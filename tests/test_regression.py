@@ -115,6 +115,42 @@ class RegressionTests(unittest.TestCase):
     def evaluate(self, policy: dict, *, trusted_keys: dict | None = None) -> dict:
         return regression.evaluate(policy, base_dir=self.root, trusted_keys=trusted_keys)
 
+    def signed_policy(self) -> tuple[dict, dict, object]:
+        try:
+            from cryptography.hazmat.primitives import serialization
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        except ImportError:
+            self.skipTest("cryptography Ed25519 verifier unavailable")
+        policy = self.fixture()
+        preliminary = self.evaluate(policy)
+        private = Ed25519PrivateKey.generate()
+        public = private.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+        trusted = {"External reviewer": base64.b64encode(public).decode()}
+        candidate = policy["artifacts"]["candidatePackage"]["sha256"]
+        policy["approvals"] = {}
+        for stage in ("visual", "campaign"):
+            evidence = self.write(f"{stage}_review.md", (
+                f"{stage} review of candidate {candidate}\n"
+                "Observed evidence and accepted the result.\n").encode())
+            claim = {"stage": stage, "decision": "approved", "reviewer": "External reviewer",
+                     "signedAtUtc": "2026-09-28T00:00:00+00:00",
+                     "candidatePackageSha256": candidate,
+                     "gateDigest": preliminary["gateDigest"],
+                     "evidence": {"path": f"{stage}_review.md", "sha256": evidence["sha256"]}}
+            self.write_approval(policy, stage, claim, private)
+        return policy, trusted, private
+
+    def write_approval(self, policy: dict, stage: str, claim: dict,
+                       private: object, *, signature: bytes | None = None) -> None:
+        signed = signature if signature is not None else private.sign(regression._canonical(claim))
+        policy["approvals"][stage] = self.write(f"{stage}_approval.json", {
+            "schemaVersion": 1, "claim": claim,
+            "signature": base64.b64encode(signed).decode(),
+        })
+
     def test_pinned_chain_views_and_threshold_pass_but_acceptance_pending(self) -> None:
         result = self.evaluate(self.fixture())
         self.assertTrue(result["chain"]["passed"])
@@ -174,40 +210,92 @@ class RegressionTests(unittest.TestCase):
         self.assertFalse(result["chain"]["passed"])
         self.assertTrue(any("does not pin" in reason for reason in result["chain"]["reasons"]))
 
-    def test_signed_visual_and_campaign_claims_bind_gate_and_candidate(self) -> None:
-        try:
-            from cryptography.hazmat.primitives import serialization
-            from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-        except ImportError:
-            self.skipTest("cryptography Ed25519 verifier unavailable")
-        policy = self.fixture()
-        preliminary = self.evaluate(policy)
-        private = Ed25519PrivateKey.generate()
-        public = private.public_key().public_bytes(
-            encoding=serialization.Encoding.Raw,
-            format=serialization.PublicFormat.Raw,
-        )
-        trusted = {"External reviewer": base64.b64encode(public).decode()}
-        candidate = policy["artifacts"]["candidatePackage"]["sha256"]
-        policy["approvals"] = {}
-        for stage in ("visual", "campaign"):
-            claim = {"stage": stage, "decision": "approved", "reviewer": "External reviewer",
-                     "signedAtUtc": "2026-09-28T00:00:00+00:00",
-                     "candidatePackageSha256": candidate,
-                     "gateDigest": preliminary["gateDigest"]}
-            signature = private.sign(regression._canonical(claim))
-            policy["approvals"][stage] = self.write(f"{stage}_approval.json", {
-                "schemaVersion": 1, "claim": claim,
-                "signature": base64.b64encode(signature).decode(),
-            })
+    def test_signed_visual_and_campaign_claims_bind_gate_candidate_and_evidence(self) -> None:
+        policy, trusted, _private = self.signed_policy()
         self.assertFalse(self.evaluate(policy)["releaseReady"])
         result = self.evaluate(policy, trusted_keys=trusted)
         self.assertTrue(result["releaseReady"])
         self.assertEqual(result["acceptance"]["visual"]["state"], "approved")
+        self.assertEqual(result["acceptance"]["visual"]["evidence"]["path"],
+                         str(self.root / "visual_review.md"))
         trusted["External reviewer"] = base64.b64encode(b"x" * 32).decode()
         result = self.evaluate(policy, trusted_keys=trusted)
         self.assertFalse(result["releaseReady"])
         self.assertEqual(result["acceptance"]["visual"]["state"], "pending")
+
+    def test_legacy_signed_claim_without_human_evidence_stays_pending(self) -> None:
+        policy, trusted, private = self.signed_policy()
+        receipt = json.loads((self.root / "visual_approval.json").read_text())
+        claim = receipt["claim"]
+        del claim["evidence"]
+        self.write_approval(policy, "visual", claim, private)
+        result = self.evaluate(policy, trusted_keys=trusted)
+        self.assertTrue(result["technicalPassed"])
+        self.assertFalse(result["releaseReady"])
+        self.assertIn("does not pin human review evidence",
+                      result["acceptance"]["visual"]["reason"])
+        self.assertEqual(result["acceptance"]["campaign"]["state"], "approved")
+
+    def test_missing_or_changed_human_evidence_stays_pending(self) -> None:
+        policy, trusted, _private = self.signed_policy()
+        visual = self.root / "visual_review.md"
+        visual.write_text("A changed visual review", encoding="utf-8")
+        result = self.evaluate(policy, trusted_keys=trusted)
+        self.assertFalse(result["releaseReady"])
+        self.assertIn("SHA-256 mismatch", result["acceptance"]["visual"]["reason"])
+        self.assertEqual(result["acceptance"]["campaign"]["state"], "approved")
+        visual.unlink()
+        result = self.evaluate(policy, trusted_keys=trusted)
+        self.assertFalse(result["releaseReady"])
+        self.assertIn("Cannot read evidence", result["acceptance"]["visual"]["reason"])
+
+    def test_forged_evidence_pointer_breaks_detached_signature(self) -> None:
+        policy, trusted, private = self.signed_policy()
+        receipt = json.loads((self.root / "campaign_approval.json").read_text())
+        claim = receipt["claim"]
+        forged = self.write("forged_campaign_review.md", b"No real campaign review\n")
+        claim["evidence"] = {"path": "forged_campaign_review.md", "sha256": forged["sha256"]}
+        old_signature = base64.b64decode(receipt["signature"])
+        self.write_approval(policy, "campaign", claim, private, signature=old_signature)
+        result = self.evaluate(policy, trusted_keys=trusted)
+        self.assertFalse(result["releaseReady"])
+        self.assertEqual(result["acceptance"]["visual"]["state"], "approved")
+        self.assertEqual(result["acceptance"]["campaign"]["reason"],
+                         "Detached signature is invalid")
+
+    def test_signed_empty_human_evidence_stays_pending(self) -> None:
+        policy, trusted, private = self.signed_policy()
+        receipt = json.loads((self.root / "visual_approval.json").read_text())
+        claim = receipt["claim"]
+        empty = self.write("empty_visual_review.md", b"  \n")
+        claim["evidence"] = {"path": "empty_visual_review.md", "sha256": empty["sha256"]}
+        self.write_approval(policy, "visual", claim, private)
+        result = self.evaluate(policy, trusted_keys=trusted)
+        self.assertFalse(result["releaseReady"])
+        self.assertEqual(result["acceptance"]["visual"]["reason"],
+                         "Human review evidence is empty")
+
+    def test_campaign_cannot_reuse_visual_review_evidence(self) -> None:
+        policy, trusted, private = self.signed_policy()
+        campaign = json.loads((self.root / "campaign_approval.json").read_text())["claim"]
+        visual = json.loads((self.root / "visual_approval.json").read_text())["claim"]
+        campaign["evidence"] = visual["evidence"]
+        self.write_approval(policy, "campaign", campaign, private)
+        result = self.evaluate(policy, trusted_keys=trusted)
+        self.assertFalse(result["releaseReady"])
+        self.assertEqual(result["acceptance"]["visual"]["state"], "approved")
+        self.assertEqual(result["acceptance"]["campaign"]["reason"],
+                         "Campaign review evidence duplicates visual review evidence")
+
+    def test_signed_claim_with_extra_unreviewed_field_stays_pending(self) -> None:
+        policy, trusted, private = self.signed_policy()
+        claim = json.loads((self.root / "visual_approval.json").read_text())["claim"]
+        claim["unreviewed"] = True
+        self.write_approval(policy, "visual", claim, private)
+        result = self.evaluate(policy, trusted_keys=trusted)
+        self.assertFalse(result["releaseReady"])
+        self.assertEqual(result["acceptance"]["visual"]["reason"],
+                         "Approval claim has unexpected fields")
 
 
 if __name__ == "__main__":

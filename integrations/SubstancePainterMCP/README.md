@@ -53,6 +53,19 @@ Version **1.0.0** provides 79 focused MCP tools. It completes the guarded resour
 
 Painter builds may expose newer features while reporting an older API version string. `get_capabilities` therefore probes the running application for supported channels, blend modes, OpenPBR behavior, and version-specific features.
 
+## MCP write gate
+
+The MCP server starts in inspection mode. Its 34 inspection and planning tools remain available; the other 45 tools reject calls before contacting Painter or writing output. This includes layer edits and deletion, baking and cancellation, project open/create/save, shelf and resource changes, selection changes, and texture or Smart-asset exports. Newly registered tools also default to the gated group until explicitly reviewed as read-only.
+
+To authorize MCP authoring for a controlled session, set `SP_MCP_ALLOW_PROJECT_WRITES=1` in the **local MCP server process environment** and restart that server. For a direct PowerShell launch:
+
+```powershell
+$env:SP_MCP_ALLOW_PROJECT_WRITES = "1"
+.venv\Scripts\python.exe -m substance_painter_mcp.server
+```
+
+Use a disposable project or verified project copy before enabling writes. This opt-in does not bypass individual `confirm=true` checks, output/input path roots such as `SP_MCP_EXPORT_ROOTS` and `SP_MCP_PROJECT_ROOTS`, or the separate `SP_MCP_ALLOW_EXECUTE_PYTHON=1` requirement for raw Python. The gate applies to MCP tool dispatch; Painter's own UI and scripts that import the operation classes directly have their own controls.
+
 ## Available tools
 
 ### Inspection and diagnostics

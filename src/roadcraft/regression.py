@@ -25,6 +25,8 @@ ROLES = frozenset({"baseline", "candidate"})
 BOUNDS = ("candidateMin", "candidateMax", "deltaMin", "deltaMax",
           "percentChangeMin", "percentChangeMax")
 SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
+APPROVAL_CLAIM_FIELDS = frozenset({"stage", "decision", "reviewer", "signedAtUtc",
+                                   "candidatePackageSha256", "gateDigest", "evidence"})
 
 
 class RegressionError(ValueError):
@@ -210,7 +212,7 @@ def _validate_policy(policy: Mapping[str, Any], base: Path) -> dict[str, Any]:
 
 
 def _approval(stage: str, pin: Any, trusted: Any, base: Path,
-              gate_digest: str, candidate_sha: str) -> dict[str, Any]:
+               gate_digest: str, candidate_sha: str) -> dict[str, Any]:
     pending = lambda reason: {"state": "pending", "reason": reason}
     if pin is None:
         return pending("No detached signed approval was supplied")
@@ -218,6 +220,8 @@ def _approval(stage: str, pin: Any, trusted: Any, base: Path,
         raise RegressionError("approvals and trustedReviewers must be objects")
     path = _path(pin.get("path"), base)
     data = _read_pinned_json(path, _digest(pin.get("sha256"), f"{stage} approval"))
+    if data.get("schemaVersion") != 1 or set(data) != {"schemaVersion", "claim", "signature"}:
+        return pending("Detached approval receipt has an invalid schema")
     claim = data.get("claim")
     if not isinstance(claim, dict):
         return pending("Approval claim is missing")
@@ -225,8 +229,20 @@ def _approval(stage: str, pin: Any, trusted: Any, base: Path,
             claim.get("candidatePackageSha256") != candidate_sha or
             claim.get("gateDigest") != gate_digest or
             not isinstance(claim.get("signedAtUtc"), str) or
-            not isinstance(claim.get("reviewer"), str)):
+            not claim["signedAtUtc"].strip() or
+            not isinstance(claim.get("reviewer"), str) or
+            not claim["reviewer"].strip()):
         return pending("Approval claim does not bind this gate and candidate")
+    evidence = claim.get("evidence")
+    if not isinstance(evidence, dict) or set(evidence) != {"path", "sha256"}:
+        return pending("Approval claim does not pin human review evidence")
+    if set(claim) != APPROVAL_CLAIM_FIELDS:
+        return pending("Approval claim has unexpected fields")
+    try:
+        evidence_path = _path(evidence["path"], base)
+        evidence_sha = _digest(evidence["sha256"], f"{stage} human review evidence")
+    except RegressionError:
+        return pending("Approval claim has an invalid human review evidence pin")
     key_text = trusted.get(claim["reviewer"])
     if not isinstance(key_text, str):
         return pending("Reviewer key is not trusted by this policy")
@@ -239,8 +255,17 @@ def _approval(stage: str, pin: Any, trusted: Any, base: Path,
         return pending("Ed25519 verifier is unavailable")
     except Exception:
         return pending("Detached signature is invalid")
+    try:
+        evidence_bytes = review._read(evidence_path, review.MAX_RECEIPT_BYTES)
+        review._pin(evidence_bytes, evidence_sha, evidence_path)
+        if not evidence_bytes.strip():
+            return pending("Human review evidence is empty")
+        evidence_bytes.decode("utf-8")
+    except (review.ReviewError, UnicodeError) as exc:
+        return pending(f"Human review evidence is unavailable or changed: {exc}")
     return {"state": "approved", "reviewer": claim["reviewer"],
-            "signedAtUtc": claim["signedAtUtc"], "receipt": str(path)}
+            "signedAtUtc": claim["signedAtUtc"], "receipt": str(path),
+            "evidence": {"path": str(evidence_path), "sha256": evidence_sha}}
 
 
 def evaluate(policy: Mapping[str, Any] | str | Path, *,
@@ -388,6 +413,13 @@ def evaluate(policy: Mapping[str, Any] | str | Path, *,
     acceptance = {stage: _approval(stage, approvals.get(stage), trust,
                                    base, gate_digest, candidate_sha)
                   for stage in ("visual", "campaign")}
+    if all(acceptance[stage]["state"] == "approved" for stage in ("visual", "campaign")):
+        visual_evidence = acceptance["visual"]["evidence"]
+        campaign_evidence = acceptance["campaign"]["evidence"]
+        if (visual_evidence["path"] == campaign_evidence["path"] or
+                visual_evidence["sha256"] == campaign_evidence["sha256"]):
+            acceptance["campaign"] = {"state": "pending",
+                                      "reason": "Campaign review evidence duplicates visual review evidence"}
     technical = not chain_reasons and all(x["passed"] for x in [*views, *thresholds])
     return {"schemaVersion": 1, "kind": "roadcraft.regression", "gateDigest": gate_digest,
             "artifacts": checked, "chain": {"passed": not chain_reasons, "reasons": chain_reasons},

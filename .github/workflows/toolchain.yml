@@ -18,3 +18,5 @@ jobs:
         run: python -c "from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey; print('Ed25519 ready')"
       - name: Run synthetic safety and schema checks
         run: python -B -m unittest discover -s tests -q
+      - name: Run Painter MCP write-gate checks
+        run: python -B -m unittest discover -s integrations/SubstancePainterMCP/tests -q
