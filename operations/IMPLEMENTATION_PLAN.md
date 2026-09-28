@@ -831,6 +831,16 @@ not a saved or exported candidate. The 51 skinned repaired-only meshes and
 the original writer/native gates remain open. See
 `D11_PIVOT_IN_MEMORY_RECONSTRUCTION_20260929.md`.
 
+A pinned no-save projection now reconstructs the smallest full-rig skinned
+front-lens LOD2 payload from the accepted USF in memory. Its SDK readback
+matched all 48 positions, normals, UVs and remapped skin entries, all 16 face
+material/edge pairs, and both complete material strings. The remaining tangent
+maximum error is `1.11413e-4`; the SDK emits 399 live bones versus 381 in the
+accepted mesh, with one differing beacon inverse bind and a five-position ordering
+difference after blade reparenting. This is payload evidence, not a correct
+hierarchy, exact bind table or exportable replacement. See
+`D11_SKINNED_LENS_PROJECTION_20260929.md`.
+
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
 2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
