@@ -47,7 +47,7 @@ the exact two target paths, five source-only paths, 20 repaired-only paths,
 worker SHA-256 is
 `ced27a3f52a0a80764eecbd07edce6e9c6b32d6f5f6b77a5f35e57be1b2399be`.
 The maintained command also exited 0 with `IN_MEMORY_BLADE_ROLL_MATCH` in both
-Blender 5.0.1 and 5.2.0, reproducing the table above. Four focused validator
+Blender 5.0.1 and 5.2.0, reproducing the table above. Five focused validator
 tests passed. Run it with either pinned Blender version:
 
 ```powershell
@@ -59,8 +59,9 @@ $env:PYTHONPATH = "$tc\src"
   --sdk-script-root 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\tools\bin\blender_to_usf_script'
 ```
 
-The command accepts no save, export or output-file argument. It is a
-diagnostic and is not connected to an export wrapper.
+The command accepts no save, export or output-file argument. The separate
+authoring wrapper can now apply the same worker as an opt-in scratch stage,
+but that file-writing invocation has not run.
 
 The separate combined no-save preparation now validates the repaired blade
 lineage and all 60 normal attributes; see
