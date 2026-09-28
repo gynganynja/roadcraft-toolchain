@@ -10,9 +10,9 @@ The contract-hash flag is rejected outside `--execute`.
 
 The [current no-write plan](d11_aaa_native_capture_plan_c0de2026.json) uses run ID
 `c0de2026` and contract SHA-256
-`64137c9b05bca412e41ecce8b490be978d414c6c74aefcd7963425e90d90484f`.
+`e4a61f0d585b1621bcc389e58edb496e671ef10922aaf01c5b9ec31fcb8020de`.
 The complete plan file SHA-256 is
-`994b0d8f8ed00ea24363b31a2275c3f87e0998628dd933a8a89327e9c73bd9f6`.
+`a53c5c169b75d311006d0fe1889acc62d9388c9f378cb6c7421474c08dcac718`.
 The earlier [a1b2c3d4 plan](d11_aaa_native_capture_plan_a1b2c3d4.json)
 is retained as historical evidence; its runner hash and contract hash no longer
 authorize `--execute` after the exit-telemetry patch.
@@ -48,6 +48,13 @@ editor and engine PIDs, observed owned-process identities, and process exit
 states before and after each geometry, camera, screenshot-trigger, and copy
 action. The runner retains a Windows handle to the observed child engine and
 records its exact unsigned exit code and hexadecimal form if that object exits.
+If startup fails before normal child attachment, cleanup first opens a retained
+handle for the observed child and requires its name and exact editor parent
+PID to match on both sides of attachment before any PID-based stop. An
+unavailable or changed child handle prevents that stop.
+The outer transaction defers rollback and retains its lock while an editor
+remains active; if no editor remains, it verifies restoration before clearing
+the lock.
 Each view also has a full start/end interval, including the 1.5-second camera
 settle, screenshot-source guard and pre-screenshot `Read` action, so an exit
 between camera response and capture request is localized. The partial link
@@ -94,7 +101,7 @@ editor disconnect or establish visual or campaign acceptance. Do not place
 The [versioned patch manifest](patches/capture_candidate_native.patch_manifest.json)
 records base SHA-256 `b3670ff30afeb06e94301f68e12bf62d3857c5f21f1958ccc982ced2fb04831d`
 and patched SHA-256
-`369b8a5c472ec4966ac589d3fae9545cfde9570e68f42b7705b1597a36b1f025`.
+`6449ddc08c81165231ee39f90e171b2f5a2c7fdecc9e2e21b1b2c1b2d4733585`.
 The archived base, patched copy, and unified diff are adjacent to that manifest.
 The synthetic contract tests import the patched copy; local verification also
 checks that the live Steam runner has the same patched hash.

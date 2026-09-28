@@ -1,0 +1,788 @@
+--- capture_candidate_native.py@b3670ff3
++++ capture_candidate_native.py@6449ddc0
+@@ -11,7 +11,10 @@
+ 
+ import argparse
+ import ast
++from contextlib import contextmanager
+ import datetime as dt
++import hashlib
++import importlib
+ import importlib.util
+ import json
+ import os
+@@ -21,7 +24,6 @@
+ import subprocess
+ import sys
+ import time
+-import uuid
+ 
+ 
+ sys.dont_write_bytecode = True
+@@ -62,6 +64,21 @@
+     "editor.cfg", "previewer_tpl.cfg", "thumbnails_tpl.cfg",
+     "thumbnails_prefab.cfg", "terraforming_converter.cfg",
+ )
++TOOLCHAIN_SRC = WORKSPACE / "RoadCraftToolchain" / "src"
++PARTIAL_LINKER_MODULES = (
++    "__init__.py", "native_capture_partial.py", "native_capture_observation.py",
++    "native_capture_postflight.py", "review.py", "core.py",
++)
++HELPER_SOURCE_FILES = {
++    "nativeControlsTemplate": WORKSPACE / "D11_Final_Candidate_20260925" /
++                              "native_controls_template.ps1",
++    "nativeAcceptance": WORKSPACE / "D11_Final_Candidate_20260925" /
++                        "native_acceptance.py",
++    "interiorCapture": OLD_INTERIOR / "capture_interior.py",
++    "cabSurvey": OLD_INTERIOR / "capture_cab_survey.py",
++    "syntaxCheck": WORKSPACE / "D11_All_Repairs_20260925" / "handling" /
++                   "syntax_check.ps1",
++}
+ 
+ 
+ def guard(condition: bool, message: str) -> None:
+@@ -78,11 +95,78 @@
+     return digest.hexdigest()
+ 
+ 
++def sha_stable(path: Path) -> str:
++    """Hash one plain output file while rejecting a concurrent change."""
++    guard(path.is_file() and not path.is_symlink(),
++          f"Required capture output is missing or linked: {path}")
++    before = path.stat()
++    digest = sha(path)
++    after = path.stat()
++    guard((before.st_size, before.st_mtime_ns, before.st_ino) ==
++          (after.st_size, after.st_mtime_ns, after.st_ino),
++          f"Required capture output changed while hashing: {path}")
++    return digest
++
++
++def canonical_sha256(value: object) -> str:
++    return hashlib.sha256(json.dumps(value, sort_keys=True,
++                                   separators=(",", ":")).encode("utf-8")).hexdigest()
++
++
+ def save(path: Path, payload: dict) -> None:
+     path.parent.mkdir(parents=True, exist_ok=True)
+     tmp = path.with_suffix(path.suffix + ".tmp")
+     tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+     os.replace(tmp, path)
++
++
++def copy_exclusive(source: Path, target: Path) -> None:
++    """Copy a transaction artifact without replacing an existing file."""
++    with source.open("rb") as input_stream, target.open("xb") as output_stream:
++        shutil.copyfileobj(input_stream, output_stream, length=8 * 1024 * 1024)
++        output_stream.flush()
++        os.fsync(output_stream.fileno())
++
++
++def partial_linker_source_pins() -> dict[str, str]:
++    """Pin the local verifier source that will interpret native transports."""
++    root = TOOLCHAIN_SRC / "roadcraft"
++    paths = {name: root / name for name in PARTIAL_LINKER_MODULES}
++    guard(all(path.is_file() and not path.is_symlink() for path in paths.values()),
++          "Partial-view linker source is missing or linked")
++    return {f"roadcraft/{name}": sha(path) for name, path in paths.items()}
++
++
++def helper_source_pins() -> dict[str, dict[str, str]]:
++    """Pin the script template and code that generate/send the exact requests."""
++    guard(all(path.is_file() and not path.is_symlink()
++              for path in HELPER_SOURCE_FILES.values()),
++          "Native helper source or template is missing or linked")
++    return {name: {"path": str(path), "sha256": sha(path)}
++            for name, path in HELPER_SOURCE_FILES.items()}
++
++
++def load_partial_linker(expected_pins: dict[str, str]):
++    """Import only the source declared in the reviewed output contract."""
++    guard(partial_linker_source_pins() == expected_pins,
++          "Partial-view linker source changed since the capture plan")
++    if str(TOOLCHAIN_SRC) not in sys.path:
++        sys.path.insert(0, str(TOOLCHAIN_SRC))
++    module = importlib.import_module("roadcraft.native_capture_partial")
++    expected = (TOOLCHAIN_SRC / "roadcraft" / "native_capture_partial.py").resolve()
++    guard(Path(module.__file__).resolve() == expected,
++          "Imported partial-view linker is not the reviewed local source")
++    for name in PARTIAL_LINKER_MODULES:
++        if name == "__init__.py":
++            imported = sys.modules["roadcraft"]
++        else:
++            imported = sys.modules.get("roadcraft." + name.removesuffix(".py"))
++        guard(imported is not None and Path(imported.__file__).resolve() ==
++              (TOOLCHAIN_SRC / "roadcraft" / name).resolve(),
++              f"Imported partial-view dependency differs from reviewed source: {name}")
++    guard(partial_linker_source_pins() == expected_pins,
++          "Partial-view linker source changed while importing")
++    return module
+ 
+ 
+ def old_helpers():
+@@ -341,8 +425,10 @@
+ 
+ 
+ def close_owned_editor(base, proc: subprocess.Popen | None, streams: tuple,
+-                       engine_pid: int | None) -> None:
++                       engine_pid: int | None,
++                       engine: OwnedEngineHandle | None = None) -> None:
+     """Stop only the editor and engine identities observed for this run."""
++    cleanup_engine = None
+     try:
+         if proc is not None:
+             current = base.processes()
+@@ -374,13 +460,34 @@
+                 guard(engine_row["Name"] == "Roadcraft ModEditor.exe"
+                       and int(engine_row["ParentProcessId"]) in (0, proc.pid),
+                       "Recorded engine PID identity changed; inspect before terminating")
++                if engine is None:
++                    # Early failures can precede the normal child attachment.
++                    # Pin the process object before any PID-based stop so its
++                    # numeric ID cannot be reused while cleanup is in flight.
++                    guard(int(engine_row["ParentProcessId"]) == proc.pid,
++                          "Early cleanup child parent is not the owned editor")
++                    cleanup_engine = OwnedEngineHandle(engine_pid)
++                    engine = cleanup_engine
++                    after_attach = base.processes()
++                    attached_rows = {int(row["ProcessId"]): row
++                                     for row in after_attach}
++                    guard(len(attached_rows) == len(after_attach)
++                          and engine_pid in attached_rows
++                          and attached_rows[engine_pid]["Name"] ==
++                          "Roadcraft ModEditor.exe"
++                          and int(attached_rows[engine_pid]["ParentProcessId"])
++                          == proc.pid,
++                          "Early cleanup child identity changed after handle attachment")
++                else:
++                    guard(engine.pid == engine_pid,
++                          "Recorded engine handle does not match engine PID")
+             targets = ([(engine_pid, "Roadcraft ModEditor")]
+                        if engine_row is not None else [])
+             if parent_live:
+                 targets.append((proc.pid, "IntegrationStudio"))
+             for pid, process_name in targets:
+-                # Resolve the same PID and name again inside PowerShell before
+-                # Stop-Process, narrowing the process-exit/PID-reuse race.
++                # Retained process handles pin both IDs. Check the name again
++                # inside PowerShell before stopping the process.
+                 script = (f"$owned=Get-Process -Id {pid} -ErrorAction SilentlyContinue; "
+                           "if($null -ne $owned){ "
+                           f"if($owned.ProcessName -ne '{process_name}'){{ throw 'PID identity changed' }}; "
+@@ -409,17 +516,283 @@
+             except subprocess.TimeoutExpired:
+                 raise RuntimeError("Owned editor process handle remained active")
+     finally:
+-        for stream in streams:
+-            if stream is not None:
+-                stream.close()
++        try:
++            if cleanup_engine is not None:
++                cleanup_engine.close()
++        finally:
++            for stream in streams:
++                if stream is not None:
++                    stream.close()
++
++
++class OwnedEngineHandle:
++    """Keep the observed child process object alive for an exact exit code."""
++
++    def __init__(self, pid: int) -> None:
++        guard(os.name == "nt" and pid > 0, "Engine exit probe requires a Windows PID")
++        import ctypes
++
++        self.pid = pid
++        self._ctypes = ctypes
++        self._kernel = ctypes.WinDLL("kernel32", use_last_error=True)
++        self._kernel.OpenProcess.argtypes = (ctypes.c_uint32, ctypes.c_int,
++                                             ctypes.c_uint32)
++        self._kernel.OpenProcess.restype = ctypes.c_void_p
++        self._kernel.WaitForSingleObject.argtypes = (ctypes.c_void_p,
++                                                      ctypes.c_uint32)
++        self._kernel.WaitForSingleObject.restype = ctypes.c_uint32
++        self._kernel.GetExitCodeProcess.argtypes = (ctypes.c_void_p,
++                                                    ctypes.POINTER(ctypes.c_uint32))
++        self._kernel.GetExitCodeProcess.restype = ctypes.c_int
++        self._kernel.CloseHandle.argtypes = (ctypes.c_void_p,)
++        self._kernel.CloseHandle.restype = ctypes.c_int
++        # SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION. The handle pins the
++        # process object even if its numeric PID is later reused.
++        self._handle = self._kernel.OpenProcess(0x00100000 | 0x1000, 0, pid)
++        if not self._handle:
++            raise OSError(ctypes.get_last_error(), f"OpenProcess engine PID {pid}")
++
++    def sample(self) -> dict:
++        guard(self._handle is not None, "Engine exit handle was closed")
++        result = self._kernel.WaitForSingleObject(self._handle, 0)
++        if result == 0x102:  # WAIT_TIMEOUT
++            return {"status": "running"}
++        if result != 0:  # WAIT_OBJECT_0
++            raise OSError(self._ctypes.get_last_error(),
++                          f"WaitForSingleObject engine PID {self.pid}: {result:#x}")
++        code = self._ctypes.c_uint32()
++        if not self._kernel.GetExitCodeProcess(self._handle,
++                                               self._ctypes.byref(code)):
++            raise OSError(self._ctypes.get_last_error(),
++                          f"GetExitCodeProcess engine PID {self.pid}")
++        return {"status": "exited", "exitCodeUnsigned": code.value,
++                "exitCodeHex": f"0x{code.value:08x}"}
++
++    def close(self) -> None:
++        if self._handle is not None:
++            handle, self._handle = self._handle, None
++            if not self._kernel.CloseHandle(handle):
++                raise OSError(self._ctypes.get_last_error(),
++                              f"CloseHandle engine PID {self.pid}")
++
++
++def owned_snapshot(base, proc: subprocess.Popen, engine: OwnedEngineHandle) -> dict:
++    """Best-effort process census plus the retained engine object's exit state."""
++    snapshot = {"observedUtc": dt.datetime.now(dt.timezone.utc).isoformat(),
++                "editorPid": proc.pid, "editorExitCode": proc.poll(),
++                "enginePid": engine.pid}
++    try:
++        snapshot["engineExit"] = engine.sample()
++    except BaseException as exc:
++        snapshot["engineExit"] = {"status": "unavailable", "error": repr(exc)}
++    try:
++        snapshot["ownedProcesses"] = [
++            {"pid": int(row["ProcessId"]),
++             "parentPid": int(row["ParentProcessId"]), "name": row["Name"]}
++            for row in base.processes()
++            if int(row["ProcessId"]) in (proc.pid, engine.pid)]
++    except BaseException as exc:
++        snapshot["processProbeError"] = repr(exc)
++    return snapshot
++
++
++def capture_contract(run_id: str, variants: tuple[str, ...],
++                     views: tuple[str, ...], candidate: Path,
++                     candidate_sha: str, pins: dict[str, str],
++                     camera_specs: dict, *, prototype: bool,
++                     package_receipt: Path, package_receipt_sha: str,
++                     package_receipt_status: str,
++                     owned_lock: bool = False) -> dict:
++    """Declare every named capture artifact before any native write or swap."""
++    guard(re.fullmatch(r"[0-9a-f]{8}", run_id) is not None,
++          "--run-id must be eight lowercase hexadecimal characters")
++    guard(not NATIVE.is_symlink() and not RUNS.is_symlink(),
++          "Native evidence directories must not be links")
++    backup = NATIVE / f"cat_d11t_before_{EXPECTED_BASE_SHA[:12]}_{run_id}.pak"
++    stage = LIVE.with_name(f"cat_d11t.standalone-{run_id}.tmp")
++    restore = LIVE.with_name(f"cat_d11t.restore-{run_id}.tmp")
++    report = NATIVE / f"candidate_capture_{run_id}.json"
++    recovery = NATIVE / f"candidate_recovery_{run_id}.json"
++    runs = {variant: RUNS / f"aaa_{variant}_{run_id}{variant[:2]}"
++            for variant in variants}
++    required_files = [report, backup]
++    optional_files = []
++    transient_paths = [LOCK, stage, restore,
++                       report.with_suffix(report.suffix + ".tmp")]
++    screenshot_sources = []
++    runtime_directories = {}
++    contexts = {}
++    for variant in variants:
++        run = runs[variant]
++        runtime_directories[variant] = {
++            "editorData": str(run / "editor_data"),
++            "temporary": str(run / "tmp"),
++            "localProfilesIfCreated": str(run / "local_profiles"),
++        }
++        scene = PROJECT / "mods_source/xscenes/mods" / SCENES[variant]
++        contexts[variant] = {
++            "scene": str(scene), "sceneSha256": sha(scene),
++            "cameraBasis": "_cockpit_camera; offsets (forward,left,up) in metres",
++            "cameraSpecs": {name: camera_specs[name] for name in views},
++            "plannedResolutionPixels": {"status": "unknown"},
++            "runtimeLighting": {"status": "unknown"},
++            "protocol": "SetCab, ReadPreCapture, CaptureCab PNG, copied image, partial view link",
++        }
++        required_files.extend((run / "native_controls.ps1", run / "probe.scenario",
++                               run / "stdout.log", run / "stderr.log",
++                               run / "report.json", run / "interior_geom.json",
++                               run / "interior_geom.transport.log"))
++        optional_files.extend((run / "interior_hidden.json",
++                               run / "interior_hidden.transport.log"))
++        transient_paths.extend((run / "report.json.tmp", run / "tmp"))
++        for view in views:
++            required_files.extend((run / f"camera_{view}.json",
++                                   run / f"camera_{view}.transport.log",
++                                   run / f"pre_capture_{view}.json",
++                                   run / f"pre_capture_{view}.transport.log",
++                                   run / f"capture_{view}.json",
++                                   run / f"capture_{view}.transport.log",
++                                   run / f"cab_{view}.png",
++                                   run / f"partial_{view}.json"))
++            screenshot_sources.append(WORKSPACE.parent / "root/bin/pc" /
++                                      f"d11_cab_{run_id}{variant[:2]}_{view}.png")
++    collisions = [path for path in (report, backup, recovery,
++                                    *(path for path in transient_paths
++                                      if path != LOCK or not owned_lock),
++                                    *runs.values(), *screenshot_sources)
++                  if path.exists() or path.is_symlink()]
++    guard(not collisions,
++          "Capture run ID has existing outputs; choose a fresh ID: " +
++          ", ".join(str(path) for path in collisions[:5]))
++    return {"schemaVersion": 1, "runId": run_id,
++            "runner": str(Path(__file__).resolve()),
++            "runnerSha256": sha(Path(__file__)),
++            "candidatePackage": str(candidate), "candidateSha256": candidate_sha,
++            "installedPackage": str(LIVE), "baselineSha256": EXPECTED_BASE_SHA,
++            "prototype": prototype,
++            "packageReceipt": str(package_receipt),
++            "packageReceiptSha256": package_receipt_sha,
++            "packageReceiptStatus": package_receipt_status,
++            "sourcePinsSha256": canonical_sha256(pins),
++            "sourcePinCount": len(pins),
++            "partialLinkerSource": str(TOOLCHAIN_SRC),
++            "partialLinkerSourcePins": partial_linker_source_pins(),
++            "helperSourcePins": helper_source_pins(),
++            "variantContexts": contexts,
++            "capturePlan": {"variants": list(variants),
++                            "viewsPerVariant": list(views),
++                            "fullCapture": len(variants) == len(SCENES) and views == VIEWS},
++            "outerReceipt": str(report), "backup": str(backup),
++            "stage": str(stage), "restore": str(restore),
++            "lock": str(LOCK),
++            "variantRuns": {name: str(path) for name, path in runs.items()},
++            "runtimeDirectoryRoots": runtime_directories,
++            "expectedOutputFiles": [str(path) for path in required_files],
++            "optionalOutputFiles": [str(path) for path in optional_files],
++            "transientPaths": [str(path) for path in transient_paths],
++            "reservedRecoveryReceipt": str(recovery),
++            "screenshotSourceFiles": [str(path) for path in screenshot_sources]}
++
++
++def timed_action(report: dict, base, proc: subprocess.Popen,
++                 engine: OwnedEngineHandle, action: str, callback,
++                 *, view: str | None = None) -> None:
++    """Bracket a native command with timestamps and retained process state."""
++    event = {"action": action,
++             "startedUtc": dt.datetime.now(dt.timezone.utc).isoformat(),
++             "editorPid": proc.pid, "enginePid": engine.pid,
++             "ownedBefore": owned_snapshot(base, proc, engine)}
++    if view is not None:
++        event["view"] = view
++    report.setdefault("actionEvents", []).append(event)
++    try:
++        guard(event["ownedBefore"]["engineExit"]["status"] == "running",
++              f"Owned engine was not running before {action}")
++        callback()
++        event["status"] = "PASS"
++    except BaseException as exc:
++        event.update(status="FAIL", error=repr(exc))
++        raise
++    finally:
++        event["finishedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
++        after = owned_snapshot(base, proc, engine)
++        event["ownedAfter"] = after
++        event["editorExitCode"] = after["editorExitCode"]
++        event["engineExitCode"] = after["engineExit"].get("exitCodeUnsigned")
++        if "ownedProcesses" in after:
++            event["ownedProcessesAfter"] = after["ownedProcesses"]
++        if "processProbeError" in after:
++            event["processProbeError"] = after["processProbeError"]
++
++
++@contextmanager
++def view_boundary(report: dict, base, proc: subprocess.Popen,
++                  engine: OwnedEngineHandle, view: str):
++    """Keep the full camera-to-file interval, including pauses, in evidence."""
++    event = {"view": view,
++             "startedUtc": dt.datetime.now(dt.timezone.utc).isoformat(),
++             "ownedBefore": owned_snapshot(base, proc, engine)}
++    report.setdefault("viewEvents", []).append(event)
++    try:
++        yield
++        event["status"] = "PASS"
++    except BaseException as exc:
++        event.update(status="FAIL", error=repr(exc))
++        raise
++    finally:
++        event["finishedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
++        event["ownedAfter"] = owned_snapshot(base, proc, engine)
++
++
++def png_dimensions(path: Path) -> list[int]:
++    with path.open("rb") as stream:
++        header = stream.read(24)
++    guard(header[:8] == b"\x89PNG\r\n\x1a\n" and header[12:16] == b"IHDR"
++          and len(header) == 24, f"Screenshot lacks a PNG IHDR: {path}")
++    width, height = int.from_bytes(header[16:20], "big"), int.from_bytes(header[20:24], "big")
++    guard(width > 0 and height > 0, f"Screenshot dimensions are invalid: {path}")
++    return [width, height]
++
++
++def save_partial_link(path: Path, record: dict, linker) -> str:
++    """Write one new partial receipt and recheck its saved bytes and inputs."""
++    with path.open("x", encoding="utf-8", newline="\n") as stream:
++        json.dump(record, stream, indent=2, ensure_ascii=False, allow_nan=False)
++        stream.write("\n")
++        stream.flush()
++        os.fsync(stream.fileno())
++    saved = json.loads(path.read_bytes())
++    checked = linker.verify_partial_view(saved)
++    guard(checked["status"] == "PARTIAL_VIEW_LINKAGE_CONSISTENT"
++          and checked["pairProtocolEligible"] is False,
++          "Saved partial-view link is inconsistent")
++    return sha(path)
++
++
++def required_output_digests(contract: dict) -> dict[str, str]:
++    """Bind the complete reviewed file roster, excluding the outer receipt."""
++    paths = contract["expectedOutputFiles"]
++    outer = contract["outerReceipt"]
++    guard(isinstance(paths, list) and paths.count(outer) == 1 and
++          len(paths) == len(set(paths)),
++          "Required capture output roster is inconsistent")
++    return {name: sha_stable(Path(name)) for name in paths if name != outer}
+ 
+ 
+ def capture_variant(base, survey, variant: str, run_id: str,
+                     package_sha: str, pins: dict[str, str],
+-                    views: tuple[str, ...], full_capture: bool) -> dict:
++                    views: tuple[str, ...], full_capture: bool,
++                    context: dict, contract_sha: str,
++                    linker_pins: dict[str, str],
++                    helper_pins: dict[str, dict[str, str]]) -> dict:
++    linker = load_partial_linker(linker_pins)
++    guard(helper_source_pins() == helper_pins,
++          "Native helper generation source changed since the capture plan")
+     run = RUNS / f"aaa_{variant}_{run_id}"
+     run.mkdir(parents=True)
+     helper = controls_with_geom_probe(base, survey, run, run_id)
++    guard(helper_source_pins() == helper_pins,
++          "Native helper generation source changed during generation")
+     scene = PROJECT / "mods_source/xscenes/mods" / SCENES[variant]
+     scenario = run / "probe.scenario"
+     scenario.write_text(f'''open "{scene.as_posix()}"
+@@ -438,14 +811,18 @@
+         "cameraBasis": "_cockpit_camera; offsets (forward,left,up) in metres",
+         "viewSpecs": {name: survey.VIEWS[name] for name in views},
+         "helperSha256": sha(helper), "sourcePins": pins, "views": [],
++        "captureContext": context, "outputContractSha256": contract_sha,
+         "editorLaunch": {"projectArgument": str(PROJECT),
+                          "workingDirectory": str(base.h.EDITOR),
+                          "mount": editor_mount(PROJECT)},
+     }
+     proc = out = err = None
+     engine_pid = None
++    engine = None
+     try:
+         proc, out, err = base.h.launch_editor(run, scenario)
++        report["editorPid"] = proc.pid
++        report["editorLaunchedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
+         deadline = time.monotonic() + 170
+         while time.monotonic() < deadline:
+             guard(proc.poll() is None, "Editor exited before scene readiness")
+@@ -463,21 +840,78 @@
+         report["runtimeResourceMount"] = runtime_resource_mount(log)
+         engine_pid = base.find_engine_pid(proc.pid)
+         report["enginePid"] = engine_pid
+-        report["loadedInteriorGeom"] = inspect_loaded_geom(
+-            base, run, helper, engine_pid, variant)
++        engine = OwnedEngineHandle(engine_pid)
++        report["engineHandleAttachedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
++        report["ownedAtAttach"] = owned_snapshot(base, proc, engine)
++        guard(report["ownedAtAttach"]["engineExit"]["status"] == "running"
++              and any(row["pid"] == engine_pid
++                      and row["parentPid"] == proc.pid
++                      and row["name"] == "Roadcraft ModEditor.exe"
++                      for row in report["ownedAtAttach"].get("ownedProcesses", [])),
++              "Owned child engine exited or changed identity before capture")
++        loaded_geom = []
++        timed_action(report, base, proc, engine, "InspectInteriorGeom",
++                     lambda: loaded_geom.append(inspect_loaded_geom(
++                         base, run, helper, engine_pid, variant)))
++        report["loadedInteriorGeom"] = loaded_geom[0]
+         for name in views:
+             mode = name.title().replace("_", "")
+-            base.h.probe(run, "camera_" + name, helper, engine_pid, "SetCab" + mode)
+-            time.sleep(1.5)
+-            base.h.probe(run, "capture_" + name, helper, engine_pid, "CaptureCab" + mode)
+-            source = base.h.SDK / "root/bin/pc" / f"d11_cab_{run_id}_{name}.png"
+-            target = run / f"cab_{name}.png"
+-            base.screenshot(source, target, proc)
+-            report["views"].append({
+-                "view": name, "path": str(target), "sha256": sha(target),
+-                "cameraProbeSha256": sha(run / f"camera_{name}.json"),
+-            })
++            with view_boundary(report, base, proc, engine, name):
++                action_start = len(report.get("actionEvents", []))
++                timed_action(report, base, proc, engine, "SetCab" + mode,
++                             lambda name=name, mode=mode: base.h.probe(
++                                 run, "camera_" + name, helper, engine_pid,
++                                 "SetCab" + mode), view=name)
++                timed_action(report, base, proc, engine, "SettleCamera",
++                             lambda: time.sleep(1.5), view=name)
++                source = base.h.SDK / "root/bin/pc" / f"d11_cab_{run_id}_{name}.png"
++                timed_action(report, base, proc, engine, "ScreenshotSourceGuard",
++                             lambda: guard(not source.exists() and not source.is_symlink(),
++                                           f"Native screenshot output already exists: {source}"),
++                             view=name)
++                timed_action(report, base, proc, engine, "ReadPreCapture",
++                             lambda name=name: base.h.probe(
++                                 run, "pre_capture_" + name, helper, engine_pid,
++                                 "Read"), view=name)
++                timed_action(report, base, proc, engine, "CaptureCab" + mode,
++                             lambda name=name, mode=mode: base.h.probe(
++                                 run, "capture_" + name, helper, engine_pid,
++                                 "CaptureCab" + mode), view=name)
++                target = run / f"cab_{name}.png"
++                timed_action(report, base, proc, engine, "SaveScreenshot:" + name,
++                             lambda: base.screenshot(source, target, proc), view=name)
++                partial_path = run / f"partial_{name}.json"
++                partial = linker.build_partial_view(
++                    run_id=run_id[:-2], variant=variant, view=name,
++                    engine_pid=engine_pid, scene=scene, helper=helper,
++                    camera_transport=run / f"camera_{name}.json",
++                    pre_transport=run / f"pre_capture_{name}.json",
++                    capture_transport=run / f"capture_{name}.json",
++                    image=target,
++                    action_events=report["actionEvents"][action_start:])
++                guard(partial["pairProtocolEligible"] is False
++                      and partial["loadedSceneVerified"] is False
++                      and partial["nativePostflightVerified"] is False,
++                      "Partial link must not claim matched-pair or scene proof")
++                partial_sha = save_partial_link(partial_path, partial, linker)
++                report["views"].append({
++                    "view": name, "path": str(target), "sha256": sha(target),
++                    "cameraProbeSha256": sha(run / f"camera_{name}.json"),
++                    "cameraTransportLogSha256": sha(run / f"camera_{name}.transport.log"),
++                    "preCaptureProbeSha256": sha(run / f"pre_capture_{name}.json"),
++                    "preCaptureTransportLogSha256": sha(run / f"pre_capture_{name}.transport.log"),
++                    "captureProbeSha256": sha(run / f"capture_{name}.json"),
++                    "captureTransportLogSha256": sha(run / f"capture_{name}.transport.log"),
++                    "partialViewLinkPath": str(partial_path),
++                    "partialViewLinkSha256": partial_sha,
++                    "resolutionPixels": png_dimensions(target),
++                })
+         guard(project_pins(PROJECT) == pins, "Candidate project changed during capture")
++        guard(sha(helper) == report["helperSha256"],
++              "Generated native helper changed during capture")
++        guard(partial_linker_source_pins() == linker_pins and
++              helper_source_pins() == helper_pins,
++              "Partial-view or helper source changed during capture")
+         guard(sha(LIVE) == package_sha, "Installed candidate changed during capture")
+         report["status"] = ("D11_AAA_NATIVE_CAPTURES_READY"
+                             if full_capture
+@@ -485,18 +919,34 @@
+     except Exception as exc:
+         report.update(status="FAIL", error=repr(exc))
+     finally:
++        report["cleanupStartedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
++        if proc is not None and engine is not None:
++            report["ownedBeforeCleanup"] = owned_snapshot(base, proc, engine)
+         try:
+-            close_owned_editor(base, proc, (out, err), engine_pid)
++            close_owned_editor(base, proc, (out, err), engine_pid, engine)
+         except BaseException as cleanup_error:
+             report.update(status="FAIL", cleanupError=repr(cleanup_error))
+             raise
+         finally:
++            report["cleanupFinishedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
++            if proc is not None:
++                report["editorExitCodeAfterCleanup"] = proc.poll()
++            if proc is not None and engine is not None:
++                report["ownedAfterCleanup"] = owned_snapshot(base, proc, engine)
++                try:
++                    engine.close()
++                except BaseException as close_error:
++                    report.update(status="FAIL", engineHandleCloseError=repr(close_error))
+             save(run / "report.json", report)
+     guard(report["status"] in ("D11_AAA_NATIVE_CAPTURES_READY",
+                                "D11_AAA_NATIVE_TRIAGE_CAPTURES_READY"),
+           f"Native capture failed for {variant}: {report.get('error')}")
++    partial_links = [{"view": row["view"], "path": row["partialViewLinkPath"],
++                      "sha256": row["partialViewLinkSha256"]}
++                     for row in report["views"]]
+     return {"variant": variant, "report": str(run / "report.json"),
+             "reportSha256": sha(run / "report.json"), "views": len(report["views"]),
++            "partialViewLinksSha256": canonical_sha256(partial_links),
+             "loadedInteriorGeom": report["loadedInteriorGeom"]}
+ 
+ 
+@@ -510,13 +960,20 @@
+                         help="Capture only these camera views (default: all fifteen)")
+     parser.add_argument("--execute", action="store_true",
+                         help="Perform the guarded temporary swap and native captures")
++    parser.add_argument("--run-id", help="Predeclared eight-character lowercase hex run ID")
++    parser.add_argument("--expected-contract-sha256",
++                        help="SHA-256 from the reviewed --plan output; required with --execute")
++    parser.add_argument("--plan", action="store_true",
++                        help="Print the no-write output contract for --run-id")
+     parser.add_argument("--prototype", action="store_true",
+                         help="Admit the sealed texture-only prototype for early lighting QA")
+     parser.add_argument("--recover", action="store_true",
+                         help="Restore the pinned baseline after an interrupted capture")
+     args = parser.parse_args()
+     if args.recover:
+-        guard(not args.execute and not args.prototype and not args.candidate_pak and not args.expected_candidate_sha
++        guard(not args.execute and not args.plan and not args.run_id
++              and not args.expected_contract_sha256 and not args.prototype
++              and not args.candidate_pak and not args.expected_candidate_sha
+               and args.variants is None and args.views is None,
+               "--recover takes no candidate, selection, or execute arguments")
+         base, _ = old_helpers()
+@@ -524,6 +981,18 @@
+         return
+     guard(args.candidate_pak is not None and args.expected_candidate_sha is not None,
+           "Provide both --candidate-pak and --expected-candidate-sha")
++    guard(not (args.plan and args.execute), "--plan and --execute are exclusive")
++    guard(not (args.plan or args.execute) or args.run_id is not None,
++          "--plan and --execute require --run-id")
++    guard(not args.execute or args.expected_contract_sha256 is not None,
++          "--execute requires --expected-contract-sha256 from --plan")
++    guard(args.execute or args.expected_contract_sha256 is None,
++          "--expected-contract-sha256 is only valid with --execute")
++    guard(args.expected_contract_sha256 is None or
++          re.fullmatch(r"[0-9a-f]{64}", args.expected_contract_sha256) is not None,
++          "--expected-contract-sha256 must be 64 lowercase hex characters")
++    guard(args.run_id is None or re.fullmatch(r"[0-9a-f]{8}", args.run_id) is not None,
++          "--run-id must be eight lowercase hexadecimal characters")
+     guard(args.variants is None or len(args.variants) == len(set(args.variants)),
+           "--variants must not repeat a variant")
+     guard(args.views is None or len(args.views) == len(set(args.views)),
+@@ -560,24 +1029,40 @@
+     guard(not base.processes(), "RoadCraft or a Mod Editor is already running")
+     pins = project_pins(PROJECT)
+     mount = editor_mount(PROJECT)
++    contract = (capture_contract(args.run_id, variants, views, candidate, expected,
++                                 pins, survey.VIEWS, prototype=args.prototype,
++                                 package_receipt=package_receipt_path.resolve(),
++                                 package_receipt_sha=sha(package_receipt_path),
++                                 package_receipt_status=expected_status)
++                if args.run_id else None)
++    contract_sha = canonical_sha256(contract) if contract else None
++    guard(not args.execute or args.expected_contract_sha256 == contract_sha,
++          "Capture output contract changed since --plan")
+     if not args.execute:
+-        print(json.dumps({"status": ("PREFLIGHT_READY_NO_SWAP" if full_capture
+-                                      else "PREFLIGHT_TRIAGE_READY_NO_SWAP"),
+-                          "candidate": str(candidate),
+-                          "candidateSha256": expected, "baselineSha256": EXPECTED_BASE_SHA,
+-                          "prototype": args.prototype,
+-                          "project": str(PROJECT), "pinnedFiles": len(pins),
+-                          "editorMount": mount,
+-                          "variants": list(variants), "viewsPerVariant": list(views)}, indent=2))
++        preview = {"status": ("PREFLIGHT_READY_NO_SWAP" if full_capture
++                              else "PREFLIGHT_TRIAGE_READY_NO_SWAP"),
++                   "candidate": str(candidate),
++                   "candidateSha256": expected, "baselineSha256": EXPECTED_BASE_SHA,
++                   "prototype": args.prototype,
++                   "project": str(PROJECT), "pinnedFiles": len(pins),
++                   "editorMount": mount,
++                   "variants": list(variants), "viewsPerVariant": list(views)}
++        if args.plan:
++            preview["status"] = "CAPTURE_OUTPUTS_DECLARED_NO_SWAP"
++            preview["outputContract"] = contract
++            preview["outputContractSha256"] = contract_sha
++        print(json.dumps(preview, indent=2))
+         return
+ 
++    # Import the reviewed interpreter before touching the native lock or PAK.
++    load_partial_linker(contract["partialLinkerSourcePins"])
+     NATIVE.mkdir(parents=True, exist_ok=True)
+     RUNS.mkdir(parents=True, exist_ok=True)
+-    run_id = uuid.uuid4().hex[:8]
+-    backup = NATIVE / f"cat_d11t_before_{EXPECTED_BASE_SHA[:12]}_{run_id}.pak"
+-    stage = LIVE.with_name(f"cat_d11t.standalone-{run_id}.tmp")
+-    restore = LIVE.with_name(f"cat_d11t.restore-{run_id}.tmp")
+-    report_path = NATIVE / f"candidate_capture_{run_id}.json"
++    run_id = args.run_id
++    backup = Path(contract["backup"])
++    stage = Path(contract["stage"])
++    restore = Path(contract["restore"])
++    report_path = Path(contract["outerReceipt"])
+     report = {"status": "STARTING", "runId": run_id,
+               "startedUtc": dt.datetime.now(dt.timezone.utc).isoformat(),
+               "candidatePackage": str(candidate), "candidateSha256": expected,
+@@ -587,16 +1072,30 @@
+               "sourcePins": pins, "capturePlan": {"variants": list(variants),
+                                                     "viewsPerVariant": list(views),
+                                                     "fullCapture": full_capture},
++              "outputContractSha256": contract_sha,
+               "variants": []}
+     swapped = False
++    receipt_owned = False
+     with LOCK.open("x", encoding="utf-8") as stream:
+         json.dump({"runId": run_id, "baselineSha256": EXPECTED_BASE_SHA,
+                    "candidateSha256": expected, "backup": str(backup)}, stream)
+     try:
+-        shutil.copy2(LIVE, backup)
++        guard(canonical_sha256(capture_contract(
++            run_id, variants, views, candidate, expected,
++            pins, survey.VIEWS, prototype=args.prototype,
++            package_receipt=package_receipt_path.resolve(),
++            package_receipt_sha=sha(package_receipt_path),
++            package_receipt_status=expected_status,
++            owned_lock=True)) == contract_sha,
++            "Capture output contract changed after acquiring the native lock")
++        # The outer receipt is reserved before copying or swapping anything.
++        # A run-ID race must never overwrite earlier evidence in save().
++        with report_path.open("x", encoding="utf-8"):
++            receipt_owned = True
++        copy_exclusive(LIVE, backup)
+         guard(sha(backup) == EXPECTED_BASE_SHA, "Baseline backup failed hash check")
+         guard(not stage.exists() and not restore.exists(), "Staging path already exists")
+-        shutil.copy2(candidate, stage)
++        copy_exclusive(candidate, stage)
+         guard(sha(stage) == expected, "Candidate staging failed hash check")
+         guard(sha(LIVE) == EXPECTED_BASE_SHA and not base.processes(),
+               "Installed package or process state changed before swap")
+@@ -608,7 +1107,9 @@
+             guard(not base.processes(), "An editor remained active after the previous variant")
+             report["variants"].append(capture_variant(
+                 base, survey, variant, run_id + variant[:2], expected, pins,
+-                views, full_capture))
++                views, full_capture, contract["variantContexts"][variant],
++                contract_sha, contract["partialLinkerSourcePins"],
++                contract["helperSourcePins"]))
+         report["status"] = ("NATIVE_CAPTURES_READY_ROLLBACK_PENDING" if full_capture
+                             else "NATIVE_TRIAGE_CAPTURES_READY_ROLLBACK_PENDING")
+     except BaseException as exc:
+@@ -620,10 +1121,13 @@
+             if swapped:
+                 guard(sha(LIVE) == expected,
+                       "Installed package differs from candidate; refusing to overwrite it")
+-                shutil.copy2(backup, restore)
++                copy_exclusive(backup, restore)
+                 guard(sha(restore) == EXPECTED_BASE_SHA, "Rollback staging hash mismatch")
+                 os.replace(restore, LIVE)
+                 guard(sha(LIVE) == EXPECTED_BASE_SHA, "Baseline rollback failed hash check")
++            else:
++                guard(sha(LIVE) == EXPECTED_BASE_SHA,
++                      "Installed baseline changed without this run's swap")
+             report["rollback"] = {"status": "BASELINE_RESTORED" if swapped else "NO_SWAP_NEEDED",
+                                   "backup": str(backup) if backup.is_file() else None,
+                                   "sha256": sha(LIVE)}
+@@ -637,13 +1141,24 @@
+             report["status"] = "ROLLBACK_FAILED"
+             raise
+         finally:
+-            for path in (stage, restore):
+-                if path.exists():
+-                    path.unlink()
++            # Any incomplete stage/restore file is retained for inspection.
++            # Another process may have won a path race; never delete its file.
++            if report["status"] in (
++                    "NATIVE_CAPTURES_READY_BASELINE_RESTORED",
++                    "NATIVE_TRIAGE_CAPTURES_READY_BASELINE_RESTORED"):
++                try:
++                    report["requiredOutputSha256"] = required_output_digests(contract)
++                except BaseException as output_error:
++                    report.update(status="FAIL_OUTPUT_AUDIT", outputAuditError=repr(output_error))
+             report["finishedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
+-            save(report_path, report)
++            if receipt_owned:
++                save(report_path, report)
+             if report.get("rollback", {}).get("status") in ("BASELINE_RESTORED", "NO_SWAP_NEEDED"):
+                 LOCK.unlink()
++    guard(report["status"] in (
++        "NATIVE_CAPTURES_READY_BASELINE_RESTORED",
++        "NATIVE_TRIAGE_CAPTURES_READY_BASELINE_RESTORED"),
++        f"Native output audit failed: {report.get('outputAuditError')}")
+     print(json.dumps({"status": report["status"], "report": str(report_path),
+                       "variants": report["variants"]}, indent=2))
+ 

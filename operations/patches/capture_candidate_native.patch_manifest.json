@@ -2,6 +2,6 @@
   "schemaVersion": 1,
   "source": "D11_Interior_AAA_20260928/capture_candidate_native.py",
   "baseSha256": "b3670ff30afeb06e94301f68e12bf62d3857c5f21f1958ccc982ced2fb04831d",
-  "patchedSha256": "369b8a5c472ec4966ac589d3fae9545cfde9570e68f42b7705b1597a36b1f025",
-  "patch": "capture_candidate_native.b3670ff3_to_369b8a5c.patch"
+  "patchedSha256": "6449ddc08c81165231ee39f90e171b2f5a2c7fdecc9e2e21b1b2c1b2d4733585",
+  "patch": "capture_candidate_native.b3670ff3_to_6449ddc0.patch"
 }

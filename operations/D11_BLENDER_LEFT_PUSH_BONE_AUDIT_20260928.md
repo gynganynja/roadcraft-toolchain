@@ -2,9 +2,10 @@
 
 This was an **in-memory, file-read-only experiment** for `cat_d11t`. It did
 not save a Blend, export a USF, or change an accepted asset. The Blender 5.2
-process exited after printing its result. The Python probe was passed inline
-through `blender.exe -b <pinned Blend> --disable-autoexec --python-expr
-<inline probe>`; the temporary expression was not retained as a script.
+process exited after printing its result. The first Python probe was passed
+inline through `blender.exe -b <pinned Blend> --disable-autoexec --python-expr
+<inline probe>`. The retained read-only diagnostic now reproduces those
+measurements from pinned source, Blender, and SDK bytes.
 
 The historical source Blend is
 `D11_Interior_Standalone_20260927/p/mods_source/models/mods/cat_d11t.tpl.asset/cat_d11t.blend`
@@ -51,3 +52,34 @@ was exported or compared. Skin bone UID/order, inverse binds, animation,
 other hierarchy branches, mesh and material data, native viewing, and
 gameplay parity remain unverified. The `native-blend` export gate stays
 `BLOCKED`; the accepted build continues to use `usf-repair`.
+
+Run the retained diagnostic from the toolchain directory. It verifies the
+accepted inventory and all referenced input hashes before loading the Blend,
+prints one JSON object to stdout, and checks the source and SDK hashes again
+afterward. It has no result-file, Blend-save, or USF-export argument:
+
+```powershell
+$tc = 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\Roadcraft Development Package\RoadCraftToolchain'
+$env:PYTHONPATH = "$tc\src"
+& 'C:\RC\RoadCraftDev\toolchain\.venv\Scripts\python.exe' -B -m roadcraft.blender_left_push_probe `
+  --registry "$tc\project.json" `
+  --blender 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' `
+  --sdk-script-root 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\tools\bin\blender_to_usf_script'
+```
+
+The final no-save rerun used host SHA-256
+`69c6c387cae1f802597f2e03b3e6c25bda0dbe580a6859e8dc2a82fd38979b7a`
+and worker SHA-256
+`7a1a56a04c8946c115f33292dc8d47c6ee60d4b4032a45ee0574da4d756ea67b`.
+It returned `IN_MEMORY_STATIC_PATH_MATCH`, `sourceUnchanged: true`,
+`sdkUnchanged: true`, and the measured errors above. It inserts only the
+intermediate `IK_push_arm_left_base` bone and reparents the existing tilt base
+in process memory. The repaired node also has an `IK_push_arm_left_tip` child;
+this diagnostic does not reconstruct or validate that child or the rest of the
+asset. It deliberately reports `nativeBlendExportApproved: false` even on a
+static-path match.
+
+The host also pins the two Python SDK package initializers loaded before the
+reader modules, and rejects a linked inventory source root before resolving
+the declared asset paths. The final no-save rerun above passed with these
+guards active.

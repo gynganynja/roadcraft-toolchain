@@ -28,7 +28,7 @@ animation/controller files and provides no working call to these scene
 identity methods.
 
 The maintained runner `D11_Interior_AAA_20260928/capture_candidate_native.py`
-(SHA-256 `369b8a5c472ec4966ac589d3fae9545cfde9570e68f42b7705b1597a36b1f025`)
+(SHA-256 `6449ddc08c81165231ee39f90e171b2f5a2c7fdecc9e2e21b1b2c1b2d4733585`)
 writes a scenario that opens the selected `.scn`, waits for scene loading, and
 checks a ready marker and the process's `mods_source` resource mount. The
 maroon source `.scn` currently hashes to
@@ -47,6 +47,25 @@ windows, process ID, helper, scene-source hash, and PNG consistently. The
 reply is post-trigger and contains neither an engine-reported loaded-scene
 digest nor an engine-reported PNG digest. The receipt chain is useful
 consistency evidence; it is not independent authentication of the producer.
+
+## OS trace boundary
+
+The installed `C:\Windows\system32\wpr.exe` lists a `FileIO` profile. Its
+`FileIO.Verbose` profile details include process/thread events and file create,
+read, write, and rename events. `tracerpt.exe` is installed; `wpa.exe` and
+`WPAExporter.exe` were not found on `PATH` or in the standard Windows
+Performance Toolkit locations. [Microsoft's WPR profile documentation](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/built-in-recording-profiles),
+[WPA graph list](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/list-of-wpa-graphs),
+and [tracerpt reference](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/tracerpt)
+describe the available file-I/O recording and parsing surfaces. No trace was
+started for this audit.
+
+A future, bounded FileIO trace could corroborate that a particular process
+accessed a scene path or wrote a PNG path during a capture interval. File-I/O
+events do not record the bytes or SHA-256 of a loaded resource, identify the
+scene the renderer actually used, or authenticate the rendered image's origin.
+Even a matching PID/path/time trace would be supporting process evidence, not
+grounds to set `loadedSceneVerified` or `captureProcessAuthenticated` true.
 
 ## Next native experiment and acceptance rule
 

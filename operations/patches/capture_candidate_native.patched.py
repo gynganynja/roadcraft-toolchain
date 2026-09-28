@@ -425,8 +425,10 @@ def inspect_loaded_geom(base, run: Path, helper: Path, engine_pid: int,
 
 
 def close_owned_editor(base, proc: subprocess.Popen | None, streams: tuple,
-                       engine_pid: int | None) -> None:
+                       engine_pid: int | None,
+                       engine: OwnedEngineHandle | None = None) -> None:
     """Stop only the editor and engine identities observed for this run."""
+    cleanup_engine = None
     try:
         if proc is not None:
             current = base.processes()
@@ -458,13 +460,34 @@ def close_owned_editor(base, proc: subprocess.Popen | None, streams: tuple,
                 guard(engine_row["Name"] == "Roadcraft ModEditor.exe"
                       and int(engine_row["ParentProcessId"]) in (0, proc.pid),
                       "Recorded engine PID identity changed; inspect before terminating")
+                if engine is None:
+                    # Early failures can precede the normal child attachment.
+                    # Pin the process object before any PID-based stop so its
+                    # numeric ID cannot be reused while cleanup is in flight.
+                    guard(int(engine_row["ParentProcessId"]) == proc.pid,
+                          "Early cleanup child parent is not the owned editor")
+                    cleanup_engine = OwnedEngineHandle(engine_pid)
+                    engine = cleanup_engine
+                    after_attach = base.processes()
+                    attached_rows = {int(row["ProcessId"]): row
+                                     for row in after_attach}
+                    guard(len(attached_rows) == len(after_attach)
+                          and engine_pid in attached_rows
+                          and attached_rows[engine_pid]["Name"] ==
+                          "Roadcraft ModEditor.exe"
+                          and int(attached_rows[engine_pid]["ParentProcessId"])
+                          == proc.pid,
+                          "Early cleanup child identity changed after handle attachment")
+                else:
+                    guard(engine.pid == engine_pid,
+                          "Recorded engine handle does not match engine PID")
             targets = ([(engine_pid, "Roadcraft ModEditor")]
                        if engine_row is not None else [])
             if parent_live:
                 targets.append((proc.pid, "IntegrationStudio"))
             for pid, process_name in targets:
-                # Resolve the same PID and name again inside PowerShell before
-                # Stop-Process, narrowing the process-exit/PID-reuse race.
+                # Retained process handles pin both IDs. Check the name again
+                # inside PowerShell before stopping the process.
                 script = (f"$owned=Get-Process -Id {pid} -ErrorAction SilentlyContinue; "
                           "if($null -ne $owned){ "
                           f"if($owned.ProcessName -ne '{process_name}'){{ throw 'PID identity changed' }}; "
@@ -493,9 +516,13 @@ def close_owned_editor(base, proc: subprocess.Popen | None, streams: tuple,
             except subprocess.TimeoutExpired:
                 raise RuntimeError("Owned editor process handle remained active")
     finally:
-        for stream in streams:
-            if stream is not None:
-                stream.close()
+        try:
+            if cleanup_engine is not None:
+                cleanup_engine.close()
+        finally:
+            for stream in streams:
+                if stream is not None:
+                    stream.close()
 
 
 class OwnedEngineHandle:
@@ -896,7 +923,7 @@ exit
         if proc is not None and engine is not None:
             report["ownedBeforeCleanup"] = owned_snapshot(base, proc, engine)
         try:
-            close_owned_editor(base, proc, (out, err), engine_pid)
+            close_owned_editor(base, proc, (out, err), engine_pid, engine)
         except BaseException as cleanup_error:
             report.update(status="FAIL", cleanupError=repr(cleanup_error))
             raise

@@ -293,7 +293,7 @@ class NativeCaptureContractTests(unittest.TestCase):
                                              side_effect=snapshot))
             stack.enter_context(patch.object(self.runner, "inspect_loaded_geom",
                                              return_value={"status": "ok"}))
-            stack.enter_context(patch.object(self.runner, "close_owned_editor"))
+            close = stack.enter_context(patch.object(self.runner, "close_owned_editor"))
             stack.enter_context(patch.object(self.runner, "project_pins",
                                              return_value=pins))
             stack.enter_context(patch.object(self.runner.time, "sleep"))
@@ -305,6 +305,7 @@ class NativeCaptureContractTests(unittest.TestCase):
                 self.runner.partial_linker_source_pins(),
                 self.runner.helper_source_pins())
         report = json.loads((run / "report.json").read_text(encoding="utf-8"))
+        close.assert_called_once_with(base, proc, (None, None), 43, engine)
         self.assertEqual(probe_modes, [
             ("camera_front_seat", "SetCabFrontSeat"),
             ("pre_capture_front_seat", "Read"),
@@ -534,6 +535,110 @@ class NativeCaptureContractTests(unittest.TestCase):
             if child.poll() is None:
                 child.kill()
                 child.wait(timeout=10)
+
+    def test_early_cleanup_pins_and_rechecks_child_before_stop(self) -> None:
+        rows = {
+            42: {"ProcessId": 42, "ParentProcessId": 0,
+                 "Name": "IntegrationStudio.exe"},
+            43: {"ProcessId": 43, "ParentProcessId": 42,
+                 "Name": "Roadcraft ModEditor.exe"},
+        }
+        events = []
+        engine = SimpleNamespace(pid=43, close=lambda: events.append("close"))
+        proc = SimpleNamespace(pid=42,
+                               poll=lambda: None if 42 in rows else 0,
+                               wait=lambda timeout: events.append("wait"))
+        base = SimpleNamespace(
+            processes=lambda: list(rows.values()),
+            h=SimpleNamespace(PWSH=self.root / "pwsh.exe"))
+        stream = io.BytesIO()
+
+        def attach(pid):
+            self.assertEqual(pid, 43)
+            events.append("attach")
+            return engine
+
+        def stop(command, **_kwargs):
+            script = command[-1]
+            self.assertIn("attach", events)
+            self.assertNotIn("close", events)
+            pid = 43 if "Get-Process -Id 43 " in script else 42
+            events.append(f"stop-{pid}")
+            rows.pop(pid)
+            return SimpleNamespace(returncode=0, stderr=b"")
+
+        with patch.object(self.runner, "OwnedEngineHandle", side_effect=attach), \
+             patch.object(self.runner.subprocess, "run", side_effect=stop):
+            self.runner.close_owned_editor(base, proc, (stream,), None)
+        self.assertEqual(events,
+                         ["attach", "stop-43", "stop-42", "wait", "close"])
+        self.assertTrue(stream.closed)
+
+    def test_early_cleanup_fails_closed_if_child_handle_is_unavailable(self) -> None:
+        rows = [
+            {"ProcessId": 42, "ParentProcessId": 0,
+             "Name": "IntegrationStudio.exe"},
+            {"ProcessId": 43, "ParentProcessId": 42,
+             "Name": "Roadcraft ModEditor.exe"},
+        ]
+        proc = SimpleNamespace(pid=42, poll=lambda: None)
+        base = SimpleNamespace(processes=lambda: rows)
+        stream = io.BytesIO()
+        with patch.object(self.runner, "OwnedEngineHandle",
+                          side_effect=OSError("OpenProcess denied")), \
+             patch.object(self.runner.subprocess, "run") as stop:
+            with self.assertRaisesRegex(OSError, "OpenProcess denied"):
+                self.runner.close_owned_editor(base, proc, (stream,), None)
+        stop.assert_not_called()
+        self.assertTrue(stream.closed)
+
+    def test_early_cleanup_rejects_unattached_orphan_child(self) -> None:
+        rows = [
+            {"ProcessId": 42, "ParentProcessId": 0,
+             "Name": "IntegrationStudio.exe"},
+            {"ProcessId": 43, "ParentProcessId": 0,
+             "Name": "Roadcraft ModEditor.exe"},
+        ]
+        proc = SimpleNamespace(pid=42, poll=lambda: None)
+        base = SimpleNamespace(processes=lambda: rows)
+        stream = io.BytesIO()
+        with patch.object(self.runner, "OwnedEngineHandle") as attach, \
+             patch.object(self.runner.subprocess, "run") as stop:
+            with self.assertRaisesRegex(RuntimeError,
+                                        "parent is not the owned editor"):
+                self.runner.close_owned_editor(base, proc, (stream,), 43)
+        attach.assert_not_called()
+        stop.assert_not_called()
+        self.assertTrue(stream.closed)
+
+    def test_early_cleanup_rechecks_identity_after_handle_attachment(self) -> None:
+        census = [
+            {"ProcessId": 42, "ParentProcessId": 0,
+             "Name": "IntegrationStudio.exe"},
+            {"ProcessId": 43, "ParentProcessId": 42,
+             "Name": "Roadcraft ModEditor.exe"},
+        ]
+        calls = []
+        engine = SimpleNamespace(pid=43, close=lambda: calls.append("close"))
+
+        def processes():
+            calls.append("census")
+            if calls.count("census") == 1:
+                return census
+            return [census[0], {**census[1], "ParentProcessId": 99}]
+
+        base = SimpleNamespace(processes=processes)
+        proc = SimpleNamespace(pid=42, poll=lambda: None)
+        stream = io.BytesIO()
+        with patch.object(self.runner, "OwnedEngineHandle",
+                          return_value=engine), \
+             patch.object(self.runner.subprocess, "run") as stop:
+            with self.assertRaisesRegex(RuntimeError,
+                                        "identity changed after handle attachment"):
+                self.runner.close_owned_editor(base, proc, (stream,), None)
+        stop.assert_not_called()
+        self.assertEqual(calls, ["census", "census", "close"])
+        self.assertTrue(stream.closed)
 
     def test_png_dimensions_are_observed_not_assumed(self) -> None:
         path = self.root / "capture.png"
