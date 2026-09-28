@@ -46,7 +46,7 @@ manifest and unified patch preserve the exact runner delta.
 | `RoadCraftToolchain/tests/test_native_capture_contract.py` | `41382da4ce514c7285af207ac368ad78eae23ea6d4d8dbc275742d41b09d0b2c` |
 | `RoadCraftToolchain/tests/test_native_capture_partial.py` | `050d25a3a8d7b40870cf2fa188034ec95f2b529daa11a9d9ea779520eb4b8854` |
 | `RoadCraftToolchain/tests/test_native_capture_postflight.py` | `d88c8ab83c45b75fad327df143a6f77845ca2fe30fbc982e642ba8e89e5d2a86` |
-| `RoadCraftToolchain/.gitattributes` | `4d48ac3a26e96ebcb1c36080c2fbb483b388113069f907a80f0f2caead69428d` |
+| `RoadCraftToolchain/.gitattributes` | `4be3d49706115cc01eae1555e6602f44c414349ac77d941e05e32ce6ae77199a` |
 
 The preflight recipe now pins the new runner in both capture steps and the new
 verifier in its Read-source step. Its verifier path is in the dedicated

@@ -11,6 +11,7 @@ import struct
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zlib
 
 
@@ -129,6 +130,97 @@ class CapturePairTests(unittest.TestCase):
                                         "protocol": protocol, "runs": runs})
         return Path(pair["path"])
 
+    def native_binding_fixture(self) -> tuple[Path, dict[str, str]]:
+        """Make a synthetic candidate chain; postflight itself is tested elsewhere."""
+        pair_path = self.fixture(full_d11=True, run_ids={
+            "baseline": "a1b2c3d4", "candidate": "e5f6a7b8"})
+        pair = json.loads(pair_path.read_text(encoding="utf-8"))
+        protocol = json.loads(Path(pair["protocol"]["path"]).read_text(encoding="utf-8"))
+        installed = self.write("installed.pak", b"accepted baseline")
+        external: dict[str, str] = {}
+        bindings = {}
+        for role in ("candidate",):
+            run_path = Path(pair["runs"][role]["path"])
+            run = json.loads(run_path.read_text(encoding="utf-8"))
+            run_id = run["runId"]
+            native_root = self.root / f"native_{role}"
+            output_hashes = {}
+            contexts = {}
+            for variant_row in run["variants"]:
+                variant = variant_row["variant"]
+                native_run = native_root / "runs" / (
+                    f"aaa_{variant}_{run_id}{variant[:2]}")
+                contexts[variant] = {"scene": variant_row["scene"]["path"],
+                                     "sceneSha256": variant_row["scene"]["sha256"]}
+                actions = [{"action": "InspectInteriorGeom"}]
+                for capture in variant_row["captures"]:
+                    view = capture["view"]
+                    image = self.write(
+                        str((native_run / f"cab_{view}.png").relative_to(self.root)),
+                        Path(capture["image"]["path"]).read_bytes())
+                    capture["image"] = image
+                    output_hashes[image["path"]] = image["sha256"]
+                    observation = json.loads(Path(capture["observation"]["path"])
+                                             .read_text(encoding="utf-8"))
+                    transport = self.write(
+                        str((native_run / f"pre_capture_{view}.json")
+                            .relative_to(self.root)),
+                        {"status": "pass", "stage": "response_received",
+                         "mode": "Read", "readOnly": True,
+                         "engineProcessId": variant_row["enginePid"],
+                         "script": observation["requestScript"],
+                         "response": observation["responseRaw"],
+                         "requestSentUtc": observation["requestSentUtc"],
+                         "receivedUtc": observation["responseReceivedUtc"]})
+                    output_hashes[transport["path"]] = transport["sha256"]
+                    observation["nativeTransport"] = transport
+                    capture["observation"] = self.write(
+                        str(Path(capture["observation"]["path"]).relative_to(self.root)),
+                        observation)
+                    sent = datetime.fromisoformat(
+                        observation["requestSentUtc"].replace("Z", "+00:00"))
+                    stamp = lambda offset: (sent + timedelta(seconds=offset)).strftime(
+                        "%Y-%m-%dT%H:%M:%SZ")
+                    mode = view.title().replace("_", "")
+                    for action, start, finish in (
+                        ("SetCab" + mode, -3, -2), ("SettleCamera", -2, -1),
+                        ("ScreenshotSourceGuard", -1, 0),
+                        ("ReadPreCapture", 0, 1),
+                        ("CaptureCab" + mode, 1, 2),
+                        ("SaveScreenshot:" + view, 2, 3)):
+                        actions.append({"action": action, "startedUtc": stamp(start),
+                                        "finishedUtc": stamp(finish)})
+                report = self.write(
+                    str((native_run / "report.json").relative_to(self.root)),
+                    {"enginePid": variant_row["enginePid"], "actionEvents": actions})
+                output_hashes[report["path"]] = report["sha256"]
+            pair["runs"][role] = self.write(run_path.name, run)
+            plan = self.write(f"native_{role}/plan.json", {
+                "outputContract": {
+                    "runner": protocol["runner"]["path"],
+                    "runnerSha256": protocol["runner"]["sha256"],
+                    "variantContexts": contexts}})
+            receipt = self.write(f"native_{role}/candidate_capture_{run_id}.json", {
+                "runId": run_id, "requiredOutputSha256": output_hashes})
+            bindings[role] = {
+                "receipt": receipt, "plan": plan,
+                "candidatePackage": run["package"],
+                "installedPackage": installed,
+                "baselineSha256": installed["sha256"],
+            }
+            external = {"receiptSha256": receipt["sha256"],
+                        "planSha256": plan["sha256"]}
+        pair["candidateNativeReceipt"] = bindings["candidate"]
+        self.write("pair.json", pair)
+        return pair_path, external
+
+    @staticmethod
+    def passing_postflight(*args, **kwargs) -> dict:
+        return {"captureIntegrityPassed": True, "checkedViews": 45,
+                "checkedPartialViews": 45, "checkedReadRequests": 45,
+                "receiptSha256": kwargs["expected_capture_receipt_sha256"],
+                "runId": kwargs["run_id"]}
+
     def test_partial_context_is_comparable_but_not_d11_complete(self) -> None:
         result = gate.validate(self.fixture())
         self.assertTrue(result["contextComparable"])
@@ -145,7 +237,80 @@ class CapturePairTests(unittest.TestCase):
         self.assertTrue(result["d11RosterComplete"])
         self.assertTrue(result["pairComparable"])
         self.assertFalse(result["nativePostflightVerified"])
+        self.assertFalse(result["nativeEvidenceLinked"])
         self.assertFalse(result["technicalPassed"])
+
+    def test_native_evidence_needs_external_pins_and_exact_view_links(self) -> None:
+        pair, external = self.native_binding_fixture()
+        self.assertFalse(gate.validate(pair)["nativeEvidenceLinked"])
+        with mock.patch.object(gate.native_capture_postflight, "validate",
+                               side_effect=self.passing_postflight) as postflight:
+            result = gate.validate(pair, expected_candidate_native_pins=external)
+        self.assertEqual(postflight.call_count, 1)
+        self.assertTrue(result["candidateNativeReceiptLinked"])
+        self.assertTrue(result["candidateNativePostflightVerified"])
+        self.assertFalse(result["nativeEvidenceLinked"])
+        self.assertFalse(result["nativePostflightVerified"])
+        self.assertTrue(result["pairComparable"])
+        self.assertFalse(result["captureProcessAuthenticated"])
+        self.assertFalse(result["technicalPassed"])
+
+    def test_native_binding_rejects_external_pin_and_failed_postflight(self) -> None:
+        pair, external = self.native_binding_fixture()
+        changed = dict(external)
+        changed["receiptSha256"] = "0" * 64
+        with self.assertRaisesRegex(gate.CapturePairError, "external pin"):
+            gate.validate(pair, expected_candidate_native_pins=changed)
+        with mock.patch.object(gate.native_capture_postflight, "validate",
+                               return_value={"captureIntegrityPassed": False}):
+            with self.assertRaisesRegex(gate.CapturePairError, "postflight"):
+                gate.validate(pair, expected_candidate_native_pins=external)
+
+    def test_native_binding_rejects_a_different_plan_runner(self) -> None:
+        pair, external = self.native_binding_fixture()
+        pair_row = json.loads(pair.read_text(encoding="utf-8"))
+        binding = pair_row["candidateNativeReceipt"]
+        plan_path = Path(binding["plan"]["path"])
+        plan = json.loads(plan_path.read_text(encoding="utf-8"))
+        plan["outputContract"]["runnerSha256"] = "0" * 64
+        binding["plan"] = self.write(
+            str(plan_path.relative_to(self.root)), plan)
+        external["planSha256"] = binding["plan"]["sha256"]
+        self.write("pair.json", pair_row)
+        with mock.patch.object(gate.native_capture_postflight, "validate",
+                               side_effect=self.passing_postflight):
+            with self.assertRaisesRegex(gate.CapturePairError,
+                                        "protocol runner differs from native contract"):
+                gate.validate(pair, expected_candidate_native_pins=external)
+
+    def test_native_binding_rejects_unlinked_observation_and_image(self) -> None:
+        pair, external = self.native_binding_fixture()
+        run_path = self.root / "candidate_run.json"
+        run = json.loads(run_path.read_text(encoding="utf-8"))
+        capture = run["variants"][0]["captures"][0]
+        observed_path = Path(capture["observation"]["path"])
+        observed = json.loads(observed_path.read_text(encoding="utf-8"))
+        observed["nativeTransport"]["sha256"] = "0" * 64
+        capture["observation"] = self.write(
+            str(observed_path.relative_to(self.root)), observed)
+        pair_row = json.loads(pair.read_text(encoding="utf-8"))
+        pair_row["runs"]["candidate"] = self.write(run_path.name, run)
+        self.write("pair.json", pair_row)
+        with mock.patch.object(gate.native_capture_postflight, "validate",
+                               side_effect=self.passing_postflight):
+            with self.assertRaisesRegex(gate.CapturePairError, "native transport link"):
+                gate.validate(pair, expected_candidate_native_pins=external)
+        pair, external = self.native_binding_fixture()
+        run = json.loads(run_path.read_text(encoding="utf-8"))
+        run["variants"][0]["captures"][0]["image"] = self.write("alternate.png", png())
+        pair_row = json.loads(pair.read_text(encoding="utf-8"))
+        pair_row["runs"]["candidate"] = self.write(run_path.name, run)
+        self.write("pair.json", pair_row)
+        with mock.patch.object(gate.native_capture_postflight, "validate",
+                               side_effect=self.passing_postflight):
+            with self.assertRaisesRegex(gate.CapturePairError, "image differs from native"):
+                gate.validate(pair, expected_candidate_native_pins=external)
+
 
     def test_missing_and_mismatched_capture_time_lighting_fail(self) -> None:
         def missing(role, variant, view, response, observation, capture):

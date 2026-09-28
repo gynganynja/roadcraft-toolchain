@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "kind": "roadcraft.d11.blade-payload-readback",
+  "asset": "cat_d11t",
+  "scope": "in-memory SDK projection against retained native and repaired USFs",
+  "status": "SOURCE_BLADE_PAYLOAD_READBACK",
+  "relocationRows": 60,
+  "sourceBlendSha256": "1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731",
+  "nativeUsfSha256": "80c856b07b3ae1447f2748b5f6f8ec13c688c2594f3ebfaeada9e0d11da21370",
+  "repairedUsfSha256": "49bfc77c1172a0e324934974d5612a13d121c3cee78ae7ca454468b61649e170",
+  "worklistSha256": "a842c0e7dd355e64ace39a724a806f509328ba3fb1916fc7ab4bbb85062759c3",
+  "hostSha256": "b02a9c8de297c1673d93bc353e50f9460daafe94d316b00603fe0d2d6cec9f70",
+  "workerSha256": "c6a4b4b0c0639a0b412c917e420d320ff5e0015edd915972ec393875b36d3be6",
+  "rowsDigestSha256": "9bb95eb979bbe4c5baeaea90cd57d8f08ef515af8023c9eae38c2d8131b479d4",
+  "runs": [
+    {
+      "blenderVersion": "5.0.1",
+      "blenderSha256": "f81d3bca0af0d917e03fdf09255981b2ed0750d3a2815da991ea5425a87f8f7c",
+      "receipt": "d11_blade_payload_blender50_20260928.json",
+      "receiptSha256": "d00fb4fa0135e5846b5d0274587ecf980b15b8c40f4358d7661c6fa45a975846"
+    },
+    {
+      "blenderVersion": "5.2.0 LTS",
+      "blenderSha256": "e27fbfea8564aa645d4463cb0949695fd85562b9de6df9561b06859a1074adf7",
+      "receipt": "d11_blade_payload_blender52_20260928.json",
+      "receiptSha256": "8a7f20c166f8c510a32ecdb991729fdd614a77c7a7e69b4620d8f3dc477a752f"
+    }
+  ],
+  "fieldMatchRows": {
+    "sourceNative": {
+      "positions": 60,
+      "normals": 60,
+      "faceMaterialEdges": 60,
+      "uvCoordinates": 60,
+      "packedColors": 60,
+      "skinIndicesWeights": 60
+    },
+    "nativeRepaired": {
+      "positions": 2,
+      "normals": 0,
+      "faceMaterialEdges": 60,
+      "uvCoordinates": 60,
+      "packedColors": 60,
+      "skinIndicesWeights": 60
+    }
+  },
+  "repairedPositionMatchedLeaves": ["cdt_blade_49", "cdt_blade_50"],
+  "sourceUnchanged": true,
+  "sdkUnchanged": true,
+  "retainedNativeUnchanged": true,
+  "blendSaved": false,
+  "usfExported": false,
+  "nativeBlendExportApproved": false,
+  "equivalenceVerified": false
+}

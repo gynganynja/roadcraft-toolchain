@@ -80,13 +80,53 @@ capture time and seal these raw replies in the run receipt. The
 `CAPTURE_READY` and `native-editor-response` strings are still self-declared
 by that runner: this validator does **not** authenticate the editor process or
 prove native postflight succeeded. Before technical acceptance, link the pair
-to pinned native outer receipts, rerun `native_capture_postflight` for each
-run, verify that each image and observation is present in the native receipt
-chain, and feed that verified result into the regression gate. The validator
+to independently pinned native outer receipts, verify both roles with
+role-appropriate postflight adapters, check that each image and observation is
+present in its native receipt chain, and feed that result into the regression gate. The validator
 reports `nativePostflightVerified: false`, `captureProcessAuthenticated: false`,
 `technicalPassed: false`, and `releaseReady: false` until that separate work is
 done. The existing regression policy's signed visual and campaign claims remain
 separate gates.
+
+**Current-run hard limit:** the pinned `ReadPreCapture` SSL emits a multiline
+`D11T_SYSTEMS_OK` text response, including camera and light lines. The pair
+schema instead requires a JSON `responseRaw` with `status: "OBSERVED"` and
+complete capture-time camera, lighting, scene and protocol fields. Therefore
+an authentic run of the current native runner cannot pass the optional link
+check below. Its positive unit test uses a mocked postflight and synthetic
+JSON transport to check future bridge logic; it is not a live or integrated
+native pass. A new reviewed runner/probe and non-mocked postflight integration
+are needed before this check can validate real captures.
+
+An optional candidate-only receipt check is scaffolded for a future runner
+that emits the complete observation in its `ReadPreCapture` transport. Add a
+`candidateNativeReceipt` object to the pair manifest with exactly `receipt`,
+`plan`, `candidatePackage`, and `installedPackage` path/SHA-256 pins plus
+`baselineSha256`. Supply the **independent** outer-receipt and plan SHA-256s to
+the API as `expected_candidate_native_pins` or to the CLI as
+`--candidate-native-receipt-sha256` and `--candidate-native-plan-sha256`. Pins
+inside `pair.json` alone never enable the check. It reruns the existing D11
+candidate postflight and checks all 45 candidate images, source-scene pins,
+engine PIDs, action intervals, the protocol runner path/SHA-256, and
+pre-screenshot native transport files
+against the pair records. Each candidate observation must include a
+`nativeTransport` path/SHA-256 pin whose exact script, raw response, timestamps,
+and PID match the native `ReadPreCapture` record. Changed or missing links
+fail validation; success reports `candidateNativeReceiptLinked: true` and
+`candidateNativePostflightVerified: true`.
+
+That candidate-only result is a receipt-chain consistency check. The current
+`native_capture_postflight` verifies a candidate run followed by baseline
+restoration; it is **not** a verifier for a baseline capture run. There is no
+baseline receipt adapter yet, and the current partial Read response cannot
+provide the complete observation schema. Consequently
+`nativeEvidenceLinked` and `nativePostflightVerified` remain false for the
+pair, including when the candidate-only check passes. The check also cannot
+prove which scene bytes the engine loaded or that it produced the PNG;
+`captureProcessAuthenticated`, `technicalPassed`, and `releaseReady` remain
+false. A baseline adapter, a full capture-time renderer observation, and
+engine-origin scene/PNG proof are still required before native evidence can
+support technical acceptance.
 
 Focused synthetic tests cover reused screenshots, overlapping view intervals,
 absent or changed lighting, camera transform,

@@ -14,7 +14,7 @@ import json
 import math
 from pathlib import Path
 import re
-from typing import Any
+from typing import Any, Mapping
 
 from . import native_capture_postflight, review
 
@@ -204,7 +204,151 @@ def _unique_capture_file(path: Path, label: str,
     seen_paths[path] = label
 
 
-def validate(pair_path: str | Path) -> dict[str, Any]:
+def _candidate_native_receipt_links(
+        pair: dict[str, Any], pair_file: Path,
+        expected_pins: Mapping[str, str],
+        run_refs: dict[str, tuple[Path, dict[str, Any]]],
+        protocol_runner_path: Path, protocol_runner_sha: str) -> None:
+    """Bind candidate context to an externally pinned native capture receipt.
+
+    The existing postflight handles a candidate with baseline restoration. It
+    cannot verify a baseline run. Even a passing candidate link does not prove
+    that the engine consumed the scene or produced the PNG bytes.
+    """
+    _need(set(expected_pins) == {"receiptSha256", "planSha256"},
+          "External candidate native pins need receiptSha256 and planSha256")
+    role = "candidate"
+    _, run = run_refs[role]
+    _need([row["variant"] for row in run["variants"]] ==
+          list(native_capture_postflight.VARIANTS) and
+          all([capture["view"] for capture in row["captures"]] ==
+              list(native_capture_postflight.VIEWS) for row in run["variants"]),
+          "Candidate native binding needs the exact 45-view D11 roster")
+    native_rows = {role: _object(pair.get("candidateNativeReceipt"),
+                                 "candidateNativeReceipt")}
+    for role in ("candidate",):
+        external = expected_pins
+        _need(set(external) == {"receiptSha256", "planSha256"},
+              f"External {role} native pins need receiptSha256 and planSha256")
+        receipt_sha = _digest(external["receiptSha256"], f"External {role} receipt")
+        plan_sha = _digest(external["planSha256"], f"External {role} plan")
+        binding = _object(native_rows[role], f"{role} native receipt binding")
+        _need(set(binding) == {"receipt", "plan", "candidatePackage",
+                               "installedPackage", "baselineSha256"},
+              f"{role} native receipt binding has an incomplete or extra field")
+        receipt_path, outer = _json(binding["receipt"], pair_file.parent,
+                                    f"{role} native outer receipt")
+        plan_path, plan = _json(binding["plan"], pair_file.parent,
+                                f"{role} native capture plan")
+        _need(binding["receipt"]["sha256"] == receipt_sha and
+              binding["plan"]["sha256"] == plan_sha,
+              f"{role} native receipt or plan differs from external pin")
+        candidate_path, _ = _file(binding["candidatePackage"], pair_file.parent,
+                                   f"{role} native candidate package")
+        installed_path, _ = _file(binding["installedPackage"], pair_file.parent,
+                                   f"{role} native installed package")
+        baseline_sha = _digest(binding["baselineSha256"],
+                               f"{role} accepted baseline SHA-256")
+        run_path, run = run_refs[role]
+        _need(run["package"] == binding["candidatePackage"],
+              f"{role} pair package differs from native candidate package")
+        _need(binding["installedPackage"]["sha256"] == baseline_sha,
+              f"{role} installed package differs from accepted baseline")
+        run_id = run["runId"]
+        _need(re.fullmatch(r"[0-9a-f]{8}", run_id) is not None,
+              f"{role} native run ID needs eight lowercase hexadecimal characters")
+        postflight = native_capture_postflight.validate(
+            receipt_path, run_id=run_id,
+            candidate_package=candidate_path,
+            candidate_sha256=binding["candidatePackage"]["sha256"],
+            installed_package=installed_path,
+            baseline_sha256=baseline_sha,
+            installed_sha256=binding["installedPackage"]["sha256"],
+            capture_plan=plan_path, capture_plan_sha256=plan_sha,
+            expected_capture_receipt_sha256=receipt_sha)
+        _need(postflight.get("captureIntegrityPassed") is True and
+              postflight.get("checkedViews") == 45 and
+              postflight.get("checkedPartialViews") == 45 and
+              postflight.get("checkedReadRequests") == 45 and
+              postflight.get("receiptSha256") == receipt_sha and
+              postflight.get("runId") == run_id,
+              f"{role} native postflight did not verify the full run")
+        output_hashes = _object(outer.get("requiredOutputSha256"),
+                                f"{role} native output hashes")
+        contract = _object(plan.get("outputContract"),
+                           f"{role} native output contract")
+        _need(contract.get("runner") == str(protocol_runner_path) and
+              contract.get("runnerSha256") == protocol_runner_sha,
+              "Candidate protocol runner differs from native contract")
+        contexts = _object(contract.get("variantContexts"),
+                           f"{role} native variant contexts")
+        for variant_row in run["variants"]:
+            variant = variant_row["variant"]
+            native_run = receipt_path.parent / "runs" / (
+                f"aaa_{variant}_{run_id}{variant[:2]}")
+            context = _object(contexts.get(variant), f"{role} {variant} native context")
+            _need(variant_row["scene"] ==
+                  {"path": context.get("scene"), "sha256": context.get("sceneSha256")},
+                  f"{role} {variant} scene differs from native contract")
+            report_path = native_run / "report.json"
+            report_pin = output_hashes.get(str(report_path))
+            _need(report_pin is not None, f"{role} {variant} native report is absent")
+            _, report = _json({"path": str(report_path), "sha256": report_pin},
+                              run_path.parent, f"{role} {variant} native report")
+            _need(report.get("enginePid") == variant_row["enginePid"],
+                  f"{role} {variant} engine PID differs from native report")
+            actions = report.get("actionEvents")
+            _need(isinstance(actions, list) and len(actions) == 91,
+                  f"{role} {variant} native action transcript is incomplete")
+            for index, capture in enumerate(variant_row["captures"]):
+                view = capture["view"]
+                label = f"{role} {variant} {view}"
+                image_path = native_run / f"cab_{view}.png"
+                transport_path = native_run / f"pre_capture_{view}.json"
+                _need(capture["image"] ==
+                      {"path": str(image_path),
+                       "sha256": output_hashes.get(str(image_path))},
+                      f"{label} image differs from native output")
+                _, observed = _json(capture["observation"], run_path.parent,
+                                     f"{label} observation")
+                _need(observed.get("nativeTransport") ==
+                      {"path": str(transport_path),
+                       "sha256": output_hashes.get(str(transport_path))},
+                      f"{label} observation lacks the exact native transport link")
+                _, transport = _json(observed["nativeTransport"], run_path.parent,
+                                      f"{label} native transport")
+                _need(transport.get("status") == "pass" and
+                      transport.get("stage") == "response_received" and
+                      transport.get("mode") == "Read" and
+                      transport.get("readOnly") is True and
+                      transport.get("engineProcessId") == variant_row["enginePid"] and
+                      transport.get("script") == observed.get("requestScript") and
+                      transport.get("response") == observed.get("responseRaw") and
+                      transport.get("requestSentUtc") == observed.get("requestSentUtc") and
+                      transport.get("receivedUtc") == observed.get("responseReceivedUtc"),
+                      f"{label} observation differs from native transport")
+                action_slice = actions[1 + index * 6:1 + (index + 1) * 6]
+                _need(len(action_slice) == 6 and
+                      action_slice[3].get("action") == "ReadPreCapture" and
+                      action_slice[4].get("action") == "CaptureCab" +
+                      view.title().replace("_", "") and
+                      action_slice[5].get("action") == "SaveScreenshot:" + view and
+                      _time(action_slice[3]["startedUtc"], f"{label} read start") <=
+                      _time(observed["requestSentUtc"], f"{label} request") <=
+                      _time(observed["responseReceivedUtc"], f"{label} response") <=
+                      _time(action_slice[3]["finishedUtc"], f"{label} read finish") and
+                      _time(action_slice[4]["startedUtc"], f"{label} capture start") <=
+                      _time(capture["triggeredUtc"], f"{label} trigger") <=
+                      _time(action_slice[4]["finishedUtc"], f"{label} capture finish") and
+                      _time(action_slice[5]["startedUtc"], f"{label} copy start") <=
+                      _time(capture["copiedUtc"], f"{label} copy") <=
+                      _time(action_slice[5]["finishedUtc"], f"{label} copy finish"),
+                      f"{label} pair timing differs from native actions")
+
+
+def validate(pair_path: str | Path, *,
+             expected_candidate_native_pins: Mapping[str, str] | None = None
+             ) -> dict[str, Any]:
     """Verify a sealed baseline/candidate pair without writing or launching tools."""
     unresolved_pair = Path(pair_path).expanduser()
     _need(not unresolved_pair.is_symlink(), "Pair manifest must not be linked")
@@ -266,6 +410,7 @@ def validate(pair_path: str | Path) -> dict[str, Any]:
     seen_capture_paths: dict[Path, str] = {}
     seen_capture_files: dict[tuple[int, int], str] = {}
     seen_run_ids: set[str] = set()
+    run_refs: dict[str, tuple[Path, dict[str, Any]]] = {}
     for role in ("baseline", "candidate"):
         run_path, run = _json(runs[role], pair_file.parent, f"{role} run")
         _need(run.get("schemaVersion") == 1 and run.get("status") == "CAPTURE_READY",
@@ -379,6 +524,11 @@ def validate(pair_path: str | Path) -> dict[str, Any]:
                              "packagePath": str(package_path),
                              "packageSha256": run["package"]["sha256"],
                              "runId": run_id, "checkedViews": checked}
+        run_refs[role] = (run_path, run)
+    if expected_candidate_native_pins is not None:
+        _candidate_native_receipt_links(
+            pair, pair_file, expected_candidate_native_pins, run_refs,
+            runner_path, runner_sha)
     full_d11_roster = (variants == list(native_capture_postflight.VARIANTS) and
                        list(views) == list(native_capture_postflight.VIEWS))
     return {"schemaVersion": 1, "kind": "roadcraft.capture-pair",
@@ -387,6 +537,9 @@ def validate(pair_path: str | Path) -> dict[str, Any]:
             "d11RosterComplete": full_d11_roster,
             "pairComparable": full_d11_roster,
             "nativePostflightVerified": False,
+            "candidateNativePostflightVerified": expected_candidate_native_pins is not None,
+            "candidateNativeReceiptLinked": expected_candidate_native_pins is not None,
+            "nativeEvidenceLinked": False,
             "captureProcessAuthenticated": False,
             "technicalPassed": False,
             "releaseReady": False,
@@ -402,9 +555,22 @@ def validate(pair_path: str | Path) -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("pair", type=Path, help="Pair manifest with pinned protocol and run receipts")
+    parser.add_argument("--candidate-native-receipt-sha256")
+    parser.add_argument("--candidate-native-plan-sha256")
     args = parser.parse_args(argv)
+    native_args = (args.candidate_native_receipt_sha256,
+                   args.candidate_native_plan_sha256)
+    if any(value is not None for value in native_args) and not all(
+            value is not None for value in native_args):
+        parser.error("Both external candidate receipt and plan SHA-256 pins are required")
+    expected_candidate_native_pins = None
+    if all(value is not None for value in native_args):
+        expected_candidate_native_pins = {
+            "receiptSha256": args.candidate_native_receipt_sha256,
+            "planSha256": args.candidate_native_plan_sha256}
     try:
-        result = validate(args.pair)
+        result = validate(args.pair,
+                          expected_candidate_native_pins=expected_candidate_native_pins)
     except (CapturePairError, OSError) as exc:
         parser.exit(2, f"capture-pair: {exc}\n")
     print(json.dumps(result, indent=2, sort_keys=True))
