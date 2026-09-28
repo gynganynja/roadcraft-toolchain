@@ -55,6 +55,8 @@ visually accepted and campaign accepted are different states.
 | D11 base skin identity and inverse binds | Source/native 126/126; repaired gap remains | A pinned no-save SDK projection in both Blender versions matched ordered source/native skin-bone identities and inverse matrices on all 126 mapped meshes. Source/repaired ordered identities match 0/126; only 3/126 have shared inverse matrices within `1e-5`, with zero-overlap rows excluded. Numeric UIDs, animation, hierarchy repair and in-game behavior remain unproved. See `D11_SOURCE_BIND_IDENTITY_READBACK_20260928.md`. |
 | D11 base material payload | Source/native 126/126; repaired gap remains | Pinned no-save Blender 5.0.1/5.2.0 SDK projections agreed across all 126 mapped meshes and matched retained native USF ordered material text/struct metadata, labels, texture-name references and face-to-slot indices. No source/repaired material row matched; 135 repaired-only label occurrences remain. Texture bytes, graph semantics and rendered behavior were not compared. See `D11_SOURCE_MATERIAL_PAYLOAD_READBACK_20260928.md`. |
 | D11 base wiper animation payload | Source/repaired sampled transforms match; native omits the animated node | Pinned no-save Blender 5.0.1/5.2.0 readbacks evaluated two source actions over 36 inclusive frames. The repaired USF has one wiper node with 36 translation/rotation/scale samples and agreed within `1e-5`; the retained native USF has matching clip metadata but zero animated nodes. New native export, interpolation between frames and in-game behavior remain unproved. See `D11_ANIMATION_PAYLOAD_READBACK_20260928.md`. |
+| D11 v2/v3 material payload | Source/native 126/126 for each variant; repaired gap remains | Each variant's own accepted Blend opened in pinned, no-save Blender 5.0.1/5.2.0 SDK readbacks. All 126 mapped rows per variant matched retained native ordered material text, metadata, labels, texture-name references and face material indices; none matched the corresponding repaired material rows. Texture bytes, graph behavior and rendered appearance remain unverified. See `D11_VARIANT_SOURCE_MATERIAL_PAYLOAD_READBACK_20260928.md`. |
+| D11 v2/v3 wiper animation payload | Source/repaired samples match; native tracks absent | Separate pinned, no-save Blender 5.0.1/5.2.0 readbacks evaluated both variant Blend paths across 36 inclusive frames. Each repaired USF had one matching wiper node with 36 transform samples, while its retained native USF had clip metadata but zero animated nodes. Fresh exporter behavior, runtime playback and native appearance remain unverified. See `D11_VARIANT_ANIMATION_PAYLOAD_READBACK_20260928.md`. |
 | D11 v2/v3 source mesh inventory | Variant-specific gaps classified; export remains blocked | The accepted v2/v3 Blend paths have the same pinned bytes as base. A separate wrapper verified each variant's asset digest, repaired USF and 126 worklist paths, then interpreted a no-save base source readback against that variant's own gaps. Blender 5.0.1/5.2.0 produced matching per-variant digests; all 135 repaired-only label occurrences were absent from source slots, and all 126 source-derived slot/bone counts plus 36 recorded count gaps matched each retained native export. This is read-only prediction, not variant export or parity. See `D11_VARIANT_SOURCE_MESH_READBACK_20260928.md`. |
 | D11 blade collision relocation | Static hierarchy/transform target identified; export remains blocked | A pinned, no-save readback covered all 60 `cdt_blade_*` leaves under `BoneBlade_cdt`. Both Blender versions returned the same 60-row digest: source, retained native USF and repaired USF world matrices agree within `1e-5`, while all 60 native/repaired USF local matrices differ beneath the inserted `BoneBladeRoll_cdt` parent. Mesh-count maps and evaluated source/native face counts match. The differing paths are not marked equivalent; geometry payloads, binds, animation and native behavior remain untested. See `D11_BLADE_COLLISION_RELOCATION_READBACK_20260928.md`. |
 | Painter integration | Capabilities verified; scratch project deferred; write gate added | Real stdio probe listed 79 tools, connected to Painter 12.1.5/API 0.3.5 and called `get_capabilities` successfully while no project was open. Baking presets, auto-rebake control and skew-painting control are unavailable. The server now leaves 34 inspection/planning tools enabled and denies 45 authoring/output tools unless its local process has `SP_MCP_ALLOW_PROJECT_WRITES=1`; synthetic FastMCP dispatch tests cover all 45. The user intentionally ended the Painter session to avoid interference and chose to leave it closed; no `.spp` was created and no accepted asset changed. |
@@ -600,6 +602,26 @@ retain it: the SDK's current baking loop is end-exclusive. Subframe motion,
 compiled playback and native rendering remain unverified. The `usf-repair`
 route and blocked `native-blend` gate remain. See
 `D11_ANIMATION_PAYLOAD_READBACK_20260928.md`.
+
+The v2/v3 material diagnostic opened each accepted variant Blend path and
+projected its 126 mapped meshes through the pinned SDK in memory. Both Blender
+versions matched each variant's retained native ordered material text,
+metadata, labels, texture-name references and face material indices on all
+126 rows, while no source/repaired full material row matched. Variant native
+USFs use their variant root names; repaired USFs retain `cat_d11t`. The
+diagnostic handles this distinction without assuming that identical Blend
+hashes make the variant USF payloads interchangeable. Texture bytes, shader
+graph behavior and rendering remain unverified. See
+`D11_VARIANT_SOURCE_MATERIAL_PAYLOAD_READBACK_20260928.md`.
+
+The v2/v3 animation diagnostic independently opened those accepted Blend
+paths and evaluated the two wiper actions over the same 36 inclusive frames.
+Each variant's source samples matched its repaired USF within `1e-5`; each
+native variant USF retained clip metadata but no animated node. Blender 5.0.1
+and 5.2.0 returned the same per-variant record digests. The current SDK's
+end-exclusive bake, a fresh export, runtime playback and native appearance
+remain unresolved. The `usf-repair` route and blocked `native-blend` gate
+remain. See `D11_VARIANT_ANIMATION_PAYLOAD_READBACK_20260928.md`.
 
 The base blade-collision readback then examined all 60 same-leaf relocation
 candidates under `BoneBlade_cdt`. Two Blender versions produced the same
