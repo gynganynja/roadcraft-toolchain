@@ -813,6 +813,15 @@ This narrows the combined-scene integration risk but does not change the
 pending scratch export command or the blocked native-Blend gate. See
 `D11_FULL_IN_MEMORY_REPAIR_COMPOSITION_20260929.md`.
 
+A read-only repaired-USF profile shows the remaining source gap is larger than
+the net mesh count suggests: 52 repaired-only mesh paths contain 351,577 faces
+and 1,054,695 skin entries; 51 are skinned. Three plausible alternate Blends
+and all 639 D11 Blend paths in the supplied drive inventory had zero matching
+target object names. This makes geometry/material/skin reconstruction, or
+finding an independently proven equivalent source, a separate workstream from
+the rig repair. The name search does not rule out differently named geometry.
+See `D11_MISSING_MESH_SOURCE_SEARCH_20260929.md`.
+
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
 2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
