@@ -12,7 +12,7 @@ forward; this document adds no blanket approval requirement.
   environment and current checks pass. Git is initialized on `main`; `origin`
   is `https://github.com/gynganynja/roadcraft-toolchain.git`. Finish syncing
   remaining source edits have been synchronized and 96 maintained files were
-  hash-compared. Make the initial commit/push, then maintain this checkout
+  hash-compared. Initial code commit `d7ffa4a3` is local; push it, then maintain this checkout
   without diverging source/target copies.
 - **Current assets:** the verified location in `project.json` remains
   authoritative: `C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\Roadcraft Development Package\D11_Interior_Standalone_20260927\p`.
@@ -40,7 +40,7 @@ visually accepted and campaign accepted are different states.
 | Accepted vs AAA candidate | Installed accepted; no recovery required; AAA unaccepted | Latest target status reports installed accepted and `recoveryRequired: false`. AAA's historical capture still reports `FAIL_ROLLBACK_PENDING`, with `BASELINE_RESTORED` rollback evidence. Refresh status before native work. |
 | Project-local MCP and workflow plugin | Trust approved; enabled and smoke-tested | User approved trust. Codex CLI `mcp list` sees `roadcraft`, `substance_painter`, `roadcraft_blender_scratch` enabled. Local marketplace is registered and `roadcraft-workflow` installed/enabled. Real stdio inventories: RoadCraft 11, Painter 79, Blender 2. RoadCraft remains read-only; tool scopes differ across servers. |
 | Dedicated environment | Installed and verified | RoadCraft, Painter MCP and PyYAML are installed in `C:\RC\RoadCraftDev\toolchain\.venv`; project-local config is parsed and loaded by Codex CLI. Final source edits still need synchronization before publication. |
-| New code Git repo/private remote | Local Git and private remote created; no push yet | Target initialized on `main`, origin `https://github.com/gynganynja/roadcraft-toolchain.git`. GitHub repository creation and private lock icon were verified. Remote code publication and CI remain pending. |
+| New code Git repo/private remote | Initial local commit and private remote created; no push yet | Target `main` contains code commit `d7ffa4a3` with clean intended status, origin `https://github.com/gynganynja/roadcraft-toolchain.git`. GitHub repository creation and private lock icon were verified. Remote code publication and CI remain pending. |
 | Asset migration/Git LFS | Deferred by user choice; keep verified assets in place | `d11_asset_migration_preflight_20260928.json` verified 2,817 files / 3,477,364,242 bytes but failed its space gate. No copy occurred. Future migration requires a new decision and a fresh space check. |
 | Native build/test/capture recipes | Preflight-only recipe passed dry runs | `d11_aaa_native_preflight_recipe.json` passed `build`, `inspect` and `capture` dry runs from the target. It runs only source checks, an existing-package audit and capture preflight without `--execute`. Legacy runners need safety changes before native execution; current free space is below their 14 GiB guard. |
 | AAA regression | Failed; acceptance pending | `d11_aaa_interior_regression_result.json`: technical gate false, releaseReady false, zero matched capture pairs and 45 required views failing. Existing capture contexts omit lighting/protocol; visual and campaign approvals are pending. |
@@ -91,11 +91,12 @@ retain diagnostics. These checks must not modify installed game packages.
 Local `main`, origin and the verified private GitHub repository already exist;
 asset migration is not required.
 
-1. Inspect the existing Git repo in `C:\RC\RoadCraftDev\toolchain`, capture
-   the exact staged diff, and commit maintained code, tests, docs, workflow skill,
-   plugin scaffold, CI and intended small registry/evidence files. Verify
-   `.venv`, `local`, jobs, machine config, secrets and generated builds remain
-   excluded; review any absolute machine paths before publication.
+1. Retain the reviewed initial `d7ffa4a3` code commit in
+   `C:\RC\RoadCraftDev\toolchain`. It includes code, tests, docs, workflow
+   skill, plugin scaffold, CI and compact registry/evidence files. `.venv`,
+   `local`, jobs, machine config, raw 33 MB expansion JSON, obsolete verify
+   snapshot and generated builds remain excluded. The verified gzip copy of
+   the expansion JSON is versioned. Recheck any later staging before push.
 2. Preserve the older `C:\RC\D11_Development` repository. Its earlier audit
    recorded 91 commits, `master` at
    `fadca63406efdaedf6601074b7efe40619c0f8e5`, tag
@@ -331,8 +332,8 @@ new local integration config if transport cannot be made reliable.
 
 ## Immediate execution order
 
-1. Finish remaining target sync; run checks warranted by those edits; commit
-   and push `main` to the existing verified private origin, then inspect CI.
+1. Finish Git credential sign-in, push the reviewed local `main` branch to
+   the verified private origin, compare commit IDs, then inspect CI.
 2. Use the registered, smoke-tested local integrations; confirm tool visibility
    in the actual desktop task after reconnect if needed. Complete Painter
    project/capability checks on disposable inputs.
