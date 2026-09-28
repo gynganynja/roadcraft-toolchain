@@ -75,7 +75,7 @@ class BlenderLeftPushProbeTests(unittest.TestCase):
         mock.patch.object(probe, "SDK_PINS", {
             "saber/blender/lib/usf/scene.py": _digest(b"pinned sdk")}).start()
         mock.patch.object(probe, "_pinned_asset", return_value=(
-            {}, self.root, {}, self.blend, self.usf)).start()
+            {}, self.root.resolve(strict=True), {}, self.blend, self.usf)).start()
 
     def _run(self, side_effect=None):
         result = _valid_result()
