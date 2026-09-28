@@ -21,7 +21,10 @@ class BaselineSourceIsolationTests(unittest.TestCase):
     def test_disk_sampler_records_transient_low_and_recovery(self) -> None:
         readings = iter((17_000_000_000, 900_000_000, 16_000_000_000))
         with patch.object(baseline.shutil, "disk_usage",
-                          side_effect=lambda _root: SimpleNamespace(free=next(readings))):
+                          side_effect=lambda _root: SimpleNamespace(free=next(readings))), \
+             patch.object(baseline.DiskFreeSampler, "_pagefile_size",
+                          side_effect=(10_000_000_000, 20_000_000_000,
+                                       10_000_000_000)):
             sampler = baseline.DiskFreeSampler(Path("C:/"), interval_seconds=3600)
             sampler.start()
             sampler._sample()
@@ -32,6 +35,10 @@ class BaselineSourceIsolationTests(unittest.TestCase):
         self.assertEqual(result["lowest"]["freeBytes"], 900_000_000)
         self.assertEqual(result["last"]["freeBytes"], 16_000_000_000)
         self.assertEqual(result["dropFromStartBytes"], 16_100_000_000)
+        self.assertEqual(result["first"]["pagefileBytes"], 10_000_000_000)
+        self.assertEqual(result["largestPagefile"]["pagefileBytes"],
+                         20_000_000_000)
+        self.assertEqual(result["last"]["pagefileBytes"], 10_000_000_000)
         self.assertLessEqual(result["first"]["atUtc"], result["lowest"]["atUtc"])
         self.assertLessEqual(result["lowest"]["atUtc"], result["last"]["atUtc"])
 

@@ -35,6 +35,7 @@ class DiskFreeSampler:
 
     def __init__(self, root: Path, interval_seconds: float = 0.5) -> None:
         self.root = root
+        self.pagefile = Path(root.anchor) / "pagefile.sys"
         self.interval_seconds = interval_seconds
         self.stop_event = threading.Event()
         self.thread: threading.Thread | None = None
@@ -42,8 +43,15 @@ class DiskFreeSampler:
         self.first: dict[str, Any] | None = None
         self.lowest: dict[str, Any] | None = None
         self.last: dict[str, Any] | None = None
+        self.largest_pagefile: dict[str, Any] | None = None
         self.sample_count = 0
         self.errors: list[str] = []
+
+    def _pagefile_size(self) -> int | None:
+        try:
+            return self.pagefile.stat().st_size
+        except OSError:
+            return None
 
     def _sample(self) -> None:
         at_utc = dt.datetime.now(dt.timezone.utc).isoformat()
@@ -54,13 +62,18 @@ class DiskFreeSampler:
                 if len(self.errors) < 4:
                     self.errors.append(f"{at_utc}: {type(error).__name__}: {error}")
             return
-        point = {"atUtc": at_utc, "freeBytes": free}
+        point = {"atUtc": at_utc, "freeBytes": free,
+                 "pagefileBytes": self._pagefile_size()}
         with self.state_lock:
             self.sample_count += 1
             if self.first is None:
                 self.first = point
             if self.lowest is None or free < self.lowest["freeBytes"]:
                 self.lowest = point
+            if (point["pagefileBytes"] is not None and
+                    (self.largest_pagefile is None or
+                     point["pagefileBytes"] > self.largest_pagefile["pagefileBytes"])):
+                self.largest_pagefile = point
             self.last = point
 
     def _run(self) -> None:
@@ -82,9 +95,11 @@ class DiskFreeSampler:
             self._sample()
         with self.state_lock:
             return {
-                "root": str(self.root), "sampleIntervalSeconds": self.interval_seconds,
+                "root": str(self.root), "pagefilePath": str(self.pagefile),
+                "sampleIntervalSeconds": self.interval_seconds,
                 "sampleCount": self.sample_count, "first": self.first,
                 "lowest": self.lowest, "last": self.last,
+                "largestPagefile": self.largest_pagefile,
                 "dropFromStartBytes": (self.first["freeBytes"] - self.lowest["freeBytes"]
                                        if self.first and self.lowest else None),
                 "samplingErrors": [*self.errors], "threadStopped": thread_stopped,

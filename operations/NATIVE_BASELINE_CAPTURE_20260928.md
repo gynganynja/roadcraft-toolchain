@@ -94,7 +94,12 @@ That separate cleanup has not been authorized or applied.
 The baseline runner now samples free space on the SDK volume every 0.5 seconds
 from just before the first variant through cleanup. Its outer receipt records
 the first, lowest and final free-byte readings, their UTC times, the drop from
-the starting reading, the sample count and any sampling errors. This is host
+the starting reading, the sample count and any sampling errors. The same
+samples include `pagefile.sys` size when readable and retain its largest
+observed size. On this machine, Windows reports an automatically managed
+`C:\pagefile.sys` of 19,426,185,216 bytes; its last-write time is
+2026-09-28 23:03:05 +10:00, about one second before the failed outer receipt
+finished. That timestamp establishes activity, not growth or causation. This is host
 diagnostic telemetry, not evidence that the editor loaded the intended scene or
 produced an authenticated PNG. The failed `b1c2d3e4` run predates the sampler;
 its low point cannot be reconstructed. This runner change requires a fresh
