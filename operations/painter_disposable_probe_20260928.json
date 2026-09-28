@@ -1,0 +1,278 @@
+{
+  "purpose": "Disposable Painter MCP project lifecycle smoke test",
+  "input": {
+    "mesh": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\local\\painter-disposable-20260928\\mesh\\scratch_uv_cube.obj",
+      "exists": true,
+      "bytes": 769,
+      "sha256": "6f7356503f5dcbfb924e3902ccc26f77e5b63bc97af58884f4691c99d58667ea"
+    },
+    "material": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\local\\painter-disposable-20260928\\mesh\\scratch_uv_cube.mtl",
+      "exists": true,
+      "bytes": 33,
+      "sha256": "1eeba84469f6d9ed4070bd329fc9e035b1de752024796ab5bd4a377305d0a35f"
+    }
+  },
+  "output_before": {
+    "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\local\\painter-disposable-20260928\\projects\\scratch_uv_cube.spp",
+    "exists": false,
+    "bytes": null,
+    "sha256": null
+  },
+  "allowed_roots": {
+    "SP_MCP_MESH_ROOTS": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\local\\painter-disposable-20260928\\mesh",
+    "SP_MCP_PROJECT_ROOTS": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\local\\painter-disposable-20260928\\projects",
+    "SP_MCP_RESOURCE_ROOTS": null,
+    "SP_MCP_EXPORT_ROOTS": null,
+    "SP_MCP_ALLOW_EXEC": null
+  },
+  "stage": "stopped_painter_disconnected",
+  "cleanup_procedure": "Only after verifying Painter has no unsaved user work: close the scratch project if its path equals output.path. The optional OBJ, MTL and SPP are all inside local/painter-disposable-20260928 and can later be removed by exact path; this probe does not delete them.",
+  "mcp_tool_count": 79,
+  "mcp_schemas": {
+    "painter_status": {
+      "properties": {},
+      "title": "painter_statusArguments",
+      "type": "object"
+    },
+    "get_project_info": {
+      "properties": {},
+      "title": "get_project_infoArguments",
+      "type": "object"
+    },
+    "plan_project_creation": {
+      "properties": {
+        "mesh_file_path": {
+          "title": "Mesh File Path",
+          "type": "string"
+        },
+        "output_path": {
+          "title": "Output Path",
+          "type": "string"
+        },
+        "mesh_map_file_paths": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mesh Map File Paths"
+        },
+        "template_file_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Template File Path"
+        },
+        "settings": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Settings"
+        },
+        "overwrite": {
+          "default": false,
+          "title": "Overwrite",
+          "type": "boolean"
+        },
+        "replace_current": {
+          "default": false,
+          "title": "Replace Current",
+          "type": "boolean"
+        },
+        "backup_current_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Backup Current Path"
+        },
+        "backup_mode": {
+          "default": "Incremental",
+          "title": "Backup Mode",
+          "type": "string"
+        },
+        "overwrite_backup": {
+          "default": false,
+          "title": "Overwrite Backup",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mesh_file_path",
+        "output_path"
+      ],
+      "title": "plan_project_creationArguments",
+      "type": "object"
+    },
+    "create_project": {
+      "properties": {
+        "mesh_file_path": {
+          "title": "Mesh File Path",
+          "type": "string"
+        },
+        "output_path": {
+          "title": "Output Path",
+          "type": "string"
+        },
+        "mesh_map_file_paths": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mesh Map File Paths"
+        },
+        "template_file_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Template File Path"
+        },
+        "settings": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Settings"
+        },
+        "overwrite": {
+          "default": false,
+          "title": "Overwrite",
+          "type": "boolean"
+        },
+        "replace_current": {
+          "default": false,
+          "title": "Replace Current",
+          "type": "boolean"
+        },
+        "backup_current_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Backup Current Path"
+        },
+        "backup_mode": {
+          "default": "Incremental",
+          "title": "Backup Mode",
+          "type": "string"
+        },
+        "overwrite_backup": {
+          "default": false,
+          "title": "Overwrite Backup",
+          "type": "boolean"
+        },
+        "confirm": {
+          "default": false,
+          "title": "Confirm",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mesh_file_path",
+        "output_path"
+      ],
+      "title": "create_projectArguments",
+      "type": "object"
+    },
+    "get_project_creation_job": {
+      "properties": {
+        "job_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Id"
+        }
+      },
+      "title": "get_project_creation_jobArguments",
+      "type": "object"
+    },
+    "list_layers": {
+      "properties": {
+        "texture_set": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Texture Set"
+        },
+        "recursive": {
+          "default": true,
+          "title": "Recursive",
+          "type": "boolean"
+        }
+      },
+      "title": "list_layersArguments",
+      "type": "object"
+    }
+  },
+  "failure": "MCP tool error: [TextContent(type='text', text='Error executing tool painter_status: Cannot connect to Painter at localhost:60041. Start Painter with --enable-remote-scripting.', annotations=None, meta=None)]",
+  "output_after": {
+    "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\local\\painter-disposable-20260928\\projects\\scratch_uv_cube.spp",
+    "exists": false,
+    "bytes": null,
+    "sha256": null
+  }
+}

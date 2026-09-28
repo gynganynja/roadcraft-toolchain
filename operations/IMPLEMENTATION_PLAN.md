@@ -10,10 +10,10 @@ forward; this document adds no blanket approval requirement.
 - **Source toolchain:** `C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\Roadcraft Development Package\RoadCraftToolchain`.
 - **Dedicated toolchain:** `C:\RC\RoadCraftDev\toolchain`. Its dedicated
   environment and current checks pass. Git is initialized on `main`; `origin`
-  is `https://github.com/gynganynja/roadcraft-toolchain.git`. Finish syncing
-  remaining source edits have been synchronized and 96 maintained files were
-  hash-compared. Initial code commit `d7ffa4a3` is local; push it, then maintain this checkout
-  without diverging source/target copies.
+  is the private `https://github.com/gynganynja/roadcraft-toolchain.git`.
+  The initial 96 maintained files were hash-compared after handoff. The code
+  and Windows CI fixture fix have been pushed; keep this checkout and the
+  Steam source mirror synchronized for subsequent edits.
 - **Current assets:** the verified location in `project.json` remains
   authoritative: `C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\Roadcraft Development Package\D11_Interior_Standalone_20260927\p`.
   The user chose to keep assets here. No migration is planned now;
@@ -35,17 +35,17 @@ visually accepted and campaign accepted are different states.
 | Area | State at this snapshot | Evidence and limit |
 |---|---|---|
 | Core CLI, jobs and transactions | Implemented | `src/roadcraft/cli.py`, `jobs.py`, `transaction.py`. CLI job/transaction operations default to dry-run; `--apply` executes. Availability is not evidence of a native run. |
-| Local inspect and synthetic tests | Dedicated environment passed | Post-sync target run completed 108 tests with 3 skips. Earlier inspect/test receipts remain under `jobs/20260927T233929Z-cab582e7350c/receipt.json` and `jobs/20260927T234050Z-66e61f71fca5/receipt.json`. Repeat affected checks after new code edits; disclose skips. |
+| Local inspect and synthetic tests | Dedicated environment passed | After the postflight validator addition, the target run completed 116 tests with 3 skips. Earlier inspect/test receipts remain under `jobs/20260927T233929Z-cab582e7350c/receipt.json` and `jobs/20260927T234050Z-66e61f71fca5/receipt.json`. Repeat affected checks after new code edits; disclose skips. |
 | Project verification | Current expanded check passed | Target `verify --project` verified all 5 pins and 2,817 source files; `source-check` passed. The older source `d11_verify_20260928.json` is a four-pin snapshot and does not replace the newer result. |
 | Accepted vs AAA candidate | Installed accepted; no recovery required; AAA unaccepted | Latest target status reports installed accepted and `recoveryRequired: false`. AAA's historical capture still reports `FAIL_ROLLBACK_PENDING`, with `BASELINE_RESTORED` rollback evidence. Refresh status before native work. |
 | Project-local MCP and workflow plugin | Trust approved; enabled and smoke-tested | User approved trust. Codex CLI `mcp list` sees `roadcraft`, `substance_painter`, `roadcraft_blender_scratch` enabled. Local marketplace is registered and `roadcraft-workflow` installed/enabled. Real stdio inventories: RoadCraft 11, Painter 79, Blender 2. RoadCraft remains read-only; tool scopes differ across servers. |
-| Dedicated environment | Installed and verified | RoadCraft, Painter MCP and PyYAML are installed in `C:\RC\RoadCraftDev\toolchain\.venv`; project-local config is parsed and loaded by Codex CLI. Final source edits still need synchronization before publication. |
-| New code Git repo/private remote | Initial local commit and private remote created; no push yet | Target `main` contains code commit `d7ffa4a3` with clean intended status, origin `https://github.com/gynganynja/roadcraft-toolchain.git`. GitHub repository creation and private lock icon were verified. Remote code publication and CI remain pending. |
+| Dedicated environment | Installed and verified | RoadCraft, Painter MCP and PyYAML are installed in `C:\RC\RoadCraftDev\toolchain\.venv`; project-local config is parsed and loaded by Codex CLI. The maintained source handoff was hash-checked. |
+| New code Git repo/private remote | Pushed; Windows CI passed | Target `main` tracks the verified private origin `https://github.com/gynganynja/roadcraft-toolchain.git`. Remote/local commit identity was checked after the first push. The first Windows CI run found five 8.3 temporary-path fixture failures; `5027305` fixed them. Postflight commit `7938d97` passed 116 local tests (3 skips), and [CI run #3](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36362168779) completed successfully. |
 | Asset migration/Git LFS | Deferred by user choice; keep verified assets in place | `d11_asset_migration_preflight_20260928.json` verified 2,817 files / 3,477,364,242 bytes but failed its space gate. No copy occurred. Future migration requires a new decision and a fresh space check. |
-| Native build/test/capture recipes | Preflight-only recipe passed dry runs | `d11_aaa_native_preflight_recipe.json` passed `build`, `inspect` and `capture` dry runs from the target. It runs only source checks, an existing-package audit and capture preflight without `--execute`. Legacy runners need safety changes before native execution; current free space is below their 14 GiB guard. |
+| Native build/test/capture recipes | Preflight recipe and read-only postflight validator passed local checks | `d11_aaa_native_preflight_recipe.json` passed `build`, `inspect` and `capture` dry runs. It runs only source checks, an existing-package audit and capture preflight without `--execute`. `native_capture_postflight.py` now validates a completed 3×15 view chain and rejects the real failed AAA receipt despite baseline restoration. The 14 GiB guard belongs to a separate lighting fixture; the AAA capture runner has 4 GB start / 1.5 GB loop guards but failed previously after editor disconnect. Deterministic output identity and process ownership still block executable recipe adoption. |
 | AAA regression | Failed; acceptance pending | `d11_aaa_interior_regression_result.json`: technical gate false, releaseReady false, zero matched capture pairs and 45 required views failing. Existing capture contexts omit lighting/protocol; visual and campaign approvals are pending. |
 | Blender no-edit USF bridge | Three assets passed; scratch MCP ready; native Blend export blocked | `d11_base_usf_roundtrip_receipt.json`, `d11_v2_usf_roundtrip_receipt.json`, `d11_v3_usf_roundtrip_receipt.json`: byte-identical, source/SDK unchanged, nativeBlendExportApproved false. Real scratch MCP smoke listed 2 tools and status ready with pinned Blender 5.2.0. |
-| Painter integration | Live connection verified; no project open | Real stdio smoke listed 79 tools and connected to Painter 12.1.5 with no project. `../integrations/SubstancePainterMCP/RECOVERY_PROVENANCE.json` pins recovered source. Project inspection, material work and export remain pending. |
+| Painter integration | Capabilities verified earlier; scratch project deferred by user | Real stdio probe listed 79 tools, connected to Painter 12.1.5/API 0.3.5 and called `get_capabilities` successfully while no project was open. Baking presets, auto-rebake control and skew-painting control are unavailable. The app exited before a disposable project could be created; the user chose to leave Painter closed for now. `PAINTER_CAPABILITIES_20260928.md` and `painter_disposable_probe_20260928.json` record the checks. No `.spp` was created and no accepted asset changed. |
 | Storage | First exact batch complete; additional review pending | `STORAGE_REVIEW.md`: 159 template copies removed, 6.30 GiB freed, retained originals verified. The 23,604-file / 5.93 GiB expansion review remains untouched; its 33 MB raw manifest is local and a verified 1.6 MB gzip copy is versioned. `storage_expansion_executor_sample_20260928.json` checked eight files, removed zero and reports `applyReady: false` because process command-line inspection was denied. Git temporary pack remains separate. |
 
 ## 1. Finish checkout handoff and retain verified local tools
@@ -57,7 +57,7 @@ dedicated environment installation and local integration registration are done.
    preserve its `.venv`, local paths, jobs and receipts. Record the compared
    file list and hashes. Verify imports resolve from the dedicated checkout,
    not the earlier editable source installation.
-2. Retain the completed target evidence: 108 tests with 3 skips, all 5 project
+2. Retain the completed target evidence: 116 tests with 3 skips, all 5 project
    pins and 2,817 files verified, `source-check` passed, installed accepted,
    no recovery required. Run only checks warranted by subsequent changes;
    refresh live status before native work. Keep dated old receipts intact.
@@ -96,7 +96,7 @@ asset migration is not required.
    skill, plugin scaffold, CI and compact registry/evidence files. `.venv`,
    `local`, jobs, machine config, raw 33 MB expansion JSON, obsolete verify
    snapshot and generated builds remain excluded. The verified gzip copy of
-   the expansion JSON is versioned. Recheck any later staging before push.
+   the expansion JSON is versioned. Recheck any later staging before each push.
 2. Preserve the older `C:\RC\D11_Development` repository. Its earlier audit
    recorded 91 commits, `master` at
    `fadca63406efdaedf6601074b7efe40619c0f8e5`, tag
@@ -105,9 +105,10 @@ asset migration is not required.
    migration. A new code repo is not a replacement for that history.
 3. Use the existing origin
    `https://github.com/gynganynja/roadcraft-toolchain.git`. Repository creation
-   and its private lock icon were verified; no push has occurred. Verify the
-   final staged contents and authentication, push `main` without force, and
-   compare local/remote commit IDs. A created remote alone is not a code backup.
+   and its private lock icon were verified. The approved Git Credential Manager
+   browser sign-in completed; `main` was pushed without force and its remote
+   commit matched local HEAD. Verify future staged contents and compare IDs
+   after subsequent pushes.
 4. Run `.github/workflows/toolchain.yml` on the private remote and inspect its
    outcome. Its Windows/Python checks cover synthetic tests and MCP schemas;
    they do not validate native game rendering or machine-specific asset paths.
@@ -197,8 +198,20 @@ package and verified rollback source. Migration is not a prerequisite if the
 current accepted source remains the reviewed input.
 
 Native recipe preparation is in progress and is **preflight-only**: the legacy
-runners are not safe to execute through the new workflow yet, and free space
-is below 14 GiB. No new native build, installation or capture is claimed.
+runners are not safe to execute through the new workflow yet. The separate
+lighting fixture needs more than 14 GiB and is below its guard. The AAA
+capture runner's 4 GB start / 1.5 GB loop guards are different; its prior run
+failed after the editor process vanished during nearnew view 4. No new native
+build, installation or capture is claimed.
+
+The read-only `python -m roadcraft.native_capture_postflight` check now
+requires exact run ID, candidate/baseline/installed hashes, successful
+rollback, three nested receipts and all 45 image/probe hashes. It rejected
+`candidate_capture_bd58bce0.json` with
+`captureIntegrityPassed=false` and exit 1 because the outer status remains
+`FAIL_ROLLBACK_PENDING`. This is technical evidence only; it cannot make the
+legacy runner safe to launch or satisfy visual/campaign acceptance. See
+`NATIVE_CAPTURE_POSTFLIGHT.md`.
 
 1. Audit existing D11 builders/capture runners and document each unsafe
    behavior with the required adapter/fix before allowing execution. Prepare
@@ -305,14 +318,22 @@ with an unverified generic Blender export.
 **Dependencies:** step 1 transport/trust (complete), appropriate disposable
 project/input assets, and space for verified backups/exports.
 
-1. Retain the successful live Painter 12.1.5 connection and 79-tool stdio smoke
-   result. No project was open. Preserve any subsequently opened user project;
-   recheck live status before authoring instead of assuming this earlier idle
-   state persists. The README's tested 12.1.1 is not the observed runtime.
-2. Probe `get_capabilities`, then use an authorized disposable project/copy
-   for `get_project_info` and read-only project/layer inspection. Record
-   runtime API capabilities and exact project identity. Existing live health
-   evidence does not establish successful project creation, bake or export.
+1. Retain the earlier live Painter 12.1.5 connection, 79-tool inventory and
+   `get_capabilities` probe. No project was open then. The live API reported
+   `baking_presets=false`, `auto_rebake_control=false` and
+   `skew_painting_control=false`; see `PAINTER_CAPABILITIES_20260928.md`.
+   Painter later closed before disposable-project creation; the user chose to
+   leave it closed for now. See `painter_disposable_probe_20260928.json`.
+   Preserve any subsequently opened
+   user project and recheck live status before authoring. The README's tested
+   12.1.1 is not the observed runtime.
+2. The scratch UV cube OBJ/MTL and guarded helper are prepared under ignored
+   `local/painter-disposable-20260928`; the intended `.spp` does not exist.
+   When Painter is available, recheck that no user project is open, use the
+   narrow declared mesh/project roots, create only the disposable project,
+   and run `get_project_info` plus read-only layer inspection. Record exact
+   project identity. Existing health evidence does not establish successful
+   project creation, bake or export.
 3. Configure narrow `SP_MCP_EXPORT_ROOTS`, `SP_MCP_PROJECT_ROOTS`,
    `SP_MCP_MESH_ROOTS`, `SP_MCP_BAKE_MESH_ROOTS` and `SP_MCP_RESOURCE_ROOTS`
    only for the required workflow. Keep arbitrary Python execution disabled.
@@ -332,11 +353,14 @@ new local integration config if transport cannot be made reliable.
 
 ## Immediate execution order
 
-1. Finish Git credential sign-in, push the reviewed local `main` branch to
-   the verified private origin, compare commit IDs, then inspect CI.
+1. Git credential sign-in, private `main` push, remote commit comparison,
+   and the `7938d97` Windows CI run are complete. Recheck CI after later code
+   changes.
 2. Use the registered, smoke-tested local integrations; confirm tool visibility
-   in the actual desktop task after reconnect if needed. Complete Painter
-   project/capability checks on disposable inputs.
+   in the actual desktop task after reconnect if needed. Painter capability
+   probing passed, but the app closed before disposable-project creation.
+   Resume the prepared scratch check when the user chooses to reopen Painter
+   and its current project state is rechecked.
 3. Keep assets in their verified current location. Continue exact storage
    review as authorized, preflight-only native recipe work and capture-protocol
    definition. Do not migrate assets now.
