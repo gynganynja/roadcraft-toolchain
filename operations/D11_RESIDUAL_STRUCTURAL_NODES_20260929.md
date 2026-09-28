@@ -1,4 +1,4 @@
-# D11 residual structural nodes — no-save experiment, 2026-09-29
+# D11 residual structural nodes — maintained no-save diagnostic, 2026-09-29
 
 The maintained push, blade-roll and ladder workers leave eight repaired-only
 paths in the pose-bone comparison. A pinned read-only inspection separated
@@ -40,7 +40,28 @@ versions returned:
 | Source `sfx` Empty versus repaired `sfx` matrix error | 0 |
 | Source mesh world-matrix drift | 0 |
 
-The exact disposable probe is
+The same result is now reproducible with the maintained, source-pinned
+`roadcraft.blender_residual_bones` command. Its host verifies the accepted
+inventory, source Blend, repaired USF, Blender executable, SDK, worker and
+prior repair dependencies before and after execution. Its worker performs all
+four repair stages in one fresh Blender process and emits exact target paths,
+matrix errors, source Empty classification and no-write fields. Blender 5.0.1
+and 5.2.0 independently returned `IN_MEMORY_STRUCTURAL_MATCH` with the table's
+measurements. The maintained worker SHA-256 is
+`9c402c74245a18081e559a13f7cf4d3a425e13a7fc046cdd0f27d301b1a8c594`.
+Focused tests reject a missing target, `sfx` or mesh drift, a saved-Blend claim
+and a false source-bone classification for `sfx`.
+
+```powershell
+$tc = 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\Roadcraft Development Package\RoadCraftToolchain'
+$env:PYTHONPATH = "$tc\src"
+& 'C:\RC\RoadCraftDev\toolchain\.venv\Scripts\python.exe' -B -m roadcraft.blender_residual_bones `
+  --registry "$tc\project.json" `
+  --blender 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' `
+  --sdk-script-root 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\tools\bin\blender_to_usf_script'
+```
+
+The original disposable probe is
 `local/residual_bones_probe_20260929.py`, SHA-256
 `ca1963f396276b1a28e981dd1c23b8ceb0f6742059b1298aee489edaa4f068a9`.
 Run it from the RoadCraft development package with either pinned Blender
@@ -57,7 +78,7 @@ The historical Blend remained SHA-256
 `1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731`;
 the repaired USF remained
 `49bfc77c1172a0e324934974d5612a13d121c3cee78ae7ca454468b61649e170`.
-The experiment used arbitrary 0.25-unit new edit-bone lengths because the USF
+The diagnostic uses arbitrary 0.25-unit new edit-bone lengths because the USF
 does not encode Blender edit-bone length. It proves a static in-memory path and
 transform construction, **not** Blender save persistence, SDK export, bind or
 animation parity, collision, compilation, native appearance or gameplay. The

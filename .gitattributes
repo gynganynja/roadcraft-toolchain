@@ -101,3 +101,6 @@ tests/test_blender_blade_roll.py text eol=lf
 tests/test_blender_ladder.py text eol=lf
 operations/D11_LADDER_IN_MEMORY_*.md text eol=lf
 operations/D11_RESIDUAL_STRUCTURAL_NODES_*.md text eol=lf
+src/roadcraft/blender_residual_bones.py text eol=lf
+src/roadcraft/blender_residual_bones_worker.py text eol=lf
+tests/test_blender_residual_bones.py text eol=lf

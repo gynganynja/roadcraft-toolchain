@@ -780,8 +780,9 @@ The other seven light and dash nodes are absent from both source Blend and
 native USF. A two-version no-save experiment added those seven bones after
 push, roll and ladder; counting the existing Empty, all 400 repaired
 structural paths then matched within `2.269e-6`, with no mesh world drift.
-This still needs a maintained diagnostic and a separately authorized scratch
-export before native-Blend parity can advance. See
+The maintained, pinned no-save diagnostic reproduces the two-version result;
+a separately authorized scratch export is still needed before native-Blend
+parity can advance. See
 `D11_RESIDUAL_STRUCTURAL_NODES_20260929.md`.
 
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
