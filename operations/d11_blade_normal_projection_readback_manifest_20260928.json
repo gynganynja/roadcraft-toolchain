@@ -1,0 +1,48 @@
+{
+  "allOtherFieldsExactSourceNative": true,
+  "allProjectedNormalsExactRepaired": true,
+  "asset": "cat_d11t",
+  "bladeHostSha256": "87b272b4f2b52f29488a4188a7df5c2b5e83bdd03fe70527dc036082cc39a8a0",
+  "blendSaved": false,
+  "commonRowsDigestSha256": "533058ffdaa47a8aa064c284c7f717096dc27282a3dd300fab7330d50b00fa23",
+  "corners": 6486,
+  "equivalenceVerified": false,
+  "hostSha256": "69c839ccc693c570e4b82c32ecd39741f9d6f2786d27042d0ed2d77ece3b0e0c",
+  "inventorySha256": "03d3eae96720612ae3b1457a27cc797f8bc6ebb694b230f253bcadbe9d13b50d",
+  "kind": "roadcraft.d11.blade-normal-projection-readback",
+  "leaves": 60,
+  "meshHostSha256": "2ec3051322517d68b07c99bd94710402bb32d2157e540996814e66e5925a1a4e",
+  "nativeBlendExportApproved": false,
+  "nativeUsfSha256": "80c856b07b3ae1447f2748b5f6f8ec13c688c2594f3ebfaeada9e0d11da21370",
+  "normalInputSpace": "saber",
+  "paritySummarySha256": "b116ea18837df190eec539b1173deb55926f79ad9b14339f3217c1b86128c87f",
+  "repairedUsfSha256": "49bfc77c1172a0e324934974d5612a13d121c3cee78ae7ca454468b61649e170",
+  "runs": [
+    {
+      "blenderPath": "C:\\Program Files\\Blender Foundation\\Blender 5.0\\blender.exe",
+      "blenderSha256": "f81d3bca0af0d917e03fdf09255981b2ed0750d3a2815da991ea5425a87f8f7c",
+      "blenderVersion": "5.0.1",
+      "receipt": "d11_blade_normal_projection_blender50_20260928.json",
+      "receiptSha256": "305704d1b6c6fab188898f8c637e63b804083141e0c03ac469352fda26cb13f8",
+      "rowsDigestSha256": "533058ffdaa47a8aa064c284c7f717096dc27282a3dd300fab7330d50b00fa23"
+    },
+    {
+      "blenderPath": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
+      "blenderSha256": "e27fbfea8564aa645d4463cb0949695fd85562b9de6df9561b06859a1074adf7",
+      "blenderVersion": "5.2.0 LTS",
+      "receipt": "d11_blade_normal_projection_blender52_20260928.json",
+      "receiptSha256": "ded6b8fe1f6683dde9850104f8dd4639981a99b250898e50841c90f1c701c929",
+      "rowsDigestSha256": "533058ffdaa47a8aa064c284c7f717096dc27282a3dd300fab7330d50b00fa23"
+    }
+  ],
+  "schemaVersion": 1,
+  "scope": "No-save Blender SDK projection of accepted repaired normals onto 60 historical source blade meshes",
+  "sourceBlendSha256": "1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731",
+  "sourceWorkerSha256": "c6a4b4b0c0639a0b412c917e420d320ff5e0015edd915972ec393875b36d3be6",
+  "status": "IN_MEMORY_NORMAL_PROJECTION",
+  "testSha256": "f2952d0173ad0bc4a258e156bf28a7590f487790ce1a3ee25878eb846f3a0531",
+  "triangles": 2162,
+  "usfExported": false,
+  "workerSha256": "5cbccc066898089906fe766a8ce2f6e040cd925257ae236674bdaeda3382b3b4",
+  "worklistSha256": "a842c0e7dd355e64ace39a724a806f509328ba3fb1916fc7ab4bbb85062759c3"
+}
