@@ -250,7 +250,7 @@
           },
           {
             "path": "C:\\RC\\RoadCraftDev\\toolchain\\src\\roadcraft\\native_precapture_request.py",
-            "sha256": "527b71ed56788a849a9c809d48ebf92bea3616cf77e0bac25224ee48ad74c109"
+            "sha256": "31a1831c3cf899933b5d490c95de0508f8b0b80f250897f7696b08b009f34e80"
           },
           {
             "path": "C:\\RC\\RoadCraftDev\\toolchain\\local\\machine.json",
@@ -274,7 +274,7 @@
           },
           {
             "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\capture_candidate_native.py",
-            "sha256": "6449ddc08c81165231ee39f90e171b2f5a2c7fdecc9e2e21b1b2c1b2d4733585"
+            "sha256": "78e2f3634cbfde8d2b64b15652275474646338efe7f1f25a760a2140cfdc73dc"
           }
         ],
         "outputs": [
@@ -309,7 +309,7 @@
           },
           {
             "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\capture_candidate_native.py",
-            "sha256": "6449ddc08c81165231ee39f90e171b2f5a2c7fdecc9e2e21b1b2c1b2d4733585"
+            "sha256": "78e2f3634cbfde8d2b64b15652275474646338efe7f1f25a760a2140cfdc73dc"
           },
           {
             "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\mods\\cat_d11t.pak",

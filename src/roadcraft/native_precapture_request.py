@@ -25,7 +25,7 @@ SOURCE_SHA256 = {
     "D11_Interior_Repair_20260926/capture_cab_survey.py":
         "083652fc56cf6d0bcc54ab139c7100f126427f9a5d2da9df5fb29dbf3eeec2ef",
     "D11_Interior_AAA_20260928/capture_candidate_native.py":
-        "6449ddc08c81165231ee39f90e171b2f5a2c7fdecc9e2e21b1b2c1b2d4733585",
+        "78e2f3634cbfde8d2b64b15652275474646338efe7f1f25a760a2140cfdc73dc",
 }
 READ_SCRIPT_SHA256 = "61cd4d77e6441660f094bb86fa62eda0fa9a93c37c85aa7d31df5fac111b732e"
 NORMALIZED_HELPER_SHA256 = "44bf3dacc0fd2bb7fb163ea464da4ac117d0c3139e9667fa8a734dae85c1fda5"

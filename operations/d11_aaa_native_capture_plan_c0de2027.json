@@ -1,0 +1,1175 @@
+{
+  "status": "CAPTURE_OUTPUTS_DECLARED_NO_SWAP",
+  "candidate": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\retail\\cat_d11t_aaa_candidate.pak",
+  "candidateSha256": "3b4129d22b8a79bf1969ee7effd8d92b699beae1aa6a33deebb658cd2ade6031",
+  "baselineSha256": "3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16",
+  "prototype": false,
+  "project": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\p",
+  "pinnedFiles": 1644,
+  "editorMount": {
+    "editorConfig": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\p\\config\\editor.cfg",
+    "editorConfigSha256": "94b33e09c48fe0bb263cf66960af7ef8fa96791b45731aba3b2a5c474773a07d",
+    "modsSourceLocal": "C:/Program Files (x86)/Steam/steamapps/common/RoadCraft/Roadcraft Development Package/D11_Interior_AAA_20260928/p/mods_source",
+    "projectPath": "C:/Program Files (x86)/Steam/steamapps/common/RoadCraft/Roadcraft Development Package/D11_Interior_AAA_20260928/p/.project"
+  },
+  "variants": [
+    "maroon",
+    "nearnew",
+    "worn"
+  ],
+  "viewsPerVariant": [
+    "front_seat",
+    "front_down",
+    "right",
+    "right_down",
+    "right_panel_detail",
+    "right_outer_low",
+    "left",
+    "left_down",
+    "left_panel_detail",
+    "rear",
+    "rear_down",
+    "rear_right_detail",
+    "rear_left_detail",
+    "overhead",
+    "overhead_rear"
+  ],
+  "outputContract": {
+    "schemaVersion": 1,
+    "runId": "c0de2027",
+    "runner": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\capture_candidate_native.py",
+    "runnerSha256": "78e2f3634cbfde8d2b64b15652275474646338efe7f1f25a760a2140cfdc73dc",
+    "candidatePackage": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\retail\\cat_d11t_aaa_candidate.pak",
+    "candidateSha256": "3b4129d22b8a79bf1969ee7effd8d92b699beae1aa6a33deebb658cd2ade6031",
+    "installedPackage": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\mods\\cat_d11t.pak",
+    "baselineSha256": "3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16",
+    "prototype": false,
+    "packageReceipt": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\package_receipt.json",
+    "packageReceiptSha256": "40fe7ad060aa95f7d23bd17331716017a24cc3951915fef15c52a1d9e73b2b8e",
+    "packageReceiptStatus": "D11_AAA_PACKAGE_AUDITED",
+    "sourcePinsSha256": "1801b57de99a5ab13452b00cd69f47c8564ec30704425a933334a177586769e2",
+    "sourcePinCount": 1644,
+    "partialLinkerSource": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\src",
+    "partialLinkerSourcePins": {
+      "roadcraft/__init__.py": "e9d56f7eb038f281cd6ed95da5a761b0743168ebadce1436c8078d1adaeca9c7",
+      "roadcraft/native_capture_partial.py": "26020bf75341c2ac72b8096145076e538a3cddfdb0f8f5113539106c16b2a6bc",
+      "roadcraft/native_capture_observation.py": "2815fdc85d2408339ef4b1f870ff23d5d84be3547a924cdb91a950d1e0a870bf",
+      "roadcraft/native_capture_postflight.py": "ad81fa466f1cde0d2e1b963b222fccd67014d211f630c1b20160e54631d81c5f",
+      "roadcraft/native_precapture_request.py": "31a1831c3cf899933b5d490c95de0508f8b0b80f250897f7696b08b009f34e80",
+      "roadcraft/review.py": "2c8b5d4ad5215761243b092f62f7a5323fd57341fe766f72c630a93a546a5bc7",
+      "roadcraft/core.py": "967e1f077a53b4b3ac1b528675046f6bb3e7c88cddd9339861be4aff2a8d849f"
+    },
+    "helperSourcePins": {
+      "nativeControlsTemplate": {
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Final_Candidate_20260925\\native_controls_template.ps1",
+        "sha256": "9722e35723f75fd841f95e81848cdf1759261d9ef2141fd6948ac9e23ac60c0d"
+      },
+      "nativeAcceptance": {
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Final_Candidate_20260925\\native_acceptance.py",
+        "sha256": "89b1431099bacc00a3173ffbe46c9dbfc1047707828db929df949e40df11f580"
+      },
+      "interiorCapture": {
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Repair_20260926\\capture_interior.py",
+        "sha256": "dae524f24afad50e04902d8310775478577d5f48c8610fb3595e3b376ea8f19f"
+      },
+      "cabSurvey": {
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Repair_20260926\\capture_cab_survey.py",
+        "sha256": "083652fc56cf6d0bcc54ab139c7100f126427f9a5d2da9df5fb29dbf3eeec2ef"
+      },
+      "syntaxCheck": {
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_All_Repairs_20260925\\handling\\syntax_check.ps1",
+        "sha256": "981be612c637ae6e8916c563536ffcdf7005965c8bc01308a7d81466bf3bec43"
+      }
+    },
+    "variantContexts": {
+      "maroon": {
+        "scene": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\p\\mods_source\\xscenes\\mods\\d11t_maroon_validation\\d11t_maroon_validation.scn",
+        "sceneSha256": "9481bca1db96dd5c3c0c201f9d7f84e0b16fd7e683905c286060b16e9d53dfa1",
+        "cameraBasis": "_cockpit_camera; offsets (forward,left,up) in metres",
+        "cameraSpecs": {
+          "front_seat": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "front_down": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.7,
+              0.0,
+              -0.4
+            ]
+          ],
+          "right": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              -0.72,
+              -0.16
+            ]
+          ],
+          "right_down": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              -0.66,
+              -0.58
+            ]
+          ],
+          "right_panel_detail": [
+            [
+              0.1,
+              -0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              -0.75,
+              -0.78
+            ]
+          ],
+          "right_outer_low": [
+            [
+              0.02,
+              -0.44,
+              -0.18
+            ],
+            [
+              0.32,
+              -1.0,
+              -0.83
+            ]
+          ],
+          "left": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              0.72,
+              -0.12
+            ]
+          ],
+          "left_down": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              0.66,
+              -0.56
+            ]
+          ],
+          "left_panel_detail": [
+            [
+              0.1,
+              0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              0.75,
+              -0.72
+            ]
+          ],
+          "rear": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.78,
+              0,
+              0.05
+            ]
+          ],
+          "rear_down": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.55,
+              0,
+              -0.55
+            ]
+          ],
+          "rear_right_detail": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              -0.65,
+              -0.22
+            ]
+          ],
+          "rear_left_detail": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              0.65,
+              -0.22
+            ]
+          ],
+          "overhead": [
+            [
+              0,
+              0,
+              -0.08
+            ],
+            [
+              0.85,
+              0,
+              0.43
+            ]
+          ],
+          "overhead_rear": [
+            [
+              0.2,
+              0,
+              0
+            ],
+            [
+              -0.42,
+              0,
+              0.78
+            ]
+          ]
+        },
+        "plannedResolutionPixels": {
+          "status": "unknown"
+        },
+        "runtimeLighting": {
+          "status": "unknown"
+        },
+        "protocol": "SetCab, ReadPreCapture, CaptureCab PNG, copied image, partial view link"
+      },
+      "nearnew": {
+        "scene": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\p\\mods_source\\xscenes\\mods\\d11t_nearnew_validation\\d11t_nearnew_validation.scn",
+        "sceneSha256": "7bb6428240ecb1acf0d31674d855d8af6eebefe57f62d7f4956bf8d603b0a701",
+        "cameraBasis": "_cockpit_camera; offsets (forward,left,up) in metres",
+        "cameraSpecs": {
+          "front_seat": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "front_down": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.7,
+              0.0,
+              -0.4
+            ]
+          ],
+          "right": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              -0.72,
+              -0.16
+            ]
+          ],
+          "right_down": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              -0.66,
+              -0.58
+            ]
+          ],
+          "right_panel_detail": [
+            [
+              0.1,
+              -0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              -0.75,
+              -0.78
+            ]
+          ],
+          "right_outer_low": [
+            [
+              0.02,
+              -0.44,
+              -0.18
+            ],
+            [
+              0.32,
+              -1.0,
+              -0.83
+            ]
+          ],
+          "left": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              0.72,
+              -0.12
+            ]
+          ],
+          "left_down": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              0.66,
+              -0.56
+            ]
+          ],
+          "left_panel_detail": [
+            [
+              0.1,
+              0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              0.75,
+              -0.72
+            ]
+          ],
+          "rear": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.78,
+              0,
+              0.05
+            ]
+          ],
+          "rear_down": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.55,
+              0,
+              -0.55
+            ]
+          ],
+          "rear_right_detail": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              -0.65,
+              -0.22
+            ]
+          ],
+          "rear_left_detail": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              0.65,
+              -0.22
+            ]
+          ],
+          "overhead": [
+            [
+              0,
+              0,
+              -0.08
+            ],
+            [
+              0.85,
+              0,
+              0.43
+            ]
+          ],
+          "overhead_rear": [
+            [
+              0.2,
+              0,
+              0
+            ],
+            [
+              -0.42,
+              0,
+              0.78
+            ]
+          ]
+        },
+        "plannedResolutionPixels": {
+          "status": "unknown"
+        },
+        "runtimeLighting": {
+          "status": "unknown"
+        },
+        "protocol": "SetCab, ReadPreCapture, CaptureCab PNG, copied image, partial view link"
+      },
+      "worn": {
+        "scene": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\p\\mods_source\\xscenes\\mods\\d11t_worn_validation\\d11t_worn_validation.scn",
+        "sceneSha256": "a518939a52afa5dd946a480161545e257fa89c7d0968d489937a27adf5a1bd8c",
+        "cameraBasis": "_cockpit_camera; offsets (forward,left,up) in metres",
+        "cameraSpecs": {
+          "front_seat": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "front_down": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.7,
+              0.0,
+              -0.4
+            ]
+          ],
+          "right": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              -0.72,
+              -0.16
+            ]
+          ],
+          "right_down": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              -0.66,
+              -0.58
+            ]
+          ],
+          "right_panel_detail": [
+            [
+              0.1,
+              -0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              -0.75,
+              -0.78
+            ]
+          ],
+          "right_outer_low": [
+            [
+              0.02,
+              -0.44,
+              -0.18
+            ],
+            [
+              0.32,
+              -1.0,
+              -0.83
+            ]
+          ],
+          "left": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              0.72,
+              -0.12
+            ]
+          ],
+          "left_down": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              0.66,
+              -0.56
+            ]
+          ],
+          "left_panel_detail": [
+            [
+              0.1,
+              0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              0.75,
+              -0.72
+            ]
+          ],
+          "rear": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.78,
+              0,
+              0.05
+            ]
+          ],
+          "rear_down": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.55,
+              0,
+              -0.55
+            ]
+          ],
+          "rear_right_detail": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              -0.65,
+              -0.22
+            ]
+          ],
+          "rear_left_detail": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              0.65,
+              -0.22
+            ]
+          ],
+          "overhead": [
+            [
+              0,
+              0,
+              -0.08
+            ],
+            [
+              0.85,
+              0,
+              0.43
+            ]
+          ],
+          "overhead_rear": [
+            [
+              0.2,
+              0,
+              0
+            ],
+            [
+              -0.42,
+              0,
+              0.78
+            ]
+          ]
+        },
+        "plannedResolutionPixels": {
+          "status": "unknown"
+        },
+        "runtimeLighting": {
+          "status": "unknown"
+        },
+        "protocol": "SetCab, ReadPreCapture, CaptureCab PNG, copied image, partial view link"
+      }
+    },
+    "capturePlan": {
+      "variants": [
+        "maroon",
+        "nearnew",
+        "worn"
+      ],
+      "viewsPerVariant": [
+        "front_seat",
+        "front_down",
+        "right",
+        "right_down",
+        "right_panel_detail",
+        "right_outer_low",
+        "left",
+        "left_down",
+        "left_panel_detail",
+        "rear",
+        "rear_down",
+        "rear_right_detail",
+        "rear_left_detail",
+        "overhead",
+        "overhead_rear"
+      ],
+      "fullCapture": true
+    },
+    "outerReceipt": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\candidate_capture_c0de2027.json",
+    "backup": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\cat_d11t_before_3e3d21b877ad_c0de2027.pak",
+    "stage": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\mods\\cat_d11t.standalone-c0de2027.tmp",
+    "restore": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\mods\\cat_d11t.restore-c0de2027.tmp",
+    "lock": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\candidate_capture.lock.json",
+    "variantRuns": {
+      "maroon": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma",
+      "nearnew": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne",
+      "worn": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo"
+    },
+    "runtimeDirectoryRoots": {
+      "maroon": {
+        "editorData": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\editor_data",
+        "temporary": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\tmp",
+        "localProfilesIfCreated": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\local_profiles"
+      },
+      "nearnew": {
+        "editorData": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\editor_data",
+        "temporary": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\tmp",
+        "localProfilesIfCreated": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\local_profiles"
+      },
+      "worn": {
+        "editorData": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\editor_data",
+        "temporary": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\tmp",
+        "localProfilesIfCreated": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\local_profiles"
+      }
+    },
+    "expectedOutputFiles": [
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\candidate_capture_c0de2027.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\cat_d11t_before_3e3d21b877ad_c0de2027.pak",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\native_controls.ps1",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\probe.scenario",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\stdout.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\stderr.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\report.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\interior_geom.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\interior_geom.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_front_seat.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_front_seat.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_front_seat.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_front_seat.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_front_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_front_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_front_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_front_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_right.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_right.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_right.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_right.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_right_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_right_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_right_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_right_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_right_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_right_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_right_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_right_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_right_outer_low.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_right_outer_low.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_right_outer_low.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_right_outer_low.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_left.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_left.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_left.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_left.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_left_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_left_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_left_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_left_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_left_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_left_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_left_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_left_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_rear.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_rear_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_rear_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_rear_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_rear_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_rear_right_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_rear_right_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_rear_right_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_rear_right_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_rear_left_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_rear_left_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_rear_left_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_rear_left_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_overhead.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_overhead.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_overhead.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_overhead.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_overhead_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\camera_overhead_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_overhead_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\pre_capture_overhead_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_overhead_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\capture_overhead_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\cab_overhead_rear.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\partial_overhead_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\native_controls.ps1",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\probe.scenario",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\stdout.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\stderr.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\report.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\interior_geom.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\interior_geom.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_front_seat.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_front_seat.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_front_seat.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_front_seat.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_front_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_front_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_front_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_front_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_right.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_right.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_right.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_right.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_right_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_right_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_right_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_right_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_right_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_right_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_right_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_right_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_right_outer_low.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_right_outer_low.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_right_outer_low.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_right_outer_low.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_left.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_left.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_left.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_left.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_left_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_left_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_left_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_left_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_left_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_left_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_left_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_left_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_rear.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_rear_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_rear_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_rear_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_rear_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_rear_right_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_rear_right_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_rear_right_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_rear_right_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_rear_left_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_rear_left_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_rear_left_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_rear_left_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_overhead.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_overhead.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_overhead.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_overhead.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_overhead_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\camera_overhead_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_overhead_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\pre_capture_overhead_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_overhead_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\capture_overhead_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\cab_overhead_rear.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\partial_overhead_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\native_controls.ps1",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\probe.scenario",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\stdout.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\stderr.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\report.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\interior_geom.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\interior_geom.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_front_seat.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_front_seat.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_front_seat.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_front_seat.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_front_seat.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_front_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_front_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_front_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_front_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_front_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_right.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_right.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_right.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_right.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_right.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_right_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_right_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_right_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_right_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_right_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_right_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_right_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_right_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_right_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_right_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_right_outer_low.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_right_outer_low.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_right_outer_low.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_right_outer_low.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_right_outer_low.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_left.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_left.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_left.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_left.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_left.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_left_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_left_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_left_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_left_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_left_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_left_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_left_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_left_panel_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_left_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_left_panel_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_rear.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_rear_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_rear_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_rear_down.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_rear_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_rear_down.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_rear_right_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_rear_right_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_rear_right_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_rear_right_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_rear_right_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_rear_left_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_rear_left_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_rear_left_detail.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_rear_left_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_rear_left_detail.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_overhead.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_overhead.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_overhead.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_overhead.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_overhead.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_overhead_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\camera_overhead_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_overhead_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\pre_capture_overhead_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_overhead_rear.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\capture_overhead_rear.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\cab_overhead_rear.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\partial_overhead_rear.json"
+    ],
+    "optionalOutputFiles": [
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\interior_hidden.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\interior_hidden.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\interior_hidden.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\interior_hidden.transport.log",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\interior_hidden.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\interior_hidden.transport.log"
+    ],
+    "transientPaths": [
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\candidate_capture.lock.json",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\mods\\cat_d11t.standalone-c0de2027.tmp",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\mods\\cat_d11t.restore-c0de2027.tmp",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\candidate_capture_c0de2027.json.tmp",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\report.json.tmp",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_maroon_c0de2027ma\\tmp",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\report.json.tmp",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_nearnew_c0de2027ne\\tmp",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\report.json.tmp",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\runs\\aaa_worn_c0de2027wo\\tmp"
+    ],
+    "reservedRecoveryReceipt": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\candidate_recovery_c0de2027.json",
+    "screenshotSourceFiles": [
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_front_seat.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_front_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_right.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_right_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_right_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_right_outer_low.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_left.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_left_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_left_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_rear.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_rear_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_rear_right_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_rear_left_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_overhead.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ma_overhead_rear.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_front_seat.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_front_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_right.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_right_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_right_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_right_outer_low.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_left.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_left_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_left_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_rear.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_rear_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_rear_right_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_rear_left_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_overhead.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027ne_overhead_rear.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_front_seat.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_front_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_right.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_right_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_right_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_right_outer_low.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_left.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_left_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_left_panel_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_rear.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_rear_down.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_rear_right_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_rear_left_detail.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_overhead.png",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\bin\\pc\\d11_cab_c0de2027wo_overhead_rear.png"
+    ]
+  },
+  "outputContractSha256": "32d53165c5d8bac941172f521f6c02e774b91c61618bab8b7b847092a35c8689"
+}

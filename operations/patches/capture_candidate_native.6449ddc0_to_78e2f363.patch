@@ -1,0 +1,87 @@
+--- capture_candidate_native.py@6449ddc0
++++ capture_candidate_native.py@78e2f363
+@@ -67,7 +67,8 @@
+ TOOLCHAIN_SRC = WORKSPACE / "RoadCraftToolchain" / "src"
+ PARTIAL_LINKER_MODULES = (
+     "__init__.py", "native_capture_partial.py", "native_capture_observation.py",
+-    "native_capture_postflight.py", "review.py", "core.py",
++    "native_capture_postflight.py", "native_precapture_request.py", "review.py",
++    "core.py",
+ )
+ HELPER_SOURCE_FILES = {
+     "nativeControlsTemplate": WORKSPACE / "D11_Final_Candidate_20260925" /
+@@ -723,6 +724,10 @@
+             event["ownedProcessesAfter"] = after["ownedProcesses"]
+         if "processProbeError" in after:
+             event["processProbeError"] = after["processProbeError"]
++        if event.get("status") == "PASS" and after["engineExit"]["status"] != "running":
++            error = RuntimeError(f"Owned engine exited or became unobservable during {action}")
++            event.update(status="FAIL", error=repr(error))
++            raise error
+ 
+ 
+ @contextmanager
+@@ -752,6 +757,14 @@
+     width, height = int.from_bytes(header[16:20], "big"), int.from_bytes(header[20:24], "big")
+     guard(width > 0 and height > 0, f"Screenshot dimensions are invalid: {path}")
+     return [width, height]
++
++
++def send_capture_after_pretrigger(check, engine: OwnedEngineHandle, send) -> None:
++    """Stop before native send if the Read guard or owned engine is invalid."""
++    check()
++    guard(engine.sample()["status"] == "running",
++          "Owned engine exited before CaptureCab trigger")
++    send()
+ 
+ 
+ def save_partial_link(path: Path, record: dict, linker) -> str:
+@@ -858,6 +871,32 @@
+             mode = name.title().replace("_", "")
+             with view_boundary(report, base, proc, engine, name):
+                 action_start = len(report.get("actionEvents", []))
++                def check_pretrigger(phase: str) -> None:
++                    checked = linker.check_pretrigger_view(
++                        sdk_workspace=WORKSPACE, run_id=run_id[:-2],
++                        variant=variant, view=name, engine_pid=engine_pid,
++                        helper=helper,
++                        camera_transport=run / f"camera_{name}.json",
++                        pre_transport=run / f"pre_capture_{name}.json")
++                    guard(checked["status"] == "PARTIAL_PRETRIGGER_CHECK_PASSED"
++                          and checked["loadedSceneVerified"] is False
++                          and checked["captureProcessAuthenticated"] is False
++                          and checked["pairProtocolEligible"] is False,
++                          "Pre-trigger check claimed unsupported native proof")
++                    report.setdefault("preTriggerChecks", []).append(
++                        {"phase": phase, **checked})
++
++                def read_pretrigger() -> None:
++                    base.h.probe(run, "pre_capture_" + name, helper, engine_pid,
++                                 "Read")
++                    check_pretrigger("afterRead")
++
++                def capture_after_pretrigger() -> None:
++                    send_capture_after_pretrigger(
++                        lambda: check_pretrigger("beforeCapture"), engine,
++                        lambda: base.h.probe(run, "capture_" + name, helper,
++                                             engine_pid, "CaptureCab" + mode))
++
+                 timed_action(report, base, proc, engine, "SetCab" + mode,
+                              lambda name=name, mode=mode: base.h.probe(
+                                  run, "camera_" + name, helper, engine_pid,
+@@ -870,13 +909,9 @@
+                                            f"Native screenshot output already exists: {source}"),
+                              view=name)
+                 timed_action(report, base, proc, engine, "ReadPreCapture",
+-                             lambda name=name: base.h.probe(
+-                                 run, "pre_capture_" + name, helper, engine_pid,
+-                                 "Read"), view=name)
++                             read_pretrigger, view=name)
+                 timed_action(report, base, proc, engine, "CaptureCab" + mode,
+-                             lambda name=name, mode=mode: base.h.probe(
+-                                 run, "capture_" + name, helper, engine_pid,
+-                                 "CaptureCab" + mode), view=name)
++                             capture_after_pretrigger, view=name)
+                 target = run / f"cab_{name}.png"
+                 timed_action(report, base, proc, engine, "SaveScreenshot:" + name,
+                              lambda: base.screenshot(source, target, proc), view=name)

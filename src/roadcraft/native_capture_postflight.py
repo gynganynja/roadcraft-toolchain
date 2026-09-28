@@ -31,7 +31,7 @@ VIEWS = (
 MAX_RECEIPT_BYTES = 4 * 1024 * 1024
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 PRECAPTURE_VERIFIER_SHA256 = (
-    "527b71ed56788a849a9c809d48ebf92bea3616cf77e0bac25224ee48ad74c109"
+    "31a1831c3cf899933b5d490c95de0508f8b0b80f250897f7696b08b009f34e80"
 )
 
 
@@ -240,7 +240,8 @@ def validate(receipt_path: str | Path, *, run_id: str,
         linker_pins = contract.get("partialLinkerSourcePins")
         module_names = (
             "__init__.py", "native_capture_partial.py", "native_capture_observation.py",
-            "native_capture_postflight.py", "review.py", "core.py")
+            "native_capture_postflight.py", "native_precapture_request.py",
+            "review.py", "core.py")
         _require(isinstance(linker_pins, dict) and
                  set(linker_pins) == {f"roadcraft/{name}" for name in module_names},
                  "Reviewed contract lacks partial linker source pins")

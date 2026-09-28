@@ -22,7 +22,8 @@ from roadcraft import (native_capture_partial, native_capture_postflight as post
                        native_precapture_request as precapture_request)  # noqa: E402
 
 MODULES = ("__init__.py", "native_capture_partial.py", "native_capture_observation.py",
-           "native_capture_postflight.py", "review.py", "core.py")
+           "native_capture_postflight.py", "native_precapture_request.py",
+           "review.py", "core.py")
 READ_TEMPLATE = ("$script=@'\n__ACTION__return result\n'@\n$action=''\n"
                  "if($Mode -eq 'Capture'){\n $action='SaveScreenshot()'\n}\n"
                  "$script=$script.Replace('__ACTION__',$action)\n"

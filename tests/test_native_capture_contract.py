@@ -23,7 +23,7 @@ from unittest.mock import patch
 
 
 RUNNER = (Path(__file__).resolve().parents[1] / "operations" / "patches" /
-          "capture_candidate_native.patched.py")
+          "capture_candidate_native.pretrigger_20260928.py")
 
 
 def load_runner():
@@ -87,17 +87,22 @@ class NativeCaptureContractTests(unittest.TestCase):
             package_receipt_sha=self.runner.sha(self.package_receipt),
             package_receipt_status="D11_AAA_PACKAGE_AUDITED")
 
-    def test_versioned_patch_and_current_plan_pin_reviewed_runner(self) -> None:
+    def test_current_patch_and_archival_plan_have_distinct_runner_pins(self) -> None:
         operations = RUNNER.parents[1]
+        archived_manifest = json.loads((RUNNER.parent /
+                                        "capture_candidate_native.patch_manifest.json").read_text(
+                                            encoding="utf-8"))
+        archived = RUNNER.parent / "capture_candidate_native.patched.py"
+        self.assertEqual(sha256(archived.read_bytes()).hexdigest(),
+                         archived_manifest["patchedSha256"])
         manifest = json.loads((RUNNER.parent /
-                               "capture_candidate_native.patch_manifest.json").read_text(
+                               "capture_candidate_native.pretrigger_20260928.patch_manifest.json").read_text(
                                    encoding="utf-8"))
-        base = RUNNER.parent / "capture_candidate_native.base_b3670ff3.py"
-        self.assertEqual(sha256(base.read_bytes()).hexdigest(), manifest["baseSha256"])
+        self.assertEqual(sha256(archived.read_bytes()).hexdigest(), manifest["baseSha256"])
         self.assertEqual(sha256(RUNNER.read_bytes()).hexdigest(),
                          manifest["patchedSha256"])
         expected_diff = "".join(difflib.unified_diff(
-            base.read_text(encoding="utf-8").splitlines(keepends=True),
+            archived.read_text(encoding="utf-8").splitlines(keepends=True),
             RUNNER.read_text(encoding="utf-8").splitlines(keepends=True),
             fromfile=f"capture_candidate_native.py@{manifest['baseSha256'][:8]}",
             tofile=f"capture_candidate_native.py@{manifest['patchedSha256'][:8]}"))
@@ -108,7 +113,9 @@ class NativeCaptureContractTests(unittest.TestCase):
                                encoding="utf-8"))
         self.assertEqual(plan["status"], "CAPTURE_OUTPUTS_DECLARED_NO_SWAP")
         self.assertEqual(plan["outputContract"]["runnerSha256"],
-                         manifest["patchedSha256"])
+                         archived_manifest["patchedSha256"])
+        self.assertNotEqual(plan["outputContract"]["runnerSha256"],
+                            manifest["patchedSha256"])
         self.assertEqual(self.runner.canonical_sha256(plan["outputContract"]),
                          plan["outputContractSha256"])
         self.assertEqual(len(plan["outputContract"]["expectedOutputFiles"]), 383)
@@ -226,6 +233,7 @@ class NativeCaptureContractTests(unittest.TestCase):
         helper = run / "native_controls.ps1"
         probe_modes = []
         partial_calls = []
+        pretrigger_calls = []
         proc = SimpleNamespace(pid=42, poll=lambda: None)
 
         def launch_editor(run_path, _scenario):
@@ -246,6 +254,13 @@ class NativeCaptureContractTests(unittest.TestCase):
                     "nativePostflightVerified": False,
                     "status": "PARTIAL_PRE_SCREENSHOT_CONTEXT"}
 
+        def check_pretrigger_view(**inputs):
+            pretrigger_calls.append(inputs)
+            return {"status": "PARTIAL_PRETRIGGER_CHECK_PASSED",
+                    "loadedSceneVerified": False,
+                    "captureProcessAuthenticated": False,
+                    "pairProtocolEligible": False}
+
         def screenshot(_source, target, _proc):
             target.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\x0dIHDR" +
                                (1920).to_bytes(4, "big") +
@@ -259,11 +274,13 @@ class NativeCaptureContractTests(unittest.TestCase):
 
         linker = SimpleNamespace(
             build_partial_view=build_partial_view,
+            check_pretrigger_view=check_pretrigger_view,
             verify_partial_view=lambda _saved: {
                 "status": "PARTIAL_VIEW_LINKAGE_CONSISTENT",
                 "pairProtocolEligible": False,
             })
-        engine = SimpleNamespace(pid=43, close=lambda: None)
+        engine = SimpleNamespace(pid=43, sample=lambda: {"status": "running"},
+                                 close=lambda: None)
         base = SimpleNamespace(
             h=SimpleNamespace(launch_editor=launch_editor, probe=probe,
                               SDK=self.root / "sdk", EDITOR=self.root / "editor"),
@@ -311,6 +328,9 @@ class NativeCaptureContractTests(unittest.TestCase):
             ("pre_capture_front_seat", "Read"),
             ("capture_front_seat", "CaptureCabFrontSeat"),
         ])
+        self.assertEqual(len(pretrigger_calls), 2)
+        self.assertEqual([row["phase"] for row in report["preTriggerChecks"]],
+                         ["afterRead", "beforeCapture"])
         self.assertEqual([row["action"] for row in partial_calls[0]["action_events"]],
                          ["SetCabFrontSeat", "SettleCamera", "ScreenshotSourceGuard",
                           "ReadPreCapture", "CaptureCabFrontSeat",
@@ -500,6 +520,42 @@ class NativeCaptureContractTests(unittest.TestCase):
         self.assertEqual(view["ownedAfter"]["engineExit"]["exitCodeHex"],
                          "0xc0000005")
         self.assertTrue(view["startedUtc"] <= view["finishedUtc"])
+
+    def test_silent_engine_exit_during_settle_fails_that_action(self) -> None:
+        state = {"engineExited": False}
+        engine = SimpleNamespace(
+            pid=43, sample=lambda: (
+                {"status": "exited", "exitCodeUnsigned": 0xC0000005,
+                 "exitCodeHex": "0xc0000005"}
+                if state["engineExited"] else {"status": "running"}))
+        proc = SimpleNamespace(pid=42, poll=lambda: None)
+        base = SimpleNamespace(processes=lambda: [])
+        report = {}
+
+        def silent_exit() -> None:
+            state["engineExited"] = True
+
+        with self.assertRaisesRegex(RuntimeError, "during SettleCamera"):
+            self.runner.timed_action(report, base, proc, engine,
+                                     "SettleCamera", silent_exit, view="right_down")
+        event = report["actionEvents"][0]
+        self.assertEqual(event["status"], "FAIL")
+        self.assertEqual(event["engineExitCode"], 0xC0000005)
+        self.assertIn("SettleCamera", event["error"])
+
+    def test_pretrigger_guard_and_final_engine_sample_prevent_native_send(self) -> None:
+        sent = []
+        engine = SimpleNamespace(sample=lambda: {"status": "running"})
+        with self.assertRaisesRegex(ValueError, "drifted Read"):
+            self.runner.send_capture_after_pretrigger(
+                lambda: (_ for _ in ()).throw(ValueError("drifted Read")),
+                engine, lambda: sent.append(True))
+        self.assertEqual(sent, [])
+        exited = SimpleNamespace(sample=lambda: {"status": "exited"})
+        with self.assertRaisesRegex(RuntimeError, "exited before CaptureCab"):
+            self.runner.send_capture_after_pretrigger(
+                lambda: None, exited, lambda: sent.append(True))
+        self.assertEqual(sent, [])
 
     def test_action_refuses_command_if_retained_engine_already_exited(self) -> None:
         proc = SimpleNamespace(pid=42, poll=lambda: None)

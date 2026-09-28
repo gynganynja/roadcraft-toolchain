@@ -17,10 +17,12 @@ from pathlib import Path
 import re
 from typing import Any
 
-from . import native_capture_observation, native_capture_postflight, review
+from . import (native_capture_observation, native_capture_postflight,
+               native_precapture_request, review)
 
 
 HEX_RUN = re.compile(r"[0-9a-f]{8}\Z")
+OPTIONAL_VIEWS = ("left_hvac_detail",)
 REQUEST_ID = re.compile(r"\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9a-f]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}\Z")
 MAX_JSON_BYTES = 4 * 1024 * 1024
 MAX_RAW_REPLY_BYTES = 65_536
@@ -131,6 +133,88 @@ def _transport(path: Path, label: str, mode: str, read_only: bool,
     return pin, observed, row
 
 
+def check_pretrigger_view(*, sdk_workspace: Path, run_id: str, variant: str,
+                          view: str, engine_pid: int, helper: Path,
+                          camera_transport: Path, pre_transport: Path,
+                          now_utc: datetime | None = None) -> dict[str, Any]:
+    """Check the actual pre-screenshot Read before allowing CaptureCab.
+
+    This authenticates reviewed request content and internally consistent
+    transport records, not the native producer or complete renderer state.
+    Call it after ReadPreCapture and again immediately before CaptureCab so
+    changed files or a stale response cannot be used to trigger a screenshot.
+    """
+    _need(isinstance(run_id, str) and HEX_RUN.fullmatch(run_id) is not None,
+          "Pre-trigger run ID is invalid")
+    _need(variant in native_capture_postflight.VARIANTS and
+          view in (*native_capture_postflight.VIEWS, *OPTIONAL_VIEWS) and
+          type(engine_pid) is int and engine_pid > 0,
+          "Pre-trigger variant, view, or engine PID is invalid")
+    _need(all(isinstance(path, Path) and path.is_absolute() for path in
+              (sdk_workspace, helper, camera_transport, pre_transport)),
+          "Pre-trigger paths must be absolute")
+    run = helper.parent
+    _need(run.name == f"aaa_{variant}_{run_id}{variant[:2]}" and
+          helper.name == "native_controls.ps1" and
+          camera_transport == run / f"camera_{view}.json" and
+          pre_transport == run / f"pre_capture_{view}.json",
+          "Pre-trigger files do not identify the reviewed run and view")
+    _, helper_sha = _read(helper, "native helper", MAX_JSON_BYTES)
+    try:
+        request = native_precapture_request.audit(
+            sdk_workspace, helper=helper, transport=pre_transport)
+    except (native_precapture_request.PrecaptureRequestError, OSError) as error:
+        raise PartialViewError(f"Pre-trigger Read request failed: {error}") from error
+    _need(request["generatedHelperVerified"] and request["transportRequestVerified"]
+          and request["generatedHelperSha256"] == helper_sha and
+          request["loadedSceneVerified"] is False and
+          request["captureProcessAuthenticated"] is False,
+          "Pre-trigger Read verifier did not confirm the reviewed request")
+    mode = view.title().replace("_", "")
+    camera_pin, camera_observed, camera_raw = _transport(
+        camera_transport, "camera transport", "SetCab" + mode, False,
+        engine_pid, helper_sha)
+    pre_pin, pre_observed, pre_raw = _transport(
+        pre_transport, "pre-screenshot transport", "Read", True,
+        engine_pid, helper_sha)
+    _need(camera_pin["requestId"] != pre_pin["requestId"] and
+          camera_raw["workspace"] == pre_raw["workspace"],
+          "Pre-trigger requests repeat an ID or use different workspaces")
+    _need("SaveScreenshot(" not in camera_raw["script"] and
+          "SaveScreenshot(" not in pre_raw["script"],
+          "Pre-trigger query contains a screenshot action")
+    _need(camera_observed["reported"]["activePlayCamera"] ==
+          pre_observed["reported"]["activePlayCamera"],
+          "Pre-trigger camera transform changed after SetCab")
+    _need(camera_observed["reported"]["activePlayCameraResolution"] ==
+          pre_observed["reported"]["activePlayCameraResolution"] ==
+          pre_observed["reported"]["videoConfigWindowSize"],
+          "Pre-trigger camera or video resolution changed after SetCab")
+    camera_received = _utc(camera_pin["responseReceivedUtc"], "camera response")
+    pre_sent = _utc(pre_pin["requestSentUtc"], "pre-screenshot request")
+    pre_received = _utc(pre_pin["responseReceivedUtc"], "pre-screenshot response")
+    now = now_utc or datetime.now(timezone.utc)
+    _need(isinstance(now, datetime) and now.tzinfo is not None and
+          now.utcoffset() == timezone.utc.utcoffset(now),
+          "Pre-trigger check needs a UTC clock")
+    _need(camera_received <= pre_sent <= pre_received <= now,
+          "Pre-trigger responses are out of order or in the future")
+    _need((now - pre_received).total_seconds() <= MAX_PRE_TRIGGER_GAP_SECONDS,
+          "Pre-trigger Read response is stale")
+    return {
+        "status": "PARTIAL_PRETRIGGER_CHECK_PASSED",
+        "runId": run_id, "variant": variant, "view": view, "enginePid": engine_pid,
+        "checkedUtc": now.isoformat(),
+        "helperSha256": helper_sha,
+        "cameraTransportSha256": camera_pin["sha256"],
+        "preCaptureTransportSha256": pre_pin["sha256"],
+        "readRequestScriptSha256Lf": request["requestScriptSha256Lf"],
+        "preCaptureResponseReceivedUtc": pre_pin["responseReceivedUtc"],
+        "loadedSceneVerified": False, "captureProcessAuthenticated": False,
+        "pairProtocolEligible": False,
+    }
+
+
 def _windows(action_events: list[dict[str, Any]], view: str,
              pid: int) -> tuple[dict[str, dict[str, Any]], dict[str, tuple[datetime, datetime]]]:
     mode = view.title().replace("_", "")
@@ -175,7 +259,8 @@ def build_partial_view(*, run_id: str, variant: str, view: str, engine_pid: int,
     _need(isinstance(run_id, str) and HEX_RUN.fullmatch(run_id) is not None,
           "run_id needs eight lowercase hex characters")
     _need(variant in native_capture_postflight.VARIANTS, "Unknown D11 variant")
-    _need(view in native_capture_postflight.VIEWS, "Unknown D11 view")
+    _need(view in (*native_capture_postflight.VIEWS, *OPTIONAL_VIEWS),
+          "Unknown D11 view")
     _need(type(engine_pid) is int and engine_pid > 0, "Engine PID must be positive")
     paths = (scene, helper, camera_transport, pre_transport, capture_transport, image)
     _need(all(isinstance(path, Path) for path in paths), "Inputs must be paths")
@@ -229,11 +314,15 @@ def build_partial_view(*, run_id: str, variant: str, view: str, engine_pid: int,
               f"{key} transport falls outside its action window")
     pre_received = _utc(pre_pin["responseReceivedUtc"], "pre-screenshot response")
     # The helper records requestSentUtc after its Send call. The runner's
-    # capture action start is the available lower bound for that call.
+    # capture action start bounds the earliest possible call; the recorded
+    # request timestamp bounds the latest possible call.
     capture_started = parsed["captureTrigger"][0]
     _need(0 <= (capture_started - pre_received).total_seconds()
           <= MAX_PRE_TRIGGER_GAP_SECONDS,
           "Pre-screenshot response is not immediately before CaptureCab")
+    _need(0 <= (_utc(capture_pin["requestSentUtc"], "capture request") -
+                pre_received).total_seconds() <= MAX_PRE_TRIGGER_GAP_SECONDS,
+          "CaptureCab request was sent too long after pre-screenshot Read")
     _need(camera_observed["reported"]["activePlayCamera"] ==
           pre_observed["reported"]["activePlayCamera"] ==
           capture_observed["reported"]["activePlayCamera"],

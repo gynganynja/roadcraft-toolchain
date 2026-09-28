@@ -1,5 +1,6 @@
 # These archived bytes are pinned by SHA-256; preserve the historical files and
 # their exact unified diff even when they contain trailing whitespace.
+.gitattributes text eol=lf
 operations/patches/capture_candidate_native.* -text -whitespace
 
 # These exact-hash Python files must retain LF bytes in fresh Windows checkouts,
@@ -14,6 +15,12 @@ src/roadcraft/blender_tangent_payload_worker.py text eol=lf
 src/roadcraft/blender_bind_identity_worker.py text eol=lf
 src/roadcraft/blender_material_payload_worker.py text eol=lf
 src/roadcraft/native_precapture_request.py text eol=lf
+src/roadcraft/__init__.py text eol=lf
+src/roadcraft/native_capture_partial.py text eol=lf
+src/roadcraft/native_capture_observation.py text eol=lf
+src/roadcraft/native_capture_postflight.py text eol=lf
+src/roadcraft/review.py text eol=lf
+src/roadcraft/core.py text eol=lf
 src/roadcraft/blender_animation_payload_worker.py text eol=lf
 src/roadcraft/blender_animation_variants_worker.py text eol=lf
 src/roadcraft/blender_material_variant_payload_worker.py text eol=lf
@@ -33,3 +40,14 @@ src/roadcraft/blender_mesh_variant_payload_worker.py text eol=lf
 src/roadcraft/blender_mesh_variant_payload.py text eol=lf
 src/roadcraft/blender_rgba_discriminant.py text eol=lf
 src/roadcraft/blender_rgba_discriminant_worker.py text eol=lf
+src/roadcraft/blender_rgba_cache_lifetime.py text eol=lf
+src/roadcraft/blender_rgba_cache_lifetime_worker.py text eol=lf
+operations/d11_aaa_native_preflight_recipe.json text eol=lf
+operations/d11_aaa_native_capture_plan_c0de2027.json text eol=lf
+operations/d11_rgba_cache_lifetime_*.json text eol=lf
+operations/NATIVE_PRETRIGGER_GUARD_20260928.md text eol=lf
+operations/D11_RGBA_CACHE_LIFETIME_20260928.md text eol=lf
+tests/test_native_capture_contract.py text eol=lf
+tests/test_native_capture_partial.py text eol=lf
+tests/test_native_capture_postflight.py text eol=lf
+tests/test_blender_rgba_cache_lifetime.py text eol=lf
