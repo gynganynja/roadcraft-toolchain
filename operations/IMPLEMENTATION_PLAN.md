@@ -822,6 +822,15 @@ finding an independently proven equivalent source, a separate workstream from
 the rig repair. The name search does not rule out differently named geometry.
 See `D11_MISSING_MESH_SOURCE_SEARCH_20260929.md`.
 
+The one unskinned repaired-only mesh, `cdt_blade_roll_pivot`, now has a pinned
+reusable in-memory installer. After full structural reconstruction, its SDK
+readback matched positions, normals, UVs, faces and material text exactly;
+all tangent components were within `5.961e-8`, and world/local matrices were
+within `2.385e-7`. This is a successful authoring-space proof for one mesh,
+not a saved or exported candidate. The 51 skinned repaired-only meshes and
+the original writer/native gates remain open. See
+`D11_PIVOT_IN_MEMORY_RECONSTRUCTION_20260929.md`.
+
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
 2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
