@@ -236,17 +236,28 @@ class MCPTests(unittest.TestCase):
         manifest.write_text(json.dumps({"files": [{"path": "junction/remote.pak", "sha256": "0" * 64}]}))
         receipt = self.root / "nested-receipt.json"
         receipt.write_text(json.dumps({"captures": [{"path": "junction/remote.png", "sha256": "0" * 64}]}))
+        canonical = self.root / "canonical"
+        canonical.mkdir()
+        (canonical / manifest.name).write_bytes(manifest.read_bytes())
+        (canonical / receipt.name).write_bytes(receipt.read_bytes())
         original_lstat = server.Path.lstat
         original_resolve = server.Path.resolve
 
         def marked_reparse(path, *args, **kwargs):
-            if path == junction:
+            # A resolved receipt/manifest may have a different lexical parent
+            # (for example, a Windows temp-directory alias). Identify the
+            # unique fixture component instead of comparing whole paths.
+            if path.name.casefold() == junction.name.casefold():
                 return SimpleNamespace(st_mode=stat.S_IFDIR, st_file_attributes=0x400)
             return original_lstat(path, *args, **kwargs)
 
         def local_only_resolve(path, *args, **kwargs):
-            if junction in path.parents or path == junction:
+            if any(part.casefold() == junction.name.casefold() for part in path.parts):
                 raise AssertionError("reparse target was resolved")
+            if path == manifest or path == receipt:
+                # Simulate a temp-directory alias changing its parent path.
+                # An exact-path lstat mock missed this on hosted Windows CI.
+                return canonical / path.name
             return original_resolve(path, *args, **kwargs)
 
         with patch.object(server.Path, "lstat", new=marked_reparse):

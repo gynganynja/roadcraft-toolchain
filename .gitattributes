@@ -1,3 +1,8 @@
 # These archived bytes are pinned by SHA-256; preserve the historical files and
 # their exact unified diff even when they contain trailing whitespace.
 operations/patches/capture_candidate_native.* -text -whitespace
+
+# These workers are verified by exact SHA-256 on Windows and must retain LF
+# bytes in fresh checkouts even when the user's Git uses core.autocrlf=true.
+src/roadcraft/blender_left_push_worker.py text eol=lf
+src/roadcraft/blender_armature_parity_worker.py text eol=lf
