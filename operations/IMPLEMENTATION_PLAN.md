@@ -46,6 +46,15 @@ contract, schema-2 candidate-only receipt-link scaffold, guarded color
 readbacks and blade readbacks are offline evidence only. The accepted PAK
 remains installed; no native capture or Blender export ran in this checkpoint.
 
+The later no-swap accepted-project baseline adapter and separate partial
+postflight are in `NATIVE_BASELINE_CAPTURE_20260928.md`. The accepted project
+already contains all three validation scenes with the same bytes as the AAA
+project, while its model sources differ. Both checkouts' no-write baseline
+preflights verified 1,576 project source pins and the exact 382-file / 45-view
+output roster; the dedicated checkout passed 371 local tests with four skips.
+No baseline run was executed. The current native Read response still lacks the
+complete measured context and engine-origin scene/PNG proof required by step 5.
+
 | Area | State at this snapshot | Evidence and limit |
 |---|---|---|
 | Core CLI, jobs and transactions | Implemented | `src/roadcraft/cli.py`, `jobs.py`, `transaction.py`. CLI job/transaction operations default to dry-run; `--apply` executes. A failed phase after native launch retains its lock; `jobs-recover` requires exact lock/receipt/installed/registry/config pins and verified terminal external state before release. No live job lock was released. |
