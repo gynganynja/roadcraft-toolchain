@@ -107,7 +107,8 @@ the API as `expected_candidate_native_pins` or to the CLI as
 `--candidate-native-receipt-sha256` and `--candidate-native-plan-sha256`. Pins
 inside `pair.json` alone never enable the check. It reruns the existing D11
 candidate postflight and checks all 45 candidate images, source-scene pins,
-engine PIDs, action intervals, the protocol runner path/SHA-256, and
+engine PIDs, action intervals, the protocol runner's canonical file identity
+and SHA-256, and
 pre-screenshot native transport files
 against the pair records. Each candidate observation must include a
 `nativeTransport` path/SHA-256 pin whose exact script, raw response, timestamps,

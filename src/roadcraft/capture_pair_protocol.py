@@ -277,7 +277,11 @@ def _candidate_native_receipt_links(
                                 f"{role} native output hashes")
         contract = _object(plan.get("outputContract"),
                            f"{role} native output contract")
-        _need(contract.get("runner") == str(protocol_runner_path) and
+        contract_runner, _ = _file(
+            {"path": contract.get("runner"),
+             "sha256": contract.get("runnerSha256")},
+            plan_path.parent, "candidate native contract runner")
+        _need(contract_runner.samefile(protocol_runner_path) and
               contract.get("runnerSha256") == protocol_runner_sha,
               "Candidate protocol runner differs from native contract")
         contexts = _object(contract.get("variantContexts"),

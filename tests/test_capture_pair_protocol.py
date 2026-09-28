@@ -272,7 +272,9 @@ class CapturePairTests(unittest.TestCase):
         binding = pair_row["candidateNativeReceipt"]
         plan_path = Path(binding["plan"]["path"])
         plan = json.loads(plan_path.read_text(encoding="utf-8"))
-        plan["outputContract"]["runnerSha256"] = "0" * 64
+        same_bytes_different_file = self.write("other_runner.py", b"native runner")
+        plan["outputContract"]["runner"] = same_bytes_different_file["path"]
+        plan["outputContract"]["runnerSha256"] = same_bytes_different_file["sha256"]
         binding["plan"] = self.write(
             str(plan_path.relative_to(self.root)), plan)
         external["planSha256"] = binding["plan"]["sha256"]
@@ -282,6 +284,50 @@ class CapturePairTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.CapturePairError,
                                         "protocol runner differs from native contract"):
                 gate.validate(pair, expected_candidate_native_pins=external)
+
+    def test_native_binding_accepts_canonical_runner_path_alias(self) -> None:
+        pair, external = self.native_binding_fixture()
+        pair_row = json.loads(pair.read_text(encoding="utf-8"))
+        binding = pair_row["candidateNativeReceipt"]
+        plan_path = Path(binding["plan"]["path"])
+        plan = json.loads(plan_path.read_text(encoding="utf-8"))
+        runner = Path(plan["outputContract"]["runner"])
+        alias = runner.parent / ".." / runner.parent.name / runner.name
+        self.assertNotEqual(str(alias), str(runner))
+        self.assertTrue(alias.samefile(runner))
+        plan["outputContract"]["runner"] = str(alias)
+        binding["plan"] = self.write(
+            str(plan_path.relative_to(self.root)), plan)
+        external["planSha256"] = binding["plan"]["sha256"]
+        self.write("pair.json", pair_row)
+        with mock.patch.object(gate.native_capture_postflight, "validate",
+                               side_effect=self.passing_postflight):
+            result = gate.validate(pair, expected_candidate_native_pins=external)
+        self.assertTrue(result["candidateNativeReceiptLinked"])
+        self.assertFalse(result["nativeEvidenceLinked"])
+
+    @unittest.skipUnless(os.name == "nt", "Windows drive-letter identity")
+    def test_native_binding_accepts_windows_drive_letter_case_alias(self) -> None:
+        pair, external = self.native_binding_fixture()
+        pair_row = json.loads(pair.read_text(encoding="utf-8"))
+        binding = pair_row["candidateNativeReceipt"]
+        plan_path = Path(binding["plan"]["path"])
+        plan = json.loads(plan_path.read_text(encoding="utf-8"))
+        runner = Path(plan["outputContract"]["runner"])
+        self.assertTrue(runner.drive)
+        alias = runner.drive.swapcase() + str(runner)[len(runner.drive):]
+        self.assertNotEqual(alias, str(runner))
+        self.assertTrue(Path(alias).samefile(runner))
+        plan["outputContract"]["runner"] = alias
+        binding["plan"] = self.write(
+            str(plan_path.relative_to(self.root)), plan)
+        external["planSha256"] = binding["plan"]["sha256"]
+        self.write("pair.json", pair_row)
+        with mock.patch.object(gate.native_capture_postflight, "validate",
+                               side_effect=self.passing_postflight):
+            result = gate.validate(pair, expected_candidate_native_pins=external)
+        self.assertTrue(result["candidateNativeReceiptLinked"])
+        self.assertFalse(result["nativeEvidenceLinked"])
 
     def test_native_binding_rejects_unlinked_observation_and_image(self) -> None:
         pair, external = self.native_binding_fixture()
