@@ -23,7 +23,7 @@ class BaselineSourceIsolationTests(unittest.TestCase):
             accepted = root / "accepted" / "p"
             config = accepted / "config" / "editor.cfg"
             config.parent.mkdir(parents=True)
-            actual = accepted.as_posix()
+            actual = accepted.resolve(strict=True).as_posix()
             config.write_text(
                 "  ModsSourceLocal: " + actual + "/mods_source\n"
                 "  ProjectPath: " + actual + "/.project\n", encoding="utf-8")
@@ -60,6 +60,7 @@ class BaselineSourceIsolationTests(unittest.TestCase):
                                         "validation scenes differ"):
                 baseline._contract(runner, "a1b2c3d4", accepted,
                                    root / "accepted.pak", "a" * 64, {},
+                                   ("maroon",),
                                    ("front_seat",), {"front_seat": ((0, 0, 0),
                                                                      (1, 0, 0))})
 

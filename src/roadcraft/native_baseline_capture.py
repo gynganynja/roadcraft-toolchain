@@ -99,11 +99,12 @@ def _load_inner(toolchain: Path, project: Path, accepted_sha: str):
 
 
 def _contract(inner, run_id: str, project: Path, package: Path,
-              accepted_sha: str, pins: dict[str, str], views: tuple[str, ...],
+              accepted_sha: str, pins: dict[str, str],
+              variants: tuple[str, ...], views: tuple[str, ...],
               camera_specs: dict[str, Any]) -> dict[str, Any]:
     outer = inner.NATIVE / f"baseline_capture_{run_id}.json"
     runs = {variant: inner.RUNS / f"aaa_{variant}_{run_id}{variant[:2]}"
-            for variant in inner.SCENES}
+            for variant in variants}
     required = [outer]
     screenshots = []
     contexts = {}
@@ -151,8 +152,10 @@ def _contract(inner, run_id: str, project: Path, package: Path,
         "partialLinkerSourcePins": inner.partial_linker_source_pins(),
         "helperSourcePins": inner.helper_source_pins(),
         "variantContexts": contexts,
-        "capturePlan": {"variants": list(inner.SCENES),
-                        "viewsPerVariant": list(views), "fullCapture": views == inner.VIEWS},
+        "capturePlan": {"variants": list(variants),
+                        "viewsPerVariant": list(views),
+                        "fullCapture": (variants == tuple(inner.SCENES) and
+                                        views == inner.VIEWS)},
         "outerReceipt": str(outer), "variantRuns": {k: str(v) for k, v in runs.items()},
         "expectedOutputFiles": [str(p) for p in required],
         "screenshotSourceFiles": [str(p) for p in screenshots],
@@ -160,7 +163,8 @@ def _contract(inner, run_id: str, project: Path, package: Path,
     }
 
 
-def _prepare(run_id: str):
+def _prepare(run_id: str, requested_variants: tuple[str, ...] | None = None,
+             requested_views: tuple[str, ...] | None = None):
     toolchain = Path(__file__).resolve().parents[2]
     registry = core.read_registry(toolchain / "project.json")
     accepted = registry["accepted"]
@@ -181,17 +185,37 @@ def _prepare(run_id: str):
     need(not base.runner.LOCK.exists() and not base.processes(),
          "Another native job, RoadCraft or Mod Editor is running")
     pins = inner.project_pins(project)
-    for variant in inner.SCENES:
+    need(requested_variants is None or
+         len(requested_variants) == len(set(requested_variants)),
+         "Baseline variants must not repeat")
+    need(requested_views is None or
+         len(requested_views) == len(set(requested_views)),
+         "Baseline views must not repeat")
+    variants = tuple(name for name in inner.SCENES
+                     if requested_variants is None or name in requested_variants)
+    views = tuple(name for name in inner.VIEWS
+                  if requested_views is None or name in requested_views)
+    need(variants and views and
+         (requested_variants is None or set(variants) == set(requested_variants)) and
+         (requested_views is None or set(views) == set(requested_views)),
+         "Unknown or empty baseline variant/view selection")
+    for variant in variants:
         inner.compiled_node_info(variant)
     mount = _mount(project, inner.sha)
     contract = _contract(inner, run_id, project, package, accepted_sha,
-                         pins, inner.VIEWS, survey.VIEWS)
+                         pins, variants, views, survey.VIEWS)
     return inner, base, survey, project, accepted_sha, pins, mount, contract
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-id", required=True)
+    parser.add_argument("--variants", nargs="+", choices=("maroon", "nearnew", "worn"))
+    parser.add_argument("--views", nargs="+", choices=(
+        "front_seat", "front_down", "right", "right_down", "right_panel_detail",
+        "right_outer_low", "left", "left_down", "left_panel_detail", "rear",
+        "rear_down", "rear_right_detail", "rear_left_detail", "overhead",
+        "overhead_rear"))
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--expected-contract-sha256")
     args = parser.parse_args(argv)
@@ -199,7 +223,9 @@ def main(argv: list[str] | None = None) -> int:
          "--run-id must be eight lowercase hexadecimal characters")
     need(args.execute == (args.expected_contract_sha256 is not None),
          "--execute requires a reviewed --expected-contract-sha256")
-    inner, base, survey, project, accepted_sha, pins, mount, contract = _prepare(args.run_id)
+    inner, base, survey, project, accepted_sha, pins, mount, contract = _prepare(
+        args.run_id, tuple(args.variants) if args.variants else None,
+        tuple(args.views) if args.views else None)
     contract_sha = inner.canonical_sha256(contract)
     if not args.execute:
         print(json.dumps({"status": "BASELINE_OUTPUTS_DECLARED_NO_SWAP",
@@ -227,11 +253,14 @@ def main(argv: list[str] | None = None) -> int:
     try:
         with outer.open("x", encoding="utf-8"):
             owned = True
-        for variant in inner.SCENES:
+        variants = tuple(contract["capturePlan"]["variants"])
+        views = tuple(contract["capturePlan"]["viewsPerVariant"])
+        full_capture = contract["capturePlan"]["fullCapture"]
+        for variant in variants:
             need(not base.processes(), "An editor remained active after the previous variant")
             report["variants"].append(inner.capture_variant(
                 base, survey, variant, args.run_id + variant[:2], accepted_sha,
-                pins, inner.VIEWS, True, contract["variantContexts"][variant],
+                pins, views, full_capture, contract["variantContexts"][variant],
                 contract_sha, contract["partialLinkerSourcePins"],
                 contract["helperSourcePins"]))
         need(inner.project_pins(project) == pins,
@@ -239,7 +268,8 @@ def main(argv: list[str] | None = None) -> int:
         need(inner.sha(inner.LIVE) == accepted_sha,
              "Installed package changed during baseline capture")
         report["requiredOutputSha256"] = inner.required_output_digests(contract)
-        report["status"] = "BASELINE_CAPTURES_READY_NO_SWAP"
+        report["status"] = ("BASELINE_CAPTURES_READY_NO_SWAP" if full_capture
+                            else "BASELINE_TRIAGE_CAPTURES_READY_NO_SWAP")
     except BaseException as error:
         report.update(status="FAIL", error=repr(error))
         raise

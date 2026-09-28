@@ -27,7 +27,10 @@ outputs, the accepted editor mount and all three compiled interior nodes. No
 editor was launched and no baseline capture was produced by this check.
 
 Run `python -m roadcraft.native_baseline_capture --run-id <fresh-eight-hex-id>`
-with the selected checkout's `src` on `PYTHONPATH` to print a no-write plan. Save
+with the selected checkout's `src` on `PYTHONPATH` to print a no-write full
+plan. `--variants maroon --views front_seat` makes a one-view diagnostic plan;
+the resulting receipt remains triage evidence and cannot satisfy the 45-view
+requirement. Save
 that entire JSON to a new ignored `local` file and independently pin its
 SHA-256. Only after reviewing that exact output contract, run the same command
 with `--execute --expected-contract-sha256 <outputContractSha256>`. The runner
@@ -41,9 +44,10 @@ claim.
 
 `roadcraft.native_baseline_postflight` takes the saved plan and produced outer
 receipt, plus **independently supplied** SHA-256 pins for both files. It checks
-the no-swap contract, the accepted project and package, all required outputs,
-the three native variant reports, the 45 partial-view links and their matching
-action windows. A successful result is
+the no-swap contract, the accepted project and package, all declared outputs,
+the selected native variant reports and partial-view links, and their matching
+action windows. A full capture checks 382 declared outputs and 45 views; a
+one-view diagnostic checks 16 declared outputs and one view. A successful result is
 `BASELINE_PARTIAL_CAPTURE_INTEGRITY_VERIFIED`, with `pairProtocolEligible`,
 `loadedSceneVerified`, `captureProcessAuthenticated`, `technicalPassed`, and
 `releaseReady` all `false`.

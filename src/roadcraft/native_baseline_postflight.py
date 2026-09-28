@@ -75,8 +75,11 @@ def _roster(contract: dict[str, Any], outer: Path) -> tuple[list[Path], dict[str
          "Baseline run ID is invalid")
     need(outer.name == f"baseline_capture_{run_id}.json",
          "Baseline receipt filename differs from run ID")
+    capture_plan = contract["capturePlan"]
+    variants = capture_plan["variants"]
+    views = capture_plan["viewsPerVariant"]
     runs = {variant: outer.parent / "baseline_runs" /
-            f"aaa_{variant}_{run_id}{variant[:2]}" for variant in VARIANTS}
+            f"aaa_{variant}_{run_id}{variant[:2]}" for variant in variants}
     need(contract.get("variantRuns") == {k: str(v) for k, v in runs.items()},
          "Baseline variant directories differ from contract")
     required = [outer]
@@ -84,19 +87,19 @@ def _roster(contract: dict[str, Any], outer: Path) -> tuple[list[Path], dict[str
         required.extend(run / name for name in (
             "native_controls.ps1", "probe.scenario", "stdout.log", "stderr.log",
             "report.json", "interior_geom.json", "interior_geom.transport.log"))
-        for view in VIEWS:
+        for view in views:
             required.extend(run / f"{stem}_{view}{suffix}" for stem, suffix in (
                 ("camera", ".json"), ("camera", ".transport.log"),
                 ("pre_capture", ".json"), ("pre_capture", ".transport.log"),
                 ("capture", ".json"), ("capture", ".transport.log"),
                 ("cab", ".png"), ("partial", ".json")))
-    need(len(required) == 382 and
+    need(len(required) == 1 + len(variants) * (7 + len(views) * 8) and
          contract.get("expectedOutputFiles") == [str(p) for p in required],
          "Baseline required output roster is incomplete")
     screenshot_root = outer.parent.parent.parent.parent / "root" / "bin" / "pc"
     screenshot_sources = [
         screenshot_root / f"d11_cab_{run_id}{variant[:2]}_{view}.png"
-        for variant in VARIANTS for view in VIEWS]
+        for variant in variants for view in views]
     need(contract.get("screenshotSourceFiles") ==
          [str(path) for path in screenshot_sources],
          "Baseline screenshot-source roster differs")
@@ -113,11 +116,21 @@ def validate(plan_path: str | Path, receipt_path: str | Path, *,
          "Baseline plan was not the no-swap preflight")
     contract = plan.get("outputContract")
     need(isinstance(contract, dict) and contract.get("schemaVersion") == 1 and
-         contract.get("role") == "baseline" and contract.get("packageSwap") is False and
-         contract.get("capturePlan") ==
-         {"variants": list(VARIANTS), "viewsPerVariant": list(VIEWS),
-          "fullCapture": True},
-         "Baseline contract is not a full no-swap D11 capture")
+         contract.get("role") == "baseline" and contract.get("packageSwap") is False,
+         "Baseline contract is not a no-swap D11 capture")
+    capture_plan = contract.get("capturePlan")
+    need(isinstance(capture_plan, dict) and
+         set(capture_plan) == {"variants", "viewsPerVariant", "fullCapture"},
+         "Baseline capture plan is incomplete")
+    variants = capture_plan["variants"]
+    views = capture_plan["viewsPerVariant"]
+    need(isinstance(variants, list) and bool(variants) and
+         variants == [name for name in VARIANTS if name in variants] and
+         isinstance(views, list) and bool(views) and
+         views == [name for name in VIEWS if name in views] and
+         capture_plan["fullCapture"] is
+         (variants == list(VARIANTS) and views == list(VIEWS)),
+         "Baseline variant or view selection differs from D11 order")
     contract_sha = sha256(json.dumps(contract, sort_keys=True,
                                     separators=(",", ":")).encode("utf-8")).hexdigest()
     need(plan.get("outputContractSha256") == contract_sha,
@@ -174,7 +187,9 @@ def validate(plan_path: str | Path, receipt_path: str | Path, *,
     required, runs = _roster(contract, receipt_file)
     outer = _json(receipt_file, expected_receipt_sha256,
                   "Externally pinned baseline receipt")
-    need(outer.get("status") == "BASELINE_CAPTURES_READY_NO_SWAP" and
+    status = ("BASELINE_CAPTURES_READY_NO_SWAP" if capture_plan["fullCapture"]
+              else "BASELINE_TRIAGE_CAPTURES_READY_NO_SWAP")
+    need(outer.get("status") == status and
          outer.get("role") == "baseline" and
          outer.get("runId") == contract["runId"] and
          outer.get("acceptedProject") == str(project) and
@@ -203,21 +218,24 @@ def validate(plan_path: str | Path, receipt_path: str | Path, *,
              f"Baseline required output changed or is missing: {path}")
     variants = outer.get("variants")
     need(isinstance(variants, list) and
-         [row.get("variant") for row in variants] == list(VARIANTS),
+         [row.get("variant") for row in variants] == capture_plan["variants"],
          "Baseline receipt variant order differs")
     checked = 0
     request_ids: set[str] = set()
-    for variant, row in zip(VARIANTS, variants, strict=True):
+    for variant, row in zip(capture_plan["variants"], variants, strict=True):
         run = runs[variant]
         report_path = run / "report.json"
         need(row.get("report") == str(report_path) and
              row.get("reportSha256") == hashes[str(report_path)] and
-             row.get("views") == 15,
+             row.get("views") == len(views),
              f"{variant} report link differs from baseline output")
         report = _json(report_path, hashes[str(report_path)],
                        f"{variant} baseline variant report")
         context = contract["variantContexts"][variant]
-        need(report.get("status") == "D11_AAA_NATIVE_CAPTURES_READY" and
+        variant_status = ("D11_AAA_NATIVE_CAPTURES_READY" if
+                          capture_plan["fullCapture"] else
+                          "D11_AAA_NATIVE_TRIAGE_CAPTURES_READY")
+        need(report.get("status") == variant_status and
              report.get("project") == str(project) and
              report.get("scene") == context["scene"] and
              report.get("candidatePackageSha256") == accepted_sha and
@@ -231,17 +249,17 @@ def validate(plan_path: str | Path, receipt_path: str | Path, *,
         engine_pid = report.get("enginePid")
         actions = report.get("actionEvents")
         need(type(engine_pid) is int and engine_pid > 0 and
-             isinstance(actions, list) and len(actions) == 91 and
+             isinstance(actions, list) and len(actions) == 1 + 6 * len(views) and
              actions[0].get("action") == "InspectInteriorGeom" and
              all(action.get("status") == "PASS" and
                  action.get("enginePid") == engine_pid for action in actions),
              f"{variant} action transcript is incomplete")
-        views = report.get("views")
-        need(isinstance(views, list) and
-             [view.get("view") for view in views] == list(VIEWS),
-             f"{variant} does not contain 15 ordered views")
+        view_rows = report.get("views")
+        need(isinstance(view_rows, list) and
+             [view.get("view") for view in view_rows] == views,
+             f"{variant} view order differs from plan")
         links = []
-        for view, view_row in zip(VIEWS, views, strict=True):
+        for index, (view, view_row) in enumerate(zip(views, view_rows, strict=True)):
             image = run / f"cab_{view}.png"
             partial_path = run / f"partial_{view}.json"
             need(view_row.get("path") == str(image) and
@@ -263,7 +281,6 @@ def validate(plan_path: str | Path, receipt_path: str | Path, *,
             need(request_id not in request_ids,
                  f"{variant} {view} reused a pre-screenshot request ID")
             request_ids.add(request_id)
-            index = VIEWS.index(view)
             action_slice = actions[1 + index * 6:1 + (index + 1) * 6]
             need(len(action_slice) == 6, f"{variant} {view} action slice is incomplete")
             for key, action in zip(native_capture_partial.EVENTS, action_slice,
@@ -282,6 +299,7 @@ def validate(plan_path: str | Path, receipt_path: str | Path, *,
              f"{variant} partial-view digest differs from outer receipt")
     return {"status": "BASELINE_PARTIAL_CAPTURE_INTEGRITY_VERIFIED",
             "checkedViews": checked, "checkedRequiredOutputs": len(required) - 1,
+            "d11RosterComplete": capture_plan["fullCapture"],
             "planSha256": expected_plan_sha256,
             "receiptSha256": expected_receipt_sha256,
             "acceptedSha256": accepted_sha, "packageSwapDeclared": False,
