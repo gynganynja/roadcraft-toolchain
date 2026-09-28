@@ -1,4 +1,4 @@
-# D11 access-ladder hierarchy experiment — 2026-09-29
+# D11 access-ladder in-memory diagnostic — 2026-09-29
 
 The pinned historical base Blend has one `BoneAccess_Ladder` bone directly
 under `BoneChassis_cdt`. It has no constraints, connected parent, child bones,
@@ -8,7 +8,7 @@ instead has a meshless, unanimated chain:
 `BoneAccess_LadderHinge` → `BoneAccess_Ladder`. A pinned read-only shape probe
 checked those exact nodes before any edit.
 
-A disposable no-save Blender experiment created the three intermediate bones
+A disposable no-save Blender experiment first created the three intermediate bones
 in order, then reparented and retargeted the existing ladder bone. Each rest
 matrix was solved from the newly realized parent pose and the repaired USF
 world target. The new edit bones use an arbitrary 0.25-unit length because
@@ -32,7 +32,29 @@ shared paths outside `1e-5`. The maximum shared matrix error, including the
 earlier push branches, was `2.2687017917633057e-6`. The eight missing paths
 are two inner lights, five dash controls and `sfx`.
 
-The ignored local probes are pinned by these SHA-256 values:
+The result is now reproducible with the maintained, source-pinned diagnostic:
+
+```powershell
+$tc = 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\Roadcraft Development Package\RoadCraftToolchain'
+$env:PYTHONPATH = "$tc\src"
+& 'C:\RC\RoadCraftDev\toolchain\.venv\Scripts\python.exe' -B -m roadcraft.blender_ladder `
+  --registry "$tc\project.json" `
+  --blender 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' `
+  --sdk-script-root 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\tools\bin\blender_to_usf_script'
+```
+
+The host pins the accepted inventory, both inputs, Blender executable and
+version, SDK scripts, worker and comparison dependencies; it rechecks them
+after the run. The worker opens the pinned Blend in background Blender, checks
+the repaired ladder shape and source baseline, makes only in-memory edits,
+and reports exact residual paths and matrix errors. Blender 5.0.1 and 5.2.0
+both returned `IN_MEMORY_LADDER_MATCH` in the standalone mode. The maintained
+worker SHA-256 is
+`526768b392678b705c0d82687cbb76bd0bad1f1a41a9ad29ee0163cdb50ddf54`.
+Focused validation tests reject missing target paths, high matrix error,
+saved-Blend claims and a combined result interpreted as standalone.
+
+The ignored original local probes are pinned by these SHA-256 values:
 
 | Probe | SHA-256 |
 | --- | --- |
@@ -46,6 +68,6 @@ the repaired USF remained
 `49bfc77c1172a0e324934974d5612a13d121c3cee78ae7ca454468b61649e170`.
 No Blend was saved and no USF was exported. This is static hierarchy/transform
 evidence only: it does not prove SDK export, skin/bind data, animation,
-collision, compilation or native appearance. The ladder edit is still a local
-experiment, not yet a maintained scratch repair. The accepted repaired USF
+collision, compilation or native appearance. The ladder edit is a maintained
+no-save diagnostic, not yet an opt-in scratch export repair. The accepted repaired USF
 remains authoritative and the `native-blend` gate stays blocked.

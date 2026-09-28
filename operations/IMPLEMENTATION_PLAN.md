@@ -766,6 +766,14 @@ run. See
 `D11_BLADE_PAYLOAD_READBACK_20260928.md` and
 `D11_BLADE_GEOMETRY_READBACK_20260928.md`.
 
+A maintained, pinned no-save ladder diagnostic now reconstructs the repaired
+access-ladder hierarchy in memory. Blender 5.0.1 and 5.2.0 matched all four
+ladder paths within `3.353e-7`. After the maintained push and blade-roll
+workers, the ladder worker left 392/400 repaired structural paths shared, no
+source-only paths, and eight repaired-only paths. This is static evidence; the
+scratch export command remains separately reviewed and unexecuted, and the
+`native-blend` gate remains blocked. See `D11_LADDER_IN_MEMORY_20260929.md`.
+
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
 2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
