@@ -29,17 +29,38 @@ not proof of exported mesh payload, skin/bind identity, animation, collision,
 or native behavior. The new edit bone uses an arbitrary 0.25-unit length
 because the USF does not encode Blender edit-bone length.
 
-The ignored, disposable script is
+The initial ignored, disposable script was
 `local/blade_roll_reconstruct_probe_20260929.py`, SHA-256
 `7301bf519221195363ac6d0499abd35cdb794f0178941009886d2e8de4c8500f`.
-It verifies the pinned source Blend
+It verified the pinned source Blend
 `1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731`,
 repaired USF
 `49bfc77c1172a0e324934974d5612a13d121c3cee78ae7ca454468b61649e170`
-and reviewed SDK imports before and after the run. It is currently a local
-experiment, not a published or source-pinned toolchain command. A maintained
-command still needs portable inventory input, exact worker pinning, bounded
-result validation and tests before use in an export wrapper.
+and reviewed SDK imports before and after the run.
+
+The maintained `roadcraft.blender_blade_roll` command now resolves the accepted
+asset through the pinned inventory, pins its worker and imported diagnostic
+dependencies, checks source/tool bytes before and after Blender, and validates
+the exact two target paths, five source-only paths, 20 repaired-only paths,
+60-mesh coverage, matrix bounds and no-write fields. Host SHA-256 is
+`b8417528ca746f69a56bf1a636779efafd3ae42342a939184c753c0c711d4541`;
+worker SHA-256 is
+`df8d94c1712e35ec7aee87883d3b1bfd571b1bbbe688cd46b9ddf39be79c2787`.
+The maintained command also exited 0 with `IN_MEMORY_BLADE_ROLL_MATCH` in both
+Blender 5.0.1 and 5.2.0, reproducing the table above. Four focused validator
+tests passed. Run it with either pinned Blender version:
+
+```powershell
+$tc = 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\Roadcraft Development Package\RoadCraftToolchain'
+$env:PYTHONPATH = "$tc\src"
+& 'C:\RC\RoadCraftDev\toolchain\.venv\Scripts\python.exe' -B -m roadcraft.blender_blade_roll `
+  --registry "$tc\project.json" `
+  --blender 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' `
+  --sdk-script-root 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\tools\bin\blender_to_usf_script'
+```
+
+The command accepts no save, export or output-file argument. It is a
+diagnostic and is not connected to an export wrapper.
 
 The existing normal scratch installer expects the old blade hierarchy. If a
 future combined repair inserts the roll first, its path mapping must be
