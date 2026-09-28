@@ -221,7 +221,10 @@ the SDK script root in `.codex/config.toml.example`; it uses the same optional
 official MCP SDK in `requirements-mcp.txt`. `blender_status` checks the pinned
 binary and reads its `--version` without opening a project. `usf_roundtrip`
 requires an absolute authoring-inventory path, that inventory's SHA-256 pin,
-and an asset name. It defaults to a no-write dry run. Set `run=true` for the
+and an asset name. The path and SHA-256 must match this checkout's
+`project.json` `accepted.authoringInventory`; it rehashes the declared
+authoring source under `accepted.sourceRoot` before either a dry run or native
+roundtrip. It defaults to a no-write dry run. Set `run=true` for the
 background, factory-startup USF parser/serializer check, with a maximum
 900-second timeout. The serialized USF and helper result are disposed of in
 `local/blender-mcp-scratch`; without `receipt_path`, the bridge receipt is

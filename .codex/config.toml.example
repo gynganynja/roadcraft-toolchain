@@ -19,6 +19,8 @@ tool_timeout_sec = 180
 
 # Separate scratch diagnostic. Pin the exact installed blender.exe with
 # `roadcraft verify --file <absolute-blender.exe> --json` before enabling it.
+# Its USF tool accepts only the inventory pinned by this checkout's
+# project.json and verifies the accepted authoring source before execution.
 # This server exposes no Blender project editing or native .blend export.
 [mcp_servers.roadcraft_blender_scratch]
 command = "C:/RC/RoadCraftDev/toolchain/.venv/Scripts/python.exe"

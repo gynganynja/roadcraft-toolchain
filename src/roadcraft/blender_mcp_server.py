@@ -29,7 +29,8 @@ TOOL_NAMES = ("blender_status", "usf_roundtrip")
 INSTRUCTIONS = (
     "This is a separate Blender scratch diagnostic, not a Blender editing or export API. "
     "blender_status only probes the operator-pinned executable's version. "
-    "usf_roundtrip reads one authoring-inventory-pinned export.usf and disposes of "
+    "usf_roundtrip requires the inventory accepted by project.json, verifies "
+    "its current authoring source, reads one pinned export.usf, and disposes of "
     "the serialized scratch copy. It never opens or writes a .blend, replaces source, "
     "or approves native export. Execution requires run=true; a durable receipt is "
     "written only to an explicit new JSON path under RoadCraftToolchain/local/jobs."
@@ -94,6 +95,43 @@ class BlenderTools:
         if not identity.get("matchesExpected") or not identity.get("unchangedDuringRead"):
             raise BlenderMCPError("Blender executable is missing, changed, or unstable")
         return identity
+
+    @staticmethod
+    def _require_accepted_inventory(inventory: Path, supplied_sha256: str) -> None:
+        """Bind the caller's inventory to this project's accepted, live source."""
+        registry_path = TOOLCHAIN_ROOT / "project.json"
+        try:
+            before = file_sha256(registry_path)
+            registry = core.read_registry(registry_path)
+            accepted = registry.get("accepted", {})
+            pin = accepted.get("authoringInventory")
+            source_root = accepted.get("sourceRoot")
+            if (not isinstance(pin, dict) or not pin.get("sha256") or
+                    not source_root):
+                raise BlenderMCPError(
+                    "project.json needs accepted.authoringInventory and sourceRoot pins")
+            if (inventory != Path(pin["path"]).resolve() or
+                    supplied_sha256.lower() != pin["sha256"]):
+                raise BlenderMCPError(
+                    "caller inventory must match project.json accepted.authoringInventory")
+            identity = core.file_identity(pin["path"], pin["sha256"])
+            if not identity.get("matchesExpected") or not identity.get("unchangedDuringRead"):
+                raise BlenderMCPError("accepted authoring inventory differs from its registry pin")
+            declared_root = core.load_json(inventory).get("sourceRoot")
+            if (not isinstance(declared_root, str) or
+                    Path(declared_root).resolve(strict=True) !=
+                    Path(source_root).resolve(strict=True)):
+                raise BlenderMCPError(
+                    "accepted authoring inventory sourceRoot differs from project.json")
+            verification = core.verify_authoring_inventory(inventory, source_root)
+            if not verification["passed"]:
+                raise BlenderMCPError("accepted authoring source differs from inventory")
+            if file_sha256(registry_path) != before:
+                raise BlenderMCPError("project.json changed during authoring preflight")
+        except (core.RoadcraftError, OSError, KeyError, TypeError, ValueError) as exc:
+            if isinstance(exc, BlenderMCPError):
+                raise
+            raise BlenderMCPError(f"accepted authoring preflight failed: {exc}") from exc
 
     def blender_status(self) -> dict[str, Any]:
         """Check the fixed Blender executable pin, SDK parser, helper, and `--version`; do not open a project."""
@@ -163,10 +201,11 @@ class BlenderTools:
                 raise BlenderMCPError("receipt path must name a JSON file under local/jobs")
             if requested_receipt.exists():
                 raise BlenderMCPError("receipt already exists; choose a new path")
-        self._require_blender()
         if not self._roundtrip_lock.acquire(blocking=False):
             raise BlenderMCPError("Another Blender scratch roundtrip is already running")
         try:
+            self._require_accepted_inventory(inventory, inventory_sha256)
+            self._require_blender()
             if run and requested_receipt is None:
                 # An ephemeral bridge receipt is needed to verify Blender's
                 # output, then TemporaryDirectory disposes of it.

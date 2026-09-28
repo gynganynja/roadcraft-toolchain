@@ -46,12 +46,24 @@ class BlenderMCPTests(unittest.TestCase):
         self.source = self.project / "models/cat_d11t/export.usf"
         self.source.parent.mkdir(parents=True)
         self.source.write_bytes(b"synthetic repaired USF")
+        self.reference = self.project / "models/cat_d11t/reference.blend"
+        self.reference.write_bytes(b"synthetic authoring reference")
         inventory = capture_source_inventory(self.project, [{
             "asset": "cat_d11t", "exportMethod": "usf-repair",
-            "files": [{"path": "models/cat_d11t/export.usf", "role": "build-usf"}],
+            "files": [{"path": "models/cat_d11t/export.usf", "role": "build-usf"},
+                      {"path": "models/cat_d11t/reference.blend", "role": "blend-reference"}],
         }])
         self.inventory = self.root / "inventory.json"
         self.inventory.write_text(json.dumps(inventory), encoding="utf-8")
+        (self.root / "project.json").write_text(json.dumps({
+            "schemaVersion": 1,
+            "accepted": {
+                "authoringInventory": {"path": "inventory.json",
+                                       "sha256": file_sha256(self.inventory)},
+                "sourceRoot": str(self.project),
+            },
+            "candidates": {},
+        }), encoding="utf-8")
         self.blender = self.root / "blender.exe"
         self.blender.write_bytes(b"fake pinned Blender executable")
         self.sdk = self.root / "sdk"
@@ -141,8 +153,56 @@ class BlenderMCPTests(unittest.TestCase):
             self._request(run=True, receipt_path=str(self.root / "outside.json"))
         self.source.write_bytes(b"changed")
         with mock.patch.object(adapter.subprocess, "run", side_effect=self._fake_blender):
-            with self.assertRaisesRegex(blender_bridge.BlenderBridgeError, "differs"):
+            with self.assertRaisesRegex(adapter.BlenderMCPError, "source differs"):
                 self._request(run=True)
+
+    def test_rejects_alternate_self_consistent_inventory_before_blender(self):
+        other_root = self.root / "other-project"
+        other_usf = other_root / "models/cat_d11t/export.usf"
+        other_usf.parent.mkdir(parents=True)
+        other_usf.write_bytes(b"different but self-consistent USF")
+        alternate = capture_source_inventory(other_root, [{
+            "asset": "cat_d11t", "exportMethod": "usf-repair",
+            "files": [{"path": "models/cat_d11t/export.usf", "role": "build-usf"}],
+        }])
+        alternate_path = self.root / "alternate.json"
+        alternate_path.write_text(json.dumps(alternate), encoding="utf-8")
+        with mock.patch.object(adapter.subprocess, "run", side_effect=self._fake_blender):
+            with self.assertRaisesRegex(adapter.BlenderMCPError, "accepted.authoringInventory"):
+                self.tools.usf_roundtrip("cat_d11t", str(alternate_path),
+                                         file_sha256(alternate_path), run=True)
+        self.assertEqual(self.commands, [])
+        self.assertFalse(self.settings.scratch_root.exists())
+
+    def test_rejects_changed_non_usf_authoring_source_before_blender(self):
+        self.reference.write_bytes(b"changed authoring reference")
+        with mock.patch.object(adapter.subprocess, "run", side_effect=self._fake_blender):
+            with self.assertRaisesRegex(adapter.BlenderMCPError, "source differs"):
+                self._request()
+        self.assertEqual(self.commands, [])
+        self.assertFalse(self.settings.scratch_root.exists())
+
+    def test_rejects_registry_pin_change_before_blender(self):
+        registry_path = self.root / "project.json"
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        registry["accepted"]["authoringInventory"]["sha256"] = "0" * 64
+        registry_path.write_text(json.dumps(registry), encoding="utf-8")
+        with mock.patch.object(adapter.subprocess, "run", side_effect=self._fake_blender):
+            with self.assertRaisesRegex(adapter.BlenderMCPError, "accepted.authoringInventory"):
+                self._request()
+        self.assertEqual(self.commands, [])
+
+    def test_rejects_registry_source_root_mismatch_before_blender(self):
+        other_root = self.root / "other-project"
+        other_root.mkdir()
+        registry_path = self.root / "project.json"
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        registry["accepted"]["sourceRoot"] = str(other_root)
+        registry_path.write_text(json.dumps(registry), encoding="utf-8")
+        with mock.patch.object(adapter.subprocess, "run", side_effect=self._fake_blender):
+            with self.assertRaisesRegex(adapter.BlenderMCPError, "sourceRoot differs"):
+                self._request()
+        self.assertEqual(self.commands, [])
 
     def test_refuses_concurrent_run_and_invalid_arguments(self):
         self.assertTrue(self.tools._roundtrip_lock.acquire(blocking=False))
