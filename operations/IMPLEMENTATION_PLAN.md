@@ -804,6 +804,15 @@ The variant-specific no-save check is now available as a maintained, pinned
 command in both source trees. See
 `D11_VARIANT_IN_MEMORY_RECONSTRUCTION_20260929.md`.
 
+A pinned Blender 5.2.0 no-save composition check has now applied the base
+push-arm, blade-roll, ladder, seven-bone and blade-normal repairs together,
+then installed the wiper hook. The 400 repaired structural paths stayed
+unchanged after the hook; 60 blade normal attributes were installed on the
+reviewed mesh data. The hook did not bake animation because no export ran.
+This narrows the combined-scene integration risk but does not change the
+pending scratch export command or the blocked native-Blend gate. See
+`D11_FULL_IN_MEMORY_REPAIR_COMPOSITION_20260929.md`.
+
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
 2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
