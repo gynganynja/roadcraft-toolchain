@@ -10,13 +10,16 @@ The contract-hash flag is rejected outside `--execute`.
 
 The [current no-write plan](d11_aaa_native_capture_plan_c0de2026.json) uses run ID
 `c0de2026` and contract SHA-256
-`8cd248a4ee027f8de22113dc653b18e7a08b04a288dbbd3ee2dd9619e2be5d33`.
+`64137c9b05bca412e41ecce8b490be978d414c6c74aefcd7963425e90d90484f`.
+The complete plan file SHA-256 is
+`994b0d8f8ed00ea24363b31a2275c3f87e0998628dd933a8a89327e9c73bd9f6`.
 The earlier [a1b2c3d4 plan](d11_aaa_native_capture_plan_a1b2c3d4.json)
 is retained as historical evidence; its runner hash and contract hash no longer
 authorize `--execute` after the exit-telemetry patch.
-It declares 248 required evidence files, including the outer receipt, baseline
-backup, three nested reports, 45 camera and 45 capture probe records with
-transport logs, and 45 copied PNGs. Six hidden-geometry probe files are
+It declares 383 required evidence files, including the outer receipt, baseline
+backup, three nested reports, 45 camera, 45 pre-capture, and 45 capture probe
+records with transport logs, 45 partial-view links, and 45 copied PNGs.
+Six hidden-geometry probe files are
 optional because the editor API can reject that supplemental query. The
 contract separately names three variant run directories, 45 engine screenshot
 sources, ten transient lock/stage/temporary-receipt or directory paths, and the
@@ -24,7 +27,9 @@ reserved recovery-receipt name. It also names the per-variant editor-data,
 temporary, and optional local-profile directory roots; their nested editor
 byproducts are not pinned evidence. It pins the runner, candidate, baseline, prototype route,
 and selected audited package receipt path, SHA-256, and status, plus a
-canonical SHA-256 over 1,644 project-source pins. Each variant names the
+canonical SHA-256 over 1,644 project-source pins. It also pins six
+partial-linker Python modules and five helper source/template files, and
+rechecks them before native capture. Each variant names the
 validation scene and its SHA-256 and the 15 camera offsets. Planned pixel
 resolution and runtime lighting are explicitly `unknown`; successful runs
 record the actual PNG dimensions per image. Nothing is inferred for historical
@@ -44,10 +49,14 @@ states before and after each geometry, camera, screenshot-trigger, and copy
 action. The runner retains a Windows handle to the observed child engine and
 records its exact unsigned exit code and hexadecimal form if that object exits.
 Each view also has a full start/end interval, including the 1.5-second camera
-settle and screenshot-source guard, so an exit between camera response and
-capture request is localized. A failed action is marked `FAIL` even if rollback
-later restores the baseline. These are code and synthetic-test results, not a
-new native capture or an explanation of the historical exit.
+settle, screenshot-source guard and pre-screenshot `Read` action, so an exit
+between camera response and capture request is localized. The partial link
+ties those action windows to the exact three probe transports and PNG while
+keeping pair eligibility false. A failed action is marked `FAIL` even if
+rollback later restores the baseline. The outer receipt hashes every required
+output except itself after rollback; read-only postflight rechecks the full
+roster against the externally pinned plan. These are code and synthetic-test
+results, not a new native capture or an explanation of the historical exit.
 
 This is an **output identity and diagnostic step**, not a successful native
 capture. The existing [`capture` recipe](d11_aaa_native_preflight_recipe.json)
@@ -85,7 +94,7 @@ editor disconnect or establish visual or campaign acceptance. Do not place
 The [versioned patch manifest](patches/capture_candidate_native.patch_manifest.json)
 records base SHA-256 `b3670ff30afeb06e94301f68e12bf62d3857c5f21f1958ccc982ced2fb04831d`
 and patched SHA-256
-`89fc71ee14751f77ba7b79a1c0714b0d6df85bee4c526955d312e23c234914da`.
+`369b8a5c472ec4966ac589d3fae9545cfde9570e68f42b7705b1597a36b1f025`.
 The archived base, patched copy, and unified diff are adjacent to that manifest.
 The synthetic contract tests import the patched copy; local verification also
 checks that the live Steam runner has the same patched hash.

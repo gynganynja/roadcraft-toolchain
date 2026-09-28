@@ -138,6 +138,9 @@ class NativePartialViewTests(unittest.TestCase):
             self.assertFalse(record["pairProtocolEligible"])
             self.assertFalse(record["loadedSceneVerified"])
             self.assertFalse(record["declaredTriggerWindow"]["exactTriggerUtcKnown"])
+            self.assertEqual(record["declaredTriggerWindow"]["startedUtc"], when(2.4))
+            self.assertNotEqual(record["declaredTriggerWindow"]["startedUtc"],
+                                record["transports"]["captureTrigger"]["requestSentUtc"])
             self.assertEqual(record["screenshot"]["resolutionPixels"], [1, 1])
             self.assertFalse(record["preScreenshotReported"]["truckLocalLights"][0]["enabled"])
             self.assertTrue(record["postTriggerReported"]["truckLocalLights"][0]["enabled"])
@@ -189,6 +192,21 @@ class NativePartialViewTests(unittest.TestCase):
             overlap["action_events"][3]["startedUtc"] = when(2.0)
             with self.assertRaisesRegex(PartialViewError, "overlap"):
                 build_partial_view(**overlap)
+
+    def test_rejects_camera_drift_before_screenshot(self) -> None:
+        with TemporaryDirectory() as directory:
+            args = fixture(Path(directory))
+            pre = args["pre_transport"]
+            row = json.loads(pre.read_text(encoding="utf-8"))
+            changed = row["response"].replace("cameraWorld pos 0.1 2 3",
+                                               "cameraWorld pos 0.2 2 3")
+            row["response"] = changed
+            raw = changed.encode("utf-8") + b"\0"
+            row["responseBase64"] = base64.b64encode(raw).decode()
+            row["responseBytes"] = len(raw)
+            pre.write_text(json.dumps(row), encoding="utf-8")
+            with self.assertRaisesRegex(PartialViewError, "Camera transform changed"):
+                build_partial_view(**args)
 
     def test_rejects_tampered_saved_link_and_png(self) -> None:
         with TemporaryDirectory() as directory:

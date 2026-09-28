@@ -14,6 +14,7 @@ import ast
 from contextlib import contextmanager
 import datetime as dt
 import hashlib
+import importlib
 import importlib.util
 import json
 import os
@@ -63,6 +64,21 @@ EDITOR_CONFIG_NAMES = (
     "editor.cfg", "previewer_tpl.cfg", "thumbnails_tpl.cfg",
     "thumbnails_prefab.cfg", "terraforming_converter.cfg",
 )
+TOOLCHAIN_SRC = WORKSPACE / "RoadCraftToolchain" / "src"
+PARTIAL_LINKER_MODULES = (
+    "__init__.py", "native_capture_partial.py", "native_capture_observation.py",
+    "native_capture_postflight.py", "review.py", "core.py",
+)
+HELPER_SOURCE_FILES = {
+    "nativeControlsTemplate": WORKSPACE / "D11_Final_Candidate_20260925" /
+                              "native_controls_template.ps1",
+    "nativeAcceptance": WORKSPACE / "D11_Final_Candidate_20260925" /
+                        "native_acceptance.py",
+    "interiorCapture": OLD_INTERIOR / "capture_interior.py",
+    "cabSurvey": OLD_INTERIOR / "capture_cab_survey.py",
+    "syntaxCheck": WORKSPACE / "D11_All_Repairs_20260925" / "handling" /
+                   "syntax_check.ps1",
+}
 
 
 def guard(condition: bool, message: str) -> None:
@@ -79,7 +95,20 @@ def sha(path: Path) -> str:
     return digest.hexdigest()
 
 
-def canonical_sha256(value: dict) -> str:
+def sha_stable(path: Path) -> str:
+    """Hash one plain output file while rejecting a concurrent change."""
+    guard(path.is_file() and not path.is_symlink(),
+          f"Required capture output is missing or linked: {path}")
+    before = path.stat()
+    digest = sha(path)
+    after = path.stat()
+    guard((before.st_size, before.st_mtime_ns, before.st_ino) ==
+          (after.st_size, after.st_mtime_ns, after.st_ino),
+          f"Required capture output changed while hashing: {path}")
+    return digest
+
+
+def canonical_sha256(value: object) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True,
                                    separators=(",", ":")).encode("utf-8")).hexdigest()
 
@@ -97,6 +126,47 @@ def copy_exclusive(source: Path, target: Path) -> None:
         shutil.copyfileobj(input_stream, output_stream, length=8 * 1024 * 1024)
         output_stream.flush()
         os.fsync(output_stream.fileno())
+
+
+def partial_linker_source_pins() -> dict[str, str]:
+    """Pin the local verifier source that will interpret native transports."""
+    root = TOOLCHAIN_SRC / "roadcraft"
+    paths = {name: root / name for name in PARTIAL_LINKER_MODULES}
+    guard(all(path.is_file() and not path.is_symlink() for path in paths.values()),
+          "Partial-view linker source is missing or linked")
+    return {f"roadcraft/{name}": sha(path) for name, path in paths.items()}
+
+
+def helper_source_pins() -> dict[str, dict[str, str]]:
+    """Pin the script template and code that generate/send the exact requests."""
+    guard(all(path.is_file() and not path.is_symlink()
+              for path in HELPER_SOURCE_FILES.values()),
+          "Native helper source or template is missing or linked")
+    return {name: {"path": str(path), "sha256": sha(path)}
+            for name, path in HELPER_SOURCE_FILES.items()}
+
+
+def load_partial_linker(expected_pins: dict[str, str]):
+    """Import only the source declared in the reviewed output contract."""
+    guard(partial_linker_source_pins() == expected_pins,
+          "Partial-view linker source changed since the capture plan")
+    if str(TOOLCHAIN_SRC) not in sys.path:
+        sys.path.insert(0, str(TOOLCHAIN_SRC))
+    module = importlib.import_module("roadcraft.native_capture_partial")
+    expected = (TOOLCHAIN_SRC / "roadcraft" / "native_capture_partial.py").resolve()
+    guard(Path(module.__file__).resolve() == expected,
+          "Imported partial-view linker is not the reviewed local source")
+    for name in PARTIAL_LINKER_MODULES:
+        if name == "__init__.py":
+            imported = sys.modules["roadcraft"]
+        else:
+            imported = sys.modules.get("roadcraft." + name.removesuffix(".py"))
+        guard(imported is not None and Path(imported.__file__).resolve() ==
+              (TOOLCHAIN_SRC / "roadcraft" / name).resolve(),
+              f"Imported partial-view dependency differs from reviewed source: {name}")
+    guard(partial_linker_source_pins() == expected_pins,
+          "Partial-view linker source changed while importing")
+    return module
 
 
 def old_helpers():
@@ -539,7 +609,7 @@ def capture_contract(run_id: str, variants: tuple[str, ...],
             "cameraSpecs": {name: camera_specs[name] for name in views},
             "plannedResolutionPixels": {"status": "unknown"},
             "runtimeLighting": {"status": "unknown"},
-            "protocol": "SetCab camera probe, CaptureCab SaveScreenshot PNG, copied source image",
+            "protocol": "SetCab, ReadPreCapture, CaptureCab PNG, copied image, partial view link",
         }
         required_files.extend((run / "native_controls.ps1", run / "probe.scenario",
                                run / "stdout.log", run / "stderr.log",
@@ -551,9 +621,12 @@ def capture_contract(run_id: str, variants: tuple[str, ...],
         for view in views:
             required_files.extend((run / f"camera_{view}.json",
                                    run / f"camera_{view}.transport.log",
+                                   run / f"pre_capture_{view}.json",
+                                   run / f"pre_capture_{view}.transport.log",
                                    run / f"capture_{view}.json",
                                    run / f"capture_{view}.transport.log",
-                                   run / f"cab_{view}.png"))
+                                   run / f"cab_{view}.png",
+                                   run / f"partial_{view}.json"))
             screenshot_sources.append(WORKSPACE.parent / "root/bin/pc" /
                                       f"d11_cab_{run_id}{variant[:2]}_{view}.png")
     collisions = [path for path in (report, backup, recovery,
@@ -575,6 +648,9 @@ def capture_contract(run_id: str, variants: tuple[str, ...],
             "packageReceiptStatus": package_receipt_status,
             "sourcePinsSha256": canonical_sha256(pins),
             "sourcePinCount": len(pins),
+            "partialLinkerSource": str(TOOLCHAIN_SRC),
+            "partialLinkerSourcePins": partial_linker_source_pins(),
+            "helperSourcePins": helper_source_pins(),
             "variantContexts": contexts,
             "capturePlan": {"variants": list(variants),
                             "viewsPerVariant": list(views),
@@ -651,13 +727,45 @@ def png_dimensions(path: Path) -> list[int]:
     return [width, height]
 
 
+def save_partial_link(path: Path, record: dict, linker) -> str:
+    """Write one new partial receipt and recheck its saved bytes and inputs."""
+    with path.open("x", encoding="utf-8", newline="\n") as stream:
+        json.dump(record, stream, indent=2, ensure_ascii=False, allow_nan=False)
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    saved = json.loads(path.read_bytes())
+    checked = linker.verify_partial_view(saved)
+    guard(checked["status"] == "PARTIAL_VIEW_LINKAGE_CONSISTENT"
+          and checked["pairProtocolEligible"] is False,
+          "Saved partial-view link is inconsistent")
+    return sha(path)
+
+
+def required_output_digests(contract: dict) -> dict[str, str]:
+    """Bind the complete reviewed file roster, excluding the outer receipt."""
+    paths = contract["expectedOutputFiles"]
+    outer = contract["outerReceipt"]
+    guard(isinstance(paths, list) and paths.count(outer) == 1 and
+          len(paths) == len(set(paths)),
+          "Required capture output roster is inconsistent")
+    return {name: sha_stable(Path(name)) for name in paths if name != outer}
+
+
 def capture_variant(base, survey, variant: str, run_id: str,
                     package_sha: str, pins: dict[str, str],
                     views: tuple[str, ...], full_capture: bool,
-                    context: dict, contract_sha: str) -> dict:
+                    context: dict, contract_sha: str,
+                    linker_pins: dict[str, str],
+                    helper_pins: dict[str, dict[str, str]]) -> dict:
+    linker = load_partial_linker(linker_pins)
+    guard(helper_source_pins() == helper_pins,
+          "Native helper generation source changed since the capture plan")
     run = RUNS / f"aaa_{variant}_{run_id}"
     run.mkdir(parents=True)
     helper = controls_with_geom_probe(base, survey, run, run_id)
+    guard(helper_source_pins() == helper_pins,
+          "Native helper generation source changed during generation")
     scene = PROJECT / "mods_source/xscenes/mods" / SCENES[variant]
     scenario = run / "probe.scenario"
     scenario.write_text(f'''open "{scene.as_posix()}"
@@ -722,6 +830,7 @@ exit
         for name in views:
             mode = name.title().replace("_", "")
             with view_boundary(report, base, proc, engine, name):
+                action_start = len(report.get("actionEvents", []))
                 timed_action(report, base, proc, engine, "SetCab" + mode,
                              lambda name=name, mode=mode: base.h.probe(
                                  run, "camera_" + name, helper, engine_pid,
@@ -733,6 +842,10 @@ exit
                              lambda: guard(not source.exists() and not source.is_symlink(),
                                            f"Native screenshot output already exists: {source}"),
                              view=name)
+                timed_action(report, base, proc, engine, "ReadPreCapture",
+                             lambda name=name: base.h.probe(
+                                 run, "pre_capture_" + name, helper, engine_pid,
+                                 "Read"), view=name)
                 timed_action(report, base, proc, engine, "CaptureCab" + mode,
                              lambda name=name, mode=mode: base.h.probe(
                                  run, "capture_" + name, helper, engine_pid,
@@ -740,12 +853,38 @@ exit
                 target = run / f"cab_{name}.png"
                 timed_action(report, base, proc, engine, "SaveScreenshot:" + name,
                              lambda: base.screenshot(source, target, proc), view=name)
+                partial_path = run / f"partial_{name}.json"
+                partial = linker.build_partial_view(
+                    run_id=run_id[:-2], variant=variant, view=name,
+                    engine_pid=engine_pid, scene=scene, helper=helper,
+                    camera_transport=run / f"camera_{name}.json",
+                    pre_transport=run / f"pre_capture_{name}.json",
+                    capture_transport=run / f"capture_{name}.json",
+                    image=target,
+                    action_events=report["actionEvents"][action_start:])
+                guard(partial["pairProtocolEligible"] is False
+                      and partial["loadedSceneVerified"] is False
+                      and partial["nativePostflightVerified"] is False,
+                      "Partial link must not claim matched-pair or scene proof")
+                partial_sha = save_partial_link(partial_path, partial, linker)
                 report["views"].append({
                     "view": name, "path": str(target), "sha256": sha(target),
                     "cameraProbeSha256": sha(run / f"camera_{name}.json"),
+                    "cameraTransportLogSha256": sha(run / f"camera_{name}.transport.log"),
+                    "preCaptureProbeSha256": sha(run / f"pre_capture_{name}.json"),
+                    "preCaptureTransportLogSha256": sha(run / f"pre_capture_{name}.transport.log"),
+                    "captureProbeSha256": sha(run / f"capture_{name}.json"),
+                    "captureTransportLogSha256": sha(run / f"capture_{name}.transport.log"),
+                    "partialViewLinkPath": str(partial_path),
+                    "partialViewLinkSha256": partial_sha,
                     "resolutionPixels": png_dimensions(target),
                 })
         guard(project_pins(PROJECT) == pins, "Candidate project changed during capture")
+        guard(sha(helper) == report["helperSha256"],
+              "Generated native helper changed during capture")
+        guard(partial_linker_source_pins() == linker_pins and
+              helper_source_pins() == helper_pins,
+              "Partial-view or helper source changed during capture")
         guard(sha(LIVE) == package_sha, "Installed candidate changed during capture")
         report["status"] = ("D11_AAA_NATIVE_CAPTURES_READY"
                             if full_capture
@@ -775,8 +914,12 @@ exit
     guard(report["status"] in ("D11_AAA_NATIVE_CAPTURES_READY",
                                "D11_AAA_NATIVE_TRIAGE_CAPTURES_READY"),
           f"Native capture failed for {variant}: {report.get('error')}")
+    partial_links = [{"view": row["view"], "path": row["partialViewLinkPath"],
+                      "sha256": row["partialViewLinkSha256"]}
+                     for row in report["views"]]
     return {"variant": variant, "report": str(run / "report.json"),
             "reportSha256": sha(run / "report.json"), "views": len(report["views"]),
+            "partialViewLinksSha256": canonical_sha256(partial_links),
             "loadedInteriorGeom": report["loadedInteriorGeom"]}
 
 
@@ -884,6 +1027,8 @@ def main() -> None:
         print(json.dumps(preview, indent=2))
         return
 
+    # Import the reviewed interpreter before touching the native lock or PAK.
+    load_partial_linker(contract["partialLinkerSourcePins"])
     NATIVE.mkdir(parents=True, exist_ok=True)
     RUNS.mkdir(parents=True, exist_ok=True)
     run_id = args.run_id
@@ -936,7 +1081,8 @@ def main() -> None:
             report["variants"].append(capture_variant(
                 base, survey, variant, run_id + variant[:2], expected, pins,
                 views, full_capture, contract["variantContexts"][variant],
-                contract_sha))
+                contract_sha, contract["partialLinkerSourcePins"],
+                contract["helperSourcePins"]))
         report["status"] = ("NATIVE_CAPTURES_READY_ROLLBACK_PENDING" if full_capture
                             else "NATIVE_TRIAGE_CAPTURES_READY_ROLLBACK_PENDING")
     except BaseException as exc:
@@ -970,11 +1116,22 @@ def main() -> None:
         finally:
             # Any incomplete stage/restore file is retained for inspection.
             # Another process may have won a path race; never delete its file.
+            if report["status"] in (
+                    "NATIVE_CAPTURES_READY_BASELINE_RESTORED",
+                    "NATIVE_TRIAGE_CAPTURES_READY_BASELINE_RESTORED"):
+                try:
+                    report["requiredOutputSha256"] = required_output_digests(contract)
+                except BaseException as output_error:
+                    report.update(status="FAIL_OUTPUT_AUDIT", outputAuditError=repr(output_error))
             report["finishedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
             if receipt_owned:
                 save(report_path, report)
             if report.get("rollback", {}).get("status") in ("BASELINE_RESTORED", "NO_SWAP_NEEDED"):
                 LOCK.unlink()
+    guard(report["status"] in (
+        "NATIVE_CAPTURES_READY_BASELINE_RESTORED",
+        "NATIVE_TRIAGE_CAPTURES_READY_BASELINE_RESTORED"),
+        f"Native output audit failed: {report.get('outputAuditError')}")
     print(json.dumps({"status": report["status"], "report": str(report_path),
                       "variants": report["variants"]}, indent=2))
 

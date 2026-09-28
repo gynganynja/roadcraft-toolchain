@@ -198,7 +198,7 @@ def build_partial_view(*, run_id: str, variant: str, view: str, engine_pid: int,
     _need(bool(helper_raw), "Native helper is empty")
     windows, parsed = _windows(action_events, view, engine_pid)
     mode = view.title().replace("_", "")
-    camera_pin, _camera_observed, camera_raw = _transport(
+    camera_pin, camera_observed, camera_raw = _transport(
         camera_transport, "camera transport", "SetCab" + mode, False,
         engine_pid, helper_sha)
     pre_pin, pre_observed, pre_raw = _transport(
@@ -228,10 +228,19 @@ def build_partial_view(*, run_id: str, variant: str, view: str, engine_pid: int,
               _utc(pin["responseReceivedUtc"], f"{key} response") <= end,
               f"{key} transport falls outside its action window")
     pre_received = _utc(pre_pin["responseReceivedUtc"], "pre-screenshot response")
-    capture_started = _utc(capture_pin["requestSentUtc"], "capture request")
+    # The helper records requestSentUtc after its Send call. The runner's
+    # capture action start is the available lower bound for that call.
+    capture_started = parsed["captureTrigger"][0]
     _need(0 <= (capture_started - pre_received).total_seconds()
           <= MAX_PRE_TRIGGER_GAP_SECONDS,
           "Pre-screenshot response is not immediately before CaptureCab")
+    _need(camera_observed["reported"]["activePlayCamera"] ==
+          pre_observed["reported"]["activePlayCamera"] ==
+          capture_observed["reported"]["activePlayCamera"],
+          "Camera transform changed between set, pre-read, and capture")
+    _need(camera_observed["reported"]["activePlayCameraResolution"] ==
+          pre_observed["reported"]["activePlayCameraResolution"],
+          "Camera resolution changed after SetCab")
     _need(pre_observed["reported"]["activePlayCameraResolution"] ==
           pre_observed["reported"]["videoConfigWindowSize"],
           "Pre-screenshot camera and video resolution differ")
@@ -257,7 +266,7 @@ def build_partial_view(*, run_id: str, variant: str, view: str, engine_pid: int,
                        "captureTrigger": capture_pin},
         "actionWindows": windows,
         "declaredTriggerWindow": {
-            "startedUtc": capture_pin["requestSentUtc"],
+            "startedUtc": windows["captureTrigger"]["startedUtc"],
             "endedUtc": capture_pin["responseReceivedUtc"],
             "exactTriggerUtcKnown": False,
         },

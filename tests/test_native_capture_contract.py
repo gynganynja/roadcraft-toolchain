@@ -6,7 +6,7 @@ write an installed package, or perform a native capture.
 
 from __future__ import annotations
 
-from contextlib import redirect_stdout
+from contextlib import ExitStack, redirect_stdout
 import difflib
 from hashlib import sha256
 import importlib.util
@@ -45,6 +45,23 @@ class NativeCaptureContractTests(unittest.TestCase):
         self.runner.LOCK = self.runner.NATIVE / "candidate_capture.lock.json"
         self.runner.WORKSPACE = self.root / "sdk" / "workspace"
         self.runner.PROJECT = self.root / "candidate_project"
+        workspace = self.root / "reviewed_helper_sources"
+        self.runner.TOOLCHAIN_SRC = RUNNER.parents[2] / "src"
+        self.runner.HELPER_SOURCE_FILES = {
+            "nativeControlsTemplate": workspace / "D11_Final_Candidate_20260925" /
+                                      "native_controls_template.ps1",
+            "nativeAcceptance": workspace / "D11_Final_Candidate_20260925" /
+                                "native_acceptance.py",
+            "interiorCapture": workspace / "D11_Interior_Repair_20260926" /
+                               "capture_interior.py",
+            "cabSurvey": workspace / "D11_Interior_Repair_20260926" /
+                         "capture_cab_survey.py",
+            "syntaxCheck": workspace / "D11_All_Repairs_20260925" /
+                           "handling/syntax_check.ps1",
+        }
+        for name, path in self.runner.HELPER_SOURCE_FILES.items():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(f"synthetic pinned {name}".encode("utf-8"))
         self.runner.LIVE = self.root / "installed" / "cat_d11t.pak"
         self.runner.LIVE.parent.mkdir()
         self.runner.LIVE.write_bytes(b"accepted baseline")
@@ -94,18 +111,23 @@ class NativeCaptureContractTests(unittest.TestCase):
                          manifest["patchedSha256"])
         self.assertEqual(self.runner.canonical_sha256(plan["outputContract"]),
                          plan["outputContractSha256"])
-        self.assertEqual(len(plan["outputContract"]["expectedOutputFiles"]), 248)
+        self.assertEqual(len(plan["outputContract"]["expectedOutputFiles"]), 383)
 
     def test_predeclares_exact_full_capture_without_writing(self) -> None:
         contract = self.contract()
         self.assertEqual(contract["runId"], "abcdef12")
-        self.assertEqual(len(contract["expectedOutputFiles"]), 248)
+        self.assertEqual(len(contract["expectedOutputFiles"]), 383)
         self.assertEqual(len(contract["optionalOutputFiles"]), 6)
         self.assertEqual(len(contract["transientPaths"]), 10)
         self.assertEqual(len(contract["screenshotSourceFiles"]), 45)
         self.assertEqual(len(contract["runtimeDirectoryRoots"]), 3)
         self.assertEqual(contract["lock"], str(self.runner.LOCK))
-        self.assertEqual(len(set(contract["expectedOutputFiles"])), 248)
+        self.assertEqual(len(set(contract["expectedOutputFiles"])), 383)
+        self.assertEqual(contract["partialLinkerSource"], str(self.runner.TOOLCHAIN_SRC))
+        self.assertEqual(contract["partialLinkerSourcePins"],
+                         self.runner.partial_linker_source_pins())
+        self.assertEqual(contract["helperSourcePins"],
+                         self.runner.helper_source_pins())
         self.assertEqual(contract["sourcePinCount"], 1)
         self.assertFalse(contract["prototype"])
         self.assertEqual(contract["packageReceipt"], str(self.package_receipt))
@@ -119,6 +141,12 @@ class NativeCaptureContractTests(unittest.TestCase):
             self.assertEqual(context["runtimeLighting"], {"status": "unknown"})
             self.assertEqual(context["sceneSha256"],
                              self.runner.sha(Path(context["scene"])))
+            run = Path(contract["variantRuns"][variant])
+            expected = set(contract["expectedOutputFiles"])
+            for view in self.runner.VIEWS:
+                self.assertIn(str(run / f"pre_capture_{view}.json"), expected)
+                self.assertIn(str(run / f"pre_capture_{view}.transport.log"), expected)
+                self.assertIn(str(run / f"partial_{view}.json"), expected)
         self.assertFalse(self.runner.NATIVE.exists())
         self.assertEqual(self.contract(), contract)
         changed = self.runner.capture_contract(
@@ -138,6 +166,163 @@ class NativeCaptureContractTests(unittest.TestCase):
             package_receipt_status="D11_AAA_TEXTURE_PROTO_PACKAGE_AUDITED")
         self.assertNotEqual(self.runner.canonical_sha256(prototype),
                             self.runner.canonical_sha256(contract))
+
+    def test_partial_linker_requires_reviewed_local_source(self) -> None:
+        pins = self.runner.partial_linker_source_pins()
+        module = self.runner.load_partial_linker(pins)
+        self.assertEqual(Path(module.__file__).resolve(),
+                         (self.runner.TOOLCHAIN_SRC / "roadcraft" /
+                          "native_capture_partial.py").resolve())
+        forged = dict(pins)
+        forged["roadcraft/native_capture_partial.py"] = "0" * 64
+        with self.assertRaisesRegex(RuntimeError, "changed since the capture plan"):
+            self.runner.load_partial_linker(forged)
+
+    def test_partial_link_receipt_is_written_once_and_verified(self) -> None:
+        target = self.root / "partial_front_seat.json"
+        observed = []
+
+        def verify(saved):
+            observed.append(saved)
+            return {"status": "PARTIAL_VIEW_LINKAGE_CONSISTENT",
+                    "pairProtocolEligible": False}
+
+        record = {"status": "PARTIAL_PRE_SCREENSHOT_CONTEXT",
+                  "pairProtocolEligible": False}
+        digest = self.runner.save_partial_link(
+            target, record, SimpleNamespace(verify_partial_view=verify))
+        self.assertEqual(digest, sha256(target.read_bytes()).hexdigest())
+        self.assertEqual(observed, [record])
+        with self.assertRaises(FileExistsError):
+            self.runner.save_partial_link(
+                target, record, SimpleNamespace(verify_partial_view=verify))
+
+    def test_outer_output_digests_cover_exact_roster_except_self(self) -> None:
+        outer = self.root / "candidate_capture_abcdef12.json"
+        helper = self.root / "native_controls.ps1"
+        image = self.root / "cab_front_seat.png"
+        helper.write_bytes(b"helper")
+        image.write_bytes(b"image")
+        contract = {"outerReceipt": str(outer),
+                    "expectedOutputFiles": [str(outer), str(helper), str(image)]}
+        self.assertEqual(self.runner.required_output_digests(contract), {
+            str(helper): sha256(b"helper").hexdigest(),
+            str(image): sha256(b"image").hexdigest(),
+        })
+        image.unlink()
+        with self.assertRaisesRegex(RuntimeError, "missing or linked"):
+            self.runner.required_output_digests(contract)
+        image.write_bytes(b"image")
+        with self.assertRaisesRegex(RuntimeError, "roster is inconsistent"):
+            self.runner.required_output_digests({
+                **contract,
+                "expectedOutputFiles": contract["expectedOutputFiles"] + [str(helper)],
+            })
+
+    def test_variant_records_pre_capture_read_and_six_event_partial_link(self) -> None:
+        run_id = "abcdef12ma"
+        view = "front_seat"
+        run = self.runner.RUNS / f"aaa_maroon_{run_id}"
+        helper = run / "native_controls.ps1"
+        probe_modes = []
+        partial_calls = []
+        proc = SimpleNamespace(pid=42, poll=lambda: None)
+
+        def launch_editor(run_path, _scenario):
+            (run_path / "stdout.log").write_text(
+                f"D11_STANDALONE_READY_{run_id}\n", encoding="utf-8")
+            (run_path / "stderr.log").write_text("", encoding="utf-8")
+            return proc, None, None
+
+        def probe(run_path, label, _helper, _pid, mode):
+            probe_modes.append((label, mode))
+            (run_path / f"{label}.json").write_text("{}", encoding="utf-8")
+            (run_path / f"{label}.transport.log").write_text("ok", encoding="utf-8")
+
+        def build_partial_view(**inputs):
+            partial_calls.append(inputs)
+            return {"pairProtocolEligible": False,
+                    "loadedSceneVerified": False,
+                    "nativePostflightVerified": False,
+                    "status": "PARTIAL_PRE_SCREENSHOT_CONTEXT"}
+
+        def screenshot(_source, target, _proc):
+            target.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00\x00\x00\x0dIHDR" +
+                               (1920).to_bytes(4, "big") +
+                               (1080).to_bytes(4, "big"))
+
+        def snapshot(_base, _proc, _engine):
+            return {"editorPid": 42, "editorExitCode": None, "enginePid": 43,
+                    "engineExit": {"status": "running"},
+                    "ownedProcesses": [{"pid": 43, "parentPid": 42,
+                                        "name": "Roadcraft ModEditor.exe"}]}
+
+        linker = SimpleNamespace(
+            build_partial_view=build_partial_view,
+            verify_partial_view=lambda _saved: {
+                "status": "PARTIAL_VIEW_LINKAGE_CONSISTENT",
+                "pairProtocolEligible": False,
+            })
+        engine = SimpleNamespace(pid=43, close=lambda: None)
+        base = SimpleNamespace(
+            h=SimpleNamespace(launch_editor=launch_editor, probe=probe,
+                              SDK=self.root / "sdk", EDITOR=self.root / "editor"),
+            find_engine_pid=lambda _pid: 43,
+            screenshot=screenshot)
+        survey = SimpleNamespace(VIEWS={view: self.camera_specs[view]})
+        pins = self.pins
+        context = {"scene": str(self.runner.PROJECT / "mods_source/xscenes/mods" /
+                                self.runner.SCENES["maroon"])}
+
+        def controls(_base, _survey, run_path, _id):
+            (run_path / "native_controls.ps1").write_text("helper", encoding="utf-8")
+            return helper
+
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(self.runner, "load_partial_linker",
+                                             return_value=linker))
+            stack.enter_context(patch.object(self.runner, "controls_with_geom_probe",
+                                             side_effect=controls))
+            stack.enter_context(patch.object(self.runner, "editor_mount",
+                                             return_value={"status": "ok"}))
+            stack.enter_context(patch.object(self.runner, "runtime_resource_mount",
+                                             return_value={"status": "ok"}))
+            stack.enter_context(patch.object(self.runner, "OwnedEngineHandle",
+                                             return_value=engine))
+            stack.enter_context(patch.object(self.runner, "owned_snapshot",
+                                             side_effect=snapshot))
+            stack.enter_context(patch.object(self.runner, "inspect_loaded_geom",
+                                             return_value={"status": "ok"}))
+            stack.enter_context(patch.object(self.runner, "close_owned_editor"))
+            stack.enter_context(patch.object(self.runner, "project_pins",
+                                             return_value=pins))
+            stack.enter_context(patch.object(self.runner.time, "sleep"))
+            stack.enter_context(patch.object(self.runner.shutil, "disk_usage",
+                                             return_value=SimpleNamespace(free=10_000_000_000)))
+            result = self.runner.capture_variant(
+                base, survey, "maroon", run_id, self.runner.sha(self.runner.LIVE),
+                pins, (view,), False, context, "a" * 64,
+                self.runner.partial_linker_source_pins(),
+                self.runner.helper_source_pins())
+        report = json.loads((run / "report.json").read_text(encoding="utf-8"))
+        self.assertEqual(probe_modes, [
+            ("camera_front_seat", "SetCabFrontSeat"),
+            ("pre_capture_front_seat", "Read"),
+            ("capture_front_seat", "CaptureCabFrontSeat"),
+        ])
+        self.assertEqual([row["action"] for row in partial_calls[0]["action_events"]],
+                         ["SetCabFrontSeat", "SettleCamera", "ScreenshotSourceGuard",
+                          "ReadPreCapture", "CaptureCabFrontSeat",
+                          "SaveScreenshot:front_seat"])
+        self.assertEqual(partial_calls[0]["run_id"], "abcdef12")
+        self.assertEqual(report["status"], "D11_AAA_NATIVE_TRIAGE_CAPTURES_READY")
+        self.assertEqual(report["views"][0]["partialViewLinkPath"],
+                         str(run / "partial_front_seat.json"))
+        self.assertEqual(result["partialViewLinksSha256"],
+                         self.runner.canonical_sha256([{
+                             "view": view, "path": report["views"][0]["partialViewLinkPath"],
+                             "sha256": report["views"][0]["partialViewLinkSha256"],
+                         }]))
 
     def test_any_existing_run_artifact_refuses_id_reuse(self) -> None:
         contract = self.contract()
@@ -213,7 +398,7 @@ class NativeCaptureContractTests(unittest.TestCase):
         self.assertEqual(plan["status"], "CAPTURE_OUTPUTS_DECLARED_NO_SWAP")
         self.assertEqual(plan["outputContractSha256"],
                          self.runner.canonical_sha256(plan["outputContract"]))
-        self.assertEqual(len(plan["outputContract"]["expectedOutputFiles"]), 248)
+        self.assertEqual(len(plan["outputContract"]["expectedOutputFiles"]), 383)
         self.assertFalse(self.runner.NATIVE.exists())
         self.assertEqual(self.runner.LIVE.read_bytes(), b"accepted baseline")
 
