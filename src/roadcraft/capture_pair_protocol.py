@@ -8,6 +8,8 @@ upgraded by assigning policy-level context labels after the fact.
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
@@ -23,6 +25,9 @@ HEX = re.compile(r"^[0-9a-f]{64}$")
 SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
 MAX_JSON_BYTES = 4 * 1024 * 1024
 MAX_IMAGE_BYTES = review.MAX_IMAGE_BYTES
+MAX_RAW_REPLY_BYTES = 65_536
+REQUEST_ID = re.compile(
+    r"\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9a-f]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}\Z")
 
 
 class CapturePairError(ValueError):
@@ -57,6 +62,15 @@ def _canonical(value: Any) -> bytes:
                           ensure_ascii=False, allow_nan=False).encode("utf-8")
     except (TypeError, ValueError) as exc:
         raise CapturePairError(f"Value is not canonical JSON: {exc}") from exc
+
+
+def _unique_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    row: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in row:
+            raise ValueError(f"Duplicate JSON key: {key}")
+        row[key] = value
+    return row
 
 
 def _file(pin: Any, base: Path, label: str, *, limit: int | None = None) -> tuple[Path, bytes]:
@@ -95,8 +109,9 @@ def _file(pin: Any, base: Path, label: str, *, limit: int | None = None) -> tupl
 def _json(pin: Any, base: Path, label: str) -> tuple[Path, dict[str, Any]]:
     path, raw = _file(pin, base, label, limit=MAX_JSON_BYTES)
     try:
-        value = json.loads(raw, parse_constant=lambda value: (_ for _ in ()).throw(
-            ValueError(f"Non-finite JSON value: {value}")))
+        value = json.loads(raw, object_pairs_hook=_unique_json_object,
+                           parse_constant=lambda value: (_ for _ in ()).throw(
+                               ValueError(f"Non-finite JSON value: {value}")))
     except (UnicodeError, ValueError) as exc:
         raise CapturePairError(f"{label} is invalid JSON: {exc}") from exc
     return path, _object(value, label)
@@ -127,15 +142,10 @@ def _vector(value: Any, label: str) -> list[int | float]:
     return value
 
 
-def _camera(value: Any, label: str) -> dict[str, Any]:
+def _measured_camera(value: Any, label: str) -> dict[str, Any]:
     row = _object(value, label)
-    _need(set(row) == {"basis", "spec", "position", "forward", "up"},
-          f"{label} needs basis, spec, position, forward, up")
-    _safe_id(row["basis"], f"{label}.basis")
-    _need(isinstance(row["spec"], list) and len(row["spec"]) == 2,
-          f"{label}.spec needs two offset vectors")
-    for index, spec in enumerate(row["spec"]):
-        _vector(spec, f"{label}.spec[{index}]")
+    _need(set(row) == {"position", "forward", "up"},
+          f"{label} needs only measured position, forward, up")
     for field in ("position", "forward", "up"):
         _vector(row[field], f"{label}.{field}")
     _need(any(row["forward"]) and any(row["up"]),
@@ -145,11 +155,13 @@ def _camera(value: Any, label: str) -> dict[str, Any]:
 
 def _lighting(value: Any, label: str) -> dict[str, Any]:
     row = _object(value, label)
-    _need({"environment", "localLights", "exposure", "tonemap", "rendererMode"}
-          <= set(row), f"{label} lacks measured lighting controls")
+    _need(set(row) == {"environment", "localLights", "exposure", "tonemap",
+                       "rendererMode"},
+          f"{label} needs only complete measured lighting controls")
     environment = _object(row["environment"], f"{label}.environment")
-    _need({"weather", "timeOfDay", "sunDirection", "ambientRgb"}
-          <= set(environment), f"{label}.environment is incomplete")
+    _need(set(environment) == {"weather", "timeOfDay", "sunDirection",
+                               "ambientRgb"},
+          f"{label}.environment needs only measured weather and light fields")
     _safe_id(environment["weather"], f"{label}.weather")
     hour = environment["timeOfDay"]
     _need(type(hour) in (int, float) and math.isfinite(hour) and 0 <= hour <= 24,
@@ -166,8 +178,8 @@ def _lighting(value: Any, label: str) -> dict[str, Any]:
     seen = set()
     for light in lights:
         light = _object(light, f"{label}.localLights item")
-        _need({"id", "enabled", "intensity"} <= set(light),
-              f"{label}.localLights item is incomplete")
+        _need(set(light) == {"id", "enabled", "intensity"},
+              f"{label}.localLights item needs only measured fields")
         light_id = _safe_id(light["id"], f"{label}.localLights ID")
         _need(light_id not in seen, f"{label}.localLights has duplicate IDs")
         seen.add(light_id)
@@ -410,14 +422,15 @@ def validate(pair_path: str | Path, *,
     _need(pair_file.stat().st_size <= MAX_JSON_BYTES,
           "Pair manifest exceeds size limit")
     try:
-        pair = json.loads(pair_file.read_bytes(), parse_constant=lambda value: (
-            _ for _ in ()).throw(ValueError(f"Non-finite JSON value: {value}")))
+        pair = json.loads(pair_file.read_bytes(), object_pairs_hook=_unique_json_object,
+                          parse_constant=lambda value: (
+                              _ for _ in ()).throw(ValueError(f"Non-finite JSON value: {value}")))
     except (UnicodeError, ValueError) as exc:
         raise CapturePairError(f"Pair manifest is invalid JSON: {exc}") from exc
     _object(pair, "pair manifest")
-    _need(pair.get("schemaVersion") == 1, "Unsupported pair schemaVersion")
+    _need(pair.get("schemaVersion") == 2, "Unsupported pair schemaVersion")
     protocol_path, protocol = _json(pair.get("protocol"), pair_file.parent, "protocol")
-    _need(protocol.get("schemaVersion") == 1, "Unsupported protocol schemaVersion")
+    _need(protocol.get("schemaVersion") == 2, "Unsupported protocol schemaVersion")
     protocol_id = _safe_id(protocol.get("id"), "protocol.id")
     protocol_sha = pair["protocol"]["sha256"]
     runner_path, _ = _file(protocol.get("runner"), protocol_path.parent, "protocol runner")
@@ -464,6 +477,7 @@ def validate(pair_path: str | Path, *,
     seen_capture_paths: dict[Path, str] = {}
     seen_capture_files: dict[tuple[int, int], str] = {}
     seen_run_ids: set[str] = set()
+    seen_request_ids: set[str] = set()
     run_refs: dict[str, tuple[Path, dict[str, Any]]] = {}
     for role in ("baseline", "candidate"):
         run_path, run = _json(runs[role], pair_file.parent, f"{role} run")
@@ -518,29 +532,79 @@ def validate(pair_path: str | Path, *,
                                                  f"{label} observation")
                 _unique_capture_file(observed_path, f"{label} observation",
                                      seen_capture_paths, seen_capture_files)
+                declared = _object(observed.get("declaredContext"),
+                                   f"{label} declared context")
+                _need(declared == {
+                    "runId": run_id, "role": role, "variant": variant,
+                    "view": view, "enginePid": pid,
+                    "protocolSha256": protocol_sha,
+                    "sceneSourceSha256": scene_sha,
+                    "camera": views[view],
+                }, f"{label} declared context differs from pinned run or protocol")
                 _need(observed.get("requestScript") == probe_script,
                       f"{label} editor request differs from the pinned probe script")
                 response_raw = observed.get("responseRaw")
                 _need(isinstance(response_raw, str) and bool(response_raw),
                       f"{label} needs the raw editor response")
+                transport_path, transport = _json(
+                    observed.get("nativeTransport"), run_path.parent,
+                    f"{label} native transport")
+                _unique_capture_file(transport_path, f"{label} native transport",
+                                     seen_capture_paths, seen_capture_files)
+                _need(transport.get("schema") == 1 and
+                      transport.get("status") == "pass" and
+                      transport.get("stage") == "response_received" and
+                      transport.get("mode") == "Read" and
+                      transport.get("readOnly") is True and
+                      type(transport.get("engineProcessId")) is int and
+                      transport.get("engineProcessId") == pid and
+                      transport.get("script") == probe_script and
+                      transport.get("response") == response_raw and
+                      transport.get("requestSentUtc") == observed.get("requestSentUtc") and
+                      transport.get("receivedUtc") == observed.get("responseReceivedUtc"),
+                      f"{label} observation differs from pinned native transport")
+                request_id = transport.get("requestId")
+                _need(isinstance(request_id, str) and
+                      REQUEST_ID.fullmatch(request_id) is not None and
+                      request_id not in seen_request_ids,
+                      f"{label} native request ID is missing, malformed or reused")
+                seen_request_ids.add(request_id)
+                encoded = transport.get("responseBase64")
+                _need(isinstance(encoded, str) and
+                      len(encoded) <= 4 * ((MAX_RAW_REPLY_BYTES + 2) // 3),
+                      f"{label} native raw reply is missing or too large")
                 try:
-                    response = json.loads(response_raw, parse_constant=lambda value: (
-                        _ for _ in ()).throw(ValueError(f"Non-finite JSON value: {value}")))
+                    reply_bytes = base64.b64decode(encoded, validate=True)
+                except (ValueError, binascii.Error) as exc:
+                    raise CapturePairError(f"{label} native raw reply is invalid base64") from exc
+                _need(1 <= len(reply_bytes) <= MAX_RAW_REPLY_BYTES and
+                      reply_bytes.endswith(b"\0") and reply_bytes.count(b"\0") == 1 and
+                      type(transport.get("responseBytes")) is int and
+                      transport["responseBytes"] == len(reply_bytes),
+                      f"{label} native raw reply length or terminator mismatch")
+                try:
+                    decoded_reply = reply_bytes[:-1].decode("utf-8", errors="strict")
+                except UnicodeDecodeError as exc:
+                    raise CapturePairError(f"{label} native raw reply is not UTF-8") from exc
+                _need(decoded_reply == response_raw,
+                      f"{label} raw response differs from native reply bytes")
+                try:
+                    response = json.loads(
+                        response_raw, object_pairs_hook=_unique_json_object,
+                        parse_constant=lambda value: (_ for _ in ()).throw(
+                            ValueError(f"Non-finite JSON value: {value}")))
                 except ValueError as exc:
                     raise CapturePairError(f"{label} raw editor response is invalid JSON: {exc}") from exc
                 response = _object(response, f"{label} editor response")
-                _need(observed.get("schemaVersion") == 1 and
+                _need(set(response) == {"status", "loadedSceneSha256", "resolution",
+                                          "lightingState", "camera"},
+                      f"{label} raw editor response needs only engine measurements")
+                _need(observed.get("schemaVersion") == 2 and
                       observed.get("source") == "native-editor-response" and
                       observed.get("probeScriptSha256") == probe_sha and
                       response.get("status") == "OBSERVED" and
-                      response.get("runId") == run_id and
-                      response.get("role") == role and
-                      response.get("variant") == variant and
-                      response.get("view") == view and
-                      response.get("enginePid") == pid and
-                      response.get("protocolSha256") == protocol_sha and
                       response.get("loadedSceneSha256") == scene_sha,
-                      f"{label} observation provenance mismatch")
+                      f"{label} observation or loaded-scene digest mismatch")
                 sent = _time(observed.get("requestSentUtc"), f"{label} observation request")
                 received = _time(observed.get("responseReceivedUtc"), f"{label} observation response")
                 triggered = _time(capture.get("triggeredUtc"), f"{label} trigger")
@@ -553,9 +617,8 @@ def validate(pair_path: str | Path, *,
                 previous_copy = copied
                 _need(_resolution(response.get("resolution"), f"{label} observed resolution")
                       == resolution, f"{label} observed resolution mismatch")
-                camera = _camera(response.get("camera"), f"{label} observed camera")
-                _need({key: camera[key] for key in ("basis", "spec")} == views[view],
-                      f"{label} observed camera differs from protocol")
+                camera = _measured_camera(response.get("camera"),
+                                          f"{label} observed camera")
                 camera_bytes = _canonical(camera)
                 if role == "baseline":
                     pair_camera[(variant, view)] = camera_bytes
@@ -585,7 +648,7 @@ def validate(pair_path: str | Path, *,
             runner_path, runner_sha)
     full_d11_roster = (variants == list(native_capture_postflight.VARIANTS) and
                        list(views) == list(native_capture_postflight.VIEWS))
-    return {"schemaVersion": 1, "kind": "roadcraft.capture-pair",
+    return {"schemaVersion": 2, "kind": "roadcraft.capture-pair",
             "scope": "pinned comparison context only",
             "contextComparable": True,
             "d11RosterComplete": full_d11_roster,

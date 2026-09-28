@@ -8,12 +8,16 @@ Call it with `python -m roadcraft.capture_pair_protocol PAIR.json` after setting
 context evidence is internally consistent; the JSON result still sets
 `technicalPassed` and `releaseReady` to `false`.
 
-The pair manifest is schema 1 and contains pinned `protocol`, `baseline` run,
-and `candidate` run files:
+The pair manifest and protocol are schema 2; each run receipt remains schema 1.
+The pair contains pinned `protocol`, `baseline` run, and `candidate` run files:
+Schema-1 pair/protocol files are rejected because that contract mixed
+host-generated run/view labels and a source-scene hash into the purported raw
+editor reply. None is a capture-time measurement simply because the editor
+echoes it. There are no historical valid pair receipts to migrate.
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "protocol": {"path": "protocol.json", "sha256": "<64 lowercase hex>"},
   "runs": {
     "baseline": {"path": "baseline_run.json", "sha256": "<64 lowercase hex>"},
@@ -51,16 +55,35 @@ Scenes must have identical bytes between baseline and candidate for a given
 variant. This deliberately blocks a changed validation scene from masquerading
 as an image regression caused only by the package.
 
-An observation is the native runner's record of a query issued immediately
+An observation is the runner's schema-2 record of a query issued immediately
 before a screenshot. It contains the **exact pinned probe script text** in
 `requestScript`, `probeScriptSha256`, UTC request/response timestamps,
-`source: "native-editor-response"`, and `responseRaw`: the editor's raw JSON
-reply, not an analyst-written context label. The reply must include
-`status: "OBSERVED"`, `runId`, `role`, `variant`, `view`, `enginePid`,
-`protocolSha256`, `loadedSceneSha256`, runtime `resolution`, full `lightingState`,
-and a `camera` with basis, spec, position, forward, and up vectors. The
-observation must fall inside the run and precede the screenshot trigger by no
-more than the protocol's age limit. Every field is required for each view.
+`source: "native-editor-response"`, a pinned `nativeTransport`, and
+`responseRaw`: the editor's unmodified reply string. The transport must be a
+passing read-only `Read` response for the declared engine PID. Its sent script,
+reply string and request/response UTC times must match the observation exactly.
+The validator also decodes its bounded Base64 reply bytes, requires the native
+single-NUL terminator and UTF-8 text, and compares those exact bytes to
+`responseRaw`. Every request GUID and transport output file must be unique
+across the pair. These are consistency checks over pinned files, not
+authentication of the sender.
+
+The observation's `declaredContext` contains runner-supplied `runId`, `role`,
+`variant`, `view`, `enginePid`, `protocolSha256`, `sceneSourceSha256`, and
+`camera` basis/spec. Each value must match the pinned run or protocol. This
+context is deliberately outside `responseRaw`: a single fixed read-only SSL
+script cannot know the host-generated run ID, role, view or protocol hash for
+all 90 captures. Echoing those labels from a generated script would only
+repeat host declarations, not measure engine state. The raw JSON reply has
+exactly `status: "OBSERVED"`, `loadedSceneSha256`, runtime `resolution`, full
+`lightingState`, and a `camera` with measured position, forward and up vectors.
+Additional host metadata inside the raw reply is rejected. The reported
+loaded-scene digest must equal the pinned source scene digest; unlike
+`declaredContext.sceneSourceSha256`, it is intended as a **runtime**
+measurement. Neither its presence in JSON nor a matching value proves the
+engine measured loaded bytes: that requires a separately demonstrated and
+authenticated native readback. The observation must fall inside the run and
+precede the screenshot trigger by no more than the protocol's age limit.
 
 The validator verifies file hashes and content, then requires exact equality
 of the observed camera transform, lighting state, resolution, protocol, variant,
@@ -77,9 +100,10 @@ lighting and resolution are explicitly unknown; the prior AAA run ended in
 `FAIL_ROLLBACK_PENDING`. No historical receipt is rewritten or promoted by
 this validator. A future native adapter must query the renderer and camera at
 capture time and seal these raw replies in the run receipt. The
-`CAPTURE_READY` and `native-editor-response` strings are still self-declared
-by that runner: this validator does **not** authenticate the editor process or
-prove native postflight succeeded. Before technical acceptance, link the pair
+`CAPTURE_READY` and `native-editor-response` strings, as well as the
+`declaredContext`, are still runner declarations: this validator does **not**
+authenticate the editor process, the reported loaded-scene hash, or the PNG
+producer. Before technical acceptance, link the pair
 to independently pinned native outer receipts, verify both roles with
 role-appropriate postflight adapters, check that each image and observation is
 present in its native receipt chain, and feed that result into the regression gate. The validator
@@ -89,14 +113,16 @@ done. The existing regression policy's signed visual and campaign claims remain
 separate gates.
 
 **Current-run hard limit:** the pinned `ReadPreCapture` SSL emits a multiline
-`D11T_SYSTEMS_OK` text response, including camera and light lines. The pair
-schema instead requires a JSON `responseRaw` with `status: "OBSERVED"` and
-complete capture-time camera, lighting, scene and protocol fields. Therefore
-an authentic run of the current native runner cannot pass the optional link
-check below. Its positive unit test uses a mocked postflight and synthetic
-JSON transport to check future bridge logic; it is not a live or integrated
-native pass. A new reviewed runner/probe and non-mocked postflight integration
-are needed before this check can validate real captures.
+`D11T_SYSTEMS_OK` text response, including partial camera and truck-local
+light lines. The pair schema requires a JSON `responseRaw` with measured
+camera up, complete lighting/renderer state, actual resolution and a
+loaded-scene resource digest. The current reply has none of those complete
+fields and cannot pass this validator. Its positive unit test uses a mocked
+postflight and synthetic JSON transport to check future bridge logic; it is
+not a live or integrated native pass. A reviewed runtime probe, runner update
+and non-mocked postflight integration are needed before this check can validate
+real captures. A host-side parser cannot turn the multiline reply into a
+genuine editor measurement by copying source-scene or planned lighting values.
 
 An optional candidate-only receipt check is scaffolded for a future runner
 that emits the complete observation in its `ReadPreCapture` transport. Add a
@@ -130,8 +156,10 @@ false. A baseline adapter, a full capture-time renderer observation, and
 engine-origin scene/PNG proof are still required before native evidence can
 support technical acceptance.
 
-Focused synthetic tests cover reused screenshots, overlapping view intervals,
-absent or changed lighting, camera transform,
-runtime or PNG dimensions, protocol/probe identity, variant roster, stale
-observations, tampered images, partial rosters, and the complete 45-view D11
-roster. They do not create native evidence or a passing release receipt.
+Focused synthetic tests cover reused screenshots and native transports,
+overlapping view intervals, absent or changed lighting, camera transform,
+runtime or PNG dimensions, protocol/probe identity, host-context echoes,
+declared versus loaded-scene hashes, changed raw transport bytes, the current
+multiline reply, variant roster, stale observations, tampered images, partial
+rosters, and the complete 45-view D11 roster. They do not create native
+evidence or a passing release receipt.

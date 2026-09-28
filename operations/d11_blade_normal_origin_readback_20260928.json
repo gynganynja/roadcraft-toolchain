@@ -1,0 +1,408 @@
+{
+  "acceptedRepairNormalCreationStageIdentified": false,
+  "asset": "cat_d11t",
+  "blendSaved": false,
+  "collisionPhysicsParityVerified": false,
+  "inputs": {
+    "blender50": {
+      "path": "C:\\Program Files\\Blender Foundation\\Blender 5.0\\blender.exe",
+      "sha256": "f81d3bca0af0d917e03fdf09255981b2ed0750d3a2815da991ea5425a87f8f7c"
+    },
+    "blender52": {
+      "path": "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe",
+      "sha256": "e27fbfea8564aa645d4463cb0949695fd85562b9de6df9561b06859a1074adf7"
+    },
+    "geometryManifest": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\operations\\d11_blade_geometry_readback_manifest_20260928.json",
+      "sha256": "cde578502a017905e448dc16db8cd1cd78a15da2cce1ccbbda0927e6ec94dc60"
+    },
+    "nativeUsf": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\local\\blend-authoring-parity-base-normalized\\candidate.usf",
+      "sha256": "80c856b07b3ae1447f2748b5f6f8ec13c688c2594f3ebfaeada9e0d11da21370"
+    },
+    "payloadManifest": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\operations\\d11_blade_payload_readback_manifest_20260928.json",
+      "sha256": "b5680d800a3bf650c8ecd1bad5e6a5ca80535153f4f1388cf9ebf1cc06a83242"
+    },
+    "repairedUsf": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\p\\mods_source\\models\\mods\\cat_d11t.tpl.asset\\export.usf",
+      "sha256": "49bfc77c1172a0e324934974d5612a13d121c3cee78ae7ca454468b61649e170"
+    },
+    "sdkMesh": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\tools\\bin\\blender_to_usf_script\\saber\\blender\\lib\\usf\\mesh.py",
+      "sha256": "4ab671128044524524028dbea32a5c7dcaf5274630348de151592c87b08be337"
+    },
+    "sdkTransform": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\tools\\bin\\blender_to_usf_script\\saber\\blender\\lib\\usf\\transform.py",
+      "sha256": "c79cd0947590abf36bd23c590e642ee69d2c93fb9d042f944b7a2bdc857d0101"
+    },
+    "sourceBlend": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\p\\mods_source\\models\\mods\\cat_d11t.tpl.asset\\cat_d11t.blend",
+      "sha256": "1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731"
+    }
+  },
+  "kind": "roadcraft.d11.blade-normal-origin-readback",
+  "method": "Pinned Blender 5.2 SDK b_read in memory for all eight normal-outlier triangles; separate 5.0.1 and 5.2.0 no-save stage probes for three witnesses. Normal angles compare ordered USF corners; geometric normals use normalized triangle cross products in retained USF coordinates.",
+  "nativeBlendExportApproved": false,
+  "normalMechanismWithinBlenderProven": false,
+  "normalOutlierThresholdDegrees": 0.1,
+  "outlierCornerCount": 24,
+  "outlierTriangleCount": 8,
+  "schemaVersion": 1,
+  "sdkProjectedAllEightTrianglePositionsAndNormalsExactNative": true,
+  "sourceCustomNormalAttributeAbsentOnAllEight": true,
+  "sourceHasCustomNormalsFalseOnAllEight": true,
+  "sourcePolygonsFlatOnAllEight": true,
+  "sourceSaberNormalsAttributeAbsentOnAllEight": true,
+  "stageInterpretation": "The SDK source path uses Mesh.corner_normals because saber_normals is absent. The Blender axis transform changes sampled corner normals in the three witnesses while polygon/triangle normals remain geometric; mesh update and tangent calculation do not add that difference.",
+  "stageWitnesses": {
+    "5.0.1": [
+      {
+        "afterAxisTransformFirstCornerNormal": [
+          0.9734172224998474,
+          -0.22903934121131897,
+          0.0
+        ],
+        "afterAxisTransformPolygonNormal": [
+          1.0,
+          -0.0,
+          -0.0
+        ],
+        "afterAxisTransformTriangleNormal": [
+          1.0,
+          -0.0,
+          -0.0
+        ],
+        "axisTransformHasCustomNormals": false,
+        "axisUpdateAndTangentsPreserveTransformedCornerNormal": true,
+        "leaf": "cdt_blade_37",
+        "rawFirstCornerNormal": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "rawHasCustomNormals": false,
+        "triangleIndex": 38
+      },
+      {
+        "afterAxisTransformFirstCornerNormal": [
+          0.9794281721115112,
+          0.11193464696407318,
+          0.16790197789669037
+        ],
+        "afterAxisTransformPolygonNormal": [
+          0.9806328415870667,
+          0.09885411709547043,
+          0.16907715797424316
+        ],
+        "afterAxisTransformTriangleNormal": [
+          0.9806328415870667,
+          0.09885411709547043,
+          0.16907715797424316
+        ],
+        "axisTransformHasCustomNormals": false,
+        "axisUpdateAndTangentsPreserveTransformedCornerNormal": true,
+        "leaf": "cdt_blade_41",
+        "rawFirstCornerNormal": [
+          0.98844975233078,
+          -0.11405189335346222,
+          0.09979540854692459
+        ],
+        "rawHasCustomNormals": false,
+        "triangleIndex": 11
+      },
+      {
+        "afterAxisTransformFirstCornerNormal": [
+          -0.9996839165687561,
+          0.025139398872852325,
+          0.0
+        ],
+        "afterAxisTransformPolygonNormal": [
+          -1.0,
+          0.0,
+          -0.0
+        ],
+        "afterAxisTransformTriangleNormal": [
+          -1.0,
+          0.0,
+          -0.0
+        ],
+        "axisTransformHasCustomNormals": false,
+        "axisUpdateAndTangentsPreserveTransformedCornerNormal": true,
+        "leaf": "cdt_blade_6",
+        "rawFirstCornerNormal": [
+          -0.9999987483024597,
+          0.0015624980442225933,
+          0.0
+        ],
+        "rawHasCustomNormals": false,
+        "triangleIndex": 37
+      }
+    ],
+    "5.2.0 LTS": [
+      {
+        "afterAxisTransformFirstCornerNormal": [
+          0.9734172224998474,
+          -0.22903934121131897,
+          0.0
+        ],
+        "afterAxisTransformPolygonNormal": [
+          1.0,
+          -0.0,
+          -0.0
+        ],
+        "afterAxisTransformTriangleNormal": [
+          1.0,
+          -0.0,
+          -0.0
+        ],
+        "axisTransformHasCustomNormals": false,
+        "axisUpdateAndTangentsPreserveTransformedCornerNormal": true,
+        "leaf": "cdt_blade_37",
+        "rawFirstCornerNormal": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "rawHasCustomNormals": false,
+        "triangleIndex": 38
+      },
+      {
+        "afterAxisTransformFirstCornerNormal": [
+          0.9794281721115112,
+          0.11193464696407318,
+          0.16790197789669037
+        ],
+        "afterAxisTransformPolygonNormal": [
+          0.9806328415870667,
+          0.09885411709547043,
+          0.16907715797424316
+        ],
+        "afterAxisTransformTriangleNormal": [
+          0.9806328415870667,
+          0.09885411709547043,
+          0.16907715797424316
+        ],
+        "axisTransformHasCustomNormals": false,
+        "axisUpdateAndTangentsPreserveTransformedCornerNormal": true,
+        "leaf": "cdt_blade_41",
+        "rawFirstCornerNormal": [
+          0.98844975233078,
+          -0.11405189335346222,
+          0.09979540854692459
+        ],
+        "rawHasCustomNormals": false,
+        "triangleIndex": 11
+      },
+      {
+        "afterAxisTransformFirstCornerNormal": [
+          -0.9996839165687561,
+          0.025139398872852325,
+          0.0
+        ],
+        "afterAxisTransformPolygonNormal": [
+          -1.0,
+          0.0,
+          -0.0
+        ],
+        "afterAxisTransformTriangleNormal": [
+          -1.0,
+          0.0,
+          -0.0
+        ],
+        "axisTransformHasCustomNormals": false,
+        "axisUpdateAndTangentsPreserveTransformedCornerNormal": true,
+        "leaf": "cdt_blade_6",
+        "rawFirstCornerNormal": [
+          -0.9999987483024597,
+          0.0015624980442225933,
+          0.0
+        ],
+        "rawHasCustomNormals": false,
+        "triangleIndex": 37
+      }
+    ]
+  },
+  "status": "DIAGNOSTIC_ONLY",
+  "totalBladeCorners": 6486,
+  "totalBladeLeaves": 60,
+  "triangles": [
+    {
+      "cornerIndices": [
+        105,
+        106,
+        107
+      ],
+      "leaf": "cdt_blade_6",
+      "maxNativeRepairedCornerPositionDelta": 8.429369702178807e-08,
+      "nativeArea": 5.9649354426483114e-05,
+      "nativeMinimumAltitude": 0.00028738631406286566,
+      "nativeRepairedNormalAngleDegrees": 0.11450552617709578,
+      "nativeStoredToGeometricAngleDegrees": 0.11450552617709578,
+      "repairedArea": 5.964277657888317e-05,
+      "repairedStoredToGeometricAngleDegrees": 0.0,
+      "sdkProjectedThreeNormalsEqualNative": true,
+      "sdkProjectedThreePositionsEqualNative": true,
+      "sourceCustomNormalAttribute": false,
+      "sourceHasCustomNormals": false,
+      "sourcePolygonSmooth": false,
+      "sourceSaberNormalsAttribute": false,
+      "triangleIndex": 35
+    },
+    {
+      "cornerIndices": [
+        108,
+        109,
+        110
+      ],
+      "leaf": "cdt_blade_6",
+      "maxNativeRepairedCornerPositionDelta": 8.429369702178807e-08,
+      "nativeArea": 1.3492993389263574e-08,
+      "nativeMinimumAltitude": 8.521193388489588e-05,
+      "nativeRepairedNormalAngleDegrees": 0.18532263686344905,
+      "nativeStoredToGeometricAngleDegrees": 0.18532263686344905,
+      "repairedArea": 1.3489191985627258e-08,
+      "repairedStoredToGeometricAngleDegrees": 0.0,
+      "sdkProjectedThreeNormalsEqualNative": true,
+      "sdkProjectedThreePositionsEqualNative": true,
+      "sourceCustomNormalAttribute": false,
+      "sourceHasCustomNormals": false,
+      "sourcePolygonSmooth": false,
+      "sourceSaberNormalsAttribute": false,
+      "triangleIndex": 36
+    },
+    {
+      "cornerIndices": [
+        111,
+        112,
+        113
+      ],
+      "leaf": "cdt_blade_6",
+      "maxNativeRepairedCornerPositionDelta": 8.429369702178807e-08,
+      "nativeArea": 2.962371468129277e-07,
+      "nativeMinimumAltitude": 2.0945060394086454e-05,
+      "nativeRepairedNormalAngleDegrees": 1.4405332715923769,
+      "nativeStoredToGeometricAngleDegrees": 1.4405332715923769,
+      "repairedArea": 2.9613573104825264e-07,
+      "repairedStoredToGeometricAngleDegrees": 0.0,
+      "sdkProjectedThreeNormalsEqualNative": true,
+      "sdkProjectedThreePositionsEqualNative": true,
+      "sourceCustomNormalAttribute": false,
+      "sourceHasCustomNormals": false,
+      "sourcePolygonSmooth": false,
+      "sourceSaberNormalsAttribute": false,
+      "triangleIndex": 37
+    },
+    {
+      "cornerIndices": [
+        69,
+        70,
+        71
+      ],
+      "leaf": "cdt_blade_31",
+      "maxNativeRepairedCornerPositionDelta": 1.0745380149674383e-07,
+      "nativeArea": 4.618027661204015e-06,
+      "nativeMinimumAltitude": 4.65374370995285e-05,
+      "nativeRepairedNormalAngleDegrees": 0.10708247288115749,
+      "nativeStoredToGeometricAngleDegrees": 0.02210722741136844,
+      "repairedArea": 4.6223267994855025e-06,
+      "repairedStoredToGeometricAngleDegrees": 0.006394037382941571,
+      "sdkProjectedThreeNormalsEqualNative": true,
+      "sdkProjectedThreePositionsEqualNative": true,
+      "sourceCustomNormalAttribute": false,
+      "sourceHasCustomNormals": false,
+      "sourcePolygonSmooth": false,
+      "sourceSaberNormalsAttribute": false,
+      "triangleIndex": 23
+    },
+    {
+      "cornerIndices": [
+        9,
+        10,
+        11
+      ],
+      "leaf": "cdt_blade_37",
+      "maxNativeRepairedCornerPositionDelta": 5.960464477539063e-08,
+      "nativeArea": 1.3461436528513271e-05,
+      "nativeMinimumAltitude": 0.00013135076077415206,
+      "nativeRepairedNormalAngleDegrees": 0.23124758481104213,
+      "nativeStoredToGeometricAngleDegrees": 0.21098867395888732,
+      "repairedArea": 1.3460762689866032e-05,
+      "repairedStoredToGeometricAngleDegrees": 0.0297435789594187,
+      "sdkProjectedThreeNormalsEqualNative": true,
+      "sdkProjectedThreePositionsEqualNative": true,
+      "sourceCustomNormalAttribute": false,
+      "sourceHasCustomNormals": false,
+      "sourcePolygonSmooth": false,
+      "sourceSaberNormalsAttribute": false,
+      "triangleIndex": 3
+    },
+    {
+      "cornerIndices": [
+        114,
+        115,
+        116
+      ],
+      "leaf": "cdt_blade_37",
+      "maxNativeRepairedCornerPositionDelta": 5.960464477539063e-08,
+      "nativeArea": 6.477248604142005e-08,
+      "nativeMinimumAltitude": 2.610464988623693e-06,
+      "nativeRepairedNormalAngleDegrees": 13.240519621865587,
+      "nativeStoredToGeometricAngleDegrees": 13.240519621865587,
+      "repairedArea": 6.363359617012065e-08,
+      "repairedStoredToGeometricAngleDegrees": 0.0,
+      "sdkProjectedThreeNormalsEqualNative": true,
+      "sdkProjectedThreePositionsEqualNative": true,
+      "sourceCustomNormalAttribute": false,
+      "sourceHasCustomNormals": false,
+      "sourcePolygonSmooth": false,
+      "sourceSaberNormalsAttribute": false,
+      "triangleIndex": 38
+    },
+    {
+      "cornerIndices": [
+        33,
+        34,
+        35
+      ],
+      "leaf": "cdt_blade_41",
+      "maxNativeRepairedCornerPositionDelta": 8.429369702178807e-08,
+      "nativeArea": 1.58975521384483e-06,
+      "nativeMinimumAltitude": 1.6391427324258934e-05,
+      "nativeRepairedNormalAngleDegrees": 0.6402890239428772,
+      "nativeStoredToGeometricAngleDegrees": 0.7555128164242201,
+      "repairedArea": 1.5861605579202743e-06,
+      "repairedStoredToGeometricAngleDegrees": 0.14444576481460858,
+      "sdkProjectedThreeNormalsEqualNative": true,
+      "sdkProjectedThreePositionsEqualNative": true,
+      "sourceCustomNormalAttribute": false,
+      "sourceHasCustomNormals": false,
+      "sourcePolygonSmooth": false,
+      "sourceSaberNormalsAttribute": false,
+      "triangleIndex": 11
+    },
+    {
+      "cornerIndices": [
+        60,
+        61,
+        62
+      ],
+      "leaf": "cdt_blade_57",
+      "maxNativeRepairedCornerPositionDelta": 8.940696716308594e-08,
+      "nativeArea": 9.97428912379802e-07,
+      "nativeMinimumAltitude": 1.4482092194667399e-05,
+      "nativeRepairedNormalAngleDegrees": 0.1123645680069592,
+      "nativeStoredToGeometricAngleDegrees": 0.11432404788355727,
+      "repairedArea": 9.974289357454028e-07,
+      "repairedStoredToGeometricAngleDegrees": 0.00209046159114127,
+      "sdkProjectedThreeNormalsEqualNative": true,
+      "sdkProjectedThreePositionsEqualNative": true,
+      "sourceCustomNormalAttribute": false,
+      "sourceHasCustomNormals": false,
+      "sourcePolygonSmooth": false,
+      "sourceSaberNormalsAttribute": false,
+      "triangleIndex": 20
+    }
+  ],
+  "usfExported": false
+}

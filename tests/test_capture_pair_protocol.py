@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
@@ -29,6 +30,13 @@ def png(width: int = 2, height: int = 2) -> bytes:
             chunk(b"IDAT", zlib.compress(pixels)) + chunk(b"IEND", b""))
 
 
+def request_id(role: str, variant: str, view: str) -> str:
+    digest = sha256(f"{role}:{variant}:{view}".encode("utf-8")).hexdigest()
+    return ("{" + digest[:8].upper() + "-" + digest[8:12].upper() + "-" +
+            digest[12:16] + "-" + digest[16:20].upper() + "-" +
+            digest[20:32].upper() + "}")
+
+
 class CapturePairTests(unittest.TestCase):
     def setUp(self) -> None:
         temp = tempfile.TemporaryDirectory()
@@ -49,8 +57,10 @@ class CapturePairTests(unittest.TestCase):
         path.write_bytes(raw)
         return {"path": str(path), "sha256": sha256(raw).hexdigest()}
 
-    def fixture(self, *, mutate=None, variants=None, protocol_id="d11-protocol-v1",
-                image_size=(2, 2), full_d11=False, run_ids=None) -> Path:
+    def fixture(self, *, mutate=None, transport_mutate=None,
+                response_raw_override=None, variants=None,
+                protocol_id="d11-protocol-v2", image_size=(2, 2),
+                full_d11=False, run_ids=None) -> Path:
         protocol_variants = (list(gate.native_capture_postflight.VARIANTS)
                              if full_d11 else ["maroon"])
         if full_d11:
@@ -66,7 +76,7 @@ class CapturePairTests(unittest.TestCase):
         script_body = "query runtime camera lighting and resolution"
         script = self.write("probe.rsm", script_body.encode())
         protocol = self.write("protocol.json", {
-            "schemaVersion": 1, "id": protocol_id, "runner": runner,
+            "schemaVersion": 2, "id": protocol_id, "runner": runner,
             "probeScript": script, "variants": protocol_variants,
             "views": [{"view": name, "camera": spec}
                       for name, spec in camera_specs.items()],
@@ -92,20 +102,25 @@ class CapturePairTests(unittest.TestCase):
                         "%Y-%m-%dT%H:%M:%SZ")
                     image = self.write(f"{role}/{variant}/{view}.png", png(*image_size))
                     response = {
-                        "status": "OBSERVED", "runId": run_id, "role": role,
-                        "variant": variant, "view": view, "enginePid": 1234,
-                        "protocolSha256": protocol["sha256"],
+                        "status": "OBSERVED",
                         "loadedSceneSha256": scene["sha256"],
                         "resolution": [2, 2], "lightingState": dict(self.light),
-                        "camera": {**spec, "position": [index, 0, 0],
+                        "camera": {"position": [index, 0, 0],
                                    "forward": [1, 0, 0], "up": [0, 0, 1]},
                     }
                     observation = {
-                        "schemaVersion": 1, "source": "native-editor-response",
+                        "schemaVersion": 2, "source": "native-editor-response",
                         "probeScriptSha256": script["sha256"],
                         "requestScript": script_body,
                         "requestSentUtc": timestamp(0),
                         "responseReceivedUtc": timestamp(1),
+                        "declaredContext": {
+                            "runId": run_id, "role": role, "variant": variant,
+                            "view": view, "enginePid": 1234,
+                            "protocolSha256": protocol["sha256"],
+                            "sceneSourceSha256": scene["sha256"],
+                            "camera": spec,
+                        },
                     }
                     capture = {"view": view, "image": image,
                                "triggeredUtc": timestamp(2),
@@ -113,6 +128,26 @@ class CapturePairTests(unittest.TestCase):
                     if mutate is not None:
                         mutate(role, variant, view, response, observation, capture)
                     observation["responseRaw"] = json.dumps(response, sort_keys=True)
+                    if response_raw_override is not None:
+                        replacement = response_raw_override(role, variant, view)
+                        if replacement is not None:
+                            observation["responseRaw"] = replacement
+                    response_bytes = observation["responseRaw"].encode("utf-8") + b"\0"
+                    transport_record = {
+                        "schema": 1, "status": "pass", "stage": "response_received",
+                        "mode": "Read", "readOnly": True, "engineProcessId": 1234,
+                        "requestId": request_id(role, variant, view),
+                        "script": observation["requestScript"],
+                        "response": observation["responseRaw"],
+                        "responseBytes": len(response_bytes),
+                        "responseBase64": base64.b64encode(response_bytes).decode("ascii"),
+                        "requestSentUtc": observation["requestSentUtc"],
+                        "receivedUtc": observation["responseReceivedUtc"],
+                    }
+                    if transport_mutate is not None:
+                        transport_mutate(role, variant, view, transport_record)
+                    observation["nativeTransport"] = self.write(
+                        f"{role}/{variant}/{view}_transport.json", transport_record)
                     capture["observation"] = self.write(
                         f"{role}/{variant}/{view}_observation.json", observation)
                     captures.append(capture)
@@ -126,7 +161,7 @@ class CapturePairTests(unittest.TestCase):
                 "finishedUtc": "2026-09-28T00:04:00Z",
                 "variants": variant_rows,
             })
-        pair = self.write("pair.json", {"schemaVersion": 1,
+        pair = self.write("pair.json", {"schemaVersion": 2,
                                         "protocol": protocol, "runs": runs})
         return Path(pair["path"])
 
@@ -162,14 +197,19 @@ class CapturePairTests(unittest.TestCase):
                     output_hashes[image["path"]] = image["sha256"]
                     observation = json.loads(Path(capture["observation"]["path"])
                                              .read_text(encoding="utf-8"))
+                    prior_transport = json.loads(Path(observation["nativeTransport"]["path"])
+                                                 .read_text(encoding="utf-8"))
                     transport = self.write(
                         str((native_run / f"pre_capture_{view}.json")
                             .relative_to(self.root)),
-                        {"status": "pass", "stage": "response_received",
+                        {"schema": 1, "status": "pass", "stage": "response_received",
                          "mode": "Read", "readOnly": True,
                          "engineProcessId": variant_row["enginePid"],
+                         "requestId": prior_transport["requestId"],
                          "script": observation["requestScript"],
                          "response": observation["responseRaw"],
+                         "responseBytes": prior_transport["responseBytes"],
+                         "responseBase64": prior_transport["responseBase64"],
                          "requestSentUtc": observation["requestSentUtc"],
                          "receivedUtc": observation["responseReceivedUtc"]})
                     output_hashes[transport["path"]] = transport["sha256"]
@@ -378,7 +418,7 @@ class CapturePairTests(unittest.TestCase):
         with mock.patch.object(gate.native_capture_postflight, "validate",
                                side_effect=self.passing_postflight):
             with self.assertRaisesRegex(gate.CapturePairError,
-                                        "observed transport SHA-256 mismatch"):
+                                        "native transport SHA-256 mismatch"):
                 gate.validate(pair, expected_candidate_native_pins=external)
         pair, external = self.native_binding_fixture()
         run = json.loads(run_path.read_text(encoding="utf-8"))
@@ -396,7 +436,7 @@ class CapturePairTests(unittest.TestCase):
         def missing(role, variant, view, response, observation, capture):
             if role == "candidate" and view == "front":
                 response.pop("lightingState")
-        with self.assertRaisesRegex(gate.CapturePairError, "observed lighting"):
+        with self.assertRaisesRegex(gate.CapturePairError, "only engine measurements"):
             gate.validate(self.fixture(mutate=missing))
         def changed(role, variant, view, response, observation, capture):
             if role == "candidate" and view == "front":
@@ -430,19 +470,79 @@ class CapturePairTests(unittest.TestCase):
             gate.validate(self.fixture(variants={"candidate": ["nearnew"]}))
         def changed(role, variant, view, response, observation, capture):
             if role == "candidate" and view == "front":
-                response["protocolSha256"] = "0" * 64
-        with self.assertRaisesRegex(gate.CapturePairError, "observation provenance mismatch"):
+                observation["declaredContext"]["protocolSha256"] = "0" * 64
+        with self.assertRaisesRegex(gate.CapturePairError, "declared context"):
             gate.validate(self.fixture(mutate=changed))
         def unpinned_probe(role, variant, view, response, observation, capture):
             if role == "candidate" and view == "front":
                 observation.pop("probeScriptSha256")
-        with self.assertRaisesRegex(gate.CapturePairError, "observation provenance mismatch"):
+        with self.assertRaisesRegex(gate.CapturePairError, "observation or loaded-scene"):
             gate.validate(self.fixture(mutate=unpinned_probe))
         def changed_request(role, variant, view, response, observation, capture):
             if role == "candidate" and view == "front":
                 observation["requestScript"] = "unreviewed request"
         with self.assertRaisesRegex(gate.CapturePairError, "pinned probe script"):
             gate.validate(self.fixture(mutate=changed_request))
+
+    def test_raw_response_rejects_echoed_host_context(self) -> None:
+        def echoed(role, variant, view, response, observation, capture):
+            if role == "candidate" and view == "front":
+                response["runId"] = observation["declaredContext"]["runId"]
+        with self.assertRaisesRegex(gate.CapturePairError,
+                                    "only engine measurements"):
+            gate.validate(self.fixture(mutate=echoed))
+        def nested_echo(role, variant, view, response, observation, capture):
+            if role == "candidate" and view == "front":
+                response["lightingState"]["runId"] = observation["declaredContext"]["runId"]
+        with self.assertRaisesRegex(gate.CapturePairError,
+                                    "only complete measured lighting controls"):
+            gate.validate(self.fixture(mutate=nested_echo))
+
+    def test_declared_scene_source_cannot_replace_loaded_scene_readback(self) -> None:
+        def missing_loaded(role, variant, view, response, observation, capture):
+            if role == "candidate" and view == "front":
+                response.pop("loadedSceneSha256")
+        with self.assertRaisesRegex(gate.CapturePairError,
+                                    "only engine measurements"):
+            gate.validate(self.fixture(mutate=missing_loaded))
+        def changed_source(role, variant, view, response, observation, capture):
+            if role == "candidate" and view == "front":
+                observation["declaredContext"]["sceneSourceSha256"] = "0" * 64
+        with self.assertRaisesRegex(gate.CapturePairError, "declared context"):
+            gate.validate(self.fixture(mutate=changed_source))
+
+    def test_current_multiline_read_reply_cannot_pass_as_json(self) -> None:
+        def current_reply(role, variant, view):
+            if role == "candidate" and view == "front":
+                return "D11T_SYSTEMS_OK\ncameraResolution 913 559\n"
+            return None
+        with self.assertRaisesRegex(gate.CapturePairError,
+                                    "raw editor response is invalid JSON"):
+            gate.validate(self.fixture(response_raw_override=current_reply))
+
+    def test_raw_native_reply_bytes_must_match_observation(self) -> None:
+        def changed_transport(role, variant, view, transport):
+            if role == "candidate" and view == "front":
+                raw = b'{"status":"OBSERVED"}\0'
+                transport["responseBase64"] = base64.b64encode(raw).decode("ascii")
+                transport["responseBytes"] = len(raw)
+        with self.assertRaisesRegex(gate.CapturePairError,
+                                    "raw response differs from native reply bytes"):
+            gate.validate(self.fixture(transport_mutate=changed_transport))
+
+    def test_duplicate_raw_json_keys_and_request_ids_fail(self) -> None:
+        def duplicate_status(role, variant, view):
+            if role == "candidate" and view == "front":
+                return '{"status":"OBSERVED","status":"OBSERVED"}'
+            return None
+        with self.assertRaisesRegex(gate.CapturePairError, "Duplicate JSON key"):
+            gate.validate(self.fixture(response_raw_override=duplicate_status))
+        def repeated_id(role, variant, view, transport):
+            if role == "candidate" and view == "right":
+                transport["requestId"] = request_id(role, variant, "front")
+        with self.assertRaisesRegex(gate.CapturePairError,
+                                    "request ID is missing, malformed or reused"):
+            gate.validate(self.fixture(transport_mutate=repeated_id))
 
     def test_stale_observation_and_tampered_image_fail(self) -> None:
         def stale(role, variant, view, response, observation, capture):
