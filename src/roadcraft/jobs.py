@@ -214,7 +214,7 @@ def _lock(jobs_root: Path, run_id: str) -> Path:
 
 
 def _pid_alive(pid: int) -> bool | None:
-    if not isinstance(pid, int) or pid <= 0:
+    if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
         return None
     if os.name == "nt":
         kernel = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -284,6 +284,183 @@ def inspect_jobs(jobs_root: str | Path) -> dict[str, Any]:
     return result
 
 
+def _recovery_preflight(jobs_root: Path, run_id: str, expected_lock_sha256: str,
+                        expected_receipt_sha256: str, expected_installed_sha256: str,
+                        registry_path: Path, expected_registry_sha256: str,
+                        config_path: Path, expected_config_sha256: str) -> dict[str, Any]:
+    """Prove a retained native lock can be released without touching a package."""
+    if not isinstance(run_id, str) or not ID_PATTERN.fullmatch(run_id):
+        raise JobError("Recovery requires a safe, exact run ID")
+    lock_digest = _digest(expected_lock_sha256, "expected lock SHA-256")
+    receipt_digest = _digest(expected_receipt_sha256, "expected receipt SHA-256")
+    installed_digest = _digest(expected_installed_sha256, "expected installed SHA-256")
+    registry_digest = _digest(expected_registry_sha256, "expected registry SHA-256")
+    config_digest = _digest(expected_config_sha256, "expected config SHA-256")
+    if not jobs_root.is_dir():
+        raise JobError(f"Jobs root is missing: {jobs_root}")
+    lock_path = jobs_root / LOCK_NAME
+    run_dir = jobs_root / run_id
+    receipt_path = run_dir / "receipt.json"
+    if lock_path.is_symlink() or run_dir.is_symlink() or receipt_path.is_symlink():
+        raise JobError("Recovery refuses a symlinked lock, run directory, or receipt")
+    state = inspect_jobs(jobs_root)
+    if not state["lockPresent"] or "lockError" in state or "receiptError" in state:
+        raise JobError("A readable job lock and owner receipt are required")
+    if state.get("ownerAlive") is not False:
+        raise JobError("Cannot prove the lock owner has exited")
+    lock = state.get("lock", {})
+    receipt = state.get("receipt", {})
+    if (lock.get("runId") != run_id or receipt.get("runId") != run_id or
+            receipt.get("status") not in ("failed", "interrupted") or
+            receipt.get("recoveryRequired") is not True):
+        raise JobError("Lock and terminal recovery-required receipt must match the run ID")
+    lock_identity = core.file_identity(lock_path, lock_digest)
+    receipt_identity = core.file_identity(receipt_path, receipt_digest)
+    for label, identity in (("lock", lock_identity), ("receipt", receipt_identity)):
+        if identity.get("matchesExpected") is not True or identity.get("unchangedDuringRead") is not True:
+            raise JobError(f"Reviewed {label} identity is stale or unstable")
+
+    registry_identity = core.file_identity(registry_path, registry_digest)
+    config_identity = core.file_identity(config_path, config_digest)
+    if any(row.get("matchesExpected") is not True or
+           row.get("unchangedDuringRead") is not True
+           for row in (registry_identity, config_identity)):
+        raise JobError("Reviewed registry or machine config identity is stale or unstable")
+    registry = core.read_registry(registry_path)
+    config = core.read_config(config_path)
+    accepted_pin = registry.get("accepted", {}).get("package") or {}
+    if accepted_pin.get("sha256") != installed_digest:
+        raise JobError("Expected installed SHA-256 must equal the accepted registry pin")
+    if not config.get("installedPackage"):
+        raise JobError("Machine config must identify the installed package")
+    if not config.get("transactionReceipts") or not config.get("transactionLocks"):
+        raise JobError("Machine config must enumerate transaction receipts and locks")
+    project = core.status(registry, config)
+    accepted = project.get("accepted") or {}
+    installed = project.get("installed") or {}
+    if (accepted.get("matchesExpected") is not True or
+            accepted.get("unchangedDuringRead") is not True or
+            installed.get("sha256") != installed_digest or
+            installed.get("unchangedDuringRead") is not True or
+            project.get("installedRelation") != "accepted" or
+            project.get("recoveryRequired") is not False):
+        raise JobError("Accepted and installed package or transaction state is not verified")
+    if any(not row.get("exists") or row.get("needsReview") is not False
+           for row in project["transactionReceipts"]):
+        raise JobError("A configured transaction receipt needs review")
+    for row in project["transactionReceipts"]:
+        if row.get("kind") == "legacy-capture":
+            terminal = row.get("status") in (
+                "NATIVE_CAPTURES_READY_BASELINE_RESTORED",
+                "NATIVE_TRIAGE_CAPTURES_READY_BASELINE_RESTORED",
+                "FAIL_ROLLBACK_PENDING",
+            )
+            if not terminal or row.get("rollbackVerifiedNow") is not True:
+                raise JobError("Legacy capture receipt lacks a verified terminal rollback")
+        elif row.get("kind") == "package-transaction":
+            if row.get("state") not in ("ROLLED_BACK", "NOT_INSTALLED"):
+                raise JobError("Package transaction receipt is not terminal at the accepted package")
+        else:
+            raise JobError("Unknown transaction receipt kind")
+    if any(row.get("present") is not False for row in project["transactionLocks"]):
+        raise JobError("A configured transaction lock is still present")
+    transaction_receipt_identities = [core.file_identity(row["path"])
+                                      for row in project["transactionReceipts"]]
+    if any(row.get("exists") is not True or row.get("unchangedDuringRead") is not True
+           for row in transaction_receipt_identities):
+        raise JobError("A configured transaction receipt changed during verification")
+    active, error = editor_processes()
+    if error:
+        raise JobError(f"Cannot inspect authoring processes: {error}")
+    if active:
+        raise JobError(f"Active authoring processes block recovery: {active}")
+    return {"status": "ready", "runId": run_id, "jobsRoot": str(jobs_root),
+            "lock": lock_identity, "receipt": receipt_identity,
+            "registry": registry_identity, "config": config_identity,
+            "installed": installed, "accepted": accepted,
+            "installedRelation": project["installedRelation"],
+            "transactionReceipts": project["transactionReceipts"],
+            "transactionReceiptIdentities": transaction_receipt_identities,
+            "transactionLocks": project["transactionLocks"],
+            "activeAuthoringProcesses": active}
+
+
+def recover_jobs(jobs_root: str | Path, run_id: str, expected_lock_sha256: str,
+                 expected_receipt_sha256: str, expected_installed_sha256: str,
+                 registry_path: str | Path, expected_registry_sha256: str,
+                 config_path: str | Path, expected_config_sha256: str,
+                 *, dry_run: bool = True) -> dict[str, Any]:
+    """Release only an externally verified, reviewed, abandoned job lock.
+
+    The original receipt and installed package are never modified. A separate
+    durable recovery receipt records the checks and lock-release outcome.
+    """
+    root = Path(jobs_root).expanduser().resolve()
+    registry = Path(registry_path).expanduser().resolve()
+    config = Path(config_path).expanduser().resolve()
+    check = _recovery_preflight(root, run_id, expected_lock_sha256,
+                                expected_receipt_sha256, expected_installed_sha256,
+                                registry, expected_registry_sha256,
+                                config, expected_config_sha256)
+    if dry_run:
+        return {**check, "writesPerformed": False}
+    # Recheck immediately before making a durable release record. This catches
+    # changes while the first pass hashes the accepted and installed packages.
+    check = _recovery_preflight(root, run_id, expected_lock_sha256,
+                                expected_receipt_sha256, expected_installed_sha256,
+                                registry, expected_registry_sha256,
+                                config, expected_config_sha256)
+    recovery_path = root / run_id / f"job_recovery_{uuid.uuid4().hex}.json"
+    recovery = {"schemaVersion": 1, "runId": run_id,
+                "status": "verified_release_pending", "verifiedUtc": _utc(),
+                "verification": check}
+    with recovery_path.open("x", encoding="utf-8", newline="\n") as stream:
+        json.dump(recovery, stream, indent=2, sort_keys=True)
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    try:
+        lock_path = root / LOCK_NAME
+        lock_now = core.file_identity(lock_path, expected_lock_sha256)
+        receipt_now = core.file_identity(root / run_id / "receipt.json", expected_receipt_sha256)
+        installed_now = core.file_identity(check["installed"]["path"], expected_installed_sha256)
+        registry_now = core.file_identity(registry, expected_registry_sha256)
+        config_now = core.file_identity(config, expected_config_sha256)
+        transaction_receipts_now = [core.file_identity(row["path"], row["sha256"])
+                                    for row in check["transactionReceiptIdentities"]]
+        owner_now = core.load_json(lock_path).get("pid") if lock_now.get("matchesExpected") else None
+        active_now, process_error = editor_processes()
+        if (lock_path.is_symlink() or (root / run_id).is_symlink() or
+                (root / run_id / "receipt.json").is_symlink() or
+                lock_now.get("matchesExpected") is not True or
+                lock_now.get("unchangedDuringRead") is not True or
+                receipt_now.get("matchesExpected") is not True or
+                receipt_now.get("unchangedDuringRead") is not True or
+                installed_now.get("matchesExpected") is not True or
+                installed_now.get("unchangedDuringRead") is not True or
+                registry_now.get("matchesExpected") is not True or
+                registry_now.get("unchangedDuringRead") is not True or
+                config_now.get("matchesExpected") is not True or
+                config_now.get("unchangedDuringRead") is not True or
+                any(row.get("matchesExpected") is not True or
+                    row.get("unchangedDuringRead") is not True
+                    for row in transaction_receipts_now) or
+                _pid_alive(owner_now) is not False or
+                process_error or active_now or
+                any(Path(row["path"]).exists() for row in check["transactionLocks"])):
+            raise JobError("External state or reviewed evidence changed before release")
+        lock_path.unlink()
+        recovery.update(status="released", releasedUtc=_utc())
+    except Exception as exc:
+        recovery.update(status="release_failed", error=str(exc), finishedUtc=_utc())
+        _atomic_json(recovery_path, recovery)
+        raise
+    _atomic_json(recovery_path, recovery)
+    return {**check, "status": "released", "writesPerformed": True,
+            "recoveryReceiptPath": str(recovery_path),
+            "recoveryReceiptSha256": core.sha256_file(recovery_path)}
+
+
 def _verify_outputs(step: dict[str, Any]) -> tuple[list[dict[str, Any]], bool]:
     rows = [core.file_identity(pin["path"], pin["sha256"]) for pin in step["outputs"]]
     passed = all(row["exists"] and row.get("unchangedDuringRead") and
@@ -318,9 +495,10 @@ def run_recipe(recipe_path: str | Path, phase: str, jobs_root: str | Path,
                *, dry_run: bool = False) -> dict[str, Any]:
     """Run one phase serially, recording every completed step atomically.
 
-    A timeout or interruption of a native step retains the lock and reports
-    recoveryRequired. Callers must verify the external package/editor state
-    before clearing such a lock; this module does not perform blind recovery.
+    Any phase failure after a native command starts retains the lock and reports
+    recoveryRequired, including nonzero exit and missing expected outputs.
+    `recover_jobs` can release it only after the external package/editor and
+    transaction state passes pinned verification; no blind recovery occurs.
     """
     plan = load_recipe(recipe_path, phase)
     generated: set[str] = set()
@@ -351,6 +529,7 @@ def run_recipe(recipe_path: str | Path, phase: str, jobs_root: str | Path,
                                "startedUtc": _utc(), "status": "running",
                                "recoveryRequired": False, "steps": []}
     retain_lock = False
+    native_command_started = False
     current_step: dict[str, Any] | None = None
     try:
         run_dir.mkdir(exist_ok=False)
@@ -371,12 +550,15 @@ def run_recipe(recipe_path: str | Path, phase: str, jobs_root: str | Path,
                        freeBytesAtStart=check["freeBytes"])
             _atomic_json(receipt_path, receipt)
             try:
+                # Any later phase failure leaves a native command's external
+                # package/editor state unproven, including a nonzero exit.
+                native_command_started |= step["native"]
                 row["exitCode"] = _run_command(step, log_path)
             except subprocess.TimeoutExpired:
                 row["status"] = "timed_out"
                 row["error"] = f"Exceeded {step['timeoutSeconds']} seconds"
                 row["logSha256"] = core.sha256_file(log_path) if log_path.is_file() else None
-                retain_lock = step["native"]
+                retain_lock = native_command_started
                 raise JobError(f"Step {step['id']} timed out")
             row["logSha256"] = core.sha256_file(log_path)
             if row["exitCode"] != 0:
@@ -399,7 +581,7 @@ def run_recipe(recipe_path: str | Path, phase: str, jobs_root: str | Path,
         receipt.update(status="passed", finishedUtc=_utc())
         _atomic_json(receipt_path, receipt)
     except KeyboardInterrupt:
-        retain_lock = bool(current_step and current_step["native"])
+        retain_lock = native_command_started
         receipt.update(status="interrupted", recoveryRequired=retain_lock,
                        error="Interrupted by operator", finishedUtc=_utc())
         if receipt["steps"] and receipt["steps"][-1]["status"] in ("preflight", "running"):
@@ -407,9 +589,7 @@ def run_recipe(recipe_path: str | Path, phase: str, jobs_root: str | Path,
         if run_dir.exists():
             _atomic_json(receipt_path, receipt)
     except Exception as exc:
-        if current_step and receipt["steps"] and receipt["steps"][-1]["status"] == "running":
-            # Unknown failures during a native command need external review.
-            retain_lock |= current_step["native"] and not isinstance(exc, JobError)
+        retain_lock |= native_command_started
         receipt.update(status="failed", recoveryRequired=retain_lock,
                        error=str(exc), finishedUtc=_utc())
         if receipt["steps"] and receipt["steps"][-1]["status"] in ("preflight", "running"):

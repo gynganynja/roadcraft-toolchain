@@ -1,0 +1,383 @@
+"""Read-only matched-pair gate for future native D11 capture evidence.
+
+This format requires a pinned editor observation immediately before every
+screenshot. Historical native receipts lack those observations and cannot be
+upgraded by assigning policy-level context labels after the fact.
+"""
+
+from __future__ import annotations
+
+import argparse
+from datetime import datetime, timezone
+from hashlib import sha256
+import json
+import math
+from pathlib import Path
+import re
+from typing import Any
+
+from . import native_capture_postflight, review
+
+
+HEX = re.compile(r"^[0-9a-f]{64}$")
+SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
+MAX_JSON_BYTES = 4 * 1024 * 1024
+MAX_IMAGE_BYTES = review.MAX_IMAGE_BYTES
+
+
+class CapturePairError(ValueError):
+    """A pin, capture-time observation, or pair identity is invalid."""
+
+
+def _need(condition: bool, message: str) -> None:
+    if not condition:
+        raise CapturePairError(message)
+
+
+def _object(value: Any, label: str) -> dict[str, Any]:
+    _need(isinstance(value, dict), f"{label} must be an object")
+    return value
+
+
+def _digest(value: Any, label: str) -> str:
+    _need(isinstance(value, str) and HEX.fullmatch(value) is not None,
+          f"{label} needs a lowercase SHA-256 digest")
+    return value
+
+
+def _safe_id(value: Any, label: str) -> str:
+    _need(isinstance(value, str) and SAFE.fullmatch(value) is not None,
+          f"{label} needs a safe nonempty ID")
+    return value
+
+
+def _canonical(value: Any) -> bytes:
+    try:
+        return json.dumps(value, sort_keys=True, separators=(",", ":"),
+                          ensure_ascii=False, allow_nan=False).encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        raise CapturePairError(f"Value is not canonical JSON: {exc}") from exc
+
+
+def _file(pin: Any, base: Path, label: str, *, limit: int | None = None) -> tuple[Path, bytes]:
+    row = _object(pin, label)
+    _need(set(row) == {"path", "sha256"}, f"{label} needs only path and sha256")
+    text = row["path"]
+    _need(isinstance(text, str) and text and "://" not in text,
+          f"{label} needs a local path")
+    candidate = Path(text).expanduser()
+    unresolved = candidate if candidate.is_absolute() else base / candidate
+    _need(not unresolved.is_symlink(), f"{label} must not be linked")
+    path = unresolved.resolve()
+    _need(path.is_file() and not path.is_symlink(), f"{label} is missing or linked")
+    expected = _digest(row["sha256"], f"{label} SHA-256")
+    before = path.stat()
+    if limit is not None:
+        _need(before.st_size <= limit, f"{label} exceeds size limit")
+    if limit is None:
+        digest = sha256()
+        with path.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+        raw = b""
+        observed_sha = digest.hexdigest()
+    else:
+        raw = path.read_bytes()
+        observed_sha = sha256(raw).hexdigest()
+    after = path.stat()
+    _need((before.st_size, before.st_mtime_ns, before.st_ino) ==
+          (after.st_size, after.st_mtime_ns, after.st_ino),
+          f"{label} changed while reading")
+    _need(observed_sha == expected, f"{label} SHA-256 mismatch")
+    return path, raw
+
+
+def _json(pin: Any, base: Path, label: str) -> tuple[Path, dict[str, Any]]:
+    path, raw = _file(pin, base, label, limit=MAX_JSON_BYTES)
+    try:
+        value = json.loads(raw, parse_constant=lambda value: (_ for _ in ()).throw(
+            ValueError(f"Non-finite JSON value: {value}")))
+    except (UnicodeError, ValueError) as exc:
+        raise CapturePairError(f"{label} is invalid JSON: {exc}") from exc
+    return path, _object(value, label)
+
+
+def _time(value: Any, label: str) -> datetime:
+    _need(isinstance(value, str) and value, f"{label} needs an ISO UTC timestamp")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise CapturePairError(f"{label} is invalid: {exc}") from exc
+    _need(parsed.tzinfo is not None and parsed.utcoffset().total_seconds() == 0,
+          f"{label} must be UTC")
+    return parsed.astimezone(timezone.utc)
+
+
+def _resolution(value: Any, label: str) -> list[int]:
+    _need(isinstance(value, list) and len(value) == 2 and
+          all(type(item) is int and item > 0 for item in value),
+          f"{label} needs [positive width, positive height]")
+    return value
+
+
+def _vector(value: Any, label: str) -> list[int | float]:
+    _need(isinstance(value, list) and len(value) == 3 and
+          all(type(item) in (int, float) and math.isfinite(item) for item in value),
+          f"{label} needs three finite coordinates")
+    return value
+
+
+def _camera(value: Any, label: str) -> dict[str, Any]:
+    row = _object(value, label)
+    _need(set(row) == {"basis", "spec", "position", "forward", "up"},
+          f"{label} needs basis, spec, position, forward, up")
+    _safe_id(row["basis"], f"{label}.basis")
+    _need(isinstance(row["spec"], list) and len(row["spec"]) == 2,
+          f"{label}.spec needs two offset vectors")
+    for index, spec in enumerate(row["spec"]):
+        _vector(spec, f"{label}.spec[{index}]")
+    for field in ("position", "forward", "up"):
+        _vector(row[field], f"{label}.{field}")
+    _need(any(row["forward"]) and any(row["up"]),
+          f"{label} direction vectors cannot be zero")
+    return row
+
+
+def _lighting(value: Any, label: str) -> dict[str, Any]:
+    row = _object(value, label)
+    _need({"environment", "localLights", "exposure", "tonemap", "rendererMode"}
+          <= set(row), f"{label} lacks measured lighting controls")
+    environment = _object(row["environment"], f"{label}.environment")
+    _need({"weather", "timeOfDay", "sunDirection", "ambientRgb"}
+          <= set(environment), f"{label}.environment is incomplete")
+    _safe_id(environment["weather"], f"{label}.weather")
+    hour = environment["timeOfDay"]
+    _need(type(hour) in (int, float) and math.isfinite(hour) and 0 <= hour <= 24,
+          f"{label}.timeOfDay must be a finite hour")
+    _vector(environment["sunDirection"], f"{label}.sunDirection")
+    _vector(environment["ambientRgb"], f"{label}.ambientRgb")
+    exposure = row["exposure"]
+    _need(type(exposure) in (int, float) and math.isfinite(exposure) and exposure > 0,
+          f"{label}.exposure must be positive")
+    _safe_id(row["tonemap"], f"{label}.tonemap")
+    _safe_id(row["rendererMode"], f"{label}.rendererMode")
+    lights = row["localLights"]
+    _need(isinstance(lights, list), f"{label}.localLights must be an array")
+    seen = set()
+    for light in lights:
+        light = _object(light, f"{label}.localLights item")
+        _need({"id", "enabled", "intensity"} <= set(light),
+              f"{label}.localLights item is incomplete")
+        light_id = _safe_id(light["id"], f"{label}.localLights ID")
+        _need(light_id not in seen, f"{label}.localLights has duplicate IDs")
+        seen.add(light_id)
+        intensity = light["intensity"]
+        _need(type(light["enabled"]) is bool and type(intensity) in (int, float) and
+              math.isfinite(intensity) and intensity >= 0,
+              f"{label}.localLights item has invalid state")
+    return row
+
+
+def _unique_names(value: Any, label: str) -> list[str]:
+    _need(isinstance(value, list) and bool(value), f"{label} needs a nonempty array")
+    result = [_safe_id(item, label) for item in value]
+    _need(len(set(result)) == len(result), f"{label} has duplicate IDs")
+    return result
+
+
+def validate(pair_path: str | Path) -> dict[str, Any]:
+    """Verify a sealed baseline/candidate pair without writing or launching tools."""
+    unresolved_pair = Path(pair_path).expanduser()
+    _need(not unresolved_pair.is_symlink(), "Pair manifest must not be linked")
+    pair_file = unresolved_pair.resolve(strict=True)
+    _need(pair_file.stat().st_size <= MAX_JSON_BYTES,
+          "Pair manifest exceeds size limit")
+    try:
+        pair = json.loads(pair_file.read_bytes(), parse_constant=lambda value: (
+            _ for _ in ()).throw(ValueError(f"Non-finite JSON value: {value}")))
+    except (UnicodeError, ValueError) as exc:
+        raise CapturePairError(f"Pair manifest is invalid JSON: {exc}") from exc
+    _object(pair, "pair manifest")
+    _need(pair.get("schemaVersion") == 1, "Unsupported pair schemaVersion")
+    protocol_path, protocol = _json(pair.get("protocol"), pair_file.parent, "protocol")
+    _need(protocol.get("schemaVersion") == 1, "Unsupported protocol schemaVersion")
+    protocol_id = _safe_id(protocol.get("id"), "protocol.id")
+    protocol_sha = pair["protocol"]["sha256"]
+    runner_path, _ = _file(protocol.get("runner"), protocol_path.parent, "protocol runner")
+    runner_sha = protocol["runner"]["sha256"]
+    probe_path, probe_raw = _file(protocol.get("probeScript"), protocol_path.parent,
+                                   "protocol probe script", limit=MAX_JSON_BYTES)
+    probe_sha = protocol["probeScript"]["sha256"]
+    try:
+        probe_script = probe_raw.decode("utf-8")
+    except UnicodeError as exc:
+        raise CapturePairError("protocol probe script must be UTF-8") from exc
+    _need(bool(probe_script), "protocol probe script cannot be empty")
+    variants = _unique_names(protocol.get("variants"), "protocol.variants")
+    view_rows = protocol.get("views")
+    _need(isinstance(view_rows, list) and bool(view_rows),
+          "protocol.views needs a nonempty array")
+    views: dict[str, dict[str, Any]] = {}
+    for row in view_rows:
+        row = _object(row, "protocol view")
+        name = _safe_id(row.get("view"), "protocol view")
+        _need(name not in views, "Duplicate protocol view")
+        camera = _object(row.get("camera"), f"protocol camera {name}")
+        _need(set(camera) == {"basis", "spec"},
+              f"protocol camera {name} needs basis and spec")
+        _safe_id(camera["basis"], f"protocol camera {name}.basis")
+        _need(isinstance(camera["spec"], list) and len(camera["spec"]) == 2,
+              f"protocol camera {name}.spec needs two offsets")
+        for index, spec in enumerate(camera["spec"]):
+            _vector(spec, f"protocol camera {name}.spec[{index}]")
+        views[name] = camera
+    resolution = _resolution(protocol.get("resolution"), "protocol.resolution")
+    lighting_state = _lighting(protocol.get("lightingState"), "protocol.lightingState")
+    lighting_sha = sha256(_canonical(lighting_state)).hexdigest()
+    max_age = protocol.get("maxObservationAgeSeconds")
+    _need(type(max_age) is int and 1 <= max_age <= 60,
+          "maxObservationAgeSeconds must be 1..60")
+    runs = _object(pair.get("runs"), "runs")
+    _need(set(runs) == {"baseline", "candidate"},
+          "runs needs exactly baseline and candidate")
+    run_results: dict[str, dict[str, Any]] = {}
+    pair_camera: dict[tuple[str, str], bytes] = {}
+    pair_scene: dict[str, str] = {}
+    pair_lighting: dict[tuple[str, str], bytes] = {}
+    for role in ("baseline", "candidate"):
+        run_path, run = _json(runs[role], pair_file.parent, f"{role} run")
+        _need(run.get("schemaVersion") == 1 and run.get("status") == "CAPTURE_READY",
+              f"{role} run is not capture-ready schema 1")
+        _need(run.get("role") == role, f"{role} run role mismatch")
+        run_id = _safe_id(run.get("runId"), f"{role}.runId")
+        _need(run.get("protocolSha256") == protocol_sha and
+              run.get("runnerSha256") == runner_sha,
+              f"{role} run protocol or runner mismatch")
+        package_path, _ = _file(run.get("package"), run_path.parent, f"{role} package")
+        began = _time(run.get("startedUtc"), f"{role}.startedUtc")
+        ended = _time(run.get("finishedUtc"), f"{role}.finishedUtc")
+        _need(began < ended, f"{role} run timestamps are reversed")
+        variant_rows = run.get("variants")
+        _need(isinstance(variant_rows, list) and
+              [row.get("variant") if isinstance(row, dict) else None for row in variant_rows]
+              == variants, f"{role} run variant roster differs from protocol")
+        checked = 0
+        for variant_row in variant_rows:
+            variant = variant_row["variant"]
+            scene_path, _ = _file(variant_row.get("scene"), run_path.parent,
+                                  f"{role} {variant} scene")
+            scene_sha = variant_row["scene"]["sha256"]
+            if role == "baseline":
+                pair_scene[variant] = scene_sha
+            else:
+                _need(pair_scene[variant] == scene_sha,
+                      f"{variant} scene bytes differ between runs")
+            pid = variant_row.get("enginePid")
+            _need(type(pid) is int and pid > 0, f"{role} {variant} needs enginePid")
+            captures = variant_row.get("captures")
+            _need(isinstance(captures, list) and
+                  [row.get("view") if isinstance(row, dict) else None for row in captures]
+                  == list(views), f"{role} {variant} view roster differs from protocol")
+            for capture in captures:
+                view = capture["view"]
+                label = f"{role} {variant} {view}"
+                image_path, image_raw = _file(capture.get("image"), run_path.parent,
+                                               f"{label} image", limit=MAX_IMAGE_BYTES)
+                try:
+                    _, image_resolution = review._image_info(image_raw)
+                except review.ReviewError as exc:
+                    raise CapturePairError(f"{label} image is invalid: {exc}") from exc
+                _need(image_resolution == resolution, f"{label} image resolution mismatch")
+                observed_path, observed = _json(capture.get("observation"), run_path.parent,
+                                                 f"{label} observation")
+                _need(observed.get("requestScript") == probe_script,
+                      f"{label} editor request differs from the pinned probe script")
+                response_raw = observed.get("responseRaw")
+                _need(isinstance(response_raw, str) and bool(response_raw),
+                      f"{label} needs the raw editor response")
+                try:
+                    response = json.loads(response_raw, parse_constant=lambda value: (
+                        _ for _ in ()).throw(ValueError(f"Non-finite JSON value: {value}")))
+                except ValueError as exc:
+                    raise CapturePairError(f"{label} raw editor response is invalid JSON: {exc}") from exc
+                response = _object(response, f"{label} editor response")
+                _need(observed.get("schemaVersion") == 1 and
+                      observed.get("source") == "native-editor-response" and
+                      observed.get("probeScriptSha256") == probe_sha and
+                      response.get("status") == "OBSERVED" and
+                      response.get("runId") == run_id and
+                      response.get("role") == role and
+                      response.get("variant") == variant and
+                      response.get("view") == view and
+                      response.get("enginePid") == pid and
+                      response.get("protocolSha256") == protocol_sha and
+                      response.get("loadedSceneSha256") == scene_sha,
+                      f"{label} observation provenance mismatch")
+                sent = _time(observed.get("requestSentUtc"), f"{label} observation request")
+                received = _time(observed.get("responseReceivedUtc"), f"{label} observation response")
+                triggered = _time(capture.get("triggeredUtc"), f"{label} trigger")
+                copied = _time(capture.get("copiedUtc"), f"{label} copy")
+                _need(began <= sent <= received <= triggered <= copied <= ended and
+                      (triggered - received).total_seconds() <= max_age,
+                      f"{label} observation was not captured immediately before the image")
+                _need(_resolution(response.get("resolution"), f"{label} observed resolution")
+                      == resolution, f"{label} observed resolution mismatch")
+                camera = _camera(response.get("camera"), f"{label} observed camera")
+                _need({key: camera[key] for key in ("basis", "spec")} == views[view],
+                      f"{label} observed camera differs from protocol")
+                camera_bytes = _canonical(camera)
+                if role == "baseline":
+                    pair_camera[(variant, view)] = camera_bytes
+                else:
+                    _need(pair_camera[(variant, view)] == camera_bytes,
+                          f"{label} observed camera differs from baseline")
+                observed_lighting = _lighting(response.get("lightingState"),
+                                              f"{label} observed lighting")
+                _need(sha256(_canonical(observed_lighting)).hexdigest() == lighting_sha,
+                      f"{label} observed lighting differs from protocol")
+                lighting_bytes = _canonical(observed_lighting)
+                if role == "baseline":
+                    pair_lighting[(variant, view)] = lighting_bytes
+                else:
+                    _need(pair_lighting[(variant, view)] == lighting_bytes,
+                          f"{label} observed lighting differs from baseline")
+                checked += 1
+        run_results[role] = {"receiptPath": str(run_path),
+                             "receiptSha256": runs[role]["sha256"],
+                             "packagePath": str(package_path),
+                             "packageSha256": run["package"]["sha256"],
+                             "runId": run_id, "checkedViews": checked}
+    full_d11_roster = (variants == list(native_capture_postflight.VARIANTS) and
+                       list(views) == list(native_capture_postflight.VIEWS))
+    return {"schemaVersion": 1, "kind": "roadcraft.capture-pair",
+            "scope": "pinned comparison context only",
+            "contextComparable": True,
+            "d11RosterComplete": full_d11_roster,
+            "pairComparable": full_d11_roster,
+            "nativePostflightVerified": False,
+            "captureProcessAuthenticated": False,
+            "technicalPassed": False,
+            "releaseReady": False,
+            "protocolId": protocol_id,
+            "protocolPath": str(protocol_path), "protocolSha256": protocol_sha,
+            "runnerPath": str(runner_path), "runnerSha256": runner_sha,
+            "probeScriptPath": str(probe_path), "probeScriptSha256": probe_sha,
+            "lightingStateSha256": lighting_sha,
+            "matchedViews": len(variants) * len(views), "runs": run_results,
+            "visualReviewed": False, "campaignAccepted": False}
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("pair", type=Path, help="Pair manifest with pinned protocol and run receipts")
+    args = parser.parse_args(argv)
+    try:
+        result = validate(args.pair)
+    except (CapturePairError, OSError) as exc:
+        parser.exit(2, f"capture-pair: {exc}\n")
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

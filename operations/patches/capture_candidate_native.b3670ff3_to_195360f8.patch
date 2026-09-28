@@ -1,0 +1,399 @@
+--- capture_candidate_native.py@b3670ff3
++++ capture_candidate_native.py@195360f8
+@@ -12,6 +12,7 @@
+ import argparse
+ import ast
+ import datetime as dt
++import hashlib
+ import importlib.util
+ import json
+ import os
+@@ -21,7 +22,6 @@
+ import subprocess
+ import sys
+ import time
+-import uuid
+ 
+ 
+ sys.dont_write_bytecode = True
+@@ -78,11 +78,24 @@
+     return digest.hexdigest()
+ 
+ 
++def canonical_sha256(value: dict) -> str:
++    return hashlib.sha256(json.dumps(value, sort_keys=True,
++                                   separators=(",", ":")).encode("utf-8")).hexdigest()
++
++
+ def save(path: Path, payload: dict) -> None:
+     path.parent.mkdir(parents=True, exist_ok=True)
+     tmp = path.with_suffix(path.suffix + ".tmp")
+     tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+     os.replace(tmp, path)
++
++
++def copy_exclusive(source: Path, target: Path) -> None:
++    """Copy a transaction artifact without replacing an existing file."""
++    with source.open("rb") as input_stream, target.open("xb") as output_stream:
++        shutil.copyfileobj(input_stream, output_stream, length=8 * 1024 * 1024)
++        output_stream.flush()
++        os.fsync(output_stream.fileno())
+ 
+ 
+ def old_helpers():
+@@ -414,9 +427,141 @@
+                 stream.close()
+ 
+ 
++def capture_contract(run_id: str, variants: tuple[str, ...],
++                     views: tuple[str, ...], candidate: Path,
++                     candidate_sha: str, pins: dict[str, str],
++                     camera_specs: dict, *, prototype: bool,
++                     package_receipt: Path, package_receipt_sha: str,
++                     package_receipt_status: str,
++                     owned_lock: bool = False) -> dict:
++    """Declare every named capture artifact before any native write or swap."""
++    guard(re.fullmatch(r"[0-9a-f]{8}", run_id) is not None,
++          "--run-id must be eight lowercase hexadecimal characters")
++    guard(not NATIVE.is_symlink() and not RUNS.is_symlink(),
++          "Native evidence directories must not be links")
++    backup = NATIVE / f"cat_d11t_before_{EXPECTED_BASE_SHA[:12]}_{run_id}.pak"
++    stage = LIVE.with_name(f"cat_d11t.standalone-{run_id}.tmp")
++    restore = LIVE.with_name(f"cat_d11t.restore-{run_id}.tmp")
++    report = NATIVE / f"candidate_capture_{run_id}.json"
++    recovery = NATIVE / f"candidate_recovery_{run_id}.json"
++    runs = {variant: RUNS / f"aaa_{variant}_{run_id}{variant[:2]}"
++            for variant in variants}
++    required_files = [report, backup]
++    optional_files = []
++    transient_paths = [LOCK, stage, restore,
++                       report.with_suffix(report.suffix + ".tmp")]
++    screenshot_sources = []
++    runtime_directories = {}
++    contexts = {}
++    for variant in variants:
++        run = runs[variant]
++        runtime_directories[variant] = {
++            "editorData": str(run / "editor_data"),
++            "temporary": str(run / "tmp"),
++            "localProfilesIfCreated": str(run / "local_profiles"),
++        }
++        scene = PROJECT / "mods_source/xscenes/mods" / SCENES[variant]
++        contexts[variant] = {
++            "scene": str(scene), "sceneSha256": sha(scene),
++            "cameraBasis": "_cockpit_camera; offsets (forward,left,up) in metres",
++            "cameraSpecs": {name: camera_specs[name] for name in views},
++            "plannedResolutionPixels": {"status": "unknown"},
++            "runtimeLighting": {"status": "unknown"},
++            "protocol": "SetCab camera probe, CaptureCab SaveScreenshot PNG, copied source image",
++        }
++        required_files.extend((run / "native_controls.ps1", run / "probe.scenario",
++                               run / "stdout.log", run / "stderr.log",
++                               run / "report.json", run / "interior_geom.json",
++                               run / "interior_geom.transport.log"))
++        optional_files.extend((run / "interior_hidden.json",
++                               run / "interior_hidden.transport.log"))
++        transient_paths.extend((run / "report.json.tmp", run / "tmp"))
++        for view in views:
++            required_files.extend((run / f"camera_{view}.json",
++                                   run / f"camera_{view}.transport.log",
++                                   run / f"capture_{view}.json",
++                                   run / f"capture_{view}.transport.log",
++                                   run / f"cab_{view}.png"))
++            screenshot_sources.append(WORKSPACE.parent / "root/bin/pc" /
++                                      f"d11_cab_{run_id}{variant[:2]}_{view}.png")
++    collisions = [path for path in (report, backup, recovery,
++                                    *(path for path in transient_paths
++                                      if path != LOCK or not owned_lock),
++                                    *runs.values(), *screenshot_sources)
++                  if path.exists() or path.is_symlink()]
++    guard(not collisions,
++          "Capture run ID has existing outputs; choose a fresh ID: " +
++          ", ".join(str(path) for path in collisions[:5]))
++    return {"schemaVersion": 1, "runId": run_id,
++            "runner": str(Path(__file__).resolve()),
++            "runnerSha256": sha(Path(__file__)),
++            "candidatePackage": str(candidate), "candidateSha256": candidate_sha,
++            "installedPackage": str(LIVE), "baselineSha256": EXPECTED_BASE_SHA,
++            "prototype": prototype,
++            "packageReceipt": str(package_receipt),
++            "packageReceiptSha256": package_receipt_sha,
++            "packageReceiptStatus": package_receipt_status,
++            "sourcePinsSha256": canonical_sha256(pins),
++            "sourcePinCount": len(pins),
++            "variantContexts": contexts,
++            "capturePlan": {"variants": list(variants),
++                            "viewsPerVariant": list(views),
++                            "fullCapture": len(variants) == len(SCENES) and views == VIEWS},
++            "outerReceipt": str(report), "backup": str(backup),
++            "stage": str(stage), "restore": str(restore),
++            "lock": str(LOCK),
++            "variantRuns": {name: str(path) for name, path in runs.items()},
++            "runtimeDirectoryRoots": runtime_directories,
++            "expectedOutputFiles": [str(path) for path in required_files],
++            "optionalOutputFiles": [str(path) for path in optional_files],
++            "transientPaths": [str(path) for path in transient_paths],
++            "reservedRecoveryReceipt": str(recovery),
++            "screenshotSourceFiles": [str(path) for path in screenshot_sources]}
++
++
++def timed_action(report: dict, base, proc: subprocess.Popen,
++                 engine_pid: int, action: str, callback) -> None:
++    """Record action outcome and the owned editor/engine identity for diagnosis."""
++    event = {"action": action,
++             "startedUtc": dt.datetime.now(dt.timezone.utc).isoformat(),
++             "editorPid": proc.pid, "enginePid": engine_pid}
++    report.setdefault("actionEvents", []).append(event)
++    try:
++        callback()
++        event["status"] = "PASS"
++    except BaseException as exc:
++        event.update(status="FAIL", error=repr(exc))
++        raise
++    finally:
++        event["finishedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
++        event["editorExitCode"] = proc.poll()
++        event["engineExitCode"] = {"status": "unavailable"}
++        try:
++            event["ownedProcessesAfter"] = [
++                {"pid": int(row["ProcessId"]),
++                 "parentPid": int(row["ParentProcessId"]),
++                 "name": row["Name"]}
++                for row in base.processes()
++                if int(row["ProcessId"]) in (proc.pid, engine_pid)]
++        except BaseException as exc:
++            # Telemetry cannot turn a completed capture action into a failure.
++            event["processProbeError"] = repr(exc)
++
++
++def png_dimensions(path: Path) -> list[int]:
++    with path.open("rb") as stream:
++        header = stream.read(24)
++    guard(header[:8] == b"\x89PNG\r\n\x1a\n" and header[12:16] == b"IHDR"
++          and len(header) == 24, f"Screenshot lacks a PNG IHDR: {path}")
++    width, height = int.from_bytes(header[16:20], "big"), int.from_bytes(header[20:24], "big")
++    guard(width > 0 and height > 0, f"Screenshot dimensions are invalid: {path}")
++    return [width, height]
++
++
+ def capture_variant(base, survey, variant: str, run_id: str,
+                     package_sha: str, pins: dict[str, str],
+-                    views: tuple[str, ...], full_capture: bool) -> dict:
++                    views: tuple[str, ...], full_capture: bool,
++                    context: dict, contract_sha: str) -> dict:
+     run = RUNS / f"aaa_{variant}_{run_id}"
+     run.mkdir(parents=True)
+     helper = controls_with_geom_probe(base, survey, run, run_id)
+@@ -438,6 +583,7 @@
+         "cameraBasis": "_cockpit_camera; offsets (forward,left,up) in metres",
+         "viewSpecs": {name: survey.VIEWS[name] for name in views},
+         "helperSha256": sha(helper), "sourcePins": pins, "views": [],
++        "captureContext": context, "outputContractSha256": contract_sha,
+         "editorLaunch": {"projectArgument": str(PROJECT),
+                          "workingDirectory": str(base.h.EDITOR),
+                          "mount": editor_mount(PROJECT)},
+@@ -463,19 +609,32 @@
+         report["runtimeResourceMount"] = runtime_resource_mount(log)
+         engine_pid = base.find_engine_pid(proc.pid)
+         report["enginePid"] = engine_pid
+-        report["loadedInteriorGeom"] = inspect_loaded_geom(
+-            base, run, helper, engine_pid, variant)
++        loaded_geom = []
++        timed_action(report, base, proc, engine_pid, "InspectInteriorGeom",
++                     lambda: loaded_geom.append(inspect_loaded_geom(
++                         base, run, helper, engine_pid, variant)))
++        report["loadedInteriorGeom"] = loaded_geom[0]
+         for name in views:
+             mode = name.title().replace("_", "")
+-            base.h.probe(run, "camera_" + name, helper, engine_pid, "SetCab" + mode)
++            timed_action(report, base, proc, engine_pid, "SetCab" + mode,
++                         lambda name=name, mode=mode: base.h.probe(
++                             run, "camera_" + name, helper, engine_pid,
++                             "SetCab" + mode))
+             time.sleep(1.5)
+-            base.h.probe(run, "capture_" + name, helper, engine_pid, "CaptureCab" + mode)
+             source = base.h.SDK / "root/bin/pc" / f"d11_cab_{run_id}_{name}.png"
++            guard(not source.exists() and not source.is_symlink(),
++                  f"Native screenshot output already exists: {source}")
++            timed_action(report, base, proc, engine_pid, "CaptureCab" + mode,
++                         lambda name=name, mode=mode: base.h.probe(
++                             run, "capture_" + name, helper, engine_pid,
++                             "CaptureCab" + mode))
+             target = run / f"cab_{name}.png"
+-            base.screenshot(source, target, proc)
++            timed_action(report, base, proc, engine_pid, "SaveScreenshot:" + name,
++                         lambda: base.screenshot(source, target, proc))
+             report["views"].append({
+                 "view": name, "path": str(target), "sha256": sha(target),
+                 "cameraProbeSha256": sha(run / f"camera_{name}.json"),
++                "resolutionPixels": png_dimensions(target),
+             })
+         guard(project_pins(PROJECT) == pins, "Candidate project changed during capture")
+         guard(sha(LIVE) == package_sha, "Installed candidate changed during capture")
+@@ -510,13 +669,20 @@
+                         help="Capture only these camera views (default: all fifteen)")
+     parser.add_argument("--execute", action="store_true",
+                         help="Perform the guarded temporary swap and native captures")
++    parser.add_argument("--run-id", help="Predeclared eight-character lowercase hex run ID")
++    parser.add_argument("--expected-contract-sha256",
++                        help="SHA-256 from the reviewed --plan output; required with --execute")
++    parser.add_argument("--plan", action="store_true",
++                        help="Print the no-write output contract for --run-id")
+     parser.add_argument("--prototype", action="store_true",
+                         help="Admit the sealed texture-only prototype for early lighting QA")
+     parser.add_argument("--recover", action="store_true",
+                         help="Restore the pinned baseline after an interrupted capture")
+     args = parser.parse_args()
+     if args.recover:
+-        guard(not args.execute and not args.prototype and not args.candidate_pak and not args.expected_candidate_sha
++        guard(not args.execute and not args.plan and not args.run_id
++              and not args.expected_contract_sha256 and not args.prototype
++              and not args.candidate_pak and not args.expected_candidate_sha
+               and args.variants is None and args.views is None,
+               "--recover takes no candidate, selection, or execute arguments")
+         base, _ = old_helpers()
+@@ -524,6 +690,18 @@
+         return
+     guard(args.candidate_pak is not None and args.expected_candidate_sha is not None,
+           "Provide both --candidate-pak and --expected-candidate-sha")
++    guard(not (args.plan and args.execute), "--plan and --execute are exclusive")
++    guard(not (args.plan or args.execute) or args.run_id is not None,
++          "--plan and --execute require --run-id")
++    guard(not args.execute or args.expected_contract_sha256 is not None,
++          "--execute requires --expected-contract-sha256 from --plan")
++    guard(args.execute or args.expected_contract_sha256 is None,
++          "--expected-contract-sha256 is only valid with --execute")
++    guard(args.expected_contract_sha256 is None or
++          re.fullmatch(r"[0-9a-f]{64}", args.expected_contract_sha256) is not None,
++          "--expected-contract-sha256 must be 64 lowercase hex characters")
++    guard(args.run_id is None or re.fullmatch(r"[0-9a-f]{8}", args.run_id) is not None,
++          "--run-id must be eight lowercase hexadecimal characters")
+     guard(args.variants is None or len(args.variants) == len(set(args.variants)),
+           "--variants must not repeat a variant")
+     guard(args.views is None or len(args.views) == len(set(args.views)),
+@@ -560,24 +738,38 @@
+     guard(not base.processes(), "RoadCraft or a Mod Editor is already running")
+     pins = project_pins(PROJECT)
+     mount = editor_mount(PROJECT)
++    contract = (capture_contract(args.run_id, variants, views, candidate, expected,
++                                 pins, survey.VIEWS, prototype=args.prototype,
++                                 package_receipt=package_receipt_path.resolve(),
++                                 package_receipt_sha=sha(package_receipt_path),
++                                 package_receipt_status=expected_status)
++                if args.run_id else None)
++    contract_sha = canonical_sha256(contract) if contract else None
++    guard(not args.execute or args.expected_contract_sha256 == contract_sha,
++          "Capture output contract changed since --plan")
+     if not args.execute:
+-        print(json.dumps({"status": ("PREFLIGHT_READY_NO_SWAP" if full_capture
+-                                      else "PREFLIGHT_TRIAGE_READY_NO_SWAP"),
+-                          "candidate": str(candidate),
+-                          "candidateSha256": expected, "baselineSha256": EXPECTED_BASE_SHA,
+-                          "prototype": args.prototype,
+-                          "project": str(PROJECT), "pinnedFiles": len(pins),
+-                          "editorMount": mount,
+-                          "variants": list(variants), "viewsPerVariant": list(views)}, indent=2))
++        preview = {"status": ("PREFLIGHT_READY_NO_SWAP" if full_capture
++                              else "PREFLIGHT_TRIAGE_READY_NO_SWAP"),
++                   "candidate": str(candidate),
++                   "candidateSha256": expected, "baselineSha256": EXPECTED_BASE_SHA,
++                   "prototype": args.prototype,
++                   "project": str(PROJECT), "pinnedFiles": len(pins),
++                   "editorMount": mount,
++                   "variants": list(variants), "viewsPerVariant": list(views)}
++        if args.plan:
++            preview["status"] = "CAPTURE_OUTPUTS_DECLARED_NO_SWAP"
++            preview["outputContract"] = contract
++            preview["outputContractSha256"] = contract_sha
++        print(json.dumps(preview, indent=2))
+         return
+ 
+     NATIVE.mkdir(parents=True, exist_ok=True)
+     RUNS.mkdir(parents=True, exist_ok=True)
+-    run_id = uuid.uuid4().hex[:8]
+-    backup = NATIVE / f"cat_d11t_before_{EXPECTED_BASE_SHA[:12]}_{run_id}.pak"
+-    stage = LIVE.with_name(f"cat_d11t.standalone-{run_id}.tmp")
+-    restore = LIVE.with_name(f"cat_d11t.restore-{run_id}.tmp")
+-    report_path = NATIVE / f"candidate_capture_{run_id}.json"
++    run_id = args.run_id
++    backup = Path(contract["backup"])
++    stage = Path(contract["stage"])
++    restore = Path(contract["restore"])
++    report_path = Path(contract["outerReceipt"])
+     report = {"status": "STARTING", "runId": run_id,
+               "startedUtc": dt.datetime.now(dt.timezone.utc).isoformat(),
+               "candidatePackage": str(candidate), "candidateSha256": expected,
+@@ -587,16 +779,30 @@
+               "sourcePins": pins, "capturePlan": {"variants": list(variants),
+                                                     "viewsPerVariant": list(views),
+                                                     "fullCapture": full_capture},
++              "outputContractSha256": contract_sha,
+               "variants": []}
+     swapped = False
++    receipt_owned = False
+     with LOCK.open("x", encoding="utf-8") as stream:
+         json.dump({"runId": run_id, "baselineSha256": EXPECTED_BASE_SHA,
+                    "candidateSha256": expected, "backup": str(backup)}, stream)
+     try:
+-        shutil.copy2(LIVE, backup)
++        guard(canonical_sha256(capture_contract(
++            run_id, variants, views, candidate, expected,
++            pins, survey.VIEWS, prototype=args.prototype,
++            package_receipt=package_receipt_path.resolve(),
++            package_receipt_sha=sha(package_receipt_path),
++            package_receipt_status=expected_status,
++            owned_lock=True)) == contract_sha,
++            "Capture output contract changed after acquiring the native lock")
++        # The outer receipt is reserved before copying or swapping anything.
++        # A run-ID race must never overwrite earlier evidence in save().
++        with report_path.open("x", encoding="utf-8"):
++            receipt_owned = True
++        copy_exclusive(LIVE, backup)
+         guard(sha(backup) == EXPECTED_BASE_SHA, "Baseline backup failed hash check")
+         guard(not stage.exists() and not restore.exists(), "Staging path already exists")
+-        shutil.copy2(candidate, stage)
++        copy_exclusive(candidate, stage)
+         guard(sha(stage) == expected, "Candidate staging failed hash check")
+         guard(sha(LIVE) == EXPECTED_BASE_SHA and not base.processes(),
+               "Installed package or process state changed before swap")
+@@ -608,7 +814,8 @@
+             guard(not base.processes(), "An editor remained active after the previous variant")
+             report["variants"].append(capture_variant(
+                 base, survey, variant, run_id + variant[:2], expected, pins,
+-                views, full_capture))
++                views, full_capture, contract["variantContexts"][variant],
++                contract_sha))
+         report["status"] = ("NATIVE_CAPTURES_READY_ROLLBACK_PENDING" if full_capture
+                             else "NATIVE_TRIAGE_CAPTURES_READY_ROLLBACK_PENDING")
+     except BaseException as exc:
+@@ -620,10 +827,13 @@
+             if swapped:
+                 guard(sha(LIVE) == expected,
+                       "Installed package differs from candidate; refusing to overwrite it")
+-                shutil.copy2(backup, restore)
++                copy_exclusive(backup, restore)
+                 guard(sha(restore) == EXPECTED_BASE_SHA, "Rollback staging hash mismatch")
+                 os.replace(restore, LIVE)
+                 guard(sha(LIVE) == EXPECTED_BASE_SHA, "Baseline rollback failed hash check")
++            else:
++                guard(sha(LIVE) == EXPECTED_BASE_SHA,
++                      "Installed baseline changed without this run's swap")
+             report["rollback"] = {"status": "BASELINE_RESTORED" if swapped else "NO_SWAP_NEEDED",
+                                   "backup": str(backup) if backup.is_file() else None,
+                                   "sha256": sha(LIVE)}
+@@ -637,11 +847,11 @@
+             report["status"] = "ROLLBACK_FAILED"
+             raise
+         finally:
+-            for path in (stage, restore):
+-                if path.exists():
+-                    path.unlink()
++            # Any incomplete stage/restore file is retained for inspection.
++            # Another process may have won a path race; never delete its file.
+             report["finishedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
+-            save(report_path, report)
++            if receipt_owned:
++                save(report_path, report)
+             if report.get("rollback", {}).get("status") in ("BASELINE_RESTORED", "NO_SWAP_NEEDED"):
+                 LOCK.unlink()
+     print(json.dumps({"status": report["status"], "report": str(report_path),

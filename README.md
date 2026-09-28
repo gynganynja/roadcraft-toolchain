@@ -100,6 +100,7 @@ roadcraft test --recipe local/recipes/d11_toolchain_checks.json --jobs-root jobs
 roadcraft build --recipe path/to/reviewed-build-recipe.json --jobs-root jobs --json
 roadcraft capture --recipe path/to/reviewed-capture-recipe.json --jobs-root jobs --json
 roadcraft jobs-status --jobs-root jobs --json
+roadcraft jobs-recover --jobs-root jobs --run-id <run-id> --expected-lock-sha256 <sha256> --expected-receipt-sha256 <sha256> --expected-installed-sha256 <sha256> --expected-registry-sha256 <sha256> --expected-config-sha256 <sha256> --json
 roadcraft install --candidate aaa-20260928 --json
 roadcraft rollback --receipt local/transactions/<id>/receipt.json --json
 roadcraft recover --receipt local/transactions/<id>/receipt.json --json
@@ -113,6 +114,32 @@ argv, cwd, pinned inputs, expected outputs, timeout and minimum free space.
 logs and locks. Native steps refuse active RoadCraft or authoring processes.
 Interrupted native work retains a lock for inspection. Recipe dry runs do not
 create a jobs directory.
+
+`jobs-recover` is also a dry run unless given `--apply`. Use it only for a
+terminal failed or interrupted native job after reviewing its receipt and the
+external package/editor state. In PowerShell, from the toolchain root, prepare
+the five reviewed pins and run the preview first:
+
+```powershell
+$run = 'reviewed-run-id'
+$lockSha = (Get-FileHash 'jobs/.roadcraft-jobs.lock' -Algorithm SHA256).Hash.ToLowerInvariant()
+$receiptSha = (Get-FileHash "jobs/$run/receipt.json" -Algorithm SHA256).Hash.ToLowerInvariant()
+$installedSha = (Get-Content 'project.json' -Raw | ConvertFrom-Json).accepted.package.sha256
+$registrySha = (Get-FileHash 'project.json' -Algorithm SHA256).Hash.ToLowerInvariant()
+$configSha = (Get-FileHash 'local/machine.json' -Algorithm SHA256).Hash.ToLowerInvariant()
+roadcraft jobs-recover --jobs-root jobs --run-id $run --expected-lock-sha256 $lockSha --expected-receipt-sha256 $receiptSha --expected-installed-sha256 $installedSha --expected-registry-sha256 $registrySha --expected-config-sha256 $configSha --registry project.json --config local/machine.json --json
+roadcraft jobs-recover --jobs-root jobs --run-id $run --expected-lock-sha256 $lockSha --expected-receipt-sha256 $receiptSha --expected-installed-sha256 $installedSha --expected-registry-sha256 $registrySha --expected-config-sha256 $configSha --registry project.json --config local/machine.json --apply --json
+```
+
+Run the second command only if the preview returns `ready` and its state is
+still the reviewed state. Recovery checks the owner's process, active authoring
+processes, the installed accepted package, and every configured transaction
+receipt and lock. An applied recovery writes `job_recovery_<id>.json` in the
+run directory before removing only the shared job lock. Its `released` status
+and returned SHA-256 document the release; `jobs-status` should then show
+`lockPresent: false`. The original failed job receipt and installed package
+remain unchanged. A `verified_release_pending` recovery receipt after a crash
+is ambiguous: inspect the lock's current presence before any further action.
 
 `install` names a candidate from the registry and verifies the expected live
 hash, source archives and process state before writing. Applied installs
@@ -195,3 +222,11 @@ background, factory-startup USF parser/serializer check, with a maximum
 ephemeral too. A durable receipt is written only when the caller supplies a
 new absolute `.json` path under `local/jobs`. The bridge never opens, saves,
 or exports a `.blend` file, and its diagnostic does not approve native export.
+
+For the separate scratch-only historical `.blend` export comparison, use
+`python -m roadcraft.blender_authoring` with pinned inventory, Blender and SDK
+paths. It records complete node/material/rig differences in a digest-linked
+archive while keeping the generated USF under ignored `local/` scratch. See
+`operations/D11_BLENDER_AUTHORING_PARITY_20260928.md` for the reproducible
+command and current blocked results. This diagnostic never changes the
+`native-blend` export approval gate.

@@ -34,18 +34,18 @@ visually accepted and campaign accepted are different states.
 
 | Area | State at this snapshot | Evidence and limit |
 |---|---|---|
-| Core CLI, jobs and transactions | Implemented | `src/roadcraft/cli.py`, `jobs.py`, `transaction.py`. CLI job/transaction operations default to dry-run; `--apply` executes. Availability is not evidence of a native run. |
-| Local inspect and synthetic tests | Dedicated environment passed | After the postflight validator addition, the target run completed 116 tests with 3 skips. Earlier inspect/test receipts remain under `jobs/20260927T233929Z-cab582e7350c/receipt.json` and `jobs/20260927T234050Z-66e61f71fca5/receipt.json`. Repeat affected checks after new code edits; disclose skips. |
+| Core CLI, jobs and transactions | Implemented | `src/roadcraft/cli.py`, `jobs.py`, `transaction.py`. CLI job/transaction operations default to dry-run; `--apply` executes. A failed phase after native launch retains its lock; `jobs-recover` requires exact lock/receipt/installed/registry/config pins and verified terminal external state before release. No live job lock was released. |
+| Local inspect and synthetic tests | Dedicated environment passed | After the capture contract, Blender parity, lock recovery and capture-pair validator changes, the target run completed 147 tests with 3 skips; `git diff --check` passed. Earlier inspect/test receipts remain under `jobs/20260927T233929Z-cab582e7350c/receipt.json` and `jobs/20260927T234050Z-66e61f71fca5/receipt.json`. Repeat affected checks after new code edits; disclose skips. |
 | Project verification | Current expanded check passed | Target `verify --project` verified all 5 pins and 2,817 source files; `source-check` passed. The older source `d11_verify_20260928.json` is a four-pin snapshot and does not replace the newer result. |
 | Accepted vs AAA candidate | Installed accepted; no recovery required; AAA unaccepted | Latest target status reports installed accepted and `recoveryRequired: false`. AAA's historical capture still reports `FAIL_ROLLBACK_PENDING`, with `BASELINE_RESTORED` rollback evidence. Refresh status before native work. |
 | Project-local MCP and workflow plugin | Trust approved; enabled and smoke-tested | User approved trust. Codex CLI `mcp list` sees `roadcraft`, `substance_painter`, `roadcraft_blender_scratch` enabled. Local marketplace is registered and `roadcraft-workflow` installed/enabled. Real stdio inventories: RoadCraft 11, Painter 79, Blender 2. RoadCraft remains read-only; tool scopes differ across servers. |
 | Dedicated environment | Installed and verified | RoadCraft, Painter MCP and PyYAML are installed in `C:\RC\RoadCraftDev\toolchain\.venv`; project-local config is parsed and loaded by Codex CLI. The maintained source handoff was hash-checked. |
-| New code Git repo/private remote | Pushed; Windows CI passed | Target `main` tracks the verified private origin `https://github.com/gynganynja/roadcraft-toolchain.git`. Remote/local commit identity was checked after the first push. The first Windows CI run found five 8.3 temporary-path fixture failures; `5027305` fixed them. Postflight commit `7938d97` passed 116 local tests (3 skips), and [CI run #3](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36362168779) completed successfully. |
+| New code Git repo/private remote | Pushed; Windows CI passed through `b09edc8` | Target `main` tracks the verified private origin `https://github.com/gynganynja/roadcraft-toolchain.git`. Remote/local commit identity was checked after the first push. The first Windows CI run found five 8.3 temporary-path fixture failures; `5027305` fixed them. [CI run #4](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36362287404) completed successfully for `b09edc8`. Recheck CI after the current diagnostic changes are pushed. |
 | Asset migration/Git LFS | Deferred by user choice; keep verified assets in place | `d11_asset_migration_preflight_20260928.json` verified 2,817 files / 3,477,364,242 bytes but failed its space gate. No copy occurred. Future migration requires a new decision and a fresh space check. |
-| Native build/test/capture recipes | Preflight recipe and read-only postflight validator passed local checks | `d11_aaa_native_preflight_recipe.json` passed `build`, `inspect` and `capture` dry runs. It runs only source checks, an existing-package audit and capture preflight without `--execute`. `native_capture_postflight.py` now validates a completed 3×15 view chain and rejects the real failed AAA receipt despite baseline restoration. The 14 GiB guard belongs to a separate lighting fixture; the AAA capture runner has 4 GB start / 1.5 GB loop guards but failed previously after editor disconnect. Deterministic output identity and process ownership still block executable recipe adoption. |
+| Native build/test/capture recipes | Preflight-only checks and output contract passed; execution blocked | `d11_aaa_native_preflight_recipe.json` passed `build`, `inspect` and `capture` dry runs without `--execute`. The guarded runner's read-only `--plan` pins a collision-free run ID, all declared outputs, source/package/scene/camera inputs and contract digest; `NATIVE_CAPTURE_OUTPUT_CONTRACT.md` describes the 248 required files and 45 screenshots. The postflight validator still rejects the historical failed receipt. `jobs-recover` is synthetic-tested, not applied to a live lock. A new read-only capture-pair validator requires observed lighting, camera, resolution and an exact 3×15 roster, but native observation and postflight linkage remain future work. The separate lighting fixture needs over 14 GiB; the AAA runner has 4 GB start / 1.5 GB loop guards. Its historical nearnew editor process vanished, with cause unknown. |
 | AAA regression | Failed; acceptance pending | `d11_aaa_interior_regression_result.json`: technical gate false, releaseReady false, zero matched capture pairs and 45 required views failing. Existing capture contexts omit lighting/protocol; visual and campaign approvals are pending. |
-| Blender no-edit USF bridge | Three assets passed; scratch MCP ready; native Blend export blocked | `d11_base_usf_roundtrip_receipt.json`, `d11_v2_usf_roundtrip_receipt.json`, `d11_v3_usf_roundtrip_receipt.json`: byte-identical, source/SDK unchanged, nativeBlendExportApproved false. Real scratch MCP smoke listed 2 tools and status ready with pinned Blender 5.2.0. |
-| Painter integration | Capabilities verified earlier; scratch project deferred by user | Real stdio probe listed 79 tools, connected to Painter 12.1.5/API 0.3.5 and called `get_capabilities` successfully while no project was open. Baking presets, auto-rebake control and skew-painting control are unavailable. The app exited before a disposable project could be created; the user chose to leave Painter closed for now. `PAINTER_CAPABILITIES_20260928.md` and `painter_disposable_probe_20260928.json` record the checks. No `.spp` was created and no accepted asset changed. |
+| Blender no-edit USF bridge | Three roundtrips passed; native Blend export proven different and blocked | No-edit USF roundtrips remain byte-identical and scratch MCP status was ready with pinned Blender 5.2.0. The three historical `.blend` files are byte-identical to one another. Native SDK exports differ from each repaired USF by 133 repaired-only, 76 native-only and 132 changed matched paths; material, rig and animation parity is missing. All three direct export-gate checks returned `BLOCKED`. `D11_BLENDER_AUTHORING_PARITY_20260928.md` links digest-sealed compact and full evidence. |
+| Painter integration | Capabilities verified earlier; scratch project deferred by user | Real stdio probe listed 79 tools, connected to Painter 12.1.5/API 0.3.5 and called `get_capabilities` successfully while no project was open. Baking presets, auto-rebake control and skew-painting control are unavailable. The user intentionally ended the Painter session to avoid interference and chose to leave it closed; `PAINTER_CAPABILITIES_20260928.md` and `painter_disposable_probe_20260928.json` record the checks. No `.spp` was created and no accepted asset changed. |
 | Storage | First exact batch complete; additional review pending | `STORAGE_REVIEW.md`: 159 template copies removed, 6.30 GiB freed, retained originals verified. The 23,604-file / 5.93 GiB expansion review remains untouched; its 33 MB raw manifest is local and a verified 1.6 MB gzip copy is versioned. `storage_expansion_executor_sample_20260928.json` checked eight files, removed zero and reports `applyReady: false` because process command-line inspection was denied. Git temporary pack remains separate. |
 
 ## 1. Finish checkout handoff and retain verified local tools
@@ -197,12 +197,38 @@ per-recipe disk budget, no conflicting native process/lock, known accepted
 package and verified rollback source. Migration is not a prerequisite if the
 current accepted source remains the reviewed input.
 
-Native recipe preparation is in progress and is **preflight-only**: the legacy
-runners are not safe to execute through the new workflow yet. The separate
-lighting fixture needs more than 14 GiB and is below its guard. The AAA
-capture runner's 4 GB start / 1.5 GB loop guards are different; its prior run
-failed after the editor process vanished during nearnew view 4. No new native
-build, installation or capture is claimed.
+Native recipe preparation is **preflight-only**. The separate lighting fixture
+needs more than 14 GiB and is below its guard. The AAA capture runner's 4 GB
+start / 1.5 GB loop guards are different; its prior run failed after the editor
+process vanished during nearnew view 4. The guarded runner now declares a
+collision-free eight-hex-digit run ID and a digest-sealed output contract
+before execution; its `--plan` is read-only. The reviewed
+`d11_aaa_native_capture_plan_a1b2c3d4.json` declares 248 required files,
+six optional hidden-probe files, 45 screenshot source paths, transient paths
+and opaque editor runtime roots. It pins the runner, installed and candidate
+packages, audited package receipt, 1,644 source pins and validation
+scene/camera inputs. Planned resolution and lighting remain unknown. See
+`NATIVE_CAPTURE_OUTPUT_CONTRACT.md` and
+`NATIVE_CAPTURE_FAILURE_ANALYSIS_20260928.md`. No new native build,
+installation or capture is claimed.
+
+The job runner keeps its shared lock after any failure following native launch.
+`jobs-recover` is a separate dry-run-first recovery command. It verifies the
+dead job owner, terminal recovery-required job receipt, accepted installed
+package, pinned registry/config, terminal configured transaction receipts,
+absence of transaction locks and active authoring processes. Its apply path
+records a distinct recovery receipt and clears only that shared job lock.
+The code was synthetic-tested; no real retained lock was released.
+
+`capture_pair_protocol.py` now provides a read-only context validator for a
+future baseline/candidate pair. It requires pinned raw editor observations
+immediately before each image, equal actual camera/lighting/scene context and
+measured image dimensions. Exact D11 3×15 coverage is required for
+`pairComparable=true`. Its output always keeps native postflight, technical and
+release gates false. The current native runner does not emit this observation
+schema or link it to successful outer receipts, so no historical capture can
+pass by inheriting the policy's proposed lighting/protocol labels. See
+`BASELINE_CANDIDATE_CAPTURE_PROTOCOL.md`.
 
 The read-only `python -m roadcraft.native_capture_postflight` check now
 requires exact run ID, candidate/baseline/installed hashes, successful
@@ -259,7 +285,11 @@ Successful rollback does not make the failed capture successful.
    baseline and candidate. Record actual variant, scene, camera, lighting,
    resolution and protocol at capture time. The existing policy's proposed
    lighting/protocol IDs are future requirements, not permission to fill
-   missing metadata into historical evidence by assumption.
+   missing metadata into historical evidence by assumption. Add the
+   capture-time probe and outer-receipt links needed by
+   `capture_pair_protocol.py`, then require its exact 45-view context result
+   before considering images comparable. Its output alone never proves native
+   postflight or release readiness.
 3. Generate the HTML/JSON review from externally pinned receipts. Rerun
    `python -m roadcraft.regression` against the reviewed policy: require valid
    source/package/capture links, allowed capture statuses, 45 unique matched
@@ -295,7 +325,15 @@ failed candidate evidence and address the specific missing/regressed checks.
 
 The three completed Blender 5.2 USF read/write tests prove no-edit
 serialization only. They do not prove historical `.blend` files reproduce the
-repaired rig, animation, materials or triangle order.
+repaired rig, animation, materials or triangle order. Direct diagnostic native
+exports now show that all three historical `.blend` references are byte-identical
+and all three exported USFs differ substantially from the repaired sources:
+133 repaired-only paths, 76 native-only paths and 132 changed matched paths
+per asset. The three actual export-gate calls returned `BLOCKED`. The SDK
+importer cannot reconstruct material names, skin/bind data or animation into
+a valid substitute `.blend`. Repeated exploratory exports also differed in
+whole-file SHA-256, with cause unproven. See
+`D11_BLENDER_AUTHORING_PARITY_20260928.md`; retain the `usf-repair` route.
 
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
@@ -322,8 +360,9 @@ project/input assets, and space for verified backups/exports.
    `get_capabilities` probe. No project was open then. The live API reported
    `baking_presets=false`, `auto_rebake_control=false` and
    `skew_painting_control=false`; see `PAINTER_CAPABILITIES_20260928.md`.
-   Painter later closed before disposable-project creation; the user chose to
-   leave it closed for now. See `painter_disposable_probe_20260928.json`.
+   The user intentionally closed Painter before disposable-project creation
+   to avoid interference and chose to leave it closed for now. See
+   `painter_disposable_probe_20260928.json`.
    Preserve any subsequently opened
    user project and recheck live status before authoring. The README's tested
    12.1.1 is not the observed runtime.
@@ -354,8 +393,8 @@ new local integration config if transport cannot be made reliable.
 ## Immediate execution order
 
 1. Git credential sign-in, private `main` push, remote commit comparison,
-   and the `7938d97` Windows CI run are complete. Recheck CI after later code
-   changes.
+   and the `b09edc8` Windows CI run are complete. Push the current reviewed
+   diagnostic changes, compare remote commit identity and recheck CI.
 2. Use the registered, smoke-tested local integrations; confirm tool visibility
    in the actual desktop task after reconnect if needed. Painter capability
    probing passed, but the app closed before disposable-project creation.
@@ -364,12 +403,15 @@ new local integration config if transport cannot be made reliable.
 3. Keep assets in their verified current location. Continue exact storage
    review as authorized, preflight-only native recipe work and capture-protocol
    definition. Do not migrate assets now.
-4. Fix the unsafe legacy-runner boundaries and meet native staging space,
-   process and source gates before any native execution. Only then produce
-   new matched AAA evidence and perform visual/campaign acceptance checks.
-5. Complete Blender authoring parity independently. Revisit LFS migration only
-   if the user changes the in-place asset decision; retain its 30 GiB reserve
-   gate. Keep accepted identity and historical evidence stable throughout.
+4. Resolve the historical editor disconnect, retained-lock recovery and
+   baseline/candidate capture protocol; meet native staging space, process
+   and source gates before any native execution. Only then produce new matched
+   AAA evidence and perform visual/campaign acceptance checks.
+5. Reconcile Blender hierarchy, materials, rig, skin and animation against
+   the retained parity diff before seeking native export approval. Revisit
+   LFS migration only if the user changes the in-place asset decision; retain
+   its 30 GiB reserve gate. Keep accepted identity and historical evidence
+   stable throughout.
 
 For every completed item, append or link a dated receipt with command/runtime,
 input pins, outputs, verification result and rollback outcome. Change this

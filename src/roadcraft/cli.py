@@ -83,6 +83,20 @@ def make_parser() -> argparse.ArgumentParser:
     job_state.add_argument("--jobs-root", type=Path, default=PACKAGE_ROOT / "jobs")
     _add_json(job_state)
 
+    job_recovery = commands.add_parser("jobs-recover", help="Verify and release an abandoned native job lock")
+    job_recovery.add_argument("--jobs-root", type=Path, default=PACKAGE_ROOT / "jobs")
+    job_recovery.add_argument("--run-id", required=True)
+    job_recovery.add_argument("--expected-lock-sha256", required=True)
+    job_recovery.add_argument("--expected-receipt-sha256", required=True)
+    job_recovery.add_argument("--expected-installed-sha256", required=True)
+    job_recovery.add_argument("--expected-registry-sha256", required=True)
+    job_recovery.add_argument("--expected-config-sha256", required=True)
+    job_recovery.add_argument("--apply", action="store_true",
+                              help="Release the verified lock; without this flag, preflight only")
+    _add_registry(job_recovery)
+    _add_config(job_recovery)
+    _add_json(job_recovery)
+
     source_check = commands.add_parser("source-check", help="Compare current source to its pinned authoring inventory")
     _add_registry(source_check)
     _add_json(source_check)
@@ -186,6 +200,15 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
         return result, result["status"] in ("passed", "dry_run")
     if args.command == "jobs-status":
         return jobs.inspect_jobs(args.jobs_root), True
+    if args.command == "jobs-recover":
+        result = jobs.recover_jobs(args.jobs_root, args.run_id,
+                                   args.expected_lock_sha256,
+                                   args.expected_receipt_sha256,
+                                   args.expected_installed_sha256,
+                                   args.registry, args.expected_registry_sha256,
+                                   args.config, args.expected_config_sha256,
+                                   dry_run=not args.apply)
+        return result, result["status"] in ("ready", "released")
     if args.command == "source-check":
         registry = core.read_registry(args.registry)
         accepted = registry.get("accepted", {})
