@@ -1,0 +1,351 @@
+# RoadCraft workflow implementation plan
+
+Status snapshot: 28 September 2026, Australia/Brisbane. This is a roadmap, not
+an execution receipt. Recheck live hashes, jobs, processes, free space and
+connection state before each dependent step. Existing authorization carries
+forward; this document adds no blanket approval requirement.
+
+## Locations, ownership and completion rules
+
+- **Source toolchain:** `C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\Roadcraft Development Package\RoadCraftToolchain`.
+- **Dedicated toolchain:** `C:\RC\RoadCraftDev\toolchain`. Its dedicated
+  environment and current checks pass. Git is initialized on `main`; `origin`
+  is `https://github.com/gynganynja/roadcraft-toolchain.git`. Finish syncing
+  remaining source edits have been synchronized and 96 maintained files were
+  hash-compared. Make the initial commit/push, then maintain this checkout
+  without diverging source/target copies.
+- **Current assets:** the verified location in `project.json` remains
+  authoritative: `C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\Roadcraft Development Package\D11_Interior_Standalone_20260927\p`.
+  The user chose to keep assets here. No migration is planned now;
+  `C:\RC\RoadCraftDev\assets` is only a deferred option.
+- **Historical repository:** `C:\RC\D11_Development`; retain its history,
+  working files and uncommitted changes independently of the new code repo.
+- **Implementation owner:** Codex/maintainer owns code, recipes, inventories,
+  diagnostics and receipts. **Machine/account owner:** user owns any required
+  project-trust UI action, account login and remote selection. **Acceptance
+  owner:** user or designated reviewer owns visual/campaign decisions; the
+  toolchain verifies those decisions and must not invent them.
+
+A stage is done only when its exit evidence exists and its failure/rollback
+checks pass. Configured, installed, connected, captured, numerically passed,
+visually accepted and campaign accepted are different states.
+
+## Current evidence
+
+| Area | State at this snapshot | Evidence and limit |
+|---|---|---|
+| Core CLI, jobs and transactions | Implemented | `src/roadcraft/cli.py`, `jobs.py`, `transaction.py`. CLI job/transaction operations default to dry-run; `--apply` executes. Availability is not evidence of a native run. |
+| Local inspect and synthetic tests | Dedicated environment passed | Post-sync target run completed 108 tests with 3 skips. Earlier inspect/test receipts remain under `jobs/20260927T233929Z-cab582e7350c/receipt.json` and `jobs/20260927T234050Z-66e61f71fca5/receipt.json`. Repeat affected checks after new code edits; disclose skips. |
+| Project verification | Current expanded check passed | Target `verify --project` verified all 5 pins and 2,817 source files; `source-check` passed. The older source `d11_verify_20260928.json` is a four-pin snapshot and does not replace the newer result. |
+| Accepted vs AAA candidate | Installed accepted; no recovery required; AAA unaccepted | Latest target status reports installed accepted and `recoveryRequired: false`. AAA's historical capture still reports `FAIL_ROLLBACK_PENDING`, with `BASELINE_RESTORED` rollback evidence. Refresh status before native work. |
+| Project-local MCP and workflow plugin | Trust approved; enabled and smoke-tested | User approved trust. Codex CLI `mcp list` sees `roadcraft`, `substance_painter`, `roadcraft_blender_scratch` enabled. Local marketplace is registered and `roadcraft-workflow` installed/enabled. Real stdio inventories: RoadCraft 11, Painter 79, Blender 2. RoadCraft remains read-only; tool scopes differ across servers. |
+| Dedicated environment | Installed and verified | RoadCraft, Painter MCP and PyYAML are installed in `C:\RC\RoadCraftDev\toolchain\.venv`; project-local config is parsed and loaded by Codex CLI. Final source edits still need synchronization before publication. |
+| New code Git repo/private remote | Local Git and private remote created; no push yet | Target initialized on `main`, origin `https://github.com/gynganynja/roadcraft-toolchain.git`. GitHub repository creation and private lock icon were verified. Remote code publication and CI remain pending. |
+| Asset migration/Git LFS | Deferred by user choice; keep verified assets in place | `d11_asset_migration_preflight_20260928.json` verified 2,817 files / 3,477,364,242 bytes but failed its space gate. No copy occurred. Future migration requires a new decision and a fresh space check. |
+| Native build/test/capture recipes | Preflight-only recipe passed dry runs | `d11_aaa_native_preflight_recipe.json` passed `build`, `inspect` and `capture` dry runs from the target. It runs only source checks, an existing-package audit and capture preflight without `--execute`. Legacy runners need safety changes before native execution; current free space is below their 14 GiB guard. |
+| AAA regression | Failed; acceptance pending | `d11_aaa_interior_regression_result.json`: technical gate false, releaseReady false, zero matched capture pairs and 45 required views failing. Existing capture contexts omit lighting/protocol; visual and campaign approvals are pending. |
+| Blender no-edit USF bridge | Three assets passed; scratch MCP ready; native Blend export blocked | `d11_base_usf_roundtrip_receipt.json`, `d11_v2_usf_roundtrip_receipt.json`, `d11_v3_usf_roundtrip_receipt.json`: byte-identical, source/SDK unchanged, nativeBlendExportApproved false. Real scratch MCP smoke listed 2 tools and status ready with pinned Blender 5.2.0. |
+| Painter integration | Live connection verified; no project open | Real stdio smoke listed 79 tools and connected to Painter 12.1.5 with no project. `../integrations/SubstancePainterMCP/RECOVERY_PROVENANCE.json` pins recovered source. Project inspection, material work and export remain pending. |
+| Storage | First exact batch complete; additional review pending | `STORAGE_REVIEW.md`: 159 template copies removed, 6.30 GiB freed, retained originals verified. The 23,604-file / 5.93 GiB expansion review remains untouched; its 33 MB raw manifest is local and a verified 1.6 MB gzip copy is versioned. `storage_expansion_executor_sample_20260928.json` checked eight files, removed zero and reports `applyReady: false` because process command-line inspection was denied. Git temporary pack remains separate. |
+
+## 1. Finish checkout handoff and retain verified local tools
+
+**Owner:** maintainer. **Dependencies:** final source edits. User trust,
+dedicated environment installation and local integration registration are done.
+
+1. Sync only maintained code/docs/config examples into the dedicated checkout;
+   preserve its `.venv`, local paths, jobs and receipts. Record the compared
+   file list and hashes. Verify imports resolve from the dedicated checkout,
+   not the earlier editable source installation.
+2. Retain the completed target evidence: 108 tests with 3 skips, all 5 project
+   pins and 2,817 files verified, `source-check` passed, installed accepted,
+   no recovery required. Run only checks warranted by subsequent changes;
+   refresh live status before native work. Keep dated old receipts intact.
+3. Check `.agents/plugins/marketplace.json` resolves the local plugin from
+   the actual project root. Validate plugin and both identical skills after
+   syncing. Check `.codex/config.toml` points to the dedicated interpreter,
+   registry, config and cwd; local secrets/state remain ignored by Git.
+4. Retain the completed user trust and Codex CLI loading evidence: all three
+   local MCP entries enabled, local marketplace registered, workflow plugin
+   installed/enabled. Do not request trust again merely because this plan
+   previously listed it as pending.
+5. Preserve real stdio smoke results: RoadCraft 11 tools; Painter 79 and live
+   12.1.5/no project; Blender scratch 2 and ready/pinned 5.2.0. Reload/reconnect
+   the desktop task if needed, then verify its actual callable tool inventory
+   before relying on it. CLI registration and subprocess smoke are complete;
+   no desktop-agent call result is inferred from them. Keep RoadCraft
+   inspection tools separate from Painter authoring and Blender scratch work.
+
+**Exit evidence:** target source/import identity, passing tests and current
+checks, official validation output, enabled local integrations and retained
+stdio smoke results. Confirm actual tool visibility in the task that will use
+them. Painter live connection is proven; project/export checks remain separate.
+
+**Failure/rollback:** stop dependent native work on identity/config mismatch.
+Restore the last known local config or disable only the new local integration;
+retain diagnostics. These checks must not modify installed game packages.
+
+## 2. Establish code Git history and a private remote
+
+**Owner:** maintainer. **Dependencies:** final source handoff and test results.
+Local `main`, origin and the verified private GitHub repository already exist;
+asset migration is not required.
+
+1. Inspect the existing Git repo in `C:\RC\RoadCraftDev\toolchain`, capture
+   the exact staged diff, and commit maintained code, tests, docs, workflow skill,
+   plugin scaffold, CI and intended small registry/evidence files. Verify
+   `.venv`, `local`, jobs, machine config, secrets and generated builds remain
+   excluded; review any absolute machine paths before publication.
+2. Preserve the older `C:\RC\D11_Development` repository. Its earlier audit
+   recorded 91 commits, `master` at
+   `fadca63406efdaedf6601074b7efe40619c0f8e5`, tag
+   `laptop-candidate06-baseline`, one worktree, no remotes, modified tracked
+   files and substantial untracked work. Record fresh refs/status before any
+   migration. A new code repo is not a replacement for that history.
+3. Use the existing origin
+   `https://github.com/gynganynja/roadcraft-toolchain.git`. Repository creation
+   and its private lock icon were verified; no push has occurred. Verify the
+   final staged contents and authentication, push `main` without force, and
+   compare local/remote commit IDs. A created remote alone is not a code backup.
+4. Run `.github/workflows/toolchain.yml` on the private remote and inspect its
+   outcome. Its Windows/Python checks cover synthetic tests and MCP schemas;
+   they do not validate native game rendering or machine-specific asset paths.
+
+**Exit evidence:** initial code commit, clean intended status, verified private
+remote, matching remote commit and successful CI. Independently preserve old
+refs plus a recoverable copy of modified/untracked source before migration.
+
+**Failure/rollback:** retain local commits if publication fails; correct remote
+configuration without rewriting/deleting either repository. Preserve normal
+Git packs and indexes. Never force-push the historical repository to simplify
+the migration.
+
+## 3. Preserve assets in place; keep migration as a deferred option
+
+**Owner:** maintainer; user for any additional exact deletion scope or storage
+location not already authorized. **Dependencies:** current space review and
+pinned accepted source; native staging must respect the same space budget.
+The user chose to keep assets at the current verified location. Do not run
+migration, initialize a duplicate asset checkout or switch source-root pins as
+part of current work. Storage review can continue within its existing scope.
+The migration/LFS steps below apply only if that decision is later changed.
+
+The migration gate is **30 GiB remaining reserve plus bytes still to copy**,
+not merely 30 GiB free before starting. The recorded preflight had
+12,931,457,024 bytes free (12.04 GiB), required 35,689,618,962 bytes (33.24 GiB),
+and was short 22,758,161,938 bytes (21.20 GiB). These are dated measurements;
+active builds/installations can change them. LFS object storage and native
+staging need additional budget beyond the copy preflight.
+
+1. Refresh free space and exact candidate state. Do not count the completed
+   6.30 GiB cleanup twice. The expansion review establishes only 5.93 GiB,
+   not a 15–20 GiB saving. Its active-ownership check remains outstanding.
+2. For an authorized expansion batch, pin the reviewed manifest, establish
+   process/job ownership, and recheck each file's retained counterpart,
+   SHA-256, identity, exclusive allocation, link count and reparse ancestry.
+   Preserve enclosing directories, accepted/AAA projects, captures, PAKs,
+   logs, fixtures and source. The existing `cleanup_commit` executor is
+   template-specific; it does not authorize or execute the expansion schema.
+   Implement/review a compatible exact-file executor before applying it.
+3. Keep `C:\RC\D11_Development\.git\objects\pack\tmp_pack_vOMJaY` separate.
+   Its recorded allocation is 4,014,342,144 bytes (3.74 GiB), one link, and Git
+   classified it as garbage. The previous connectivity check passed, but
+   does not prove the temp pack lacks recoverable unreferenced objects.
+   Before any separately authorized removal: refresh refs, locks/processes,
+   file identity/mtime/allocation, bounded connectivity and recovery/backup
+   assessment. Never extend that finding to normal packs or perform gc/repack
+   as a space shortcut while headroom is low.
+4. For a future migration, if reviewed savings cannot meet the gate, evaluate
+   an additional volume or explicit retained-data relocation plan. Keep the
+   30 GiB reserve; do not lower it just to make preflight pass.
+5. Only after a future migration decision, rerun `python -m roadcraft.migrate`
+   with `--manifest`, its registry
+   `--manifest-sha256`, accepted `--source-root`, new `--destination`, and
+   `--receipt`. Without `--run` it is read-only. After the gate passes and
+   within existing authorization, use `--run`; preserve the durable receipt
+   for resume, and never replace/delete source bytes.
+6. In the new asset checkout, verify Git LFS availability and configure
+   reviewed binary patterns before adding assets (USF, Blend, authored
+   textures and Painter project files as applicable). Track authoring inputs,
+   not caches/redundant builds. Inspect pointers and `git lfs ls-files`, run
+   LFS integrity checks, and verify a fresh checkout against the source
+   manifest. Budget checkout plus LFS object-store allocation before copying.
+7. Only after all 2,817 migrated files and authoring declarations verify,
+   record a deliberate registry path handoff and new manifest pins if their
+   content changes. Keep the accepted PAK hash unchanged. Do not rewrite old
+   Git history into LFS until its refs and uncommitted/untracked work are
+   independently recoverable and that migration scope is established.
+
+**Current exit evidence:** existing source location retained, current manifest
+and authoring checks pass, and no migration/source-root change performed.
+
+**Future migration exit evidence:** fresh passing space preflight; completed migration receipt;
+source/destination hash parity; LFS pointers and hydrated checkout verified;
+registry checks pass from the new source root; old sources/history retained.
+
+**Failure/rollback:** resume only from the matching durable migration receipt;
+stop on mismatched existing destination files. Continue using original source
+paths until verification passes. Deletion has no automatic undo: its retained
+counterpart/backup and per-file receipt must support recovery before removal.
+
+## 4. Prepare preflight-only native recipes; resolve execution blockers
+
+**Owner:** maintainer. **Dependencies:** current source identity, sufficient
+per-recipe disk budget, no conflicting native process/lock, known accepted
+package and verified rollback source. Migration is not a prerequisite if the
+current accepted source remains the reviewed input.
+
+Native recipe preparation is in progress and is **preflight-only**: the legacy
+runners are not safe to execute through the new workflow yet, and free space
+is below 14 GiB. No new native build, installation or capture is claimed.
+
+1. Audit existing D11 builders/capture runners and document each unsafe
+   behavior with the required adapter/fix before allowing execution. Prepare
+   explicit preflight-only build/test/capture phases with absolute executable
+   argv/cwd, pinned inputs, output expectations, native flags, bounded timeout
+   and realistic free-space requirements. Keep execution blocked until runner
+   behavior, process ownership, installation/rollback boundaries and disk
+   needs are verified. Do not invent successful output pins or weaken the job
+   schema to accept unknown artifacts silently.
+2. Review `build`, `test`, `capture` or `inspect-job --recipe PATH` dry-run
+   output. `test` must identify whether it is a synthetic toolchain test or
+   an actual native test. Do not use `--apply` on these native recipes now.
+   After the documented runner fixes and space/process/source gates pass,
+   execute only the intended reviewed phase and retain job logs and receipt.
+3. Before package replacement, `install --candidate NAME` must match the
+   expected current installed hash (accepted pin unless explicitly supplied).
+   Review the dry-run, then use the transaction's retained prior bytes for
+   `rollback --receipt PATH` or known-hash `recover --receipt PATH` if needed.
+   Read each dry-run before any applied recovery. Keep legacy capture rollback
+   journals distinct from new package-transaction receipts.
+4. Pin the package receipt and audit allowed archive changes by normalized
+   member path and occurrence. Seal native captures against the exact tested
+   package/source/protocol. Record process exit, timeout and rollback outcome.
+
+**Current exit evidence:** reviewed preflight output and explicit recorded
+execution blockers, with no native/package mutation.
+
+**Future execution exit evidence:** passed native job receipts, package/receipt hash chain,
+expected scoped archive changes, all required views, and verified restoration
+of the expected installed package. Synthetic job success alone is insufficient.
+
+**Failure/rollback:** stop promotion immediately. Preserve native failure logs
+and locks; verify external editor/package state before clearing a retained
+lock. Unknown live hashes require investigation, not an unconditional copy.
+Successful rollback does not make the failed capture successful.
+
+## 5. Complete AAA regression, visual and campaign acceptance
+
+**Owner:** maintainer for capture/metrics; designated reviewer for acceptance.
+**Dependencies:** step 4 and a reproducible baseline/candidate protocol.
+
+1. Keep `aaa-20260928` a candidate. Investigate its failed native capture and
+   obtain a new successful sealed run; preserve the old failure receipt.
+2. Capture all 15 required views for each of maroon, nearnew and worn for both
+   baseline and candidate. Record actual variant, scene, camera, lighting,
+   resolution and protocol at capture time. The existing policy's proposed
+   lighting/protocol IDs are future requirements, not permission to fill
+   missing metadata into historical evidence by assumption.
+3. Generate the HTML/JSON review from externally pinned receipts. Rerun
+   `python -m roadcraft.regression` against the reviewed policy: require valid
+   source/package/capture links, allowed capture statuses, 45 unique matched
+   view pairs and no required-view failures. Define numerical thresholds and
+   units before the run for any claimed metric improvement; the current
+   interior policy has no handling/terrain/campaign thresholds.
+4. Review the actual images and record visual decisions for the same candidate
+   and gate digest. Perform campaign checks separately: shop spawn, handling,
+   visible track/trail behavior and physical rut behavior require campaign
+   evidence, not private-editor substitutes. Record exact variant/scenario
+   and unresolved findings.
+5. The implemented regression gate expects detached signed visual/campaign
+   claims bound to the candidate hash and gate digest, plus an external
+   reviewer-key trust store. Establish the genuine review/signing handoff
+   and verify the Ed25519 dependency before relying on it. Do not generate a
+   reviewer identity or sign approval on someone's behalf to clear the gate.
+6. Update acceptance/registry pins only after technical, visual and campaign
+   requirements are met and the acceptance decision is recorded. Preserve the
+   prior accepted package and receipts for rollback.
+
+**Exit evidence:** technicalPassed and releaseReady true under the intended
+policy, verified image/metric reports, valid reviewer claims and recorded
+campaign results. If a gate is out of scope, change scope explicitly rather
+than reporting an unperformed check as passed.
+
+**Failure/rollback:** keep the accepted pin and installed baseline; preserve
+failed candidate evidence and address the specific missing/regressed checks.
+
+## 6. Complete Blender authoring parity
+
+**Owner:** asset maintainer and designated parity reviewer.
+**Dependencies:** pinned source inventory and step 4 native verification.
+
+The three completed Blender 5.2 USF read/write tests prove no-edit
+serialization only. They do not prove historical `.blend` files reproduce the
+repaired rig, animation, materials or triangle order.
+
+1. Keep the declared `usf-repair` route authoritative. Work on separate copies
+   when reconciling native Blender authoring sources.
+2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
+   UV/colors, materials, skinning, bind matrices, LODs, metadata, animation,
+   compilation and native-view parity required by `source.py`.
+3. Create the reviewed parity receipt bound to that asset's current digest and
+   repaired USF SHA-256, with every required check supported. Pass
+   `require_export_allowed` before adopting `native-blend` as the export route.
+
+**Exit evidence:** asset-specific reviewed parity receipts, gate success,
+compiled/native evidence and an explicit source-inventory update.
+**Failure/rollback:** retain repaired USF and the existing export method;
+discard only disposable scratch outputs. Never overwrite authoritative USF
+with an unverified generic Blender export.
+
+## 7. Complete Painter project checks and controlled exports
+
+**Owner:** maintainer; machine owner for app login/UI prerequisites.
+**Dependencies:** step 1 transport/trust (complete), appropriate disposable
+project/input assets, and space for verified backups/exports.
+
+1. Retain the successful live Painter 12.1.5 connection and 79-tool stdio smoke
+   result. No project was open. Preserve any subsequently opened user project;
+   recheck live status before authoring instead of assuming this earlier idle
+   state persists. The README's tested 12.1.1 is not the observed runtime.
+2. Probe `get_capabilities`, then use an authorized disposable project/copy
+   for `get_project_info` and read-only project/layer inspection. Record
+   runtime API capabilities and exact project identity. Existing live health
+   evidence does not establish successful project creation, bake or export.
+3. Configure narrow `SP_MCP_EXPORT_ROOTS`, `SP_MCP_PROJECT_ROOTS`,
+   `SP_MCP_MESH_ROOTS`, `SP_MCP_BAKE_MESH_ROOTS` and `SP_MCP_RESOURCE_ROOTS`
+   only for the required workflow. Keep arbitrary Python execution disabled.
+   Start with a disposable project/copy and `plan_texture_export`; review
+   channels, color space, bit depth, resolution, naming and conflicts against
+   actual RoadCraft material requirements before an authorized export.
+4. For a first controlled write, preserve a verified `.spp` copy, export into
+   new scratch paths, verify output hashes/dimensions/channels, then compile
+   and capture through the same source/package gates. Do not write directly
+   over accepted source textures during the smoke test.
+
+**Exit evidence:** app-visible MCP calls, recorded live capabilities, verified
+backup/export receipt, and native material comparison where exports are used.
+**Failure/rollback:** restore the verified project copy or retain the original
+project; leave accepted textures/packages untouched. Remove/disable only the
+new local integration config if transport cannot be made reliable.
+
+## Immediate execution order
+
+1. Finish remaining target sync; run checks warranted by those edits; commit
+   and push `main` to the existing verified private origin, then inspect CI.
+2. Use the registered, smoke-tested local integrations; confirm tool visibility
+   in the actual desktop task after reconnect if needed. Complete Painter
+   project/capability checks on disposable inputs.
+3. Keep assets in their verified current location. Continue exact storage
+   review as authorized, preflight-only native recipe work and capture-protocol
+   definition. Do not migrate assets now.
+4. Fix the unsafe legacy-runner boundaries and meet native staging space,
+   process and source gates before any native execution. Only then produce
+   new matched AAA evidence and perform visual/campaign acceptance checks.
+5. Complete Blender authoring parity independently. Revisit LFS migration only
+   if the user changes the in-place asset decision; retain its 30 GiB reserve
+   gate. Keep accepted identity and historical evidence stable throughout.
+
+For every completed item, append or link a dated receipt with command/runtime,
+input pins, outputs, verification result and rollback outcome. Change this
+plan's status only after that evidence exists.

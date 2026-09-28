@@ -1,0 +1,1890 @@
+{
+  "evaluatedUtc": "2026-09-27T23:47:10.926149+00:00",
+  "policy": {
+    "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\operations\\d11_aaa_interior_regression_policy.json",
+    "sha256": "9e93c1a17883680dfaddf26c7c095d10ba5739fc415e265f1fddbb3c85152965"
+  },
+  "result": {
+    "schemaVersion": 1,
+    "kind": "roadcraft.regression",
+    "gateDigest": "3853a5c11b5d7b93b0d2935953bc08851f3343724a28dd03c9eb8f6b18c0daba",
+    "artifacts": {
+      "source": {
+        "kind": "source",
+        "role": null,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\baseline_project_manifest.json",
+        "exists": true,
+        "bytes": 418472,
+        "sha256": "3303e6334159f7cf623444cd211ea9196cca984166b6f752037db8a71a28e3aa",
+        "unchangedDuringRead": true,
+        "expectedSha256": "3303e6334159f7cf623444cd211ea9196cca984166b6f752037db8a71a28e3aa",
+        "matchesExpected": true
+      },
+      "baselinePackage": {
+        "kind": "package",
+        "role": "baseline",
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\build\\retail\\cat_d11t_standalone_interior_candidate.pak",
+        "exists": true,
+        "bytes": 852101141,
+        "sha256": "3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16",
+        "unchangedDuringRead": true,
+        "expectedSha256": "3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16",
+        "matchesExpected": true
+      },
+      "candidatePackage": {
+        "kind": "package",
+        "role": "candidate",
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\retail\\cat_d11t_aaa_candidate.pak",
+        "exists": true,
+        "bytes": 917278898,
+        "sha256": "3b4129d22b8a79bf1969ee7effd8d92b699beae1aa6a33deebb658cd2ade6031",
+        "unchangedDuringRead": true,
+        "expectedSha256": "3b4129d22b8a79bf1969ee7effd8d92b699beae1aa6a33deebb658cd2ade6031",
+        "matchesExpected": true
+      },
+      "packageReceipt": {
+        "kind": "package-receipt",
+        "role": null,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\package_receipt.json",
+        "exists": true,
+        "bytes": 88261,
+        "sha256": "40fe7ad060aa95f7d23bd17331716017a24cc3951915fef15c52a1d9e73b2b8e",
+        "unchangedDuringRead": true,
+        "expectedSha256": "40fe7ad060aa95f7d23bd17331716017a24cc3951915fef15c52a1d9e73b2b8e",
+        "matchesExpected": true
+      },
+      "baselineCapture": {
+        "kind": "capture",
+        "role": "baseline",
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\native\\candidate_capture_353675c4.json",
+        "exists": true,
+        "bytes": 223621,
+        "sha256": "84f087ad58d157d77323e3042d1af6e0f4795de1b38999075cc618cf69f869ad",
+        "unchangedDuringRead": true,
+        "expectedSha256": "84f087ad58d157d77323e3042d1af6e0f4795de1b38999075cc618cf69f869ad",
+        "matchesExpected": true
+      },
+      "candidateCapture": {
+        "kind": "capture",
+        "role": "candidate",
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\candidate_capture_bd58bce0.json",
+        "exists": true,
+        "bytes": 228787,
+        "sha256": "805689d11c4d7d9154559884fe17409da480c8d27756d45120f90d5a3078d915",
+        "unchangedDuringRead": true,
+        "expectedSha256": "805689d11c4d7d9154559884fe17409da480c8d27756d45120f90d5a3078d915",
+        "matchesExpected": true
+      }
+    },
+    "chain": {
+      "passed": false,
+      "reasons": [
+        "candidateCapture: status 'FAIL_ROLLBACK_PENDING' is not allowed",
+        "candidateCapture: capture receipt reports failure or pending work"
+      ]
+    },
+    "sceneEquivalences": [
+      {
+        "sceneId": "d11t-maroon-scene",
+        "sha256": "9481bca1db96dd5c3c0c201f9d7f84e0b16fd7e683905c286060b16e9d53dfa1"
+      },
+      {
+        "sceneId": "d11t-nearnew-scene",
+        "sha256": "7bb6428240ecb1acf0d31674d855d8af6eebefe57f62d7f4956bf8d603b0a701"
+      },
+      {
+        "sceneId": "d11t-worn-scene",
+        "sha256": "a518939a52afa5dd946a480161545e257fa89c7d0968d489937a27adf5a1bd8c"
+      }
+    ],
+    "views": [
+      {
+        "view": "front_seat",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "front_down",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.7,
+                0.0,
+                -0.4
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.55,
+                -0.72,
+                -0.16
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right_down",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.48,
+                -0.66,
+                -0.58
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right_panel_detail",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.1,
+                -0.3,
+                -0.15
+              ],
+              [
+                0.4,
+                -0.75,
+                -0.78
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right_outer_low",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.02,
+                -0.44,
+                -0.18
+              ],
+              [
+                0.32,
+                -1.0,
+                -0.83
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "left",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.55,
+                0.72,
+                -0.12
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "left_down",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.48,
+                0.66,
+                -0.56
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "left_panel_detail",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.1,
+                0.3,
+                -0.15
+              ],
+              [
+                0.4,
+                0.75,
+                -0.72
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.26,
+                0,
+                0.08
+              ],
+              [
+                -0.78,
+                0,
+                0.05
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear_down",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.26,
+                0,
+                0.08
+              ],
+              [
+                -0.55,
+                0,
+                -0.55
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear_right_detail",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.2,
+                0,
+                0.04
+              ],
+              [
+                -0.67,
+                -0.65,
+                -0.22
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear_left_detail",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.2,
+                0,
+                0.04
+              ],
+              [
+                -0.67,
+                0.65,
+                -0.22
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "overhead",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                -0.08
+              ],
+              [
+                0.85,
+                0,
+                0.43
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "overhead_rear",
+        "context": {
+          "variant": "maroon",
+          "scene": "d11t-maroon-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.2,
+                0,
+                0
+              ],
+              [
+                -0.42,
+                0,
+                0.78
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "front_seat",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "front_down",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.7,
+                0.0,
+                -0.4
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.55,
+                -0.72,
+                -0.16
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right_down",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.48,
+                -0.66,
+                -0.58
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right_panel_detail",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.1,
+                -0.3,
+                -0.15
+              ],
+              [
+                0.4,
+                -0.75,
+                -0.78
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right_outer_low",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.02,
+                -0.44,
+                -0.18
+              ],
+              [
+                0.32,
+                -1.0,
+                -0.83
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "left",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.55,
+                0.72,
+                -0.12
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "left_down",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.48,
+                0.66,
+                -0.56
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "left_panel_detail",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.1,
+                0.3,
+                -0.15
+              ],
+              [
+                0.4,
+                0.75,
+                -0.72
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.26,
+                0,
+                0.08
+              ],
+              [
+                -0.78,
+                0,
+                0.05
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear_down",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.26,
+                0,
+                0.08
+              ],
+              [
+                -0.55,
+                0,
+                -0.55
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear_right_detail",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.2,
+                0,
+                0.04
+              ],
+              [
+                -0.67,
+                -0.65,
+                -0.22
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear_left_detail",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.2,
+                0,
+                0.04
+              ],
+              [
+                -0.67,
+                0.65,
+                -0.22
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "overhead",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                -0.08
+              ],
+              [
+                0.85,
+                0,
+                0.43
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "overhead_rear",
+        "context": {
+          "variant": "nearnew",
+          "scene": "d11t-nearnew-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.2,
+                0,
+                0
+              ],
+              [
+                -0.42,
+                0,
+                0.78
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "front_seat",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "front_down",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.7,
+                0.0,
+                -0.4
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.55,
+                -0.72,
+                -0.16
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right_down",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.48,
+                -0.66,
+                -0.58
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right_panel_detail",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.1,
+                -0.3,
+                -0.15
+              ],
+              [
+                0.4,
+                -0.75,
+                -0.78
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "right_outer_low",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.02,
+                -0.44,
+                -0.18
+              ],
+              [
+                0.32,
+                -1.0,
+                -0.83
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "left",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.55,
+                0.72,
+                -0.12
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "left_down",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0.48,
+                0.66,
+                -0.56
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "left_panel_detail",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.1,
+                0.3,
+                -0.15
+              ],
+              [
+                0.4,
+                0.75,
+                -0.72
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.26,
+                0,
+                0.08
+              ],
+              [
+                -0.78,
+                0,
+                0.05
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear_down",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.26,
+                0,
+                0.08
+              ],
+              [
+                -0.55,
+                0,
+                -0.55
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear_right_detail",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.2,
+                0,
+                0.04
+              ],
+              [
+                -0.67,
+                -0.65,
+                -0.22
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "rear_left_detail",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.2,
+                0,
+                0.04
+              ],
+              [
+                -0.67,
+                0.65,
+                -0.22
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "overhead",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0,
+                0,
+                -0.08
+              ],
+              [
+                0.85,
+                0,
+                0.43
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      },
+      {
+        "view": "overhead_rear",
+        "context": {
+          "variant": "worn",
+          "scene": "d11t-worn-scene",
+          "camera": {
+            "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+            "spec": [
+              [
+                0.2,
+                0,
+                0
+              ],
+              [
+                -0.42,
+                0,
+                0.78
+              ]
+            ]
+          },
+          "lighting": "fixed-interior-lighting-v1",
+          "resolution": [
+            913,
+            559
+          ],
+          "protocol": "d11-interior-15view-v1"
+        },
+        "passed": false,
+        "reason": "No unique pinned baseline/candidate pair"
+      }
+    ],
+    "thresholds": [],
+    "matchedCapturePairs": 0,
+    "matchedMetricPairs": 0,
+    "comparisonExclusions": [
+      {
+        "id": "capture-0",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-1",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-2",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-3",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-4",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-5",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-6",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-7",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-8",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-9",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-10",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-11",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-12",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-13",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-14",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-15",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-16",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-17",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-18",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-19",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-20",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-21",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-22",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-23",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-24",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-25",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-26",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-27",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-28",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-29",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-30",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-31",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-32",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-33",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-34",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-35",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-36",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-37",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-38",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-39",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-40",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-41",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-42",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-43",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-44",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-45",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-46",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-47",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-48",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-49",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-50",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-51",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-52",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-53",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-54",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-55",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-56",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-57",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-58",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      },
+      {
+        "id": "capture-59",
+        "reasons": [
+          "missing context: lighting",
+          "missing context: protocol"
+        ]
+      }
+    ],
+    "technicalPassed": false,
+    "acceptance": {
+      "visual": {
+        "state": "pending",
+        "reason": "No detached signed approval was supplied"
+      },
+      "campaign": {
+        "state": "pending",
+        "reason": "No detached signed approval was supplied"
+      }
+    },
+    "releaseReady": false
+  }
+}

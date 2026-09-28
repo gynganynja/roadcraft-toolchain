@@ -1,0 +1,18 @@
+{
+  "name": "roadcraft-workflow",
+  "version": "0.1.0",
+  "description": "Repository-local RoadCraft workflow instructions for source identity, package verification, evidence review and exact-file storage checks.",
+  "author": {
+    "name": "RoadCraft Toolchain maintainers"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "RoadCraft Workflow",
+    "shortDescription": "Verify RoadCraft sources, packages and evidence.",
+    "longDescription": "Workflow instructions for an existing RoadCraftToolchain checkout. This skills-only scaffold does not install or configure an MCP server, Blender, Painter or the native editor.",
+    "developerName": "RoadCraft Toolchain maintainers",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Use the RoadCraft workflow to inspect this project's current identities and report verified results and unresolved acceptance work."
+  }
+}

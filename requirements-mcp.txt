@@ -1,0 +1,3 @@
+# Optional stdio server only. Core CLI has no third-party dependencies.
+# Match the supported SDK v1 line also used by the existing Painter integration.
+mcp>=1.28,<2

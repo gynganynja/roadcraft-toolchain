@@ -1,0 +1,436 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\p",
+  "assets": [
+    {
+      "asset": "cat_d11t",
+      "exportMethod": "usf-repair",
+      "files": [
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/cat_d11t.blend",
+          "role": "blend-reference",
+          "bytes": 30451895,
+          "sha256": "1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/cat_d11t.tpl.asset",
+          "role": "accepted-source",
+          "bytes": 374,
+          "sha256": "af7d58946ccc9f5d796b2ef98cbda2bc04b4f3234a73948c3c6e79e9be4ee66a"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/cat_d11t.tpl_markup",
+          "role": "accepted-source",
+          "bytes": 50501,
+          "sha256": "d4f4d3baf91b90c3b122722a630201448fcbd5e3a70c9d6d260578255a85cbd3"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/cat_d11t.tpl_markup.resource",
+          "role": "accepted-source",
+          "bytes": 8785,
+          "sha256": "29cae2e61d32b3818ce118c1784c570a2a063a5ab098dd5e7bc8bc2c2dd15cf2"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/export.usf",
+          "role": "build-usf",
+          "bytes": 192935318,
+          "sha256": "49bfc77c1172a0e324934974d5612a13d121c3cee78ae7ca454468b61649e170"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/export_options.ps",
+          "role": "export-options",
+          "bytes": 1132,
+          "sha256": "33b0fdd4798f68d6aa52adb93f82cf4811b60c46f4acfde0e44c799ac354f28c"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/mod_cat_d11t_beacon_green.tga",
+          "role": "accepted-source",
+          "bytes": 786,
+          "sha256": "06341e0a5e89ec3153aef76317bc451e4361359d1d90c7d3ac6ee6f9af49076b"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/mod_cat_d11t_fleet_15364.tga",
+          "role": "accepted-source",
+          "bytes": 424199,
+          "sha256": "511cad9f6a4f77326758437796ffff37125841dfe93246fb0da3c01157f8bde3"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/anim_list.json",
+          "role": "accepted-source",
+          "bytes": 220,
+          "sha256": "a5d4722cc84f04993002a0cac18b54b6e1382fa8ac29c7e97d015f82331ddc17"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/cat_d11t.geom_dbg",
+          "role": "accepted-source",
+          "bytes": 86103,
+          "sha256": "cf2d27f988ac476235d776605006afcff9710d4414b87a5772e6e5fc31093e40"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/cat_d11t.lods_base",
+          "role": "accepted-source",
+          "bytes": 181522,
+          "sha256": "0cbf08557cc6ed74003bfdf2d99bb4ab8c85c21a07f56896333683cc9df0b2fe"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/cat_d11t.tpl",
+          "role": "accepted-source",
+          "bytes": 909453,
+          "sha256": "4dea3f31f0c2cc5da62f09d47a024d89ab7ae983ff2c19c8ae18025b36c5870f"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/cat_d11t.tpl_data",
+          "role": "accepted-source",
+          "bytes": 44479086,
+          "sha256": "3b9f1835651cdfdcbda54d7d95e9293c09d4c2e6ec954421e626bf0c86f2a06a"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/intermediate/.cdt_conv_output",
+          "role": "accepted-source",
+          "bytes": 43,
+          "sha256": "bcbfd21a56cd240ff3157a5eff9d230a0dfeb043a5e69a975f95b9926133d1f9"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/intermediate/.usf_export_tpl_output",
+          "role": "accepted-source",
+          "bytes": 3979,
+          "sha256": "40ff25150e5721549e7303edab1240957a99b0ea231724f137c281673b47c2b0"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/intermediate/pct_locations.yaml",
+          "role": "accepted-source",
+          "bytes": 23298,
+          "sha256": "b6871fc55b2eb5d01498d3e38d8e367a483ee080268f79bea0b107244c74ddf0"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/obj_list.json",
+          "role": "accepted-source",
+          "bytes": 1947388,
+          "sha256": "631bb2c3f3bd2da0c3c186939299b363f264bbc58f9df01a7bac3b24816ef649"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/res_cnv_options.ps",
+          "role": "accepted-source",
+          "bytes": 53,
+          "sha256": "f8eb4466668490103ab2acd99be8e21a5c7208b120a27a676f2d7820cc75d1bc"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/tpl.tpl.resource",
+          "role": "accepted-source",
+          "bytes": 4098,
+          "sha256": "eb40bb3a6dfab8527ad77e042b21e849a51c86538752b01e442980294c06f756"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t.tpl.asset/tpl/tpl_meta_info.json",
+          "role": "accepted-source",
+          "bytes": 92,
+          "sha256": "b63e883209f36c5cadd7aa2e0aef3a6baaacff876d4bf523b9ab83938ec532da"
+        }
+      ],
+      "assetDigest": "ec611b9f0433874d30422c79f5658598d8ed50b89d5f265d42b423a50341bf30"
+    },
+    {
+      "asset": "cat_d11t_v2",
+      "exportMethod": "usf-repair",
+      "files": [
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/cat_d11t_v2.blend",
+          "role": "blend-reference",
+          "bytes": 30451895,
+          "sha256": "1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/cat_d11t_v2.tpl.asset",
+          "role": "accepted-source",
+          "bytes": 389,
+          "sha256": "1fb43fb490f5e54aa745bb90c87a7a1474792f9a39032fa21cf05a506fb75076"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/cat_d11t_v2.tpl_markup",
+          "role": "accepted-source",
+          "bytes": 52739,
+          "sha256": "d2a81044d94b51400792f2bde36d594015f9b33c8623ea66080f6068b599f0d0"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/cat_d11t_v2.tpl_markup.resource",
+          "role": "accepted-source",
+          "bytes": 8896,
+          "sha256": "e63aee0c5ca048565b16a65a8cef2745c06622e0329bfac3cd510e26b0e8b731"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/export.usf",
+          "role": "build-usf",
+          "bytes": 192935831,
+          "sha256": "096a3cc042e382becb69e25c722dbaf0e2c2a65608cf6ff01008705eb0bad24a"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/export_options.ps",
+          "role": "export-options",
+          "bytes": 1132,
+          "sha256": "33b0fdd4798f68d6aa52adb93f82cf4811b60c46f4acfde0e44c799ac354f28c"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/anim_list.json",
+          "role": "accepted-source",
+          "bytes": 220,
+          "sha256": "a5d4722cc84f04993002a0cac18b54b6e1382fa8ac29c7e97d015f82331ddc17"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/cat_d11t_v2.geom_dbg",
+          "role": "accepted-source",
+          "bytes": 86103,
+          "sha256": "cf2d27f988ac476235d776605006afcff9710d4414b87a5772e6e5fc31093e40"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/cat_d11t_v2.lods_base",
+          "role": "accepted-source",
+          "bytes": 181630,
+          "sha256": "34e48395a536b2b87087b5588a71b64d79a75a484e08af4ceff81ac9d721f350"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/cat_d11t_v2.tpl",
+          "role": "accepted-source",
+          "bytes": 909978,
+          "sha256": "865bb61d67ca68e543e0d3c1a8284594f411d3dee3efb308f355fa7586a2f030"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/cat_d11t_v2.tpl_data",
+          "role": "accepted-source",
+          "bytes": 44479086,
+          "sha256": "3b9f1835651cdfdcbda54d7d95e9293c09d4c2e6ec954421e626bf0c86f2a06a"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/intermediate/.cdt_conv_output",
+          "role": "accepted-source",
+          "bytes": 43,
+          "sha256": "bcbfd21a56cd240ff3157a5eff9d230a0dfeb043a5e69a975f95b9926133d1f9"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/intermediate/.usf_export_tpl_output",
+          "role": "accepted-source",
+          "bytes": 3991,
+          "sha256": "fa0b3a2a6777c808b30cecb0c3ed5cb24d504cc6a61cdcdc867f4d538dd8a9ec"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/intermediate/pct_locations.yaml",
+          "role": "accepted-source",
+          "bytes": 23298,
+          "sha256": "b6871fc55b2eb5d01498d3e38d8e367a483ee080268f79bea0b107244c74ddf0"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/obj_list.json",
+          "role": "accepted-source",
+          "bytes": 1947892,
+          "sha256": "75f02bca545bd4a94e6fce6453214215eada89d8650c09ab405f2cfcc4f9a695"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/res_cnv_options.ps",
+          "role": "accepted-source",
+          "bytes": 53,
+          "sha256": "f8eb4466668490103ab2acd99be8e21a5c7208b120a27a676f2d7820cc75d1bc"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/tpl.tpl.resource",
+          "role": "accepted-source",
+          "bytes": 4110,
+          "sha256": "c80a0c10052cb82c285690c3cce7a022b7fe0379ec8ff63783562aa7dbf2cbb6"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl/tpl_meta_info.json",
+          "role": "accepted-source",
+          "bytes": 92,
+          "sha256": "b63e883209f36c5cadd7aa2e0aef3a6baaacff876d4bf523b9ab83938ec532da"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/anim_list.json",
+          "role": "accepted-source",
+          "bytes": 220,
+          "sha256": "a5d4722cc84f04993002a0cac18b54b6e1382fa8ac29c7e97d015f82331ddc17"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/cat_d11t_v2.geom_dbg",
+          "role": "accepted-source",
+          "bytes": 83314,
+          "sha256": "9edc7e6ae3587939378f98f90c119da08ba944bb1ec763391f31c05720d23305"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/cat_d11t_v2.lods_base",
+          "role": "accepted-source",
+          "bytes": 170833,
+          "sha256": "f786bb8ec7eda1c939d8f34446b84a5bb3e2095c4e425f4fe00714797d5b4ba2"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/cat_d11t_v2.tpl",
+          "role": "accepted-source",
+          "bytes": 708850,
+          "sha256": "cab2046acfe0acbe77c6fe1c6fd0ab0e4531ffba0e00167e7756ac07bf0beedf"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/cat_d11t_v2.tpl_data",
+          "role": "accepted-source",
+          "bytes": 24676780,
+          "sha256": "73091534e8a62e2799efc1c9709c700a570fefbe768e18d8a9d40be3c1bd87a5"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/intermediate/.cdt_conv_output",
+          "role": "accepted-source",
+          "bytes": 43,
+          "sha256": "bcbfd21a56cd240ff3157a5eff9d230a0dfeb043a5e69a975f95b9926133d1f9"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/intermediate/.usf_export_tpl_output",
+          "role": "accepted-source",
+          "bytes": 1687,
+          "sha256": "9896c4cd238810b5ae61c4058d93e400181f4465ee6c4fb352f32a63ac22a71e"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/intermediate/pct_locations.yaml",
+          "role": "accepted-source",
+          "bytes": 15899,
+          "sha256": "d41f9c4dacec6f678d7b9a7fd1dfec450cc0859dd69a18ec46cc56464ad31da9"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/obj_list.json",
+          "role": "accepted-source",
+          "bytes": 1858810,
+          "sha256": "55c6a51cd52b279f9447151cb21ca77c7568f7e461fb4ac9ab7f8a0db172efc5"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/res_cnv_options.ps",
+          "role": "accepted-source",
+          "bytes": 53,
+          "sha256": "f8eb4466668490103ab2acd99be8e21a5c7208b120a27a676f2d7820cc75d1bc"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/tpl.tpl.resource",
+          "role": "accepted-source",
+          "bytes": 1806,
+          "sha256": "1e2c2535621607bda177e54a5609fc055912cbb4088824963f27b2d9ebb52f94"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v2.tpl.asset/tpl_before_material_remap/tpl_meta_info.json",
+          "role": "accepted-source",
+          "bytes": 92,
+          "sha256": "aa37b15997d132b72bd1d72e118ef9645c9170c6bfa63a1e81c014cebc8a6e97"
+        }
+      ],
+      "assetDigest": "6f6d47667c5dd24aa18fa1734aa2cbc7c6af48ac28bc57c67e8609f899f22d6f"
+    },
+    {
+      "asset": "cat_d11t_v3",
+      "exportMethod": "usf-repair",
+      "files": [
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/cat_d11t_v3.blend",
+          "role": "blend-reference",
+          "bytes": 30451895,
+          "sha256": "1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/cat_d11t_v3.tpl.asset",
+          "role": "accepted-source",
+          "bytes": 389,
+          "sha256": "1c39afcfd253fec3ef38d1d03d98aabd540031bb882fd208d39a21cfb9f6a5c3"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/cat_d11t_v3.tpl_markup",
+          "role": "accepted-source",
+          "bytes": 52739,
+          "sha256": "0d5cecc920780ad8ae999c675ae198b78b2f2fac50894a10cd484f42b6c8733b"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/cat_d11t_v3.tpl_markup.resource",
+          "role": "accepted-source",
+          "bytes": 8896,
+          "sha256": "c891f39468859927d6b01295f6f5db12233ef5a84de11e613ad72b3e9350a85d"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/export.usf",
+          "role": "build-usf",
+          "bytes": 192935831,
+          "sha256": "1346b73da9cf72b6e866a722d929fd5c18305537f9ef3acd369f84ea808993d1"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/export_options.ps",
+          "role": "export-options",
+          "bytes": 1132,
+          "sha256": "33b0fdd4798f68d6aa52adb93f82cf4811b60c46f4acfde0e44c799ac354f28c"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/anim_list.json",
+          "role": "accepted-source",
+          "bytes": 220,
+          "sha256": "a5d4722cc84f04993002a0cac18b54b6e1382fa8ac29c7e97d015f82331ddc17"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/cat_d11t_v3.geom_dbg",
+          "role": "accepted-source",
+          "bytes": 86103,
+          "sha256": "cf2d27f988ac476235d776605006afcff9710d4414b87a5772e6e5fc31093e40"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/cat_d11t_v3.lods_base",
+          "role": "accepted-source",
+          "bytes": 181630,
+          "sha256": "27781b674b101cc963af2057d418aa87951ea078d0647835f9594306a9f87822"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/cat_d11t_v3.tpl",
+          "role": "accepted-source",
+          "bytes": 909978,
+          "sha256": "cbfed411cbf43eedd7038015b2f0b4356dca21bca55c3e07ada5646e2bc24ff2"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/cat_d11t_v3.tpl_data",
+          "role": "accepted-source",
+          "bytes": 44479086,
+          "sha256": "3b9f1835651cdfdcbda54d7d95e9293c09d4c2e6ec954421e626bf0c86f2a06a"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/intermediate/.cdt_conv_output",
+          "role": "accepted-source",
+          "bytes": 43,
+          "sha256": "bcbfd21a56cd240ff3157a5eff9d230a0dfeb043a5e69a975f95b9926133d1f9"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/intermediate/.usf_export_tpl_output",
+          "role": "accepted-source",
+          "bytes": 3991,
+          "sha256": "4cfc07f4b4ccafe4b8b6e6acb5d8483c127fae0b0122fee1dec34cd09399020c"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/intermediate/pct_locations.yaml",
+          "role": "accepted-source",
+          "bytes": 23298,
+          "sha256": "b6871fc55b2eb5d01498d3e38d8e367a483ee080268f79bea0b107244c74ddf0"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/obj_list.json",
+          "role": "accepted-source",
+          "bytes": 1947892,
+          "sha256": "9d5bba690d14b69b4a5f9b33895c76d16ff8ee96ae25a979d263842305e3cd69"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/res_cnv_options.ps",
+          "role": "accepted-source",
+          "bytes": 53,
+          "sha256": "f8eb4466668490103ab2acd99be8e21a5c7208b120a27a676f2d7820cc75d1bc"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/tpl.tpl.resource",
+          "role": "accepted-source",
+          "bytes": 4110,
+          "sha256": "673eb49d763d9a289f5d4288ddd1e3ff691916c4272a371ea63857efe84171c6"
+        },
+        {
+          "path": "mods_source/models/mods/cat_d11t_v3.tpl.asset/tpl/tpl_meta_info.json",
+          "role": "accepted-source",
+          "bytes": 92,
+          "sha256": "b63e883209f36c5cadd7aa2e0aef3a6baaacff876d4bf523b9ab83938ec532da"
+        }
+      ],
+      "assetDigest": "7c3588072e21e5aa8944d136491ebc26e9dace14ab47929bd8672a75ffbac0e7"
+    }
+  ],
+  "manifestDigest": "50909b2dc1ef58830a9b1127f17692b0d84777274954ae9964a226e21e9248d4"
+}

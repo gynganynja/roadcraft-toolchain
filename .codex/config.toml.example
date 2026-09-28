@@ -1,0 +1,28 @@
+# Copy to .codex/config.toml in this trusted project after installing the
+# local virtual environment. The absolute paths below are generated per host.
+[plugins."roadcraft-workflow@roadcraft-local"]
+enabled = true
+
+[mcp_servers.roadcraft]
+command = "C:/RC/RoadCraftDev/toolchain/.venv/Scripts/python.exe"
+args = ["-m", "roadcraft.mcp_server", "--registry", "C:/RC/RoadCraftDev/toolchain/project.json", "--config", "C:/RC/RoadCraftDev/toolchain/local/machine.json"]
+cwd = "C:/RC/RoadCraftDev/toolchain"
+startup_timeout_sec = 30
+tool_timeout_sec = 180
+
+[mcp_servers.substance_painter]
+command = "C:/RC/RoadCraftDev/toolchain/.venv/Scripts/python.exe"
+args = ["-m", "substance_painter_mcp.server"]
+cwd = "C:/RC/RoadCraftDev/toolchain"
+startup_timeout_sec = 30
+tool_timeout_sec = 180
+
+# Separate scratch diagnostic. Pin the exact installed blender.exe with
+# `roadcraft verify --file <absolute-blender.exe> --json` before enabling it.
+# This server exposes no Blender project editing or native .blend export.
+[mcp_servers.roadcraft_blender_scratch]
+command = "C:/RC/RoadCraftDev/toolchain/.venv/Scripts/python.exe"
+args = ["-m", "roadcraft.blender_mcp_server", "--blender-executable", "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe", "--blender-sha256", "<64-hex-digit-pin>", "--sdk-script-root", "C:/RC/RoadCraftDev/toolchain/sdk_scripts"]
+cwd = "C:/RC/RoadCraftDev/toolchain"
+startup_timeout_sec = 30
+tool_timeout_sec = 960

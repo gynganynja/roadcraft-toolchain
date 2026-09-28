@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "archive": "C:\\RC\\D11_Audit_20260917\\01_RoadCraft_Essentials.zip",
+  "archiveSha256": "f1df403276775e414288b1d52c7820ecbb0bfc937e7cf237ba50a232770ff114",
+  "prefix": "RoadCraftLaptop/extras/SubstancePainterMCP/",
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 28030,
+      "sha256": "87122d57ba31454c081631cf49110bdbd9a17678c806f65baa48b6d6bb5e1132"
+    },
+    {
+      "path": "docs/PROCEDURAL_AND_BAKING.md",
+      "bytes": 4722,
+      "sha256": "b714e99ef5eba68902de8bf777394b3e0f2b717168ebdf75a1b431e044ed7af4"
+    },
+    {
+      "path": "docs/PRODUCTION_BAKING.md",
+      "bytes": 5611,
+      "sha256": "d7d64cf372daa2e4fb25799aabbcf38abe1d2282b983bf067552103fd5312de1"
+    },
+    {
+      "path": "docs/PROJECT_LIFECYCLE.md",
+      "bytes": 4412,
+      "sha256": "e41b3fc897e826fb202f6728ef820c5f5633077b85fe780866840f635b5334f9"
+    },
+    {
+      "path": "docs/RECIPES.md",
+      "bytes": 2538,
+      "sha256": "1a87b14523348515e9d8ae7606efc7ba59cea65f3af38d8feb21e3cac00a1582"
+    },
+    {
+      "path": "docs/RESOURCE_INGESTION.md",
+      "bytes": 5566,
+      "sha256": "fd9e03fb7d5d10d87110cebb50cc16a58dbf4627b8c4ab1d8116f200aa7e2cdf"
+    },
+    {
+      "path": "docs/ROADMAP.md",
+      "bytes": 9875,
+      "sha256": "caa26833ceff84f95f54d7851bd5daf6a6fe77fd1b50617dcf4ddbbdeaeb0787"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 1085,
+      "sha256": "d879eca830fb5ed10903e272fa77f1ac9f8ffadc41cab9e467817a31d925a479"
+    },
+    {
+      "path": "pyproject.toml",
+      "bytes": 603,
+      "sha256": "97e0e22a255d9b63a50e0a0fd13617da1d15d902ec90d739159f50280d55f5f4"
+    },
+    {
+      "path": "README.md",
+      "bytes": 23473,
+      "sha256": "644c72a8855eceaa7a8cd2f7dd6543e968cdf37352f5392b4bbc02921638b7e8"
+    },
+    {
+      "path": "scripts/live_features.py",
+      "bytes": 6865,
+      "sha256": "3fd317016f6e0144fd0211376c7ae27c2ae9ae8fb8d53360e96e07909e416967"
+    },
+    {
+      "path": "scripts/live_smoke.py",
+      "bytes": 3324,
+      "sha256": "dc1b2d938498b8f272d11ea6e455264bdf661cfda1ca58daddc892c89874fb5f"
+    },
+    {
+      "path": "scripts/live_v04.py",
+      "bytes": 5031,
+      "sha256": "0288f9c38e47bc2ef32399864073be966574af9fbbe54651566a4368382d8f17"
+    },
+    {
+      "path": "scripts/live_v05.py",
+      "bytes": 6496,
+      "sha256": "0cd872af7ccd0d11a34ffacdc41adcebfa5bb04022913a304bd103bdd82119dd"
+    },
+    {
+      "path": "scripts/live_v06.py",
+      "bytes": 8022,
+      "sha256": "af289f6de77bda19f8d88e8dcce2234127597e9a98ac87cdf75f740d127b0c48"
+    },
+    {
+      "path": "scripts/live_v07.py",
+      "bytes": 4901,
+      "sha256": "5bd15ebd920bd9de48de30186b09f0fc25cfc34078293d3eb8a9f5e309ab7a59"
+    },
+    {
+      "path": "scripts/live_v08.py",
+      "bytes": 5369,
+      "sha256": "2f90ca3a0004e110ed7a45f393ea1cbe7cef60d533b38d6bc68cb3aaa496c6f5"
+    },
+    {
+      "path": "scripts/live_v09.py",
+      "bytes": 5532,
+      "sha256": "515bbe5e967ba1e4323cbcd8b0c5368b3713b94c37e34a4b46935ac47d930b0f"
+    },
+    {
+      "path": "scripts/live_v10.py",
+      "bytes": 5798,
+      "sha256": "17415395e5d32c8a2af4839eeb990acce5ad10d1608f5e0fbde835d76ab091c4"
+    },
+    {
+      "path": "src/painter_remote.py",
+      "bytes": 435,
+      "sha256": "4c2473ee615e7fd08cc6114363c7d7977d5397ed5c86ffc8e81604d23d708aab"
+    },
+    {
+      "path": "src/server.py",
+      "bytes": 147,
+      "sha256": "8438f6780b5fd384f06ea718710974aa5c0164894301a00d97735bc9d1a9ac72"
+    },
+    {
+      "path": "src/substance_painter_mcp/__init__.py",
+      "bytes": 172,
+      "sha256": "7c7c0bae1783a551e0ecb03f71a2658e895113a58ceeff6c33e89d7fa58963fe"
+    },
+    {
+      "path": "src/substance_painter_mcp/__main__.py",
+      "bytes": 70,
+      "sha256": "215007891334921001e39746926e966f877db38c704cbb1dedeedb1d899b1294"
+    },
+    {
+      "path": "src/substance_painter_mcp/client.py",
+      "bytes": 5182,
+      "sha256": "383cdaa6a4c74486b21fa3b34341a22ca30eeac50d24a720bd73f409284f07df"
+    },
+    {
+      "path": "src/substance_painter_mcp/operations.py",
+      "bytes": 208285,
+      "sha256": "9d57f83e3a6498e878143aab633106faece1ec38e762ed72feaa485845a60666"
+    },
+    {
+      "path": "src/substance_painter_mcp/server.py",
+      "bytes": 26054,
+      "sha256": "92d8f6703b7d722619ed0f4249ffe98edf04a9304cf287b7f269df040ac4c46d"
+    },
+    {
+      "path": "src/substance_painter_mcp.egg-info/dependency_links.txt",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "src/substance_painter_mcp.egg-info/entry_points.txt",
+      "bytes": 76,
+      "sha256": "a4b8652f9262cd68e4d54489d1abd5153abca5c402a188ba853b632daae7cebd"
+    },
+    {
+      "path": "src/substance_painter_mcp.egg-info/requires.txt",
+      "bytes": 34,
+      "sha256": "f9646413d10ec82bfabfea35e7e2cec2da83d41b3c61ea7129c56b6818ea3deb"
+    },
+    {
+      "path": "src/substance_painter_mcp.egg-info/SOURCES.txt",
+      "bytes": 583,
+      "sha256": "ea76a99fb35c6009626153d926eea4cbed3f7a8b5d64bda03dc3ed3dc25576a4"
+    },
+    {
+      "path": "src/substance_painter_mcp.egg-info/top_level.txt",
+      "bytes": 22,
+      "sha256": "23d362acf2ea3424944ebb0dc1c98af4ebaf7a943686be86a0eb5a31ec3ad783"
+    }
+  ]
+}

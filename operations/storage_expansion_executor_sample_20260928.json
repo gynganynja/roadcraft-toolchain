@@ -1,0 +1,25 @@
+{
+  "operation": "remove-reviewed-retail-export-files",
+  "dryRun": true,
+  "partialSample": true,
+  "applyReady": false,
+  "manifest": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\operations\\storage_expansion_review_20260928.json",
+  "manifestSha256": "aa5aad369e601cf9bf076d11101fd3925f396de5898338fc150b4cfed69e7ec7",
+  "scope": "C:\\RC\\D11_Development",
+  "candidateCount": 23604,
+  "sampleCandidateCount": 8,
+  "sampleSelection": "first manifest rows",
+  "sampledRetainedSourceFiles": 0,
+  "sampledRetainedPackages": 1,
+  "git": {
+    "head": "fadca63406efdaedf6601074b7efe40619c0f8e5",
+    "trackedCandidateCount": 0,
+    "trackedCandidates": [],
+    "trackedStatusSha256": "b6a931025009341c7c3f2689c7f70646b85b2e2a798ebed916400d43d8cf6413",
+    "trackedStatusEntries": 5
+  },
+  "activeProcesses": [],
+  "processInspectionError": "export-job command-line inspection unavailable: Get-CimInstance : Access denied \nAt line:1 char:32\n+ $ErrorActionPreference='Stop'; Get-CimInstance Win32_Process | Where- ...\n+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : PermissionDenied: (root\\cimv2:Win32_Process:String) [Get-CimInstance], CimException\n    + FullyQualifiedErrorId : HRESULT 0x80041003,Microsoft.Management.Infrastructure.CimCmdlets.GetCimInstanceCommand",
+  "checkedUtc": "2026-09-28T00:06:06.159611+00:00",
+  "deletedCount": 0
+}

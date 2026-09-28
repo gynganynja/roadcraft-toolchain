@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "name": "d11-aaa-native-preflight-only",
+  "phases": {
+    "build": [
+      {
+        "id": "source-and-receipt-check",
+        "command": [
+          "C:\\RC\\RoadCraftDev\\toolchain\\.venv\\Scripts\\python.exe",
+          "-B",
+          "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\package_and_audit.py",
+          "--check"
+        ],
+        "cwd": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928",
+        "inputs": [
+          {
+            "path": "C:\\RC\\RoadCraftDev\\toolchain\\.venv\\Scripts\\python.exe",
+            "sha256": "5fc3c5244b5eef01a82fbefd1932d1382b79c72fe6e64ffe8df1e3ce3643f02f"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\package_and_audit.py",
+            "sha256": "bc06185d56af4728e9cc3c047ab46f5d606f026f1e824b3d2df0c0c624dd17b4"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\mods\\cat_d11t.pak",
+            "sha256": "3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\bootstrap_receipt.json",
+            "sha256": "c264a09a4573696167dc67e56f3c7425c666c33515b857a2c4ecb8800ec779bd"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\baseline_project_manifest.json",
+            "sha256": "3303e6334159f7cf623444cd211ea9196cca984166b6f752037db8a71a28e3aa"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\atlas_integration_v1\\integration_receipt.json",
+            "sha256": "fbe9a4d09d5ee3af523355fe446ad843f1a18a89cecbb705806da737a424af40"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\atlas_integration_v2\\integration_receipt.json",
+            "sha256": "54e1938be3d5ef8d41be15521f2a91cfe1ab4e08ecec5b86715414d04666139b"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\advisor_integration_v1\\material_receipt.json",
+            "sha256": "e2f9eb0264c2248ee7048b947d93b743d5bd5192876770580a6d72dba88ee5be"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\worn_integration_v2\\material_receipt.json",
+            "sha256": "f50a2b107f9b774d16c0acf95c3ee9682a0e0e1925e81ace4f475a037ce3cfa3"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\geometry_integration_v1\\integration_receipt.json",
+            "sha256": "5836c1f65bb04953df10cd3a1313508f350e8fa6c3a65ff32e4deb2b68fcea97"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\compile_receipt.json",
+            "sha256": "9909bf7d0b6f65694b0dac266efddbf98e3cab4f6d055f47b4acc8597444969b"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\compile_receipt.json",
+            "sha256": "9909bf7d0b6f65694b0dac266efddbf98e3cab4f6d055f47b4acc8597444969b"
+          }
+        ],
+        "timeoutSeconds": 900,
+        "minFreeBytes": 8589934592,
+        "native": false,
+        "env": {
+          "PYTHONDONTWRITEBYTECODE": "1"
+        }
+      }
+    ],
+    "inspect": [
+      {
+        "id": "existing-candidate-occurrence-audit",
+        "command": [
+          "C:\\RC\\RoadCraftDev\\toolchain\\.venv\\Scripts\\python.exe",
+          "-B",
+          "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\package_and_audit.py",
+          "--audit-package",
+          "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\retail\\cat_d11t_aaa_candidate.pak"
+        ],
+        "cwd": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928",
+        "inputs": [
+          {
+            "path": "C:\\RC\\RoadCraftDev\\toolchain\\.venv\\Scripts\\python.exe",
+            "sha256": "5fc3c5244b5eef01a82fbefd1932d1382b79c72fe6e64ffe8df1e3ce3643f02f"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\package_and_audit.py",
+            "sha256": "bc06185d56af4728e9cc3c047ab46f5d606f026f1e824b3d2df0c0c624dd17b4"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\mods\\cat_d11t.pak",
+            "sha256": "3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\bootstrap_receipt.json",
+            "sha256": "c264a09a4573696167dc67e56f3c7425c666c33515b857a2c4ecb8800ec779bd"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\baseline_project_manifest.json",
+            "sha256": "3303e6334159f7cf623444cd211ea9196cca984166b6f752037db8a71a28e3aa"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\atlas_integration_v1\\integration_receipt.json",
+            "sha256": "fbe9a4d09d5ee3af523355fe446ad843f1a18a89cecbb705806da737a424af40"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\atlas_integration_v2\\integration_receipt.json",
+            "sha256": "54e1938be3d5ef8d41be15521f2a91cfe1ab4e08ecec5b86715414d04666139b"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\advisor_integration_v1\\material_receipt.json",
+            "sha256": "e2f9eb0264c2248ee7048b947d93b743d5bd5192876770580a6d72dba88ee5be"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\worn_integration_v2\\material_receipt.json",
+            "sha256": "f50a2b107f9b774d16c0acf95c3ee9682a0e0e1925e81ace4f475a037ce3cfa3"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\geometry_integration_v1\\integration_receipt.json",
+            "sha256": "5836c1f65bb04953df10cd3a1313508f350e8fa6c3a65ff32e4deb2b68fcea97"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\compile_receipt.json",
+            "sha256": "9909bf7d0b6f65694b0dac266efddbf98e3cab4f6d055f47b4acc8597444969b"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\retail\\cat_d11t_aaa_candidate.pak",
+            "sha256": "3b4129d22b8a79bf1969ee7effd8d92b699beae1aa6a33deebb658cd2ade6031"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\package_receipt.json",
+            "sha256": "40fe7ad060aa95f7d23bd17331716017a24cc3951915fef15c52a1d9e73b2b8e"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Terrain_Tracks_20260926\\retail_roots.txt",
+            "sha256": "6b94225798d6c9eb29cb8e169d25fd71c3348ef752102207923cbc8e443c7d9e"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Terrain_Tracks_20260926\\retail_metadata\\cat_d11t.mod",
+            "sha256": "54c461996e3f69f9f1780352cd9c45e6caac48f5699e1241e57fbb732432400d"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\retail\\cat_d11t_aaa_candidate.pak",
+            "sha256": "3b4129d22b8a79bf1969ee7effd8d92b699beae1aa6a33deebb658cd2ade6031"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\package_receipt.json",
+            "sha256": "40fe7ad060aa95f7d23bd17331716017a24cc3951915fef15c52a1d9e73b2b8e"
+          }
+        ],
+        "timeoutSeconds": 1200,
+        "minFreeBytes": 8589934592,
+        "native": false,
+        "env": {
+          "PYTHONDONTWRITEBYTECODE": "1"
+        }
+      }
+    ],
+    "capture": [
+      {
+        "id": "source-and-receipt-recheck",
+        "command": [
+          "C:\\RC\\RoadCraftDev\\toolchain\\.venv\\Scripts\\python.exe",
+          "-B",
+          "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\package_and_audit.py",
+          "--check"
+        ],
+        "cwd": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928",
+        "inputs": [
+          {
+            "path": "C:\\RC\\RoadCraftDev\\toolchain\\.venv\\Scripts\\python.exe",
+            "sha256": "5fc3c5244b5eef01a82fbefd1932d1382b79c72fe6e64ffe8df1e3ce3643f02f"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\package_and_audit.py",
+            "sha256": "bc06185d56af4728e9cc3c047ab46f5d606f026f1e824b3d2df0c0c624dd17b4"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\mods\\cat_d11t.pak",
+            "sha256": "3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\bootstrap_receipt.json",
+            "sha256": "c264a09a4573696167dc67e56f3c7425c666c33515b857a2c4ecb8800ec779bd"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\baseline_project_manifest.json",
+            "sha256": "3303e6334159f7cf623444cd211ea9196cca984166b6f752037db8a71a28e3aa"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\atlas_integration_v1\\integration_receipt.json",
+            "sha256": "fbe9a4d09d5ee3af523355fe446ad843f1a18a89cecbb705806da737a424af40"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\atlas_integration_v2\\integration_receipt.json",
+            "sha256": "54e1938be3d5ef8d41be15521f2a91cfe1ab4e08ecec5b86715414d04666139b"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\advisor_integration_v1\\material_receipt.json",
+            "sha256": "e2f9eb0264c2248ee7048b947d93b743d5bd5192876770580a6d72dba88ee5be"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\worn_integration_v2\\material_receipt.json",
+            "sha256": "f50a2b107f9b774d16c0acf95c3ee9682a0e0e1925e81ace4f475a037ce3cfa3"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\geometry_integration_v1\\integration_receipt.json",
+            "sha256": "5836c1f65bb04953df10cd3a1313508f350e8fa6c3a65ff32e4deb2b68fcea97"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\compile_receipt.json",
+            "sha256": "9909bf7d0b6f65694b0dac266efddbf98e3cab4f6d055f47b4acc8597444969b"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\compile_receipt.json",
+            "sha256": "9909bf7d0b6f65694b0dac266efddbf98e3cab4f6d055f47b4acc8597444969b"
+          }
+        ],
+        "timeoutSeconds": 900,
+        "minFreeBytes": 8589934592,
+        "native": false,
+        "env": {
+          "PYTHONDONTWRITEBYTECODE": "1"
+        }
+      },
+      {
+        "id": "full-capture-preflight-no-swap",
+        "command": [
+          "C:\\RC\\RoadCraftDev\\toolchain\\.venv\\Scripts\\python.exe",
+          "-B",
+          "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\capture_candidate_native.py",
+          "--candidate-pak",
+          "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\retail\\cat_d11t_aaa_candidate.pak",
+          "--expected-candidate-sha",
+          "3b4129d22b8a79bf1969ee7effd8d92b699beae1aa6a33deebb658cd2ade6031"
+        ],
+        "cwd": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928",
+        "inputs": [
+          {
+            "path": "C:\\RC\\RoadCraftDev\\toolchain\\.venv\\Scripts\\python.exe",
+            "sha256": "5fc3c5244b5eef01a82fbefd1932d1382b79c72fe6e64ffe8df1e3ce3643f02f"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\capture_candidate_native.py",
+            "sha256": "b3670ff30afeb06e94301f68e12bf62d3857c5f21f1958ccc982ced2fb04831d"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\mods\\cat_d11t.pak",
+            "sha256": "3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\retail\\cat_d11t_aaa_candidate.pak",
+            "sha256": "3b4129d22b8a79bf1969ee7effd8d92b699beae1aa6a33deebb658cd2ade6031"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\package_receipt.json",
+            "sha256": "40fe7ad060aa95f7d23bd17331716017a24cc3951915fef15c52a1d9e73b2b8e"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Repair_20260926\\capture_interior.py",
+            "sha256": "dae524f24afad50e04902d8310775478577d5f48c8610fb3595e3b376ea8f19f"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Repair_20260926\\capture_cab_survey.py",
+            "sha256": "083652fc56cf6d0bcc54ab139c7100f126427f9a5d2da9df5fb29dbf3eeec2ef"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Final_Candidate_20260925\\native_acceptance.py",
+            "sha256": "89b1431099bacc00a3173ffbe46c9dbfc1047707828db929df949e40df11f580"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_All_Repairs_20260925\\handling\\run_benchmark.py",
+            "sha256": "66d89665a07a48dcc0603110fa68c5785ca346e86fb5cb5cf5b6ae7caed0a9dd"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_All_Repairs_20260925\\handling\\prepare_benchmark.py",
+            "sha256": "8cac36bfb54075bfd949a5dcd1dfdde714195421ab8fbbe496f0c7ff0a4d6e8e"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Painter_Return_20260924\\native_v3\\native_ssl_lights_review.ps1",
+            "sha256": "437f13daa6ccfded000d4939f39bb32bb00ba0a05c6db52507ab6f4eafb5429b"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\root\\mods\\cat_d11t.pak",
+            "sha256": "3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\package_receipt.json",
+            "sha256": "40fe7ad060aa95f7d23bd17331716017a24cc3951915fef15c52a1d9e73b2b8e"
+          }
+        ],
+        "timeoutSeconds": 900,
+        "minFreeBytes": 8589934592,
+        "native": false,
+        "env": {
+          "PYTHONDONTWRITEBYTECODE": "1"
+        }
+      }
+    ]
+  }
+}

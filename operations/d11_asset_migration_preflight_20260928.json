@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "kind": "accepted-source-migration-preflight",
+  "observedAtUtc": "2026-09-27T23:51:58Z",
+  "status": "INSUFFICIENT_SPACE",
+  "dryRun": true,
+  "sourceRoot": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\p",
+  "manifestPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\operations\\d11_accepted_source_manifest.json",
+  "manifestSha256": "f9cef6eed11f8fef8a3f73edd0aeeef8011e0e08f1615c44fbbfab5601db5d1d",
+  "destination": "C:\\RC\\RoadCraftDev\\assets",
+  "plannedReceiptPath": "C:\\RC\\RoadCraftDev\\local\\source_migration.json",
+  "sourceManifestAndFilesVerified": true,
+  "expectedFiles": 2817,
+  "expectedBytes": 3477364242,
+  "freeBytes": 12931457024,
+  "minimumFreeBytes": 32212254720,
+  "requiredFreeBytes": 35689618962,
+  "shortfallBytes": 22758161938,
+  "spaceGatePassed": false,
+  "destinationExistsAfter": false,
+  "plannedReceiptExistsAfter": false
+}

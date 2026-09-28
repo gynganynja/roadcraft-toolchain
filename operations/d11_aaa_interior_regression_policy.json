@@ -1,0 +1,1387 @@
+{
+  "schemaVersion": 1,
+  "name": "D11 AAA interior 3-variant 15-view regression",
+  "notes": {
+    "scope": "Interior capture parity only; no handling, track, terrain, or campaign metric threshold is asserted.",
+    "candidateCapturePin": "SHA-256 observed during this audit and fixed here for repeatable rechecks; it is not an external acceptance claim.",
+    "lightingProtocol": "These are required future capture context IDs; existing native receipts omit both fields."
+  },
+  "artifacts": {
+    "source": {
+      "kind": "source",
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\baseline_project_manifest.json",
+      "sha256": "3303e6334159f7cf623444cd211ea9196cca984166b6f752037db8a71a28e3aa",
+      "allowedStatuses": [
+        "D11_AAA_BASELINE_PROJECT_MANIFEST"
+      ]
+    },
+    "baselinePackage": {
+      "kind": "package",
+      "role": "baseline",
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\build\\retail\\cat_d11t_standalone_interior_candidate.pak",
+      "sha256": "3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16"
+    },
+    "candidatePackage": {
+      "kind": "package",
+      "role": "candidate",
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\retail\\cat_d11t_aaa_candidate.pak",
+      "sha256": "3b4129d22b8a79bf1969ee7effd8d92b699beae1aa6a33deebb658cd2ade6031"
+    },
+    "packageReceipt": {
+      "kind": "package-receipt",
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\build\\package_receipt.json",
+      "sha256": "40fe7ad060aa95f7d23bd17331716017a24cc3951915fef15c52a1d9e73b2b8e",
+      "allowedStatuses": [
+        "D11_AAA_PACKAGE_AUDITED"
+      ]
+    },
+    "baselineCapture": {
+      "kind": "capture",
+      "role": "baseline",
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\native\\candidate_capture_353675c4.json",
+      "sha256": "84f087ad58d157d77323e3042d1af6e0f4795de1b38999075cc618cf69f869ad",
+      "allowedStatuses": [
+        "NATIVE_CAPTURES_READY_BASELINE_RESTORED"
+      ]
+    },
+    "candidateCapture": {
+      "kind": "capture",
+      "role": "candidate",
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\native\\candidate_capture_bd58bce0.json",
+      "sha256": "805689d11c4d7d9154559884fe17409da480c8d27756d45120f90d5a3078d915",
+      "allowedStatuses": [
+        "NATIVE_CAPTURES_READY_BASELINE_RESTORED"
+      ]
+    }
+  },
+  "links": [
+    {
+      "receipt": "packageReceipt",
+      "field": "receiptChain.baselineManifestSha256",
+      "artifact": "source"
+    },
+    {
+      "receipt": "packageReceipt",
+      "field": "baselinePackageSha256",
+      "artifact": "baselinePackage"
+    },
+    {
+      "receipt": "packageReceipt",
+      "field": "candidatePackageSha256",
+      "artifact": "candidatePackage"
+    },
+    {
+      "receipt": "baselineCapture",
+      "field": "candidateSha256",
+      "artifact": "baselinePackage"
+    },
+    {
+      "receipt": "candidateCapture",
+      "field": "candidateSha256",
+      "artifact": "candidatePackage"
+    },
+    {
+      "receipt": "candidateCapture",
+      "field": "baselineSha256",
+      "artifact": "baselinePackage"
+    }
+  ],
+  "sceneEquivalences": [
+    {
+      "sceneId": "d11t-maroon-scene",
+      "baseline": {
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\p\\mods_source\\xscenes\\mods\\d11t_maroon_validation\\d11t_maroon_validation.scn",
+        "sha256": "9481bca1db96dd5c3c0c201f9d7f84e0b16fd7e683905c286060b16e9d53dfa1"
+      },
+      "candidate": {
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\p\\mods_source\\xscenes\\mods\\d11t_maroon_validation\\d11t_maroon_validation.scn",
+        "sha256": "9481bca1db96dd5c3c0c201f9d7f84e0b16fd7e683905c286060b16e9d53dfa1"
+      }
+    },
+    {
+      "sceneId": "d11t-nearnew-scene",
+      "baseline": {
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\p\\mods_source\\xscenes\\mods\\d11t_nearnew_validation\\d11t_nearnew_validation.scn",
+        "sha256": "7bb6428240ecb1acf0d31674d855d8af6eebefe57f62d7f4956bf8d603b0a701"
+      },
+      "candidate": {
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\p\\mods_source\\xscenes\\mods\\d11t_nearnew_validation\\d11t_nearnew_validation.scn",
+        "sha256": "7bb6428240ecb1acf0d31674d855d8af6eebefe57f62d7f4956bf8d603b0a701"
+      }
+    },
+    {
+      "sceneId": "d11t-worn-scene",
+      "baseline": {
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\p\\mods_source\\xscenes\\mods\\d11t_worn_validation\\d11t_worn_validation.scn",
+        "sha256": "a518939a52afa5dd946a480161545e257fa89c7d0968d489937a27adf5a1bd8c"
+      },
+      "candidate": {
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\p\\mods_source\\xscenes\\mods\\d11t_worn_validation\\d11t_worn_validation.scn",
+        "sha256": "a518939a52afa5dd946a480161545e257fa89c7d0968d489937a27adf5a1bd8c"
+      }
+    }
+  ],
+  "requiredViews": [
+    {
+      "view": "front_seat",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "front_down",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.7,
+              0.0,
+              -0.4
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              -0.72,
+              -0.16
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right_down",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              -0.66,
+              -0.58
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right_panel_detail",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.1,
+              -0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              -0.75,
+              -0.78
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right_outer_low",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.02,
+              -0.44,
+              -0.18
+            ],
+            [
+              0.32,
+              -1.0,
+              -0.83
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "left",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              0.72,
+              -0.12
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "left_down",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              0.66,
+              -0.56
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "left_panel_detail",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.1,
+              0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              0.75,
+              -0.72
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.78,
+              0,
+              0.05
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear_down",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.55,
+              0,
+              -0.55
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear_right_detail",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              -0.65,
+              -0.22
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear_left_detail",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              0.65,
+              -0.22
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "overhead",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              -0.08
+            ],
+            [
+              0.85,
+              0,
+              0.43
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "overhead_rear",
+      "context": {
+        "variant": "maroon",
+        "scene": "d11t-maroon-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.2,
+              0,
+              0
+            ],
+            [
+              -0.42,
+              0,
+              0.78
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "front_seat",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "front_down",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.7,
+              0.0,
+              -0.4
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              -0.72,
+              -0.16
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right_down",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              -0.66,
+              -0.58
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right_panel_detail",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.1,
+              -0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              -0.75,
+              -0.78
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right_outer_low",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.02,
+              -0.44,
+              -0.18
+            ],
+            [
+              0.32,
+              -1.0,
+              -0.83
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "left",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              0.72,
+              -0.12
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "left_down",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              0.66,
+              -0.56
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "left_panel_detail",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.1,
+              0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              0.75,
+              -0.72
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.78,
+              0,
+              0.05
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear_down",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.55,
+              0,
+              -0.55
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear_right_detail",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              -0.65,
+              -0.22
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear_left_detail",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              0.65,
+              -0.22
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "overhead",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              -0.08
+            ],
+            [
+              0.85,
+              0,
+              0.43
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "overhead_rear",
+      "context": {
+        "variant": "nearnew",
+        "scene": "d11t-nearnew-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.2,
+              0,
+              0
+            ],
+            [
+              -0.42,
+              0,
+              0.78
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "front_seat",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "front_down",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.7,
+              0.0,
+              -0.4
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              -0.72,
+              -0.16
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right_down",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              -0.66,
+              -0.58
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right_panel_detail",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.1,
+              -0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              -0.75,
+              -0.78
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "right_outer_low",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.02,
+              -0.44,
+              -0.18
+            ],
+            [
+              0.32,
+              -1.0,
+              -0.83
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "left",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.55,
+              0.72,
+              -0.12
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "left_down",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0.48,
+              0.66,
+              -0.56
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "left_panel_detail",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.1,
+              0.3,
+              -0.15
+            ],
+            [
+              0.4,
+              0.75,
+              -0.72
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.78,
+              0,
+              0.05
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear_down",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.26,
+              0,
+              0.08
+            ],
+            [
+              -0.55,
+              0,
+              -0.55
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear_right_detail",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              -0.65,
+              -0.22
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "rear_left_detail",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.2,
+              0,
+              0.04
+            ],
+            [
+              -0.67,
+              0.65,
+              -0.22
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "overhead",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0,
+              0,
+              -0.08
+            ],
+            [
+              0.85,
+              0,
+              0.43
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    },
+    {
+      "view": "overhead_rear",
+      "context": {
+        "variant": "worn",
+        "scene": "d11t-worn-scene",
+        "camera": {
+          "basis": "_cockpit_camera; offsets (forward,left,up) in metres",
+          "spec": [
+            [
+              0.2,
+              0,
+              0
+            ],
+            [
+              -0.42,
+              0,
+              0.78
+            ]
+          ]
+        },
+        "resolution": [
+          913,
+          559
+        ],
+        "lighting": "fixed-interior-lighting-v1",
+        "protocol": "d11-interior-15view-v1"
+      }
+    }
+  ],
+  "thresholds": []
+}

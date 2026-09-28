@@ -1,0 +1,20 @@
+{
+  "name": "roadcraft-local",
+  "interface": {
+    "displayName": "RoadCraft Local"
+  },
+  "plugins": [
+    {
+      "name": "roadcraft-workflow",
+      "source": {
+        "source": "local",
+        "path": "./plugin/roadcraft-workflow"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

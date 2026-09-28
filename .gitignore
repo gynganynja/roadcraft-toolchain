@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+local/
+jobs/
+dist/
+build/
+*.egg-info/
+/.codex/config.toml
+/operations/reports/
+/operations/storage_expansion_review_20260928.json
+/operations/d11_verify_20260928.json
