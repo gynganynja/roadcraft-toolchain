@@ -12,6 +12,9 @@ SURVEY = LOCAL / 'repaired_mesh_reconstructability_survey_20260929.log'
 FAMILY = LOCAL / 'repaired_mesh_families_45_check_20260929.log'
 CASES = ('lod2_pair', 'dash_lod1', 'interior_lod1',
          'interior_lod0', 'dash_lod0')
+INTERIOR_FULL = LOCAL / 'repaired_large_interior_full_20260929.log'
+PAIRS = {'dash_lod02': (157482, 4152),
+         'dash_lod01': (157482, 19797)}
 
 
 def need(ok, message):
@@ -53,6 +56,37 @@ need(family['status'] == 'IN_MEMORY_FAMILY_PAYLOAD_MATCH_WITH_GAPS' and
      '45-mesh family result differs')
 
 logs = {'survey': sha(SURVEY), 'families45': sha(FAMILY)}
+full = one_result(INTERIOR_FULL, 'D11_REPAIRED_FULL_FAMILY ')
+need(full['case'] == 'interior_full' and
+     full['result']['status'] == 'IN_MEMORY_FAMILY_PAYLOAD_MATCH_WITH_GAPS' and
+     tuple(row['faces'] for row in full['result']['rows']) ==
+     (65844, 63468, 24285) and
+     all(row['predictedPath'] == row['path'] and row['skinFullExact']
+         for row in full['result']['rows']) and
+     full['result']['materialAliases'] == [] and
+     full['result']['blendSaved'] is False and
+     full['result']['usfExported'] is False,
+     'full interior family result differs')
+full_verified = {row['path'] for row in full['result']['rows']}
+logs['interior_full'] = sha(INTERIOR_FULL)
+pair_verified = set()
+for case, faces in PAIRS.items():
+    path = LOCAL / ('repaired_' + case + '_20260929.log')
+    parsed = one_result(path, 'D11_REPAIRED_DASH_PAIR ')
+    pair_rows = parsed['result']['rows']
+    need(parsed['case'] == case and
+         parsed['result']['status'] ==
+         'IN_MEMORY_FAMILY_PAYLOAD_MATCH_WITH_GAPS' and
+         tuple(row['faces'] for row in pair_rows) == faces and
+         all(row['predictedPath'] == row['path'] and row['skinFullExact']
+             for row in pair_rows) and
+         parsed['result']['materialAliases'] == [] and
+         parsed['result']['blendSaved'] is False and
+         parsed['result']['usfExported'] is False,
+         'dashboard pair result differs: ' + case)
+    pair_verified.add(pair_rows[1]['path'])
+    logs[case] = sha(path)
+proof_paths = full_verified | pair_verified
 rows = []
 for row in family['rows']:
     rows.append(('families45', row))
@@ -88,7 +122,7 @@ for case, row in rows:
              ('facePairsEqual', 'materialTextEqual', 'materialMetaEqual',
               'colorsExact', 'activeSkinExact')),
          'payload differs: ' + path)
-    if row['predictedPath'] == path:
+    if row['predictedPath'] == path or path in proof_paths:
         path_verified.append(path)
     else:
         need(case in CASES and not case.endswith('lod0') and
@@ -97,7 +131,9 @@ for case, row in rows:
         path_unverified.append(path)
 
 need(seen == set(target) and len(rows) == 51 and
-     len(path_verified) == 47 and len(path_unverified) == 4 and
+     proof_paths <= seen and len(full_verified) == 3 and
+     len(pair_verified) == 2 and
+     len(path_verified) == 51 and len(path_unverified) == 0 and
      sum(row['faces'] for _, row in rows) == 351565 and
      sum(row['corners'] for _, row in rows) == 1054695 and
      sum(row['skinFullMismatchCorners'] for _, row in rows) == 378 and
@@ -119,6 +155,9 @@ receipt = {
                            'active_skin_influences'],
     'pathVerifiedCount': len(path_verified),
     'pathUnverified': sorted(path_unverified),
+    'pathVerificationScope': ('45 combined meshes; all three interior LODs; '
+                              'dashboard LOD0 paired separately with LOD1 '
+                              'and LOD2'),
     'fullSkinMismatchCorners': 378,
     'tangentErrorAtLeastOneCount': 24,
     'projectedBoneTableLength': 399,

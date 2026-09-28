@@ -5,6 +5,22 @@ an execution receipt. Recheck live hashes, jobs, processes, free space and
 connection state before each dependent step. Existing authorization carries
 forward; this document adds no blanket approval requirement.
 
+**Scope correction:** the deliverable is a reusable RoadCraft mod workflow for
+new work, existing user mods and third-party packages. D11 is one adversarial
+validation fixture. Do not treat completion of its dozer reconstruction as
+completion of the toolchain, or prioritize more D11-specific diagnostics over
+cross-project onboarding, isolation and package-only workflows. The general
+contract is: select an explicit registry, inspect/import without inventing
+acceptance or source lineage, pin candidate and source identities when known,
+run project-scoped recipes, and preserve receipts through rollback and review.
+See `GENERAL_MOD_WORKFLOW_20260929.md` for prioritized implementation slices
+and cross-mod completion criteria.
+The new `roadcraft onboard` command drafts a blank registry or pins an existing
+package as an unreviewed candidate; CLI and read-only MCP default machine
+configuration to the selected registry's sibling `local/machine.json`.
+Further work must prove the workflow against at least one non-D11 package and
+one source-less third-party case, not merely D11 synthetic fixtures.
+
 ## Locations, ownership and completion rules
 
 - **Source toolchain:** `C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\Roadcraft Development Package\RoadCraftToolchain`.
@@ -886,14 +902,19 @@ without crossing their resource floors. The coverage verifier reconciles
 these six with the earlier 45 against the accepted mesh roster: all 51
 skinned repaired-only paths, 351,565 faces and 1,054,695 corners have exact
 projected positions, normals, UVs, face metadata, material text/metadata,
-packed colors and active skin influences. Forty-seven paths are predicted
-exactly; four isolated LOD1/2 paths lack their LOD0 peer in those runs and
-are not path-verified. Across the 51 meshes, 378 full skin-slot records
+packed colors and active skin influences. A separate full interior-family
+run proves both of its nested LOD paths. Two smaller dashboard scenes paired
+LOD0 with LOD1 and LOD2 separately, matching both predicted child paths and
+bringing path verification to all 51. The all-three-LOD dashboard attempt
+stopped at the physical-memory guard; simultaneous three-LOD behavior remains
+unverified. Across the
+51 meshes, 378 full skin-slot records
 and 24 tangent arrays retain reported gaps, and the SDK still projects
 399 bones per mesh rather than the target tables. Bind matrices, animation,
 writer output, native compilation and visual/campaign acceptance remain
 open. The `usf-repair` route and pending scratch-export command are
-unchanged. See `D11_REPAIRED_LARGE_MESHES_20260929.md` and
+unchanged. See `D11_REPAIRED_LARGE_MESHES_20260929.md`,
+`D11_LARGE_FAMILY_PATH_CHECK_20260929.md` and
 `d11_repaired_mesh_coverage_20260929.json`.
 
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
@@ -956,23 +977,32 @@ new local integration config if transport cannot be made reliable.
 
 ## Immediate execution order
 
-1. Private `main`, remote commit comparison, and Windows CI run #53 at
-   `4ae7e97` are complete. Keep later changes versioned and recheck CI after
-   each push.
-2. Use the registered, smoke-tested local integrations through their dedicated
+1. Finish and publish the cross-project onboarding and config-isolation
+   change. Add a non-D11, package-only workflow fixture and verify CLI/MCP
+   status, archive inspection and project verification without D11 machine
+   data. Then add a source-backed fixture for a newly authored mod. Keep
+   project pins and acceptance decisions explicit.
+2. Audit remaining project-coupled defaults, especially Blender scratch MCP,
+   local recipe helpers and installed-package transactions. A source-less
+   third-party package must be inspectable without an accepted baseline;
+   install remains unavailable until a trusted prior package identity and
+   game target are declared. Publish user-facing onboarding examples and
+   maintain the private remote/CI after each checkpoint.
+3. Use the registered, smoke-tested local integrations through their dedicated
    checkout, then confirm desktop tool visibility in a task rooted there. The
    current Steam-root task has no project-local MCP entries. Painter capability
    probing passed, but the app closed before disposable-project creation.
    Leave it closed until the user chooses to reopen Painter, then resume the prepared scratch check
    and its current project state is rechecked.
-3. Keep assets in their verified current location. Continue exact storage
+4. Keep assets in their verified current location. Continue exact storage
    review as authorized, preflight-only native recipe work and capture-protocol
    definition. Do not migrate assets now.
-4. Resolve the historical editor disconnect, retained-lock recovery and
+5. Resolve the historical editor disconnect, retained-lock recovery and
    baseline/candidate capture protocol; meet native staging space, process
    and source gates before any native execution. Only then produce new matched
    AAA evidence and perform visual/campaign acceptance checks.
-5. Reconcile Blender hierarchy, materials, rig, skin and animation against
+6. Treat D11 Blender parity as a case-specific validation track. Reconcile its
+   hierarchy, materials, rig, skin and animation against
    the retained parity diff before seeking native export approval. Revisit
    LFS migration only if the user changes the in-place asset decision; retain
    its 30 GiB reserve gate. Keep accepted identity and historical evidence

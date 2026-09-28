@@ -10,7 +10,7 @@ import sys
 from typing import Any
 
 from . import core
-from . import jobs, source, transaction
+from . import jobs, onboard, source, transaction
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
@@ -29,14 +29,32 @@ def _add_registry(parser: argparse.ArgumentParser) -> None:
 
 def _add_config(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--config", type=Path,
-                        default=Path(os.environ.get("ROADCRAFT_CONFIG",
-                                                    PACKAGE_ROOT / "local/machine.json")),
+                        default=None,
                         help="Local machine configuration JSON")
+
+
+def _config_path(args: argparse.Namespace) -> Path:
+    if args.config is not None:
+        return args.config
+    override = os.environ.get("ROADCRAFT_CONFIG")
+    if override:
+        return Path(override)
+    root = args.registry.parent if hasattr(args, "registry") else PACKAGE_ROOT
+    return root / "local/machine.json"
 
 
 def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="roadcraft", description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
+
+    start = commands.add_parser("onboard", help="Draft a registry for a new or existing mod")
+    start.add_argument("--project", required=True, help="Mod or project name")
+    start.add_argument("--package", type=Path,
+                       help="Existing package to pin as an unreviewed candidate")
+    start.add_argument("--candidate-name", default="imported")
+    start.add_argument("--output", type=Path,
+                       help="Write new registry here; omitted means preview only")
+    _add_json(start)
 
     doctor = commands.add_parser("doctor", help="Inspect local Python, disk, SDK and tool paths")
     _add_config(doctor)
@@ -158,6 +176,13 @@ def _verify_project(registry_path: Path, config_path: Path) -> dict[str, Any]:
 
 
 def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
+    if hasattr(args, "config"):
+        args.config = _config_path(args)
+    if args.command == "onboard":
+        registry = onboard.draft_registry(args.project, args.package, args.candidate_name)
+        output = onboard.write_registry(args.output, registry) if args.output else None
+        return {"registry": registry, "writtenPath": str(output) if output else None,
+                "packageStatus": "unreviewed_candidate" if args.package else "none"}, True
     if args.command == "doctor":
         config = core.read_config(args.config) if args.config.is_file() else None
         result = core.doctor(config)

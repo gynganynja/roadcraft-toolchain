@@ -106,9 +106,10 @@ class ServerSettings:
 
     @classmethod
     def defaults(cls) -> "ServerSettings":
+        registry = Path(os.environ.get("ROADCRAFT_REGISTRY", PACKAGE_ROOT / "project.json")).expanduser().resolve()
         return cls(
-            Path(os.environ.get("ROADCRAFT_REGISTRY", PACKAGE_ROOT / "project.json")).expanduser().resolve(),
-            Path(os.environ.get("ROADCRAFT_CONFIG", PACKAGE_ROOT / "local/machine.json")).expanduser().resolve(),
+            registry,
+            Path(os.environ.get("ROADCRAFT_CONFIG") or registry.parent / "local/machine.json").expanduser().resolve(),
         )
 
 
@@ -250,10 +251,12 @@ def main(argv: list[str] | None = None) -> int:
     defaults = ServerSettings.defaults()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--registry", type=Path, default=defaults.registry)
-    parser.add_argument("--config", type=Path, default=defaults.config)
+    parser.add_argument("--config", type=Path)
     args = parser.parse_args(argv)
     try:
-        server = create_server(ServerSettings(args.registry.expanduser().resolve(), args.config.expanduser().resolve()))
+        registry = args.registry.expanduser().resolve()
+        config = (args.config or Path(os.environ.get("ROADCRAFT_CONFIG") or registry.parent / "local/machine.json")).expanduser().resolve()
+        server = create_server(ServerSettings(registry, config))
     except MCPDependencyError as exc:
         print(str(exc), file=sys.stderr)
         return 2
