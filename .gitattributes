@@ -105,3 +105,6 @@ src/roadcraft/blender_residual_bones.py text eol=lf
 src/roadcraft/blender_residual_bones_worker.py text eol=lf
 tests/test_blender_residual_bones.py text eol=lf
 operations/D11_VARIANT_STRUCTURAL_TARGETS_*.md text eol=lf
+src/roadcraft/blender_variant_structural_targets.py text eol=lf
+src/roadcraft/blender_variant_structural_targets_worker.py text eol=lf
+tests/test_blender_variant_structural_targets.py text eol=lf
