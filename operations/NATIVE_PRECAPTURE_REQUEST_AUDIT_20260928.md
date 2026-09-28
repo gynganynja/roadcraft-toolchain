@@ -52,11 +52,24 @@ verification is a future check, not a completed native test.
 The preflight-only `capture` recipe now declares the no-helper source check
 before its existing full-capture no-swap check; its dry run verifies the
 command and inputs, while an applied preflight would execute the check.
-Run `--helper` and `--transport`
-separately when those actual files exist; the recipe's source check does not
-verify a future generated helper or sent request. This verifier is not yet
-invoked by the capture runner or `native_capture_postflight`; their existing
-acceptance behavior is unchanged.
+The postflight now invokes the verifier on every one of the 45 required
+`ReadPreCapture` transports. It first pins the verifier's own source bytes and
+import location, then derives the SDK root from the reviewed template path.
+For each view it requires the reviewed generator chain, full generated helper,
+helper hash in the transport, and the exact sent empty-action SSL. A transport
+whose `readOnly` marker stays true while its script adds a setter fails even
+if its file and linked receipt hashes are consistently resealed. The recipe's
+source-only check still does not verify a future generated helper or transport;
+the postflight gate does so only after those files exist. The capture runner
+does not invoke this verifier during capture.
+
+The synthetic full-capture postflight fixture passed all 45 request checks and
+a separate resealed-mutating-request case failed at the content check. All 18
+postflight tests passed locally. No current `pre_capture_VIEW.json` exists,
+so this remains a verified verifier path rather than a completed native check.
+The preserved `d11_aaa_native_capture_plan_c0de2026.json` pins older source
+bytes; generate and review a fresh no-write plan for a future run instead of
+rewriting that historical artifact.
 Five portable tests cover a passing exact request, source drift, a malicious
 Read-mode action, unrelated generated-helper tampering, and a mutating sent
 request that still declares `readOnly: true`. The current offline preflight

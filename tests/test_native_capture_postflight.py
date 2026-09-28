@@ -18,10 +18,16 @@ import zlib
 
 SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
-from roadcraft import native_capture_partial, native_capture_postflight as postflight  # noqa: E402
+from roadcraft import (native_capture_partial, native_capture_postflight as postflight,
+                       native_precapture_request as precapture_request)  # noqa: E402
 
 MODULES = ("__init__.py", "native_capture_partial.py", "native_capture_observation.py",
            "native_capture_postflight.py", "review.py", "core.py")
+READ_TEMPLATE = ("$script=@'\n__ACTION__return result\n'@\n$action=''\n"
+                 "if($Mode -eq 'Capture'){\n $action='SaveScreenshot()'\n}\n"
+                 "$script=$script.Replace('__ACTION__',$action)\n"
+                 "$speaker.Send((New-SslMessage $requestId $script))\n")
+TEMPLATE_RELATIVE = "D11_Final_Candidate_20260925/native_controls_template.ps1"
 
 
 def digest(data: bytes) -> str:
@@ -69,6 +75,7 @@ class NativeCapturePostflightTests(unittest.TestCase):
         self.write(self.backup, b"baseline")
         self.receipt = self.native / f"candidate_capture_{self.run_id}.json"
         self.plan_path = self.root / "reviewed_plan.json"
+        self.workspace = self.root / "sdk"
         self.build()
 
     @staticmethod
@@ -147,13 +154,15 @@ class NativeCapturePostflightTests(unittest.TestCase):
                 "cameraSpecs": {view: [[0, 0, 0], [1, 0, 0]]
                                 for view in postflight.VIEWS},
             }
-        runner = self.root / "runner.py"
+        runner = self.workspace / "D11_Interior_AAA_20260928" / "capture_candidate_native.py"
         runner_sha = self.write(runner, b"synthetic runner")
         helpers = {}
         for name in ("nativeControlsTemplate", "nativeAcceptance", "interiorCapture",
-                     "cabSurvey", "syntaxCheck"):
-            path = self.root / "helper_sources" / name
-            helpers[name] = {"path": str(path), "sha256": self.write(path, name.encode())}
+                      "cabSurvey", "syntaxCheck"):
+            path = (self.workspace / TEMPLATE_RELATIVE if name == "nativeControlsTemplate"
+                    else self.root / "helper_sources" / name)
+            content = READ_TEMPLATE.encode() if name == "nativeControlsTemplate" else name.encode()
+            helpers[name] = {"path": str(path), "sha256": self.write(path, content)}
         required = self.roster()
         capture_plan = {"fullCapture": True, "variants": list(postflight.VARIANTS),
                         "viewsPerVariant": list(postflight.VIEWS)}
@@ -185,7 +194,7 @@ class NativeCapturePostflightTests(unittest.TestCase):
             run = runs[variant]
             editor, engine = 2000 + variant_index, 3000 + variant_index
             helper = run / "native_controls.ps1"
-            helper_sha = self.write(helper, f"helper {variant}".encode())
+            helper_sha = self.write(helper, READ_TEMPLATE.encode())
             self.write(run / "probe.scenario", b"scenario")
             self.write(run / "stdout.log", b"stdout")
             self.write(run / "stderr.log", b"")
@@ -284,14 +293,23 @@ class NativeCapturePostflightTests(unittest.TestCase):
         self.write_json(self.receipt, self.outer)
 
     def validate(self, *, plan_sha: str | None = None,
-                 receipt_sha: str | None = None) -> dict:
-        return postflight.validate(
-            self.receipt, run_id=self.run_id,
-            candidate_package=self.candidate, candidate_sha256=self.candidate_sha,
-            installed_package=self.installed, baseline_sha256=self.baseline_sha,
-            installed_sha256=self.baseline_sha,
-            capture_plan=self.plan_path, capture_plan_sha256=plan_sha or self.plan_sha,
-            expected_capture_receipt_sha256=receipt_sha)
+                  receipt_sha: str | None = None) -> dict:
+        with (mock.patch.object(precapture_request, "SOURCE_SHA256",
+                                {TEMPLATE_RELATIVE: digest(READ_TEMPLATE.encode()),
+                                 "D11_Interior_AAA_20260928/capture_candidate_native.py":
+                                 digest(b"synthetic runner")}),
+              mock.patch.object(precapture_request, "READ_SCRIPT_SHA256",
+                                digest(b"return result")),
+              mock.patch.object(precapture_request, "NORMALIZED_HELPER_SHA256",
+                                digest(READ_TEMPLATE.encode())),
+              mock.patch.object(precapture_request, "HELPER_RUN_ID_COUNT", 0)):
+            return postflight.validate(
+                self.receipt, run_id=self.run_id,
+                candidate_package=self.candidate, candidate_sha256=self.candidate_sha,
+                installed_package=self.installed, baseline_sha256=self.baseline_sha,
+                installed_sha256=self.baseline_sha,
+                capture_plan=self.plan_path, capture_plan_sha256=plan_sha or self.plan_sha,
+                expected_capture_receipt_sha256=receipt_sha)
 
     def reseal_nested(self, index: int, nested: dict) -> None:
         row = self.outer["variants"][index]
@@ -307,6 +325,8 @@ class NativeCapturePostflightTests(unittest.TestCase):
         self.assertEqual(report["checkedViews"], 45)
         self.assertEqual(report["checkedCameraProbes"], 45)
         self.assertEqual(report["checkedPartialViews"], 45)
+        self.assertEqual(report["checkedReadRequests"], 45)
+        self.assertTrue(report["preCaptureRequestContentVerified"])
         self.assertEqual(report["checkedRequiredOutputs"], 382)
         self.assertFalse(report["pairProtocolEligible"])
         self.assertFalse(report["captureProcessAuthenticated"])
@@ -346,6 +366,36 @@ class NativeCapturePostflightTests(unittest.TestCase):
     def test_replayed_request_id_fails(self) -> None:
         self.build(repeat_pre_id=True)
         self.assertIn("repeats a transport request ID", self.validate()["error"])
+
+    def test_resealed_mutating_read_request_fails(self) -> None:
+        run = self.native / "runs" / f"aaa_maroon_{self.run_id}ma"
+        view = postflight.VIEWS[0]
+        pre_path = run / f"pre_capture_{view}.json"
+        pre = json.loads(pre_path.read_text())
+        pre["script"] = "vehicle.Set(true)\nreturn result"
+        pre_sha = self.write_json(pre_path, pre)
+        nested_path = run / "report.json"
+        nested = json.loads(nested_path.read_text())
+        partial_path = run / f"partial_{view}.json"
+        partial = native_capture_partial.build_partial_view(
+            run_id=self.run_id, variant="maroon", view=view,
+            engine_pid=nested["enginePid"], scene=Path(nested["scene"]),
+            helper=run / "native_controls.ps1", camera_transport=run / f"camera_{view}.json",
+            pre_transport=pre_path, capture_transport=run / f"capture_{view}.json",
+            image=run / f"cab_{view}.png", action_events=nested["actionEvents"][1:7])
+        partial_sha = self.write_json(partial_path, partial)
+        nested["views"][0]["preCaptureProbeSha256"] = pre_sha
+        nested["views"][0]["partialViewLinkSha256"] = partial_sha
+        self.reseal_nested(0, nested)
+        self.outer["requiredOutputSha256"][str(pre_path)] = pre_sha
+        self.outer["requiredOutputSha256"][str(partial_path)] = partial_sha
+        links = [{"view": row["view"], "path": row["partialViewLinkPath"],
+                  "sha256": row["partialViewLinkSha256"]} for row in nested["views"]]
+        self.outer["variants"][0]["partialViewLinksSha256"] = canonical_sha(links)
+        self.write_json(self.receipt, self.outer)
+        report = self.validate()
+        self.assertFalse(report["captureIntegrityPassed"], report)
+        self.assertIn("Sent Read request differs", report["error"])
 
     def test_interleaved_action_transcript_fails_after_resealing(self) -> None:
         path = Path(self.outer["variants"][0]["report"])

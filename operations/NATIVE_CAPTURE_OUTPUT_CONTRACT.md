@@ -8,11 +8,14 @@ package, mount, disk, and process checks, then prints a deterministic JSON
 contract without creating `native/`, `runs/`, a lock, a backup, or a screenshot.
 The contract-hash flag is rejected outside `--execute`.
 
-The [current no-write plan](d11_aaa_native_capture_plan_c0de2026.json) uses run ID
+The [preserved no-write plan](d11_aaa_native_capture_plan_c0de2026.json) uses run ID
 `c0de2026` and contract SHA-256
 `e4a61f0d585b1621bcc389e58edb496e671ef10922aaf01c5b9ec31fcb8020de`.
 The complete plan file SHA-256 is
 `a53c5c169b75d311006d0fe1889acc62d9388c9f378cb6c7421474c08dcac718`.
+Subsequent toolchain source changes make its pinned postflight/linker bytes
+stale. It remains historical evidence, not a currently executable contract;
+generate and review a fresh no-write plan for any future run.
 The earlier [a1b2c3d4 plan](d11_aaa_native_capture_plan_a1b2c3d4.json)
 is retained as historical evidence; its runner hash and contract hash no longer
 authorize `--execute` after the exit-telemetry patch.

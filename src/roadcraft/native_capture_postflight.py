@@ -2,7 +2,7 @@
 
 This checks the reviewed no-write plan, outer receipt, all three variant
 receipts, the exact required output roster, 45 partial pre-screenshot links,
-and the restored installed PAK. It
+the exact SSL content of every sent Read request, and the restored installed PAK. It
 does not launch an editor, repair a failed run, compare baseline images, or
 make a visual, campaign, or release acceptance decision.
 """
@@ -30,6 +30,9 @@ VIEWS = (
 )
 MAX_RECEIPT_BYTES = 4 * 1024 * 1024
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+PRECAPTURE_VERIFIER_SHA256 = (
+    "527b71ed56788a849a9c809d48ebf92bea3616cf77e0bac25224ee48ad74c109"
+)
 
 
 class PostflightError(ValueError):
@@ -173,7 +176,9 @@ def validate(receipt_path: str | Path, *, run_id: str,
         "checkedViews": 0,
         "checkedCameraProbes": 0,
         "checkedPartialViews": 0,
+        "checkedReadRequests": 0,
         "checkedRequiredOutputs": 0,
+        "preCaptureRequestContentVerified": False,
         "pairProtocolEligible": False,
         "loadedSceneVerified": False,
         "captureProcessAuthenticated": False,
@@ -216,8 +221,11 @@ def validate(receipt_path: str | Path, *, run_id: str,
                  contract.get("baselineSha256") == baseline_sha and
                  contract.get("prototype") is False,
                  "Reviewed contract package identity mismatch")
-        _file(_path(contract.get("runner"), "reviewed runner"),
-              contract.get("runnerSha256"), "Reviewed runner")
+        runner_path = _path(contract.get("runner"), "reviewed runner")
+        _require(runner_path.name == "capture_candidate_native.py" and
+                 runner_path.parent.name == "D11_Interior_AAA_20260928",
+                 "Reviewed runner is outside the D11 SDK layout")
+        _file(runner_path, contract.get("runnerSha256"), "Reviewed runner")
         required, runs = _required_roster(
             receipt, receipt.parent / f"cat_d11t_before_{baseline_sha[:12]}_{run_id}.pak",
             run_id)
@@ -248,6 +256,12 @@ def validate(receipt_path: str | Path, *, run_id: str,
             _require(Path(module.__file__).resolve() ==
                      linker_root / "roadcraft" / name,
                      f"Imported {module_name} is not the reviewed source")
+        from . import native_precapture_request
+        verifier_path = linker_root / "roadcraft" / "native_precapture_request.py"
+        _file(verifier_path, PRECAPTURE_VERIFIER_SHA256,
+              "Pre-capture request verifier source")
+        _require(Path(native_precapture_request.__file__).resolve() == verifier_path,
+                 "Imported pre-capture request verifier is not the reviewed source")
         helper_sources = contract.get("helperSourcePins")
         _require(isinstance(helper_sources, dict) and
                  set(helper_sources) == {"nativeControlsTemplate", "nativeAcceptance",
@@ -258,6 +272,14 @@ def validate(receipt_path: str | Path, *, run_id: str,
                      "Invalid helper source pin")
             _file(_path(pin.get("path"), f"Helper source {name}"), pin.get("sha256"),
                   f"Helper source {name}")
+        template_path = _path(helper_sources["nativeControlsTemplate"]["path"],
+                              "native controls template")
+        _require(template_path.name == "native_controls_template.ps1" and
+                 template_path.parent.name == "D11_Final_Candidate_20260925",
+                 "Native controls template is outside the reviewed SDK layout")
+        sdk_workspace = template_path.parent.parent
+        _require(sdk_workspace == runner_path.parent.parent,
+                 "Native controls template and capture runner have different SDK roots")
         result.update(capturePlanPath=str(plan_path), capturePlanSha256=reviewed_plan_sha,
                       outputContractSha256=contract_sha)
         outer, outer_sha = _read_json(receipt, "capture receipt")
@@ -475,6 +497,13 @@ def validate(receipt_path: str | Path, *, run_id: str,
                     _require(isinstance(request_id, str) and request_id not in request_ids,
                              f"{variant} {view} repeats a transport request ID")
                     request_ids.add(request_id)
+                pre_request = native_precapture_request.audit(
+                    sdk_workspace, helper=run / "native_controls.ps1",
+                    transport=run / f"pre_capture_{view}.json")
+                _require(pre_request["generatedHelperVerified"] and
+                         pre_request["transportRequestVerified"],
+                         f"{variant} {view} Read request content did not verify")
+                result["checkedReadRequests"] += 1
                 verification = native_capture_partial.verify_partial_view(partial)
                 _require(verification.get("status") == "PARTIAL_VIEW_LINKAGE_CONSISTENT" and
                          verification.get("pairProtocolEligible") is False and
@@ -485,6 +514,9 @@ def validate(receipt_path: str | Path, *, run_id: str,
                 result["checkedPartialViews"] += 1
             _require(row.get("partialViewLinksSha256") == _canonical_sha(partial_links),
                      f"{variant} partial link digest differs from outer receipt")
+        _require(result["checkedReadRequests"] == len(VARIANTS) * len(VIEWS),
+                 "Incomplete pre-capture Read request audit")
+        result["preCaptureRequestContentVerified"] = True
         result["captureIntegrityPassed"] = True
     except (PostflightError, OSError, ValueError, TypeError, KeyError) as exc:
         result["error"] = str(exc)
