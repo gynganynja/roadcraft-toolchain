@@ -858,6 +858,17 @@ in six meshes, and the SDK emits a 399-bone table rather than the accepted
 2- or 381-bone tables. No writer, native build or acceptance ran. See the
 same reconstructability record.
 
+A reusable no-save family importer now composes the five lens families, the
+packed-color RearFlex ripper and the three-bone access-motor mount in one
+reconstructed scene: 21 meshes, 9,829 faces and 29,487 corners. The reviewed
+SDK readback matches positions, normals, UVs, face metadata, materials,
+packed colors and active skin influences across all 21. It restores the SDK's
+color mode after the run. Exact output remains blocked by tangent differences,
+324 zero-weight index differences in the ripper, larger projected bind tables,
+and three same-name material collisions in the still-unhandled beacon family.
+See `D11_REPAIRED_MESH_FAMILIES_20260929.md`. This does not change the pending
+scratch-export command or native-Blend gate.
+
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
 2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
