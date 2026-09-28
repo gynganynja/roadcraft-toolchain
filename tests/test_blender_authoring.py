@@ -15,6 +15,8 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from roadcraft import blender_authoring as authoring  # noqa: E402
+from roadcraft import blender_blade_normal_projection as normal_projection  # noqa: E402
+from roadcraft import blender_blade_relocation as blade_relocation  # noqa: E402
 from roadcraft import blender_rgba_cache_guard as rgba_guard  # noqa: E402
 from roadcraft import blender_wiper_repair as wiper_repair  # noqa: E402
 from roadcraft.blender_parity_evidence import package_evidence  # noqa: E402
@@ -82,8 +84,9 @@ class BlenderAuthoringTests(unittest.TestCase):
         self.receipt = self.root / "operations/authoring.json"
 
     def _run(self, *, dry_run: bool = True, **options):
+        asset_name = options.pop("asset_name", "test")
         return authoring.run_authoring_probe(
-            asset_name="test", inventory_path=self.inventory,
+            asset_name=asset_name, inventory_path=self.inventory,
             inventory_sha256=file_sha256(self.inventory),
             blender_executable=self.blender,
             blender_sha256=file_sha256(self.blender),
@@ -215,6 +218,71 @@ class BlenderAuthoringTests(unittest.TestCase):
         launch.assert_not_called()
         self.assertFalse(self.scratch.exists())
         self.assertFalse(self.receipt.exists())
+
+    def test_blade_normal_repair_rejects_unreviewed_asset_before_launch(self) -> None:
+        with mock.patch.object(authoring.subprocess, "run") as launch:
+            with self.assertRaisesRegex(authoring.BlenderAuthoringError,
+                                        "blade-normal scratch source or tool"):
+                self._run(blade_normal_scratch_repair=True)
+        launch.assert_not_called()
+        self.assertFalse(self.scratch.exists())
+        self.assertFalse(self.receipt.exists())
+
+    def test_blade_normal_repair_rejects_missing_export_attestation(self) -> None:
+        source_root = self.blend.parent
+        inventory = capture_source_inventory(source_root, [{
+            "asset": "cat_d11t", "exportMethod": "usf-repair",
+            "files": [
+                {"path": "asset.blend", "role": "blend-reference"},
+                {"path": "export.usf", "role": "build-usf"},
+            ],
+        }])
+        self.inventory.write_text(json.dumps(inventory), encoding="utf-8")
+        worklist = self.root / "worklist.json"
+        worklist.write_text("{}", encoding="utf-8")
+        native = self.root / "retained-native.usf"
+        native.write_bytes(b"retained native fixture")
+
+        def fake_blender(command, **kwargs):
+            if "--version" in command:
+                return subprocess.CompletedProcess(command, 0,
+                                                   stdout="Blender 5.2.0 LTS\n")
+            self.assertIn("--blade-normal-scratch-repair", command)
+            candidate = Path(command[command.index("--candidate-usf") + 1])
+            helper_result = Path(command[command.index("--result") + 1])
+            candidate.write_bytes(b"scratch candidate only")
+            helper_result.write_text(json.dumps({
+                "blendSha256": file_sha256(self.blend),
+                "baselineUsfSha256": file_sha256(self.usf),
+                "candidateUsfSha256": file_sha256(candidate),
+                "candidateUsfBytes": candidate.stat().st_size,
+                "nativeBlendExportApproved": False,
+                "baselineSemantic": {"nodes": 1},
+                "candidateSemantic": {"nodes": 1},
+                "nodeDiff": {"matchesIndexedFields": True},
+            }), encoding="utf-8")
+            return subprocess.CompletedProcess(command, 0)
+
+        with mock.patch.object(normal_projection, "BLEND_SHA256",
+                               file_sha256(self.blend)), \
+                mock.patch.object(normal_projection, "USF_SHA256",
+                                  file_sha256(self.usf)), \
+                mock.patch.object(normal_projection, "BLENDER_VERSION_PINS",
+                                  {file_sha256(self.blender): "Blender 5.2"}), \
+                mock.patch.object(normal_projection, "WORKLIST_SHA256",
+                                  file_sha256(worklist)), \
+                mock.patch.object(normal_projection, "require_sdk_pins",
+                                  return_value=self.sdk), \
+                mock.patch.object(blade_relocation, "WORKLIST", worklist), \
+                mock.patch.object(blade_relocation, "_rows_and_native",
+                                  return_value=([], native, file_sha256(native),
+                                                worklist, file_sha256(worklist))), \
+                mock.patch.object(authoring.subprocess, "run",
+                                  side_effect=fake_blender):
+            result = self._run(dry_run=False, asset_name="cat_d11t",
+                               blade_normal_scratch_repair=True)
+        self.assertEqual(result["status"], "HELPER_MISMATCH")
+        self.assertEqual(result["exportGate"]["status"], "BLOCKED")
 
     def test_rgba_guard_rejects_unreviewed_asset_before_launch_or_write(self) -> None:
         with mock.patch.object(authoring.subprocess, "run") as launch:

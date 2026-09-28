@@ -109,6 +109,10 @@ def main() -> None:
     parser.add_argument("--push-branch-scratch-repair", action="store_true")
     parser.add_argument("--push-branch-host-sha256")
     parser.add_argument("--push-branch-worker-sha256")
+    parser.add_argument("--blade-normal-scratch-repair", action="store_true")
+    parser.add_argument("--blade-normal-repair-sha256")
+    parser.add_argument("--blade-normal-native-usf", type=Path)
+    parser.add_argument("--blade-normal-native-sha256")
     parser.add_argument("--rgba-cache-guard", action="store_true")
     parser.add_argument("--rgba-cache-guard-sha256")
     parser.add_argument("--asset")
@@ -143,6 +147,25 @@ def main() -> None:
     elif (args.push_branch_host_sha256 is not None or
           args.push_branch_worker_sha256 is not None):
         raise ValueError("push-branch hashes require opt-in")
+    blade_repair_file = Path(__file__).with_name(
+        "blender_blade_normal_scratch_repair.py")
+    blade_native = None
+    if args.blade_normal_scratch_repair:
+        if (not args.blade_normal_repair_sha256 or
+                not args.blade_normal_native_usf or
+                not args.blade_normal_native_sha256 or
+                _sha(blade_repair_file) != args.blade_normal_repair_sha256):
+            raise ValueError("blade-normal module differs from host pin")
+        blade_native = args.blade_normal_native_usf.resolve(strict=True)
+        if (blade_native.suffix.lower() != ".usf" or
+                blade_native == baseline or
+                blade_native.is_relative_to(scratch) or
+                _sha(blade_native) != args.blade_normal_native_sha256):
+            raise ValueError("retained native USF differs from host pin")
+    elif (args.blade_normal_repair_sha256 is not None or
+          args.blade_normal_native_usf is not None or
+          args.blade_normal_native_sha256 is not None):
+        raise ValueError("blade-normal arguments require opt-in")
     rgba_guard_file = Path(__file__).with_name("blender_rgba_cache_guard.py")
     sdk_mesh_file = sdk / "saber/blender/lib/usf/mesh.py"
     if args.rgba_cache_guard:
@@ -199,6 +222,22 @@ def main() -> None:
                 push_branch_repair["nativeBlendExportApproved"] is not False):
             raise RuntimeError("in-memory push-branch reconstruction differs")
         push_branch_repair["workerSha256"] = args.push_branch_worker_sha256
+    blade_normal_repair = None
+    if args.blade_normal_scratch_repair:
+        from blender_blade_normal_scratch_repair import (
+            blade_normals_by_leaf, install_in_memory_blade_normals,
+            require_dependency_pins)
+        from roadcraft.blender_blade_normal_projection import (
+            LEAVES, NATIVE_PARENT, REPAIRED_PARENT)
+
+        blade_normal_repair = install_in_memory_blade_normals(
+            blend=blend, repaired=baseline, native=blade_native,
+            native_sha256=args.blade_normal_native_sha256, sdk_root=sdk,
+            blender_sha256=_sha(Path(bpy.app.binary_path)))
+        if (blade_normal_repair["status"] !=
+                "IN_MEMORY_BLADE_NORMALS_INSTALLED" or
+                blade_normal_repair["normalAttributesInLiveScene"] != 60):
+            raise RuntimeError("blade normal installation differs")
     wiper_repair = None
     if args.wiper_scratch_repair:
         wiper_repair = install_scratch_wiper_repair(
@@ -223,6 +262,10 @@ def main() -> None:
             raise RuntimeError("RGBA cache guard or SDK changed during scratch export")
     else:
         export_to_usf(bpy.context.scene, str(candidate), config)
+    if blade_normal_repair is not None:
+        blade_normal_repair["normalAttributesAfterExport"] = sum(
+            bpy.data.objects[leaf].data.attributes.get("saber_normals") is not None
+            for leaf in LEAVES)
     if wiper_repair is not None:
         if (wiper_repair["actionOrder"] !=
                 ["d11_wipers_backward", "d11_wipers_forward"] or
@@ -234,6 +277,9 @@ def main() -> None:
     native_root_name = native_scene._root_node.name
     native_summary = _semantic_summary(native_scene)
     native_rows = _node_rows(native_scene)
+    if blade_normal_repair is not None:
+        candidate_blade_normals = blade_normals_by_leaf(
+            native_scene._root_node, NATIVE_PARENT)
     if push_branch_repair is not None:
         target_paths = [row["path"] for row in
                         push_branch_repair["targetMatrixErrors"]]
@@ -256,6 +302,12 @@ def main() -> None:
     baseline_root_name = baseline_scene._root_node.name
     baseline_summary = _semantic_summary(baseline_scene)
     baseline_rows = _node_rows(baseline_scene)
+    if blade_normal_repair is not None:
+        repaired_blade_normals = blade_normals_by_leaf(
+            baseline_scene._root_node, REPAIRED_PARENT)
+        blade_normal_repair["nativeNormalMatchesRepaired"] = sum(
+            candidate_blade_normals[leaf] == repaired_blade_normals[leaf]
+            for leaf in candidate_blade_normals)
     del baseline_scene
     gc.collect()
 
@@ -268,6 +320,12 @@ def main() -> None:
             _sha(Path(blender_armature_parity.__file__)) !=
             ARMATURE_PARITY_SHA256):
         raise RuntimeError("push-branch module changed during scratch export")
+    if blade_normal_repair is not None and (
+            _sha(blade_repair_file) != args.blade_normal_repair_sha256 or
+            _sha(blade_native) != args.blade_normal_native_sha256):
+        raise RuntimeError("blade-normal input changed during scratch export")
+    if blade_normal_repair is not None:
+        require_dependency_pins()
     result = {
         "schemaVersion": 1,
         "blendSha256": blend_before,
@@ -286,6 +344,7 @@ def main() -> None:
         "nativeBlendExportApproved": False,
         "wiperRepair": wiper_repair,
         "pushBranchRepair": push_branch_repair,
+        "bladeNormalRepair": blade_normal_repair,
     }
     if rgba_guard_detail is not None:
         result["rgbaCacheGuard"] = rgba_guard_detail
