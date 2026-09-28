@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import struct
 import sys
@@ -48,7 +49,7 @@ class CapturePairTests(unittest.TestCase):
         return {"path": str(path), "sha256": sha256(raw).hexdigest()}
 
     def fixture(self, *, mutate=None, variants=None, protocol_id="d11-protocol-v1",
-                image_size=(2, 2), full_d11=False) -> Path:
+                image_size=(2, 2), full_d11=False, run_ids=None) -> Path:
         protocol_variants = (list(gate.native_capture_postflight.VARIANTS)
                              if full_d11 else ["maroon"])
         if full_d11:
@@ -75,7 +76,7 @@ class CapturePairTests(unittest.TestCase):
                   for variant in protocol_variants}
         runs = {}
         for role in ("baseline", "candidate"):
-            run_id = f"{role}-run"
+            run_id = run_ids.get(role, f"{role}-run") if run_ids else f"{role}-run"
             package = self.write(f"{role}.pak", role.encode())
             variant_names = variants.get(role, protocol_variants) if variants else protocol_variants
             variant_rows = []
@@ -210,6 +211,40 @@ class CapturePairTests(unittest.TestCase):
         image.write_bytes(png(3, 2))
         with self.assertRaisesRegex(gate.CapturePairError, "SHA-256 mismatch"):
             gate.validate(pair)
+
+    def test_one_screenshot_file_cannot_fill_two_view_slots(self) -> None:
+        def reused(role, variant, view, response, observation, capture):
+            if role == "candidate" and view == "right":
+                capture["image"] = {
+                    "path": str(self.root / "candidate/maroon/front.png"),
+                    "sha256": sha256(png()).hexdigest(),
+                }
+        with self.assertRaisesRegex(gate.CapturePairError, "reuses the capture output"):
+            gate.validate(self.fixture(mutate=reused))
+
+    def test_baseline_and_candidate_need_distinct_run_ids(self) -> None:
+        with self.assertRaisesRegex(gate.CapturePairError, "run IDs must differ"):
+            gate.validate(self.fixture(run_ids={"baseline": "same-run", "candidate": "same-run"}))
+
+    def test_hard_linked_screenshot_cannot_fill_two_view_slots(self) -> None:
+        pair = self.fixture()
+        first = self.root / "candidate/maroon/front.png"
+        second = self.root / "candidate/maroon/right.png"
+        second.unlink()
+        try:
+            os.link(first, second)
+        except OSError as error:
+            self.skipTest(f"Filesystem does not support scratch hard links: {error}")
+        with self.assertRaisesRegex(gate.CapturePairError, "reuses the capture output"):
+            gate.validate(pair)
+
+    def test_view_observation_cannot_overlap_previous_copy(self) -> None:
+        def overlapping(role, variant, view, response, observation, capture):
+            if role == "candidate" and view == "right":
+                observation["requestSentUtc"] = "2026-09-28T00:00:12Z"
+                observation["responseReceivedUtc"] = "2026-09-28T00:00:13Z"
+        with self.assertRaisesRegex(gate.CapturePairError, "overlaps an earlier capture"):
+            gate.validate(self.fixture(mutate=overlapping))
 
 
 if __name__ == "__main__":

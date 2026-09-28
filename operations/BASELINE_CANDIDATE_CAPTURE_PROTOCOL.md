@@ -36,10 +36,17 @@ of this state to the response observed at **every** screenshot. A label such as
 Each run receipt is schema 1 with `status: "CAPTURE_READY"`, explicit `role` and
 `runId`, the protocol and runner SHA-256s, a pinned package binary, UTC start
 and finish times, and an ordered variant roster. Every variant has a pinned
-validation scene, an engine PID, and the complete ordered view roster. Each
-view has a pinned screenshot, a pinned editor observation, and UTC
+validation scene, an engine PID, and the complete ordered view roster. The
+baseline and candidate must have distinct `runId` values; their package bytes
+may still match for an A/A control comparison. Each view has a pinned
+screenshot, a pinned editor observation, and UTC
 `triggeredUtc` and `copiedUtc` timestamps. The validator checks the PNG/JPEG
 header's actual pixel dimensions against the protocol and the editor response.
+Each screenshot and observation must be its own output file across the pair;
+the same path or a hard link to the same file cannot fill another view slot.
+Identical image *bytes* in distinct files remain valid. Within each run, the
+next view's observation request cannot start before the preceding view's image
+copy has finished, including across variant boundaries.
 Scenes must have identical bytes between baseline and candidate for a given
 variant. This deliberately blocks a changed validation scene from masquerading
 as an image regression caused only by the package.
@@ -81,7 +88,8 @@ reports `nativePostflightVerified: false`, `captureProcessAuthenticated: false`,
 done. The existing regression policy's signed visual and campaign claims remain
 separate gates.
 
-Focused synthetic tests cover absent or changed lighting, camera transform,
+Focused synthetic tests cover reused screenshots, overlapping view intervals,
+absent or changed lighting, camera transform,
 runtime or PNG dimensions, protocol/probe identity, variant roster, stale
 observations, tampered images, partial rosters, and the complete 45-view D11
 roster. They do not create native evidence or a passing release receipt.

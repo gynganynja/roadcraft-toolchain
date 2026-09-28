@@ -185,6 +185,25 @@ def _unique_names(value: Any, label: str) -> list[str]:
     return result
 
 
+def _unique_capture_file(path: Path, label: str,
+                         seen_paths: dict[Path, str],
+                         seen_files: dict[tuple[int, int], str]) -> None:
+    """Require one actual output file per capture; equal image bytes are fine.
+
+    A second name for the same hard-linked file is still reuse of an output.
+    Some filesystems report inode zero, so the resolved-path check remains the
+    minimum rule on those filesystems.
+    """
+    _need(path not in seen_paths,
+          f"{label} reuses the capture output from {seen_paths.get(path)}")
+    identity = (path.stat().st_dev, path.stat().st_ino)
+    if identity[1]:
+        _need(identity not in seen_files,
+              f"{label} reuses the capture output from {seen_files.get(identity)}")
+        seen_files[identity] = label
+    seen_paths[path] = label
+
+
 def validate(pair_path: str | Path) -> dict[str, Any]:
     """Verify a sealed baseline/candidate pair without writing or launching tools."""
     unresolved_pair = Path(pair_path).expanduser()
@@ -244,12 +263,17 @@ def validate(pair_path: str | Path) -> dict[str, Any]:
     pair_camera: dict[tuple[str, str], bytes] = {}
     pair_scene: dict[str, str] = {}
     pair_lighting: dict[tuple[str, str], bytes] = {}
+    seen_capture_paths: dict[Path, str] = {}
+    seen_capture_files: dict[tuple[int, int], str] = {}
+    seen_run_ids: set[str] = set()
     for role in ("baseline", "candidate"):
         run_path, run = _json(runs[role], pair_file.parent, f"{role} run")
         _need(run.get("schemaVersion") == 1 and run.get("status") == "CAPTURE_READY",
               f"{role} run is not capture-ready schema 1")
         _need(run.get("role") == role, f"{role} run role mismatch")
         run_id = _safe_id(run.get("runId"), f"{role}.runId")
+        _need(run_id not in seen_run_ids, "Baseline and candidate run IDs must differ")
+        seen_run_ids.add(run_id)
         _need(run.get("protocolSha256") == protocol_sha and
               run.get("runnerSha256") == runner_sha,
               f"{role} run protocol or runner mismatch")
@@ -262,6 +286,7 @@ def validate(pair_path: str | Path) -> dict[str, Any]:
               [row.get("variant") if isinstance(row, dict) else None for row in variant_rows]
               == variants, f"{role} run variant roster differs from protocol")
         checked = 0
+        previous_copy: datetime | None = None
         for variant_row in variant_rows:
             variant = variant_row["variant"]
             scene_path, _ = _file(variant_row.get("scene"), run_path.parent,
@@ -283,6 +308,8 @@ def validate(pair_path: str | Path) -> dict[str, Any]:
                 label = f"{role} {variant} {view}"
                 image_path, image_raw = _file(capture.get("image"), run_path.parent,
                                                f"{label} image", limit=MAX_IMAGE_BYTES)
+                _unique_capture_file(image_path, f"{label} image",
+                                     seen_capture_paths, seen_capture_files)
                 try:
                     _, image_resolution = review._image_info(image_raw)
                 except review.ReviewError as exc:
@@ -290,6 +317,8 @@ def validate(pair_path: str | Path) -> dict[str, Any]:
                 _need(image_resolution == resolution, f"{label} image resolution mismatch")
                 observed_path, observed = _json(capture.get("observation"), run_path.parent,
                                                  f"{label} observation")
+                _unique_capture_file(observed_path, f"{label} observation",
+                                     seen_capture_paths, seen_capture_files)
                 _need(observed.get("requestScript") == probe_script,
                       f"{label} editor request differs from the pinned probe script")
                 response_raw = observed.get("responseRaw")
@@ -320,6 +349,9 @@ def validate(pair_path: str | Path) -> dict[str, Any]:
                 _need(began <= sent <= received <= triggered <= copied <= ended and
                       (triggered - received).total_seconds() <= max_age,
                       f"{label} observation was not captured immediately before the image")
+                _need(previous_copy is None or previous_copy <= sent,
+                      f"{label} observation overlaps an earlier capture")
+                previous_copy = copied
                 _need(_resolution(response.get("resolution"), f"{label} observed resolution")
                       == resolution, f"{label} observed resolution mismatch")
                 camera = _camera(response.get("camera"), f"{label} observed camera")
