@@ -157,9 +157,9 @@ class BladeRelocationTests(unittest.TestCase):
             rows, native_path, observed_sha, summary_path, observed_summary_sha = (
                 probe._rows_and_native(worklist, "source", blend, repaired))
             self.assertEqual(len(rows), 60)
-            self.assertEqual(native_path, native)
+            self.assertTrue(native_path.samefile(native))
             self.assertEqual(observed_sha, native_sha)
-            self.assertEqual(summary_path, summary)
+            self.assertTrue(summary_path.samefile(summary))
             self.assertEqual(observed_summary_sha, summary_sha)
             native.write_bytes(b"changed native bytes")
             with self.assertRaisesRegex(probe.LeftPushProbeError,
