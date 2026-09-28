@@ -23,15 +23,28 @@ read-only probe is
 `local/variant_structural_target_probe_20260929.py`, SHA-256
 `2cafea1b165ca8ffbfbf286a2c15b9389a03c48db16e4fe3a579317f5922a088`.
 
-Run from the RoadCraft development package with either reviewed Blender
-version, replacing `5.2` with `5.0` for the second check:
+The comparison is also available as a maintained, source-pinned, no-save
+command. It validates the accepted inventory and all three separate Blend/USF
+hashes, reviewed Blender and SDK bytes, its worker hash, the complete 400-path
+result, and unchanged inputs after execution. The three Blend files have the
+same bytes at different paths; the worker opens none of them. Run from the
+RoadCraft development package with either reviewed Blender version, replacing
+`5.2` with `5.0` for the second check:
 
 ```powershell
-& 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' `
-  --background --factory-startup --disable-autoexec --threads 1 `
-  --python-exit-code 1 `
-  --python 'RoadCraftToolchain/local/variant_structural_target_probe_20260929.py'
+$env:PYTHONPATH = (Resolve-Path 'RoadCraftToolchain/src').Path
+& 'C:\RC\RoadCraftDev\toolchain\.venv\Scripts\python.exe' -B `
+  -m roadcraft.blender_variant_structural_targets `
+  --registry 'RoadCraftToolchain/project.json' `
+  --blender 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' `
+  --sdk-script-root 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\tools\bin\blender_to_usf_script'
 ```
+
+The maintained command passed under both Blender 5.0.1 and 5.2.0, returning
+`REPAIRED_VARIANT_STRUCTURES_IDENTICAL`, zero matrix error and the same digest
+above for each asset. Its worker SHA-256 is
+`7f4170919ca0549df4e9e769b995aebd0446fb35b857327d8eaca47ea6455a8e`.
+The local full suite passed 402 tests with four machine-specific skips.
 
 The maintained base no-save reconstruction therefore addresses the same
 *static structural target* for all three repaired USFs. This comparison did

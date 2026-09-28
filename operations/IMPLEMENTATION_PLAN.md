@@ -789,6 +789,7 @@ The accepted base, v2 and v3 repaired USFs have identical 400-path static
 structural targets: world matrices, child rosters and animation-presence flags
 match exactly in pinned Blender 5.0.1 and 5.2.0 read-only parses. Their Blend
 references also have identical bytes. This narrows the variant hierarchy work
+and is now rerunnable through a maintained, source-pinned no-save diagnostic,
 but does not test variant-specific edits, export, mesh or material parity. See
 `D11_VARIANT_STRUCTURAL_TARGETS_20260929.md`.
 
