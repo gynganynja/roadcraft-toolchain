@@ -233,6 +233,64 @@
         }
       },
       {
+        "id": "pre-capture-read-request-source-check",
+        "command": [
+          "C:\\RC\\RoadCraftDev\\toolchain\\.venv\\Scripts\\python.exe",
+          "-B",
+          "-m",
+          "roadcraft.native_precapture_request",
+          "--config",
+          "C:\\RC\\RoadCraftDev\\toolchain\\local\\machine.json"
+        ],
+        "cwd": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928",
+        "inputs": [
+          {
+            "path": "C:\\RC\\RoadCraftDev\\toolchain\\.venv\\Scripts\\python.exe",
+            "sha256": "5fc3c5244b5eef01a82fbefd1932d1382b79c72fe6e64ffe8df1e3ce3643f02f"
+          },
+          {
+            "path": "C:\\RC\\RoadCraftDev\\toolchain\\src\\roadcraft\\native_precapture_request.py",
+            "sha256": "527b71ed56788a849a9c809d48ebf92bea3616cf77e0bac25224ee48ad74c109"
+          },
+          {
+            "path": "C:\\RC\\RoadCraftDev\\toolchain\\local\\machine.json",
+            "sha256": "5c442e89f2e23fa7528da05e26b05f02b97f22a1c139535483a8d08d931e677d"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Final_Candidate_20260925\\native_controls_template.ps1",
+            "sha256": "9722e35723f75fd841f95e81848cdf1759261d9ef2141fd6948ac9e23ac60c0d"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Final_Candidate_20260925\\native_acceptance.py",
+            "sha256": "89b1431099bacc00a3173ffbe46c9dbfc1047707828db929df949e40df11f580"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Repair_20260926\\capture_interior.py",
+            "sha256": "dae524f24afad50e04902d8310775478577d5f48c8610fb3595e3b376ea8f19f"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Repair_20260926\\capture_cab_survey.py",
+            "sha256": "083652fc56cf6d0bcc54ab139c7100f126427f9a5d2da9df5fb29dbf3eeec2ef"
+          },
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_AAA_20260928\\capture_candidate_native.py",
+            "sha256": "6449ddc08c81165231ee39f90e171b2f5a2c7fdecc9e2e21b1b2c1b2d4733585"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Final_Candidate_20260925\\native_controls_template.ps1",
+            "sha256": "9722e35723f75fd841f95e81848cdf1759261d9ef2141fd6948ac9e23ac60c0d"
+          }
+        ],
+        "timeoutSeconds": 120,
+        "minFreeBytes": 8589934592,
+        "native": false,
+        "env": {
+          "PYTHONDONTWRITEBYTECODE": "1"
+        }
+      },
+      {
         "id": "full-capture-preflight-no-swap",
         "command": [
           "C:\\RC\\RoadCraftDev\\toolchain\\.venv\\Scripts\\python.exe",

@@ -341,6 +341,35 @@ def doctor(config: dict[str, Any] | None = None) -> dict[str, Any]:
             "warnings": warnings}
 
 
+def _is_console_launcher(pid: int, expected: Path) -> bool:
+    """Match a RoadCraft CLI launcher by its executable file, or fail closed."""
+    try:
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        open_process = kernel.OpenProcess
+        open_process.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+        open_process.restype = wintypes.HANDLE
+        query_image = kernel.QueryFullProcessImageNameW
+        query_image.argtypes = (wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR,
+                                ctypes.POINTER(wintypes.DWORD))
+        query_image.restype = wintypes.BOOL
+        close = kernel.CloseHandle
+        close.argtypes = (wintypes.HANDLE,)
+        close.restype = wintypes.BOOL
+        handle = open_process(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return False
+        try:
+            buffer = ctypes.create_unicode_buffer(32768)
+            size = wintypes.DWORD(len(buffer))
+            if not query_image(handle, 0, buffer, ctypes.byref(size)):
+                return False
+            return expected.samefile(buffer.value)
+        finally:
+            close(handle)
+    except (AttributeError, OSError):
+        return False
+
+
 def _editor_processes(*, tokens: tuple[str, ...] | None = None) -> tuple[list[dict[str, Any]], str | None]:
     """Enumerate selected process names without querying protected process memory."""
     if os.name != "nt":
@@ -372,6 +401,9 @@ def _editor_processes(*, tokens: tuple[str, ...] | None = None) -> tuple[list[di
         if handle == ctypes.c_void_p(-1).value:
             return [], f"CreateToolhelp32Snapshot failed with Windows error {ctypes.get_last_error()}"
         found = []
+        own_pid = os.getpid()
+        parents: dict[int, int] = {}
+        names: dict[int, str] = {}
         try:
             entry = ProcessEntry()
             entry.dwSize = ctypes.sizeof(ProcessEntry)
@@ -381,7 +413,11 @@ def _editor_processes(*, tokens: tuple[str, ...] | None = None) -> tuple[list[di
                 tokens = ("roadcraft", "modeditor", "integrationstudio", "blender", "painter", "furnace", "mod_pak_builder")
             while True:
                 name = entry.szExeFile
-                if any(token in name.casefold() for token in tokens):
+                parents[entry.th32ProcessID] = entry.th32ParentProcessID
+                names[entry.th32ProcessID] = name
+                # A direct Python invocation must not count itself.
+                if (entry.th32ProcessID != own_pid and
+                        any(token in name.casefold() for token in tokens)):
                     found.append({"pid": entry.th32ProcessID, "name": name})
                 entry.dwSize = ctypes.sizeof(ProcessEntry)
                 if not next_entry(handle, ctypes.byref(entry)):
@@ -393,6 +429,24 @@ def _editor_processes(*, tokens: tuple[str, ...] | None = None) -> tuple[list[di
                     break
         finally:
             close(handle)
+        # The Windows console script is an ancestor of its Python process;
+        # a venv Python shim can put another python.exe between them.
+        # Exempt the closest matching launcher, never a concurrent CLI.
+        entrypoint = Path(sys.argv[0])
+        if entrypoint.name.casefold() == "roadcraft":
+            entrypoint = entrypoint.with_suffix(".exe")
+        if entrypoint.name.casefold() == "roadcraft.exe" and entrypoint.is_file():
+            cursor = own_pid
+            seen = {cursor}
+            for _ in range(16):
+                cursor = parents.get(cursor, 0)
+                if not cursor or cursor in seen:
+                    break
+                seen.add(cursor)
+                if names.get(cursor, "").casefold() == "roadcraft.exe":
+                    if _is_console_launcher(cursor, entrypoint):
+                        found = [row for row in found if row["pid"] != cursor]
+                    break
         return found, None
     except (AttributeError, OSError) as exc:
         return [], str(exc)

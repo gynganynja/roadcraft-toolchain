@@ -4,6 +4,7 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -32,6 +33,35 @@ class CoreTests(unittest.TestCase):
 
     def write_json(self, name: str, data: dict) -> Path:
         return self.write(name, json.dumps(data).encode())
+
+    @unittest.skipUnless(os.name == "nt", "Windows process enumeration")
+    def test_doctor_does_not_report_its_own_console_process(self) -> None:
+        scripts = Path(sys.executable).parent
+        entrypoint = scripts / "roadcraft.exe"
+        if not entrypoint.is_file():
+            entrypoint = scripts / "Scripts" / "roadcraft.exe"
+        self.assertTrue(entrypoint.is_file(), f"RoadCraft entrypoint missing: {entrypoint}")
+        # Suspend a second invocation before it can exit. It has the exact
+        # same executable path but is not the doctor's own launcher.
+        other = subprocess.Popen([str(entrypoint), "doctor", "--json"],
+                                 creationflags=0x00000004,
+                                 stdin=subprocess.DEVNULL,
+                                 stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL)
+        try:
+            with subprocess.Popen([str(entrypoint), "doctor", "--json"],
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                  text=True) as child:
+                stdout, stderr = child.communicate(timeout=30)
+                self.assertEqual(child.returncode, 0, stderr)
+                result = json.loads(stdout)
+                self.assertIsNone(result["processInspectionError"])
+                reported = {row["pid"] for row in result["activeAuthoringProcesses"]}
+                self.assertNotIn(child.pid, reported)
+                self.assertIn(other.pid, reported)
+        finally:
+            other.terminate()
+            other.wait(timeout=10)
 
     def test_status_distinguishes_accepted_candidate_and_transient_install(self) -> None:
         accepted = self.write("accepted.pak", b"accepted")

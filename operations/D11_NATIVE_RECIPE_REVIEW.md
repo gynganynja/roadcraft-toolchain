@@ -3,7 +3,8 @@
 The [pinned AAA recipe](d11_aaa_native_preflight_recipe.json) is **preflight
 only**. Its `build` phase runs `package_and_audit.py --check`; its `inspect`
 phase runs `package_and_audit.py --audit-package` against the existing AAA
-candidate; its `capture` phase repeats the source check and runs
+candidate; its `capture` phase repeats the source check, declares the pinned
+no-helper pre-screenshot Read request source check, then runs
 `capture_candidate_native.py` without `--execute`. Every command uses an
 explicit Python executable, argv array, AAA working directory, SHA-256 input
 pins, 8 GiB free-space gate, and bounded timeout. It does not build a PAK,
@@ -11,6 +12,13 @@ open an editor, swap the installed PAK, or capture an image. Job logs from an
 applied preflight are the generated output; the recipe's `outputs` are
 unchanged, pinned files that the runner verifies after each step. A no-write
 `jobs.run_recipe(..., dry_run=True)` passed all three phases on 2026-09-28.
+The added request-source step has no generated-helper or transport input, so
+it cannot verify what a future editor actually receives. Its command and
+limits are documented in `NATIVE_PRECAPTURE_REQUEST_AUDIT_20260928.md`.
+The revised `capture` recipe dry run returned `dry_run` for all three steps,
+with recipe SHA-256
+`be6b0d0a45d38b5294c53955aeeb1fe473914841daf50943bd99be605a6ee7d5`.
+No `--apply` phase or native command was run.
 
 The existing AAA `package_and_audit.py --build` cannot be replayed in place:
 it derives all paths from its own `__file__`, refuses to proceed while the
