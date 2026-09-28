@@ -7,6 +7,7 @@ Blend, accepted USF, Blender executable and SDK before invoking it.
 from __future__ import annotations
 
 from contextlib import contextmanager
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -63,22 +64,40 @@ def read_nodes(repaired: Path, sdk_root: Path):
 
 
 @contextmanager
-def packed_color_readback():
-    """Use SDK INT colorsets so importer and exporter agree on packed bytes."""
+def reviewed_readback(*, allow_material_aliases: bool):
+    """Scope packed colors and optional reviewed material-name aliases."""
+    from saber.blender.lib.usf import mesh as sdk_mesh
     from saber.blender.lib.usf.mesh import UsfMeshColorSet
 
     original = UsfMeshColorSet.FAST_PACK
     need(original is False, "SDK packed-color mode unexpectedly enabled")
+    original_material = sdk_mesh.BlenderToUsfSimpleMaterial
+
+    class ReviewedMaterial(original_material):
+        def __init__(self, material, uvset_name="UVMap"):
+            super().__init__(material, uvset_name)
+            if material is not None and 'roadcraft_target_name' in material:
+                self.name = material['roadcraft_target_name']
+                expected_sha = material.get('roadcraft_target_sha256')
+                need(isinstance(expected_sha, str) and
+                     hashlib.sha256(self.build_string().encode()).hexdigest()
+                     == expected_sha,
+                     "reviewed material alias text differs")
+
     UsfMeshColorSet.FAST_PACK = True
+    if allow_material_aliases:
+        sdk_mesh.BlenderToUsfSimpleMaterial = ReviewedMaterial
     try:
         yield
     finally:
         UsfMeshColorSet.FAST_PACK = original
+        sdk_mesh.BlenderToUsfSimpleMaterial = original_material
 
 
-def material_from_target(target_material):
+def material_from_target(target_material, *, allow_aliases: bool):
     """Author only materials exactly representable by the reviewed SDK."""
-    from saber.blender.lib.usf.material import BlenderToUsfSimpleMaterial
+    from saber.blender.lib.usf import mesh as sdk_mesh
+    projector = sdk_mesh.BlenderToUsfSimpleMaterial
 
     text = target_material.build_string()
     name_match = re.search(r'material = \{\s*name = "([^"]+)"', text)
@@ -93,10 +112,22 @@ def material_from_target(target_material):
          "material tint differs")
     existing = bpy.data.materials.get(name)
     if existing is not None:
-        need(BlenderToUsfSimpleMaterial(existing).build_string() == text,
-             "same-name material text collision: " + name)
-        return existing
-    material = bpy.data.materials.new(name)
+        if projector(existing).build_string() == text:
+            return existing
+        need(allow_aliases, "same-name material text collision: " + name)
+        material_name = name + '__rc_' + hashlib.sha256(text.encode()).hexdigest()[:12]
+        alias = bpy.data.materials.get(material_name)
+        if alias is not None:
+            need(alias.get('roadcraft_target_name') == name and
+                 projector(alias).build_string() == text,
+                 "reviewed material alias collision")
+            return alias
+    else:
+        material_name = name
+    material = bpy.data.materials.new(material_name)
+    if material_name != name:
+        material['roadcraft_target_name'] = name
+        material['roadcraft_target_sha256'] = hashlib.sha256(text.encode()).hexdigest()
     material.use_nodes = True
     bsdf = material.node_tree.nodes.get('Principled BSDF')
     need(bsdf is not None, "Principled material node missing")
@@ -106,7 +137,7 @@ def material_from_target(target_material):
         texture = material.node_tree.nodes.new('ShaderNodeTexImage')
         texture.image = (bpy.data.images.get(texture_name) or
                          bpy.data.images.new(texture_name, width=1, height=1))
-    need(BlenderToUsfSimpleMaterial(material).build_string() == text,
+    need(projector(material).build_string() == text,
          "authored material text differs: " + name)
     return material
 
@@ -126,7 +157,8 @@ def family_targets(families: tuple[str, ...]) -> list[tuple[str, str]]:
 
 def reconstruct_families(*, repaired: Path, sdk_root: Path, arm,
                          families: tuple[str, ...],
-                         allowed_paths: set[str]) -> dict:
+                         allowed_paths: set[str],
+                         allow_material_aliases: bool = False) -> dict:
     """Add whole flat-LOD families, then compare SDK projections in memory."""
     sys.path.insert(0, str(sdk_root))
     from saber.blender.lib.usf.mesh import UsfMesh
@@ -140,7 +172,7 @@ def reconstruct_families(*, repaired: Path, sdk_root: Path, arm,
          "family not in pinned repaired-only worklist")
     parsed, by_path, by_uid = read_nodes(repaired, sdk_root)
     new_objects = []
-    with packed_color_readback():
+    with reviewed_readback(allow_material_aliases=allow_material_aliases):
         for path, name in pairs:
             target = by_path.get(path)
             need(target is not None and target.mesh is not None and
@@ -168,7 +200,8 @@ def reconstruct_families(*, repaired: Path, sdk_root: Path, arm,
                     uv[1] = 1.0 - uv[1]
             loaded.materials.clear()
             for material in mesh.materials.data:
-                loaded.materials.append(material_from_target(material))
+                loaded.materials.append(material_from_target(
+                    material, allow_aliases=allow_material_aliases))
             for index, polygon in enumerate(loaded.polygons):
                 polygon.material_index = mesh.faces[index].material_index
             skin_names = [by_uid[item.usf_node_uid].name
@@ -264,6 +297,11 @@ def reconstruct_families(*, repaired: Path, sdk_root: Path, arm,
     need(len(rows) == len(pairs), "family path coverage differs")
     return {"status": "IN_MEMORY_FAMILY_PAYLOAD_MATCH_WITH_GAPS",
             "families": list(families), "rows": rows,
+            "materialAliases": sorted({material.name
+                                       for _, obj, _, _ in new_objects
+                                       for material in obj.data.materials
+                                       if material is not None and
+                                       'roadcraft_target_name' in material}),
             "sceneMeshCount": sum(obj.type == 'MESH' for obj in
                                   bpy.context.scene.objects),
             "blendSaved": False, "usfExported": False}

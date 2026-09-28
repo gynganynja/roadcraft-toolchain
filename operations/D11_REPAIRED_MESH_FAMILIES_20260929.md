@@ -33,9 +33,9 @@ The gaps remain visible in the probe result:
   also drift. The access-motor base mesh has a maximum tangent-component
   error of about 0.621. Tangent parity remains unproved.
 - The accepted `d11t_beacon_off_vis` materials reuse three names with
-  different text from `d11t_lenses_inner_vis`. The module deliberately
-  rejects a same-name/different-text collision rather than silently changing
-  the serialized material. The beacon family is not in this combined run.
+  different text from `d11t_lenses_inner_vis`. This original 21-mesh probe
+  uses the default collision rejection. A later opt-in, scoped alias check
+  covers the beacon family; see `D11_REPAIRED_MESH_FAMILIES_45_20260929.md`.
 
 The material image datablocks created in RAM preserve accepted texture
 **names**, but do not prove texture pixels or native appearance. No SDK USF
@@ -44,10 +44,10 @@ The source Blend and accepted USF were hash-checked before and after and
 remained unchanged. The existing pending scratch-export command is unchanged.
 
 The module SHA-256 is
-`c3105758613137525e477d342c69665968d3ec0855a2a69aca2974f3243fe54b`.
+`f20ae1d82a47875dc6ac63709d85a089e5c2814b1c0a756bd42c7c3913f474c3`.
 The exact probe is
 `operations/probes/repaired_mesh_families_check_20260929.py`, SHA-256
-`d286a41d0e66375442552af74453dbc0c4a8909f953087e48334ca18de9d0bb0`.
+`b53c963503c13acbedc3bf51c1674228cdb141312b2d9f729d1b64d86b1220a9`.
 To replay from the Steam development-package root, copy the probe unchanged
 to `RoadCraftToolchain/local/repaired_mesh_families_check_20260929.py`,
 verify its hash, and invoke:

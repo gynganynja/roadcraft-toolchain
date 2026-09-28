@@ -869,6 +869,18 @@ and three same-name material collisions in the still-unhandled beacon family.
 See `D11_REPAIRED_MESH_FAMILIES_20260929.md`. This does not change the pending
 scratch-export command or native-Blend gate.
 
+A subsequent pinned no-save run expands the importer to 15 families and
+45 meshes, covering 16,537 faces and 49,611 corners. An opt-in in-memory
+material alias lets the three beacon-off collisions project the accepted
+material text exactly; the SDK class and packed-color mode are restored
+afterward. All 45 projected paths, positions, normals, UVs, face metadata,
+materials, packed colors and active skin influences match. The exact-output
+gaps remain: 399 projected bones per mesh versus target tables of 1–382,
+378 full skin-record mismatches from zero-weight slots and 21 meshes with
+tangent-component error at least 1. The six large interior/dashboard meshes
+remain untested. No Blend was saved or USF exported. See
+`D11_REPAIRED_MESH_FAMILIES_45_20260929.md`.
+
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
 2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
