@@ -52,8 +52,9 @@ already contains all three validation scenes with the same bytes as the AAA
 project, while its model sources differ. Both checkouts' no-write baseline
 preflights verified 1,576 project source pins and the exact 382-file / 45-view
 output roster; the dedicated checkout passed 371 local tests with four skips.
-No baseline run was executed. The current native Read response still lacks the
-complete measured context and engine-origin scene/PNG proof required by step 5.
+No baseline run had been executed at that checkpoint. The current native Read
+response still lacks the complete measured context and engine-origin scene/PNG
+proof required by step 5.
 
 After that snapshot, a separate one-view accepted-project baseline diagnostic
 started the native editor but failed before its screenshot because C: fell
@@ -63,7 +64,10 @@ accepted hash. The baseline preflight floor was raised to 16 GB to prevent a
 repeat at the same starting free space. A fresh elevated read-only check of
 the exact 23,604-file/5.93-GiB generated-export cleanup passed with zero
 deletions; applying it awaits specific approval. See
-`NATIVE_BASELINE_CAPTURE_20260928.md`.
+`NATIVE_BASELINE_CAPTURE_20260928.md`. The next runner records timestamped
+free-space low-water evidence in its outer receipt. Its diagnostic sampler and
+the combined 373-test suite passed locally with four machine-specific skips;
+no editor was launched by this change.
 
 | Area | State at this snapshot | Evidence and limit |
 |---|---|---|

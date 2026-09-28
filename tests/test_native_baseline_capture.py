@@ -18,6 +18,23 @@ def digest(path: Path) -> str:
 
 
 class BaselineSourceIsolationTests(unittest.TestCase):
+    def test_disk_sampler_records_transient_low_and_recovery(self) -> None:
+        readings = iter((17_000_000_000, 900_000_000, 16_000_000_000))
+        with patch.object(baseline.shutil, "disk_usage",
+                          side_effect=lambda _root: SimpleNamespace(free=next(readings))):
+            sampler = baseline.DiskFreeSampler(Path("C:/"), interval_seconds=3600)
+            sampler.start()
+            sampler._sample()
+            result = sampler.finish()
+        self.assertTrue(result["threadStopped"])
+        self.assertEqual(result["sampleCount"], 3)
+        self.assertEqual(result["first"]["freeBytes"], 17_000_000_000)
+        self.assertEqual(result["lowest"]["freeBytes"], 900_000_000)
+        self.assertEqual(result["last"]["freeBytes"], 16_000_000_000)
+        self.assertEqual(result["dropFromStartBytes"], 16_100_000_000)
+        self.assertLessEqual(result["first"]["atUtc"], result["lowest"]["atUtc"])
+        self.assertLessEqual(result["lowest"]["atUtc"], result["last"]["atUtc"])
+
     def test_editor_mount_rejects_a_candidate_source_path(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

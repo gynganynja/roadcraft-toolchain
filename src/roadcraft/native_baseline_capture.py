@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+import threading
 from typing import Any
 
 from . import core
@@ -27,6 +28,67 @@ RUN_ID = re.compile(r"[0-9a-f]{8}\Z")
 
 class BaselineCaptureError(ValueError):
     pass
+
+
+class DiskFreeSampler:
+    """Retain bounded, timestamped disk evidence during a native run."""
+
+    def __init__(self, root: Path, interval_seconds: float = 0.5) -> None:
+        self.root = root
+        self.interval_seconds = interval_seconds
+        self.stop_event = threading.Event()
+        self.thread: threading.Thread | None = None
+        self.state_lock = threading.Lock()
+        self.first: dict[str, Any] | None = None
+        self.lowest: dict[str, Any] | None = None
+        self.last: dict[str, Any] | None = None
+        self.sample_count = 0
+        self.errors: list[str] = []
+
+    def _sample(self) -> None:
+        at_utc = dt.datetime.now(dt.timezone.utc).isoformat()
+        try:
+            free = shutil.disk_usage(self.root).free
+        except OSError as error:
+            with self.state_lock:
+                if len(self.errors) < 4:
+                    self.errors.append(f"{at_utc}: {type(error).__name__}: {error}")
+            return
+        point = {"atUtc": at_utc, "freeBytes": free}
+        with self.state_lock:
+            self.sample_count += 1
+            if self.first is None:
+                self.first = point
+            if self.lowest is None or free < self.lowest["freeBytes"]:
+                self.lowest = point
+            self.last = point
+
+    def _run(self) -> None:
+        while not self.stop_event.wait(self.interval_seconds):
+            self._sample()
+
+    def start(self) -> None:
+        self._sample()
+        thread = threading.Thread(target=self._run, daemon=True)
+        thread.start()
+        self.thread = thread
+
+    def finish(self) -> dict[str, Any]:
+        self.stop_event.set()
+        if self.thread is not None:
+            self.thread.join(timeout=2)
+        thread_stopped = self.thread is None or not self.thread.is_alive()
+        if thread_stopped:
+            self._sample()
+        with self.state_lock:
+            return {
+                "root": str(self.root), "sampleIntervalSeconds": self.interval_seconds,
+                "sampleCount": self.sample_count, "first": self.first,
+                "lowest": self.lowest, "last": self.last,
+                "dropFromStartBytes": (self.first["freeBytes"] - self.lowest["freeBytes"]
+                                       if self.first and self.lowest else None),
+                "samplingErrors": [*self.errors], "threadStopped": thread_stopped,
+            }
 
 
 def need(condition: bool, message: str) -> None:
@@ -254,9 +316,11 @@ def main(argv: list[str] | None = None) -> int:
         json.dump({"runId": args.run_id, "role": "baseline",
                    "acceptedSha256": accepted_sha}, stream)
     owned = False
+    disk_sampler = DiskFreeSampler(inner.HERE)
     try:
         with outer.open("x", encoding="utf-8"):
             owned = True
+        disk_sampler.start()
         variants = tuple(contract["capturePlan"]["variants"])
         views = tuple(contract["capturePlan"]["viewsPerVariant"])
         full_capture = contract["capturePlan"]["fullCapture"]
@@ -278,6 +342,7 @@ def main(argv: list[str] | None = None) -> int:
         report.update(status="FAIL", error=repr(error))
         raise
     finally:
+        report["diskFreeTelemetry"] = disk_sampler.finish()
         report["finishedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
         if owned:
             inner.save(outer, report)

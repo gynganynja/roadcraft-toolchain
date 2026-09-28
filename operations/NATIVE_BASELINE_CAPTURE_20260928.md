@@ -90,3 +90,12 @@ They total 6,368,972,800 allocated bytes; its new dry-run receipt hashes to
 It found 21 retained packages, 166 retained source files, no tracked
 candidates, no active process owners, `applyReady: true`, and zero deletions.
 That separate cleanup has not been authorized or applied.
+
+The baseline runner now samples free space on the SDK volume every 0.5 seconds
+from just before the first variant through cleanup. Its outer receipt records
+the first, lowest and final free-byte readings, their UTC times, the drop from
+the starting reading, the sample count and any sampling errors. This is host
+diagnostic telemetry, not evidence that the editor loaded the intended scene or
+produced an authenticated PNG. The failed `b1c2d3e4` run predates the sampler;
+its low point cannot be reconstructed. This runner change requires a fresh
+output contract for any later invocation.
