@@ -204,6 +204,43 @@ def _unique_capture_file(path: Path, label: str,
     seen_paths[path] = label
 
 
+def _native_output_index(output_hashes: dict[str, Any]) -> dict[Path, dict[str, str]]:
+    """Index a verified outer roster by canonical path, rejecting aliases."""
+    indexed: dict[Path, dict[str, str]] = {}
+    seen_files: dict[tuple[int, int], Path] = {}
+    for raw_path, raw_sha in output_hashes.items():
+        _need(isinstance(raw_path, str) and Path(raw_path).is_absolute(),
+              "Native output roster needs absolute paths")
+        path = Path(raw_path)
+        _need(not path.is_symlink(), "Native output roster contains a linked path")
+        canonical = path.resolve(strict=True)
+        _need(canonical.is_file() and not canonical.is_symlink(),
+              "Native output roster contains a non-file")
+        digest = _digest(raw_sha, f"Native output {raw_path} SHA-256")
+        _need(canonical not in indexed,
+              "Native output roster repeats a canonical path alias")
+        stat = canonical.stat()
+        identity = (stat.st_dev, stat.st_ino)
+        if identity[1]:
+            _need(identity not in seen_files,
+                  "Native output roster repeats a hard-linked file alias")
+            seen_files[identity] = canonical
+        indexed[canonical] = {"path": raw_path, "sha256": digest}
+    return indexed
+
+
+def _native_output(index: dict[Path, dict[str, str]], expected: Path,
+                   base: Path, label: str) -> tuple[dict[str, str], Path]:
+    """Rehash the named native output and prove its canonical file identity."""
+    canonical = expected.resolve(strict=True)
+    pin = index.get(canonical)
+    _need(pin is not None, f"{label} is absent from native output roster")
+    verified, _ = _file(pin, base, label)
+    _need(verified == canonical and verified.samefile(expected),
+          f"{label} differs from the expected native file")
+    return pin, verified
+
+
 def _candidate_native_receipt_links(
         pair: dict[str, Any], pair_file: Path,
         expected_pins: Mapping[str, str],
@@ -275,6 +312,7 @@ def _candidate_native_receipt_links(
               f"{role} native postflight did not verify the full run")
         output_hashes = _object(outer.get("requiredOutputSha256"),
                                 f"{role} native output hashes")
+        output_index = _native_output_index(output_hashes)
         contract = _object(plan.get("outputContract"),
                            f"{role} native output contract")
         contract_runner, _ = _file(
@@ -295,10 +333,11 @@ def _candidate_native_receipt_links(
                   {"path": context.get("scene"), "sha256": context.get("sceneSha256")},
                   f"{role} {variant} scene differs from native contract")
             report_path = native_run / "report.json"
-            report_pin = output_hashes.get(str(report_path))
-            _need(report_pin is not None, f"{role} {variant} native report is absent")
-            _, report = _json({"path": str(report_path), "sha256": report_pin},
-                              run_path.parent, f"{role} {variant} native report")
+            report_pin, _ = _native_output(
+                output_index, report_path, run_path.parent,
+                f"{role} {variant} native report")
+            _, report = _json(report_pin, run_path.parent,
+                              f"{role} {variant} native report")
             _need(report.get("enginePid") == variant_row["enginePid"],
                   f"{role} {variant} engine PID differs from native report")
             actions = report.get("actionEvents")
@@ -309,17 +348,28 @@ def _candidate_native_receipt_links(
                 label = f"{role} {variant} {view}"
                 image_path = native_run / f"cab_{view}.png"
                 transport_path = native_run / f"pre_capture_{view}.json"
-                _need(capture["image"] ==
-                      {"path": str(image_path),
-                       "sha256": output_hashes.get(str(image_path))},
+                image_pin, native_image = _native_output(
+                    output_index, image_path, run_path.parent, f"{label} native image")
+                pair_image, _ = _file(capture["image"], run_path.parent,
+                                      f"{label} pair image")
+                _need(pair_image.samefile(native_image) and
+                      pair_image == native_image and
+                      capture["image"]["sha256"] == image_pin["sha256"],
                       f"{label} image differs from native output")
                 _, observed = _json(capture["observation"], run_path.parent,
                                      f"{label} observation")
-                _need(observed.get("nativeTransport") ==
-                      {"path": str(transport_path),
-                       "sha256": output_hashes.get(str(transport_path))},
+                transport_pin, native_transport = _native_output(
+                    output_index, transport_path, run_path.parent,
+                    f"{label} native transport")
+                observed_transport, _ = _file(observed.get("nativeTransport"),
+                                               run_path.parent,
+                                               f"{label} observed transport")
+                _need(observed_transport.samefile(native_transport) and
+                      observed_transport == native_transport and
+                      observed["nativeTransport"]["sha256"] ==
+                      transport_pin["sha256"],
                       f"{label} observation lacks the exact native transport link")
-                _, transport = _json(observed["nativeTransport"], run_path.parent,
+                _, transport = _json(transport_pin, run_path.parent,
                                       f"{label} native transport")
                 _need(transport.get("status") == "pass" and
                       transport.get("stage") == "response_received" and

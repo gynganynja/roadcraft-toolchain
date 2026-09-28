@@ -329,6 +329,39 @@ class CapturePairTests(unittest.TestCase):
         self.assertTrue(result["candidateNativeReceiptLinked"])
         self.assertFalse(result["nativeEvidenceLinked"])
 
+    def test_native_binding_accepts_aliased_fixture_output_paths(self) -> None:
+        self.root = self.root / ".." / self.root.name
+        self.assertNotEqual(str(self.root), str(self.root.resolve()))
+        pair, external = self.native_binding_fixture()
+        with mock.patch.object(gate.native_capture_postflight, "validate",
+                               side_effect=self.passing_postflight):
+            result = gate.validate(pair, expected_candidate_native_pins=external)
+        self.assertTrue(result["candidateNativeReceiptLinked"])
+        self.assertFalse(result["nativeEvidenceLinked"])
+
+    def test_native_binding_rejects_duplicate_output_path_alias(self) -> None:
+        pair, external = self.native_binding_fixture()
+        pair_row = json.loads(pair.read_text(encoding="utf-8"))
+        binding = pair_row["candidateNativeReceipt"]
+        receipt_path = Path(binding["receipt"]["path"])
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        report_path = next(Path(path) for path in receipt["requiredOutputSha256"]
+                           if path.endswith("report.json"))
+        alias = report_path.parent / ".." / report_path.parent.name / report_path.name
+        self.assertNotEqual(str(alias), str(report_path))
+        self.assertTrue(alias.samefile(report_path))
+        receipt["requiredOutputSha256"][str(alias)] = (
+            receipt["requiredOutputSha256"][str(report_path)])
+        binding["receipt"] = self.write(
+            str(receipt_path.relative_to(self.root)), receipt)
+        external["receiptSha256"] = binding["receipt"]["sha256"]
+        self.write("pair.json", pair_row)
+        with mock.patch.object(gate.native_capture_postflight, "validate",
+                               side_effect=self.passing_postflight):
+            with self.assertRaisesRegex(gate.CapturePairError,
+                                        "repeats a canonical path alias"):
+                gate.validate(pair, expected_candidate_native_pins=external)
+
     def test_native_binding_rejects_unlinked_observation_and_image(self) -> None:
         pair, external = self.native_binding_fixture()
         run_path = self.root / "candidate_run.json"
@@ -344,7 +377,8 @@ class CapturePairTests(unittest.TestCase):
         self.write("pair.json", pair_row)
         with mock.patch.object(gate.native_capture_postflight, "validate",
                                side_effect=self.passing_postflight):
-            with self.assertRaisesRegex(gate.CapturePairError, "native transport link"):
+            with self.assertRaisesRegex(gate.CapturePairError,
+                                        "observed transport SHA-256 mismatch"):
                 gate.validate(pair, expected_candidate_native_pins=external)
         pair, external = self.native_binding_fixture()
         run = json.loads(run_path.read_text(encoding="utf-8"))
