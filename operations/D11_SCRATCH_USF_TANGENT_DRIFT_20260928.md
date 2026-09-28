@@ -134,3 +134,12 @@ It strongly supports thread-sensitive tangent calculation, but does not prove
 the Blender scheduler mechanism. Structural and material/rig/animation
 differences against the repaired USF remain, so the native Blend export gate
 stays blocked.
+
+Subsequent scratch `roadcraft.blender_authoring` diagnostics default to one
+Blender worker thread, and both the dry-run output and saved receipt record
+`blenderThreads: 1`. An explicit numeric `--blender-threads N` overrides that
+count; `--blender-threads auto` omits Blender's `--threads` flag to reproduce
+its own default behavior. The Python API uses `blender_threads=None` for the
+same auto mode. Synthetic tests check the command and receipt. This narrows
+avoidable byte drift in future diagnostics; it does not establish parity,
+prove the tangent scheduler mechanism, or permit a native Blend export.

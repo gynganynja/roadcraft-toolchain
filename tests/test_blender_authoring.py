@@ -79,15 +79,14 @@ class BlenderAuthoringTests(unittest.TestCase):
         self.scratch = self.root / "local/authoring"
         self.receipt = self.root / "operations/authoring.json"
 
-    def _run(self, *, dry_run: bool = True, blender_threads: int | None = None):
+    def _run(self, *, dry_run: bool = True, **options):
         return authoring.run_authoring_probe(
             asset_name="test", inventory_path=self.inventory,
             inventory_sha256=file_sha256(self.inventory),
             blender_executable=self.blender,
             blender_sha256=file_sha256(self.blender),
             sdk_script_root=self.sdk, scratch_root=self.scratch,
-            receipt_path=self.receipt, dry_run=dry_run,
-            blender_threads=blender_threads,
+            receipt_path=self.receipt, dry_run=dry_run, **options,
         )
 
     def test_dry_run_verifies_pins_without_output(self) -> None:
@@ -96,6 +95,7 @@ class BlenderAuthoringTests(unittest.TestCase):
                                                            stdout="Blender 5.2.0 LTS\n")):
             result = self._run()
         self.assertEqual(result["status"], "DRY_RUN")
+        self.assertEqual(result["blenderThreads"], 1)
         self.assertFalse(result["nativeBlendExportApproved"])
         self.assertFalse(self.scratch.exists())
         self.assertFalse(self.receipt.exists())
@@ -123,7 +123,7 @@ class BlenderAuthoringTests(unittest.TestCase):
             return subprocess.CompletedProcess(command, 0)
 
         with mock.patch.object(authoring.subprocess, "run", side_effect=fake_blender):
-            result = self._run(dry_run=False, blender_threads=1)
+            result = self._run(dry_run=False)
         self.assertEqual(result["status"], "PARITY_DIFFERENT")
         self.assertEqual(result["blenderThreads"], 1)
         self.assertEqual(result["exportGate"]["status"], "BLOCKED")
@@ -143,6 +143,39 @@ class BlenderAuthoringTests(unittest.TestCase):
                          archive_path=second / "summary.json.gz",
                          local_raw_path=second / "full.json")
         self.assertEqual(archive, (second / "summary.json.gz").read_bytes())
+
+    def test_explicit_auto_omits_thread_flag_and_records_choice(self) -> None:
+        def fake_blender(command, **kwargs):
+            if "--version" in command:
+                return subprocess.CompletedProcess(command, 0,
+                                                   stdout="Blender 5.2.0 LTS\n")
+            self.assertNotIn("--threads", command)
+            return subprocess.CompletedProcess(command, 1)
+
+        with mock.patch.object(authoring.subprocess, "run", side_effect=fake_blender):
+            result = self._run(dry_run=False, blender_threads=None)
+        self.assertEqual(result["status"], "EXPORT_FAILED")
+        self.assertIsNone(result["blenderThreads"])
+        self.assertIsNone(json.loads(self.receipt.read_text())["blenderThreads"])
+
+    def test_cli_default_auto_and_numeric_thread_options(self) -> None:
+        required = ["--asset", "test", "--inventory", str(self.inventory),
+                    "--inventory-sha256", file_sha256(self.inventory),
+                    "--blender", str(self.blender),
+                    "--blender-sha256", file_sha256(self.blender),
+                    "--sdk-script-root", str(self.sdk),
+                    "--scratch-root", str(self.scratch),
+                    "--receipt", str(self.receipt)]
+        for option, expected in (([], 1), (["--blender-threads", "auto"], None),
+                                 (["--blender-threads", "4"], 4)):
+            with self.subTest(option=option):
+                with mock.patch.object(authoring, "run_authoring_probe",
+                                       return_value={"status": "DRY_RUN"}) as probe, \
+                        mock.patch.object(sys, "argv", ["blender_authoring", *required,
+                                                       *option]), \
+                        mock.patch("builtins.print"):
+                    authoring.main()
+                self.assertEqual(probe.call_args.kwargs["blender_threads"], expected)
 
     def test_stale_blend_pin_rejects_before_running(self) -> None:
         self.blend.write_bytes(b"changed")

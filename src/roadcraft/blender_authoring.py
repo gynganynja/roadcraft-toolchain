@@ -109,7 +109,7 @@ def run_authoring_probe(
     receipt_path: str | Path,
     archive_path: str | Path | None = None,
     timeout_seconds: int = 900,
-    blender_threads: int | None = None,
+    blender_threads: int | None = 1,
     dry_run: bool = True,
 ) -> dict[str, Any]:
     """Compare one pinned .blend to its repaired USF without adopting output."""
@@ -252,6 +252,18 @@ def run_authoring_probe(
     return result
 
 
+def _parse_blender_threads(value: str) -> int | None:
+    if value.lower() == "auto":
+        return None
+    try:
+        threads = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("Blender threads must be 1..1024 or auto") from exc
+    if not 1 <= threads <= 1024:
+        raise argparse.ArgumentTypeError("Blender threads must be 1..1024 or auto")
+    return threads
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--asset", required=True)
@@ -264,8 +276,9 @@ def main() -> None:
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--archive", type=Path)
     parser.add_argument("--timeout-seconds", type=int, default=900)
-    parser.add_argument("--blender-threads", type=int,
-                        help="Pin Blender worker threads for a scratch determinism probe")
+    parser.add_argument("--blender-threads", type=_parse_blender_threads,
+                        default=1, metavar="N|auto",
+                        help="Blender worker threads (default: 1; auto uses Blender's default)")
     parser.add_argument("--run", action="store_true")
     args = parser.parse_args()
     result = run_authoring_probe(
