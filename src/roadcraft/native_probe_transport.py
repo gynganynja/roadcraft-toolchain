@@ -39,6 +39,7 @@ SCENE_SHA256 = {
 EDITOR_SHA256 = "ce6a48b1c73bea0876376d3251a6810b4a9913a7d500226e42bb2c605f3810b7"
 JSON_DLL_SHA256 = "60aad8900d2e663fe8a7e3606f644bf9b4e6f482112ca2514a9b499b4c9134cc"
 CONSOLE_DLL_SHA256 = "26007b4d104045fc9aed7276761534abe42b07f293ca757385d47635ccd9b3f3"
+HELPER_SHA256 = "6f2f16c6781773ea6f68be4da6aaa4123b25b1b363200fcf67e69bbcf730e3f9"
 REQUEST_ID = re.compile(r"\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9a-f]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}\Z")
 OUTPUT_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.json\Z")
 MAX_RESPONSE_BYTES = 65_536
@@ -64,6 +65,7 @@ class ProbeInputs:
     editor_sha256: str
     json_dll_sha256: str
     console_dll_sha256: str
+    helper_sha256: str
 
 
 def _sha(path: Path) -> str:
@@ -121,6 +123,7 @@ def pinned_inputs(kind: str, variant: str) -> ProbeInputs:
         editor_sha256=EDITOR_SHA256,
         json_dll_sha256=JSON_DLL_SHA256,
         console_dll_sha256=CONSOLE_DLL_SHA256,
+        helper_sha256=HELPER_SHA256,
     )
 
 
@@ -178,6 +181,7 @@ def _verify_common(record: dict[str, Any], inputs: ProbeInputs) -> None:
         ("editor", inputs.editor, inputs.editor_sha256),
         ("Saber.Json.dll", inputs.json_dll, inputs.json_dll_sha256),
         ("Saber.ConsoleTre.dll", inputs.console_dll, inputs.console_dll_sha256),
+        ("PowerShell helper", inputs.helper, inputs.helper_sha256),
     ):
         _check(_sha(path) == expected, f"Current {label} SHA-256 mismatch")
     for field, expected in (
@@ -187,7 +191,7 @@ def _verify_common(record: dict[str, Any], inputs: ProbeInputs) -> None:
         ("editorSha256", inputs.editor_sha256),
         ("jsonDllSha256", inputs.json_dll_sha256),
         ("consoleDllSha256", inputs.console_dll_sha256),
-        ("helperSha256", _sha(inputs.helper)),
+        ("helperSha256", inputs.helper_sha256),
         ("machineConfigSha256", _sha(inputs.machine_config)),
     ):
         _check(record.get(field) == expected, f"{field} mismatch")
@@ -295,6 +299,8 @@ def main(argv: list[str] | None = None) -> int:
     if executable is None:
         raise ProbeTransportError("PowerShell 7 (pwsh) is unavailable")
     inputs = pinned_inputs(args.kind, args.variant)
+    _check(_sha(inputs.helper) == inputs.helper_sha256,
+           "PowerShell helper SHA-256 mismatch before launch")
     if args.execute:
         scratch = _check_scratch_location(args.output, inputs.helper.parents[2])
         _assert_plain_directory_tree(scratch.parent)

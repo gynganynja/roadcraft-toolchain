@@ -6,3 +6,4 @@ operations/patches/capture_candidate_native.* -text -whitespace
 # bytes in fresh checkouts even when the user's Git uses core.autocrlf=true.
 src/roadcraft/blender_left_push_worker.py text eol=lf
 src/roadcraft/blender_armature_parity_worker.py text eol=lf
+src/roadcraft/blender_mesh_inventory_worker.py text eol=lf

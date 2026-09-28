@@ -16,7 +16,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from roadcraft.native_probe_transport import (  # noqa: E402
-    ProbeInputs, ProbeTransportError, PROBE_SHA256, pinned_inputs,
+    ProbeInputs, ProbeTransportError, PROBE_SHA256, main, pinned_inputs,
     verify_probe_plan, verify_probe_receipt, verify_scratch_output,
 )
 
@@ -74,6 +74,7 @@ def fixture(root: Path, kind: str = "weather_state") -> tuple[ProbeInputs, dict]
         editor_sha256=sha(files["editor"].read_bytes()),
         json_dll_sha256=sha(files["json_dll"].read_bytes()),
         console_dll_sha256=sha(files["console_dll"].read_bytes()),
+        helper_sha256=sha(files["helper"].read_bytes()),
     )
     now = datetime.now(timezone.utc)
     raw = SUCCESS[kind].encode("utf-8") + b"\0"
@@ -172,6 +173,27 @@ class NativeProbeTransportTests(unittest.TestCase):
                           response=raw[:-1].decode("ascii"))
             with self.assertRaisesRegex(ProbeTransportError, "byte bound"):
                 verify_probe_receipt(record, inputs)
+
+    def test_helper_drift_fails_before_preflight_or_execution_launch(self) -> None:
+        with TemporaryDirectory() as directory:
+            inputs, record = fixture(Path(directory))
+            inputs.helper.write_bytes(b"modified scratch helper source")
+            record["helperSha256"] = sha(inputs.helper.read_bytes())
+            with self.assertRaisesRegex(ProbeTransportError, "PowerShell helper SHA-256"):
+                verify_probe_plan({**record, "status": "PREFLIGHT_ONLY",
+                                   "transportSent": False}, inputs)
+            for extra in ([], ["--execute", "--engine-pid", "1234",
+                               "--output", str(Path(directory) / "new.json")]):
+                with self.subTest(extra=extra), \
+                     mock.patch("roadcraft.native_probe_transport.pinned_inputs",
+                                return_value=inputs), \
+                     mock.patch("roadcraft.native_probe_transport.shutil.which",
+                                return_value="pwsh"), \
+                     mock.patch("roadcraft.native_probe_transport.subprocess.run") as launch, \
+                     self.assertRaisesRegex(ProbeTransportError,
+                                            "PowerShell helper SHA-256"):
+                    main(["--kind", "weather_state", "--variant", "maroon", *extra])
+                launch.assert_not_called()
 
     def test_rejects_native_compile_error_even_when_transport_is_intact(self) -> None:
         with TemporaryDirectory() as directory:

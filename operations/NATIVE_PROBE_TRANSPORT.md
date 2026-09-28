@@ -9,6 +9,14 @@ executable hash, and both SDK transport DLL hashes. A changed byte fails
 preflight. The helper derives the SDK root from `local/machine.json` or
 `ROADCRAFT_CONFIG`.
 
+The Python host also pins the reviewed PowerShell helper SHA-256 to
+`6f2f16c6781773ea6f68be4da6aaa4123b25b1b363200fcf67e69bbcf730e3f9`.
+It checks that pin before creating an execution scratch directory or launching
+PowerShell, and checks it again while verifying an offline plan or transport
+receipt. The helper separately rechecks its own bytes before sending a
+request. `local/machine.json` is machine-specific: its hash is recorded and
+rechecked within one invocation, but is not a repository-wide constant.
+
 Offline preflight is the default:
 
 ```powershell
@@ -90,3 +98,10 @@ supplied. This matrix verifies current pinned input availability and offline
 transport preparation only; it does not prove the fragments compile or return
 values in an editor session. Recheck pins and process state before any native
 method smoke.
+
+The focused transport suite passed nine tests after the fixed helper pin was
+added. A regression changes a temporary helper, updates its self-reported
+hash, and proves both the offline plan verifier and the host's preflight and
+execution entry points reject it before `subprocess.run` is called.
+The hardened host also passed all 15 fragment/variant offline preflights,
+each with no transport and no pair eligibility.
