@@ -32,14 +32,15 @@ visually accepted and campaign accepted are different states.
 
 ## Current evidence
 
-At `84f7edc9da07c86ed900789da051b335129036fc`, private `main` and
-[Windows CI #43](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36409570202)
-passed 339 synthetic tests (one hosted skip) and all three Painter write-gate
-tests. The Steam mirror and dedicated checkout each passed 339 tests with four
+At `589dcc9b2a20c30bf9e01e69792f1ab988835931`, private `main` and
+[Windows CI #44](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36411238936)
+passed 342 synthetic tests (one hosted skip) and all three Painter write-gate
+tests. The Steam mirror and dedicated checkout each passed 342 tests with four
 machine-specific skips. The native pre-trigger guard, no-write `c0de2027`
-output contract, live RGBA discriminator and scratch-only cache guard are
-offline evidence only; the accepted PAK remains installed, and no native
-capture or Blender export was performed in this checkpoint.
+output contract, live RGBA discriminator, scratch-only cache guard and two
+guarded in-memory color readbacks are offline evidence only; the accepted PAK
+remains installed, and no native capture or Blender export was performed in
+this checkpoint.
 
 | Area | State at this snapshot | Evidence and limit |
 |---|---|---|
@@ -752,8 +753,8 @@ new local integration config if transport cannot be made reliable.
 
 ## Immediate execution order
 
-1. Private `main`, remote commit comparison, and Windows CI run #43 at
-   `84f7edc` are complete. Keep later changes versioned and recheck CI after
+1. Private `main`, remote commit comparison, and Windows CI run #44 at
+   `589dcc9` are complete. Keep later changes versioned and recheck CI after
    each push.
 2. Use the registered, smoke-tested local integrations through their dedicated
    checkout, then confirm desktop tool visibility in a task rooted there. The
