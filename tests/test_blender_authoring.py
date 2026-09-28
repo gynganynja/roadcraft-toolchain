@@ -207,6 +207,15 @@ class BlenderAuthoringTests(unittest.TestCase):
             self._run(wiper_scratch_repair=True)
         self.assertFalse(self.scratch.exists())
 
+    def test_push_branch_repair_rejects_unreviewed_asset_before_launch(self) -> None:
+        with mock.patch.object(authoring.subprocess, "run") as launch:
+            with self.assertRaisesRegex(authoring.BlenderAuthoringError,
+                                        "push-branch scratch source or tool"):
+                self._run(push_branch_scratch_repair=True)
+        launch.assert_not_called()
+        self.assertFalse(self.scratch.exists())
+        self.assertFalse(self.receipt.exists())
+
     def test_rgba_guard_rejects_unreviewed_asset_before_launch_or_write(self) -> None:
         with mock.patch.object(authoring.subprocess, "run") as launch:
             with self.assertRaisesRegex(authoring.BlenderAuthoringError,

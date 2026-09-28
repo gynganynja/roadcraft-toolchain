@@ -106,6 +106,9 @@ def main() -> None:
     parser.add_argument("--scratch-root", type=Path, required=True)
     parser.add_argument("--sdk-script-root", type=Path, required=True)
     parser.add_argument("--wiper-scratch-repair", action="store_true")
+    parser.add_argument("--push-branch-scratch-repair", action="store_true")
+    parser.add_argument("--push-branch-host-sha256")
+    parser.add_argument("--push-branch-worker-sha256")
     parser.add_argument("--rgba-cache-guard", action="store_true")
     parser.add_argument("--rgba-cache-guard-sha256")
     parser.add_argument("--asset")
@@ -129,6 +132,17 @@ def main() -> None:
     if (blend_before != args.blend_sha256.lower() or
             baseline_before != args.baseline_sha256.lower()):
         raise ValueError("authoring source differs from its inventory pin")
+    push_host_file = Path(__file__).with_name("blender_push_branches.py")
+    push_worker_file = Path(__file__).with_name("blender_push_branches_worker.py")
+    if args.push_branch_scratch_repair:
+        if (not args.push_branch_host_sha256 or
+                not args.push_branch_worker_sha256 or
+                _sha(push_host_file) != args.push_branch_host_sha256 or
+                _sha(push_worker_file) != args.push_branch_worker_sha256):
+            raise ValueError("push-branch module differs from host pin")
+    elif (args.push_branch_host_sha256 is not None or
+          args.push_branch_worker_sha256 is not None):
+        raise ValueError("push-branch hashes require opt-in")
     rgba_guard_file = Path(__file__).with_name("blender_rgba_cache_guard.py")
     sdk_mesh_file = sdk / "saber/blender/lib/usf/mesh.py"
     if args.rgba_cache_guard:
@@ -162,6 +176,29 @@ def main() -> None:
     )
 
     bpy.ops.wm.open_mainfile(filepath=str(blend), load_ui=False)
+    push_branch_repair = None
+    if args.push_branch_scratch_repair:
+        from blender_push_branches_worker import run as reconstruct_push_branches
+        from roadcraft import blender_armature_parity, blender_left_push_probe
+        from roadcraft.blender_push_branches import (
+            ARMATURE_PARITY_SHA256, LEFT_PROBE_SHA256, validate_result)
+
+        if (_sha(Path(blender_left_push_probe.__file__)) != LEFT_PROBE_SHA256 or
+                _sha(Path(blender_armature_parity.__file__)) !=
+                ARMATURE_PARITY_SHA256):
+            raise ValueError("push-branch dependency differs from reviewed pin")
+        blender_sha = _sha(Path(bpy.app.binary_path))
+        push_branch_repair = reconstruct_push_branches(
+            blend=blend, usf=baseline, sdk_root=sdk,
+            worker_sha256=args.push_branch_worker_sha256,
+            blender_sha256=blender_sha)
+        validate_result(push_branch_repair, blender_sha)
+        if (push_branch_repair["status"] != "IN_MEMORY_PUSH_BRANCH_MATCH" or
+                push_branch_repair["blendSaved"] is not False or
+                push_branch_repair["usfExported"] is not False or
+                push_branch_repair["nativeBlendExportApproved"] is not False):
+            raise RuntimeError("in-memory push-branch reconstruction differs")
+        push_branch_repair["workerSha256"] = args.push_branch_worker_sha256
     wiper_repair = None
     if args.wiper_scratch_repair:
         wiper_repair = install_scratch_wiper_repair(
@@ -197,6 +234,13 @@ def main() -> None:
     native_root_name = native_scene._root_node.name
     native_summary = _semantic_summary(native_scene)
     native_rows = _node_rows(native_scene)
+    if push_branch_repair is not None:
+        target_paths = [row["path"] for row in
+                        push_branch_repair["targetMatrixErrors"]]
+        push_branch_repair["nativeTargetPathsPresent"] = all(
+            path in native_rows for path in target_paths)
+        push_branch_repair["nativeTargetPathCount"] = sum(
+            path in native_rows for path in target_paths)
     if wiper_repair is not None:
         wiper_path = "|@root|D11T_Rig.005|BoneChassis_cdt|BoneAnim_WiperFront"
         splines = native_rows.get(wiper_path, {}).get("animation", {})
@@ -217,6 +261,13 @@ def main() -> None:
 
     if _sha(blend) != blend_before or _sha(baseline) != baseline_before:
         raise RuntimeError("authoring input changed during scratch export")
+    if push_branch_repair is not None and (
+            _sha(push_host_file) != args.push_branch_host_sha256 or
+            _sha(push_worker_file) != args.push_branch_worker_sha256 or
+            _sha(Path(blender_left_push_probe.__file__)) != LEFT_PROBE_SHA256 or
+            _sha(Path(blender_armature_parity.__file__)) !=
+            ARMATURE_PARITY_SHA256):
+        raise RuntimeError("push-branch module changed during scratch export")
     result = {
         "schemaVersion": 1,
         "blendSha256": blend_before,
@@ -234,6 +285,7 @@ def main() -> None:
         "nodeDiff": compare_node_rows(baseline_rows, native_rows),
         "nativeBlendExportApproved": False,
         "wiperRepair": wiper_repair,
+        "pushBranchRepair": push_branch_repair,
     }
     if rgba_guard_detail is not None:
         result["rgbaCacheGuard"] = rgba_guard_detail

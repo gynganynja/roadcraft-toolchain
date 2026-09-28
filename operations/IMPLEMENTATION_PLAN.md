@@ -607,6 +607,12 @@ shared matrices within `2.27e-6`. This is a reproducible repair direction,
 not a saved authoring source or exported parity result. See
 `D11_PUSH_BRANCH_IN_MEMORY_20260928.md`.
 
+An opt-in `--push-branch-scratch-repair` is prepared in the scratch-only
+authoring diagnostic. A source-, SDK- and module-pinned no-write dry run passed
+on the accepted base asset. The exact file-writing scratch export remains
+unexecuted pending its separate authorization; it cannot promote a native
+Blend to build input. See `D11_PUSH_BRANCH_SCRATCH_REPAIR_PREP_20260929.md`.
+
 The separate pinned `blender_mesh_inventory.py` readback inspected the base
 historical Blend without saving or exporting. Both Blender 5.0.1 and 5.2.0
 reconstructed all 126 changed-mesh worklist paths and produced the same
