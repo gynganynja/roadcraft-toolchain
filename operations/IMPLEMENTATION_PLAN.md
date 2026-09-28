@@ -793,6 +793,15 @@ and is now rerunnable through a maintained, source-pinned no-save diagnostic,
 but does not test variant-specific edits, export, mesh or material parity. See
 `D11_VARIANT_STRUCTURAL_TARGETS_20260929.md`.
 
+Separate pinned no-save experiments then opened the v2 and v3 historical Blend
+paths, ran the existing four-stage structural reconstruction in memory, and
+compared each scene with its own repaired USF. Both Blender 5.0.1 and 5.2.0
+matched 400/400 paths with no missing paths or changed matrices and a maximum
+matrix element error of `2.269e-6`. The edits still use the base USF as their
+target; each variant USF is independently parsed for the final comparison.
+This remains static evidence without a USF export or variant payload parity.
+See `D11_VARIANT_IN_MEMORY_RECONSTRUCTION_20260929.md`.
+
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
 2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
