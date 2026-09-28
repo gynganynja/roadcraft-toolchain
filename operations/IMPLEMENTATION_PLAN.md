@@ -35,16 +35,16 @@ visually accepted and campaign accepted are different states.
 | Area | State at this snapshot | Evidence and limit |
 |---|---|---|
 | Core CLI, jobs and transactions | Implemented | `src/roadcraft/cli.py`, `jobs.py`, `transaction.py`. CLI job/transaction operations default to dry-run; `--apply` executes. A failed phase after native launch retains its lock; `jobs-recover` requires exact lock/receipt/installed/registry/config pins and verified terminal external state before release. No live job lock was released. |
-| Local inspect and synthetic tests | Source mirror and dedicated checkout passed at their stated revisions | The source mirror completed 210 offline tests with 4 machine-specific skips after the capture-pair and Blender reconciliation additions; the dedicated checkout previously completed 202 with 4 skips. The Painter MCP dispatch gate passed 3 additional tests in CI #15. The scratch weather/maroon no-contact preflight and dedicated `git diff --check` passed before these local edits. Earlier inspect/test receipts remain under `jobs/20260927T233929Z-cab582e7350c/receipt.json` and `jobs/20260927T234050Z-66e61f71fca5/receipt.json`. Disclose the four skips. |
+| Local inspect and synthetic tests | Source mirror and dedicated checkout passed at their stated revisions | At this handoff both checkouts completed 218 offline tests: 6 skips in the source mirror and 4 in the dedicated environment. The 3 Painter dispatch-gate tests also passed locally. The fifth native probe's offline, no-send preflight passed. The prior [Windows CI #16](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36374096090) passed 210 core tests with one CI skip and 3 Painter gate tests; this handoff still needs its own hosted check. Earlier inspect/test receipts remain under `jobs/20260927T233929Z-cab582e7350c/receipt.json` and `jobs/20260927T234050Z-66e61f71fca5/receipt.json`. Disclose the skips. |
 | Project verification | Current source check passed | Target `verify --project` previously verified all 5 pins and 2,817 source files; a post-Blender `source-check` again matched the accepted inventory digest with no changes. The older source `d11_verify_20260928.json` is a four-pin snapshot and does not replace the newer result. |
 | Accepted vs AAA candidate | Installed accepted; no recovery required; AAA unaccepted | Post-change target status reports installed SHA-256 `3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16`, relation `accepted`, `recoveryRequired: false`, and no candidate-capture lock. AAA's historical capture still reports `FAIL_ROLLBACK_PENDING`, with `BASELINE_RESTORED` rollback evidence. Refresh status before native work. |
 | Project-local MCP and workflow plugin | Dedicated CLI ready; this desktop task cannot yet call the project-local tools | User approved trust for the dedicated checkout. Codex CLI `mcp list` there sees `roadcraft`, `substance_painter`, `roadcraft_blender_scratch` enabled. Local marketplace is registered and `roadcraft-workflow` installed/enabled. Real stdio inventories: RoadCraft 11, Painter 79, Blender 2. This task is rooted at the Steam project, where no `.codex/config.toml` exists and none of those tools appears in its callable inventory. `MCP_DESKTOP_SCOPE_20260928.md` records the read-only comparison and the separate desktop verification step. RoadCraft remains read-only; tool scopes differ across servers. |
 | Dedicated environment | Installed and verified | RoadCraft, Painter MCP and PyYAML are installed in `C:\RC\RoadCraftDev\toolchain\.venv`; project-local config is parsed and loaded by Codex CLI. The maintained source handoff was hash-checked. |
-| New code Git repo/private remote | Private main and Windows CI operational | The private `main` was verified at `b8d4b8cf9eff28bf56c834919e58f4b9ff558e21`. [CI run #15](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36373104491) passed 202 core tests (one CI skip), 3 Painter dispatch tests and the Ed25519 dependency check. Subsequent capture-pair and Blender reconciliation changes have local test evidence and need their own hosted check after handoff. |
+| New code Git repo/private remote | Private main and Windows CI operational | The private `main` was verified at `a91956d36d5d65dda47e15f8c6babac4ee21dba7`. [CI run #16](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36374096090) passed 210 core tests (one CI skip), 3 Painter dispatch tests and the Ed25519 dependency check. Later local probe and Blender-helper changes need their own hosted check after handoff. |
 | Asset migration/Git LFS | Deferred by user choice; keep verified assets in place | `d11_asset_migration_preflight_20260928.json` verified 2,817 files / 3,477,364,242 bytes but failed its space gate. No copy occurred. Future migration requires a new decision and a fresh space check. |
-| Native build/test/capture recipes | Preflight-only checks and 383-file partial-view contract passed; execution blocked | The `capture` recipe dry run passed with no writes after pinning the new runner. Its read-only `--plan` declares 383 required files, 45 screenshots and 45 pre-screenshot partial links, plus source/package/scene/camera inputs. The runner emits `ReadPreCapture`, per-view action and transport pins, and a full output hash map; postflight checks these against the reviewed plan. Synthetic tests pass; no native capture ran. The historical failed receipt remains failed. `jobs-recover` is synthetic-tested, not applied to a live lock. Complete global lighting, camera up, renderer state, loaded-scene proof and origin authentication remain absent, so no baseline/candidate pair is comparable. Four bounded runtime SSL probes are prepared but unexecuted. The separate lighting fixture needs over 14 GiB; the AAA runner has 4 GB start / 1.5 GB loop guards. The historical nearnew editor exit cause remains unknown. |
+| Native build/test/capture recipes | Preflight-only checks and 383-file partial-view contract passed; execution blocked | The `capture` recipe dry run passed with no writes after pinning the new runner. Its read-only `--plan` declares 383 required files, 45 screenshots and 45 pre-screenshot partial links, plus source/package/scene/camera inputs. The runner emits `ReadPreCapture`, per-view action and transport pins, and a full output hash map; postflight checks these against the reviewed plan. Synthetic tests pass; no native capture ran. The historical failed receipt remains failed. `jobs-recover` is synthetic-tested, not applied to a live lock. Complete global lighting, camera up, renderer state, loaded-scene proof and origin authentication remain absent, so no baseline/candidate pair is comparable. Five bounded runtime SSL probes are prepared but unexecuted; the new level-name reply is diagnostic only. The separate lighting fixture needs over 14 GiB; the AAA runner has 4 GB start / 1.5 GB loop guards. The historical nearnew editor exit cause remains unknown. |
 | AAA regression | Failed; acceptance pending | `d11_aaa_interior_regression_result.json`: technical gate false, releaseReady false, zero matched capture pairs and 45 required views failing. Existing capture contexts omit lighting/protocol; visual and campaign approvals are pending. |
-| Blender no-edit USF bridge | Three roundtrips passed; native Blend export different and blocked | No-edit USF roundtrips remain byte-identical. The scratch MCP requires the accepted `project.json` inventory and rehashes its 68 declared authoring files. Native SDK exports differ from each repaired USF by 133 repaired-only, 76 native-only and 132 changed matched paths; material, rig and animation parity is missing. All native-Blend export gates remain `BLOCKED`. A four-run controlled scratch probe held inputs fixed: two `--threads 1` exports matched byte for byte, while two default-thread exports differed only in tangent arrays of three meshes. Subsequent scratch diagnostics default to one thread, with explicit `auto` and numeric overrides. A pinned read-only reconstruction worklist now names per-asset relocation candidates and unresolved hierarchy, material, skin/bind and animation differences; `D11_BLENDER_RECONSTRUCTION_WORKLIST_20260928.md` records the exact limits. |
+| Blender no-edit USF bridge | Three roundtrips passed; native Blend export different and blocked | No-edit USF roundtrips remain byte-identical. The scratch MCP requires the accepted `project.json` inventory and rehashes its 68 declared authoring files. Native SDK exports differ from each repaired USF by 133 repaired-only, 76 native-only and 132 changed matched paths; material, rig and animation parity is missing. All native-Blend export gates remain `BLOCKED`. A four-run controlled scratch probe held inputs fixed: two `--threads 1` exports matched byte for byte, while two default-thread exports differed only in tangent arrays of three meshes. Subsequent scratch diagnostics default to one thread, with explicit `auto` and numeric overrides. A pinned read-only reconstruction worklist names per-asset relocation candidates and unresolved differences. A guarded, opt-in in-memory wiper repair now has a passing no-write dry run; no repaired scratch export has run. `D11_BLENDER_RECONSTRUCTION_WORKLIST_20260928.md` and `D11_WIPER_SCRATCH_REPAIR_20260928.md` record the limits. |
 | Painter integration | Capabilities verified; scratch project deferred; write gate added | Real stdio probe listed 79 tools, connected to Painter 12.1.5/API 0.3.5 and called `get_capabilities` successfully while no project was open. Baking presets, auto-rebake control and skew-painting control are unavailable. The server now leaves 34 inspection/planning tools enabled and denies 45 authoring/output tools unless its local process has `SP_MCP_ALLOW_PROJECT_WRITES=1`; synthetic FastMCP dispatch tests cover all 45. The user intentionally ended the Painter session to avoid interference and chose to leave it closed; no `.spp` was created and no accepted asset changed. |
 | Storage | First exact batch complete; expansion dry run passed but deletion unapproved | `STORAGE_REVIEW.md`: 159 template copies removed, 6.30 GiB freed, retained originals verified. The separate 23,604-file / 5.93 GiB expansion remains untouched. Its 33 MB raw manifest is local and a verified 1.6 MB gzip copy is versioned. A full sandboxed dry run verified every candidate and counterpart but reported `applyReady: false` because CIM process inspection was denied. A distinct elevated full dry run reported `applyReady: true` with zero active processes at its inspection time, 21 retained packages, 166 retained source files and zero deletions. Any future apply needs specific authorization and a fresh pinned preflight. Git temporary pack remains separate. |
 
@@ -57,7 +57,7 @@ dedicated environment installation and local integration registration are done.
    preserve its `.venv`, local paths, jobs and receipts. Record the compared
    file list and hashes. Verify imports resolve from the dedicated checkout,
    not the earlier editable source installation.
-2. Retain the completed target evidence: 151 tests with 4 skips, all 5 project
+2. Retain the completed target evidence: 218 tests with 4 skips, all 5 project
    pins and 2,817 files verified, `source-check` passed, installed accepted,
    no recovery required. Run only checks warranted by subsequent changes;
    refresh live status before native work. Keep dated old receipts intact.
@@ -262,7 +262,7 @@ pair comparison. See `NATIVE_EDITOR_OBSERVATION_API_AUDIT.md`.
 `NATIVE_EDITOR_RUNTIME_API_PROBE.md` pins a deeper local search. Shipped SSL
 source proves `$weather_manager_sys.GetWeatherState()` and its rain fields;
 the installed editor binary contains `GetCurrentSunDirection` and
-`PresetSys.GetDayTime` names, but their SSL signatures are unverified. Four
+`PresetSys.GetDayTime` names, but their SSL signatures are unverified. Five
 independent scratch SSL fragments and a fail-closed parser are ready for a
 future disposable editor smoke. They were not compiled or run, and cannot
 fill missing exposure, tonemap, ambient color, renderer mode or complete light
@@ -270,9 +270,9 @@ state. Keep capture-pair eligibility false until actual readback and timing
 linkage exist.
 
 `NATIVE_PROBE_TRANSPORT.md` describes the separate bounded transport for those
-four fragments. Its default offline preflight pins the fragment, scene source,
+five fragments. Its default offline preflight pins the fragment, scene source,
 editor, helper, config and SDK transport DLLs without contacting the editor.
-The weather/maroon preflight passed; no transport request was sent. A future
+The weather and level-name maroon preflights passed; no transport request was sent. A future
 exact-PID smoke would write a new ignored scratch receipt and can establish
 only partial runtime readback, not a matched capture pair or loaded-scene proof.
 
@@ -428,6 +428,20 @@ are explained in `D11_BLENDER_RECONSTRUCTION_WORKLIST_20260928.md`. These
 findings guide work on disposable authoring copies and do not change the
 `native-blend` gate.
 
+Read-only inspection of the pinned base Blend found that its wiper armature
+has two existing actions but no active action, while the bundled SDK only
+initializes bone animation when an action is bound. The SDK also omits each
+action's final frame when baking. `blender_wiper_repair.py` now offers an
+opt-in, source-pinned, in-memory repair for a future scratch-only export; it
+requires the repaired USF's backward-then-forward action order and includes
+both endpoint frames. Its exact unexecuted command and output paths are in
+`D11_WIPER_SCRATCH_REPAIR_20260928.md`. Synthetic tests and the no-write dry
+run passed. This is a repair hypothesis, not animation parity evidence, and
+the native-Blend gate remains blocked. A read-only Blender check confirmed
+the guarded action order and unchanged source hashes. The SDK still copies
+source action frame ranges into actor metadata, which differ from the repaired
+USF, so the helper cannot by itself reach full animation parity.
+
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
 2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
@@ -475,7 +489,7 @@ project/input assets, and space for verified backups/exports.
    Start with a disposable project/copy and `plan_texture_export`; review
    channels, color space, bit depth, resolution, naming and conflicts against
    actual RoadCraft material requirements before an authorized export.
-4. For a first controlled write, preserve a verified `.spp` copy, export into
+4. For a first controlled export, preserve a verified `.spp` copy, export into
    new scratch paths, verify output hashes/dimensions/channels, then compile
    and capture through the same source/package gates. Do not write directly
    over accepted source textures during the smoke test.
@@ -489,9 +503,8 @@ new local integration config if transport cannot be made reliable.
 ## Immediate execution order
 
 1. Git credential sign-in, private `main` push, remote commit comparison,
-   and Windows CI run #14 at `7575ea5` are complete. The subsequent one-thread
-   scratch diagnostic edit passed local tests and has its own CI check;
-   keep later workflow/plan changes versioned and recheck CI after each push.
+   and Windows CI run #16 at `a91956d` are complete. Keep later probe,
+   Blender-helper and plan changes versioned and recheck CI after each push.
 2. Use the registered, smoke-tested local integrations through their dedicated
    checkout, then confirm desktop tool visibility in a task rooted there. The
    current Steam-root task has no project-local MCP entries. Painter capability

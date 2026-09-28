@@ -1,4 +1,4 @@
-"""Fail-closed offline tests for the four scratch-only SSL transport modes."""
+"""Fail-closed offline tests for the five scratch-only SSL transport modes."""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ SUCCESS = {
     "camera_up": "D11R_CAMERA_UP pos 1 2 3 forward 0 0 1 up 0 1 0",
     "sun_direction": "D11R_SUN_DIRECTION 0 0.8 -0.6",
     "daytime": "D11R_DAYTIME 0.5",
+    "level_name": "D11R_LEVEL_NAME d11t_maroon_validation",
 }
 
 
@@ -103,7 +104,7 @@ def fixture(root: Path, kind: str = "weather_state") -> tuple[ProbeInputs, dict]
 
 
 class NativeProbeTransportTests(unittest.TestCase):
-    def test_synthetic_transport_covers_all_four_readbacks_without_pair_eligibility(self) -> None:
+    def test_synthetic_transport_covers_all_five_readbacks_without_pair_eligibility(self) -> None:
         with TemporaryDirectory() as directory:
             for kind in PROBE_SHA256:
                 with self.subTest(kind=kind):
@@ -111,10 +112,28 @@ class NativeProbeTransportTests(unittest.TestCase):
                     subdir.mkdir()
                     inputs, record = fixture(subdir, kind)
                     result = verify_probe_receipt(record, inputs)
-                    self.assertEqual(result["status"], "PARTIAL_RESPONSE_CONSISTENCY_VERIFIED")
+                    self.assertEqual(result["status"],
+                                     "LEVEL_NAME_RESPONSE_CONSISTENCY_VERIFIED"
+                                     if kind == "level_name" else
+                                     "PARTIAL_RESPONSE_CONSISTENCY_VERIFIED")
                     self.assertFalse(result["pairProtocolEligible"])
                     self.assertFalse(result["loadedSceneVerified"])
                     self.assertTrue(result["reported"])
+                    if kind == "level_name":
+                        self.assertTrue(result["levelNameMatchesPinnedSourceStem"])
+
+    def test_level_name_mismatch_is_diagnostic_only(self) -> None:
+        with TemporaryDirectory() as directory:
+            inputs, record = fixture(Path(directory), "level_name")
+            raw = b"D11R_LEVEL_NAME RoadBuilder\0"
+            record.update(responseBase64=base64.b64encode(raw).decode("ascii"),
+                          responseBytes=len(raw), responseSha256=sha(raw),
+                          response=raw[:-1].decode("ascii"))
+            result = verify_probe_receipt(record, inputs)
+            self.assertEqual(result["status"], "LEVEL_NAME_RESPONSE_CONSISTENCY_VERIFIED")
+            self.assertFalse(result["levelNameMatchesPinnedSourceStem"])
+            self.assertFalse(result["loadedSceneVerified"])
+            self.assertFalse(result["pairProtocolEligible"])
 
     def test_rejects_tampered_inputs_and_response_provenance(self) -> None:
         with TemporaryDirectory() as directory:
@@ -219,6 +238,7 @@ class NativeProbeTransportTests(unittest.TestCase):
         for kind, variant in (
             ("weather_state", "maroon"), ("camera_up", "nearnew"),
             ("sun_direction", "worn"), ("daytime", "maroon"),
+            ("level_name", "nearnew"),
         ):
             with self.subTest(kind=kind):
                 result = subprocess.run(

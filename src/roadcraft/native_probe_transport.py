@@ -1,4 +1,4 @@
-"""Offline validation and explicit runner for four scratch SSL runtime probes.
+"""Offline validation and explicit runner for five scratch SSL runtime probes.
 
 The PowerShell helper is transport-only. Its reply is not evidence for the
 baseline/candidate capture gate; even a valid reply leaves the loaded scene
@@ -29,6 +29,7 @@ PROBE_SHA256 = {
     "camera_up": "086a93e10c29f97bd5dd215e7a0f155c4f0588618178480105f9d1a50ad9f09b",
     "sun_direction": "2ebd5914d635fae2ff603e73721f0c649fd5de927a50bd7a9aad46f4a1bff6fe",
     "daytime": "be7b9db66ce6a1df6a8ee3e1ed597f9cf6ccebddeb7ec2797c965e7b279ddd86",
+    "level_name": "bd5f7fe6e81dec9cc374c04f58ce3ae134a240431342a47d055714e5ca4fc61e",
 }
 SCENE_SHA256 = {
     "maroon": "9481bca1db96dd5c3c0c201f9d7f84e0b16fd7e683905c286060b16e9d53dfa1",
@@ -249,8 +250,9 @@ def verify_probe_receipt(record: dict[str, Any], inputs: ProbeInputs) -> dict[st
         parsed = parse_probe_reply(inputs.kind, response)
     except NativeRuntimeProbeError as error:
         raise ProbeTransportError(f"Native probe result rejected: {error}") from error
-    return {
-        "status": "PARTIAL_RESPONSE_CONSISTENCY_VERIFIED",
+    result = {
+        "status": ("LEVEL_NAME_RESPONSE_CONSISTENCY_VERIFIED" if inputs.kind == "level_name"
+                   else "PARTIAL_RESPONSE_CONSISTENCY_VERIFIED"),
         "probeKind": inputs.kind,
         "variant": inputs.variant,
         "engineProcessId": record["engineProcessId"],
@@ -264,6 +266,15 @@ def verify_probe_receipt(record: dict[str, Any], inputs: ProbeInputs) -> dict[st
             "A method smoke reply is not linked to a screenshot or a baseline/candidate capture pair.",
         ],
     }
+    if inputs.kind == "level_name":
+        result["levelNameMatchesPinnedSourceStem"] = (
+            parsed["reported"]["levelName"] == f"d11t_{inputs.variant}_validation"
+        )
+        result["limitations"].append(
+            "GetLevelName may name an engine level rather than the loaded validation xscene; "
+            "even an exact basename match does not verify scene bytes."
+        )
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:

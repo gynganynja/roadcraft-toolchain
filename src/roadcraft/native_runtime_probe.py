@@ -20,9 +20,10 @@ CAMERA = re.compile(
 WEATHER = re.compile(rf"D11R_WEATHER_STATE rainEnabled (true|false) rainPower ({NUMBER})")
 SUN = re.compile(rf"D11R_SUN_DIRECTION ({NUMBER}) ({NUMBER}) ({NUMBER})")
 DAYTIME = re.compile(rf"D11R_DAYTIME ({NUMBER})")
+LEVEL_NAME = re.compile(r"D11R_LEVEL_NAME ([A-Za-z0-9_.:/\\-]{1,160})")
 PATTERNS = {
     "camera_up": CAMERA, "weather_state": WEATHER,
-    "sun_direction": SUN, "daytime": DAYTIME,
+    "sun_direction": SUN, "daytime": DAYTIME, "level_name": LEVEL_NAME,
 }
 
 
@@ -80,10 +81,13 @@ def parse_probe_reply(kind: str, response: str) -> dict[str, Any]:
         vector = _numbers(match.groups())
         _nonzero(vector, "Sun direction")
         reported = {"sunDirection": vector}
+    elif kind == "level_name":
+        reported = {"levelName": match.group(1)}
     else:
         reported = {"dayTimeRaw": _numbers(match.groups())[0]}
     return {
-        "status": "PARTIAL_RUNTIME_READBACK",
+        "status": ("LEVEL_NAME_DIAGNOSTIC" if kind == "level_name"
+                   else "PARTIAL_RUNTIME_READBACK"),
         "pairProtocolEligible": False,
         "probeKind": kind,
         "reported": reported,
@@ -91,5 +95,6 @@ def parse_probe_reply(kind: str, response: str) -> dict[str, Any]:
             "The probe fragments have not been compiled or executed in a disposable editor.",
             "No weather preset, ambient RGB, exposure, tonemap, renderer mode, or complete local-light roster is observed.",
             "The reply alone has no run, scene, image, timing, or transport authentication.",
+            "A level name is a runtime label, not proof of loaded scene source bytes.",
         ],
     }

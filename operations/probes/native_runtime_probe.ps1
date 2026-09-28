@@ -6,7 +6,7 @@ The scene hash pins source bytes only; it does not prove the loaded scene.
 #>
 [CmdletBinding()]
 param(
- [Parameter(Mandatory)][ValidateSet('weather_state','camera_up','sun_direction','daytime')][string]$Kind,
+ [Parameter(Mandatory)][ValidateSet('weather_state','camera_up','sun_direction','daytime','level_name')][string]$Kind,
  [Parameter(Mandatory)][ValidateSet('maroon','nearnew','worn')][string]$Variant,
  [int]$EngineProcessId,
  [string]$OutputPath,
@@ -23,6 +23,7 @@ $probePins=@{
  camera_up='086a93e10c29f97bd5dd215e7a0f155c4f0588618178480105f9d1a50ad9f09b'
  sun_direction='2ebd5914d635fae2ff603e73721f0c649fd5de927a50bd7a9aad46f4a1bff6fe'
  daytime='be7b9db66ce6a1df6a8ee3e1ed597f9cf6ccebddeb7ec2797c965e7b279ddd86'
+ level_name='bd5f7fe6e81dec9cc374c04f58ce3ae134a240431342a47d055714e5ca4fc61e'
 }
 $scenePins=@{
  maroon='9481bca1db96dd5c3c0c201f9d7f84e0b16fd7e683905c286060b16e9d53dfa1'

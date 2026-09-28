@@ -20,6 +20,7 @@ import subprocess
 from typing import Any
 
 from .blender_parity_evidence import package_evidence
+from . import blender_wiper_repair
 from .source import (ExportBlockedError, compare_source_baselines, file_sha256,
                      require_export_allowed)
 
@@ -28,6 +29,7 @@ TOOLCHAIN_ROOT = Path(__file__).resolve().parents[2]
 HELPER = Path(__file__).with_name("blender_authoring_helper.py")
 DIFF = Path(__file__).with_name("blender_parity_diff.py")
 SUMMARY = Path(__file__).with_name("blender_usf_helper.py")
+WIPER_REPAIR = Path(__file__).with_name("blender_wiper_repair.py")
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -110,6 +112,7 @@ def run_authoring_probe(
     archive_path: str | Path | None = None,
     timeout_seconds: int = 900,
     blender_threads: int | None = 1,
+    wiper_scratch_repair: bool = False,
     dry_run: bool = True,
 ) -> dict[str, Any]:
     """Compare one pinned .blend to its repaired USF without adopting output."""
@@ -126,6 +129,15 @@ def run_authoring_probe(
         raise BlenderAuthoringError("Blender executable differs from pin")
     sdk = Path(sdk_script_root).resolve(strict=True)
     sdk_hashes = _sdk_files(sdk)
+    if not isinstance(wiper_scratch_repair, bool):
+        raise BlenderAuthoringError("wiper scratch repair option must be boolean")
+    if wiper_scratch_repair and (
+            file_sha256(blend) != blender_wiper_repair.BLEND_SHA256 or
+            sdk_hashes.get("saber/blender/lib/usf/misc.py") !=
+            blender_wiper_repair.SDK_MISC_SHA256 or
+            sdk_hashes.get("saber/blender/lib/usf/scene.py") !=
+            blender_wiper_repair.SDK_SCENE_SHA256):
+        raise BlenderAuthoringError("wiper scratch source or SDK differs from reviewed pins")
     scratch = _inside(Path(scratch_root), TOOLCHAIN_ROOT / "local", "scratch root")
     receipt = _inside(Path(receipt_path), TOOLCHAIN_ROOT, "receipt")
     archive = _inside(Path(archive_path) if archive_path is not None else
@@ -155,6 +167,8 @@ def run_authoring_probe(
         "helperSha256": file_sha256(HELPER),
         "diffSha256": file_sha256(DIFF),
         "summarySha256": file_sha256(SUMMARY),
+        "wiperRepairRequested": wiper_scratch_repair,
+        "wiperRepairSha256": file_sha256(WIPER_REPAIR) if wiper_scratch_repair else None,
         "scratchRoot": str(scratch), "receiptPath": str(receipt),
         "archivePath": str(archive),
         "nativeBlendExportApproved": False,
@@ -179,6 +193,7 @@ def run_authoring_probe(
         "--baseline-usf", str(baseline), "--baseline-sha256", base["baselineUsfSha256"],
         "--candidate-usf", str(candidate), "--result", str(helper_result),
         "--scratch-root", str(scratch), "--sdk-script-root", str(sdk),
+        *(["--wiper-scratch-repair"] if wiper_scratch_repair else []),
     ]
     environment = dict(os.environ)
     environment.update({
@@ -219,17 +234,26 @@ def run_authoring_probe(
         result["blendSha256After"] == base["blendSha256"] and
         result["baselineUsfSha256After"] == base["baselineUsfSha256"])
     result["sdkUnchanged"] = _sdk_files(sdk) == sdk_hashes
+    if wiper_scratch_repair:
+        result["wiperRepairSha256After"] = file_sha256(WIPER_REPAIR)
+        result["wiperRepairModuleUnchanged"] = (
+            result["wiperRepairSha256After"] == base["wiperRepairSha256"])
     diagnostic = result.get("diagnostic", {})
     if result.get("status") not in ("TIMEOUT", "INVALID_HELPER_RESULT"):
         if result.get("blenderExitCode") != 0 or not diagnostic:
             result["status"] = "EXPORT_FAILED"
-        elif not result["sourceUnchanged"] or not result["sdkUnchanged"]:
+        elif (not result["sourceUnchanged"] or not result["sdkUnchanged"] or
+              result.get("wiperRepairModuleUnchanged") is False):
             result["status"] = "INPUT_CHANGED"
         elif (diagnostic.get("blendSha256") != base["blendSha256"] or
               diagnostic.get("baselineUsfSha256") != base["baselineUsfSha256"] or
               diagnostic.get("candidateUsfSha256") != result.get("candidateUsfSha256Observed") or
               diagnostic.get("candidateUsfBytes") != result.get("candidateUsfBytesObserved") or
-              diagnostic.get("nativeBlendExportApproved") is not False):
+              diagnostic.get("nativeBlendExportApproved") is not False or
+              (wiper_scratch_repair and not
+               isinstance(diagnostic.get("wiperRepair"), dict)) or
+              (not wiper_scratch_repair and
+               diagnostic.get("wiperRepair") not in (None, {}))):
             result["status"] = "HELPER_MISMATCH"
         elif (diagnostic.get("rootNameMatches") is False or
               diagnostic["nodeDiff"]["matchesIndexedFields"] is False or
@@ -280,6 +304,8 @@ def main() -> None:
                         default=1, metavar="N|auto",
                         help="Blender worker threads (default: 1; auto uses Blender's default)")
     parser.add_argument("--run", action="store_true")
+    parser.add_argument("--wiper-scratch-repair", action="store_true",
+                        help="Opt-in in-memory wiper action repair during scratch export")
     args = parser.parse_args()
     result = run_authoring_probe(
         asset_name=args.asset, inventory_path=args.inventory,
@@ -288,6 +314,7 @@ def main() -> None:
         sdk_script_root=args.sdk_script_root, scratch_root=args.scratch_root,
         receipt_path=args.receipt, archive_path=args.archive,
         timeout_seconds=args.timeout_seconds, blender_threads=args.blender_threads,
+        wiper_scratch_repair=args.wiper_scratch_repair,
         dry_run=not args.run,
     )
     print(json.dumps(result, indent=2, sort_keys=True))

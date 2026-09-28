@@ -19,11 +19,14 @@ class NativeRuntimeProbeTests(unittest.TestCase):
             "weather_state": "D11R_WEATHER_STATE rainEnabled false rainPower 0.25",
             "sun_direction": "D11R_SUN_DIRECTION 0 0.8 -0.6",
             "daytime": "D11R_DAYTIME 0.5",
+            "level_name": "D11R_LEVEL_NAME d11t_maroon_validation",
         }
         for kind, reply in replies.items():
             with self.subTest(kind=kind):
                 result = parse_probe_reply(kind, reply)
-                self.assertEqual(result["status"], "PARTIAL_RUNTIME_READBACK")
+                self.assertEqual(result["status"],
+                                 "LEVEL_NAME_DIAGNOSTIC" if kind == "level_name"
+                                 else "PARTIAL_RUNTIME_READBACK")
                 self.assertFalse(result["pairProtocolEligible"])
                 self.assertTrue(result["reported"])
         self.assertEqual(
@@ -33,6 +36,10 @@ class NativeRuntimeProbeTests(unittest.TestCase):
         self.assertEqual(
             parse_probe_reply("weather_state", replies["weather_state"])["reported"]["weatherState"],
             {"rainEnabled": False, "rainPower": 0.25},
+        )
+        self.assertEqual(
+            parse_probe_reply("level_name", replies["level_name"])["reported"]["levelName"],
+            "d11t_maroon_validation",
         )
 
     def test_rejects_malformed_or_ambiguous_replies(self) -> None:
@@ -44,6 +51,9 @@ class NativeRuntimeProbeTests(unittest.TestCase):
             ("daytime", "D11R_DAYTIME NaN"),
             ("daytime", "D11R_DAYTIME 0.5\nD11R_DAYTIME 0.5"),
             ("sun_direction", "D11R_DAYTIME 0.5"),
+            ("level_name", "D11R_LEVEL_NAME "),
+            ("level_name", "D11R_LEVEL_NAME test\nD11R_LEVEL_NAME test"),
+            ("level_name", "D11R_LEVEL_NAME ../test scene"),
         )
         for kind, reply in bad:
             with self.subTest(kind=kind, reply=reply):

@@ -1,0 +1,2 @@
+var levelName = $sslEngineCtrl.GetLevelName()
+return StringFormat("D11R_LEVEL_NAME %s", levelName)

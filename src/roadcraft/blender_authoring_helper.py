@@ -19,6 +19,7 @@ import bpy
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from blender_parity_diff import compare_node_rows
 from blender_usf_helper import _semantic_summary
+from blender_wiper_repair import install_scratch_wiper_repair
 
 
 def _sha(path: Path) -> str:
@@ -102,6 +103,7 @@ def main() -> None:
     parser.add_argument("--result", type=Path, required=True)
     parser.add_argument("--scratch-root", type=Path, required=True)
     parser.add_argument("--sdk-script-root", type=Path, required=True)
+    parser.add_argument("--wiper-scratch-repair", action="store_true")
     args = parser.parse_args(argv)
 
     blend = args.blend.resolve(strict=True)
@@ -127,6 +129,7 @@ def main() -> None:
     from saber.blender.lib.binary_io import BinaryIO
     from saber.blender.lib.usf.export import export_to_usf
     from saber.blender.lib.usf.scene import usf_read
+    from saber.blender.lib.usf import misc as sdk_misc
 
     original_reader = BinaryIO.read_bytearray
     BinaryIO.read_bytearray = (
@@ -135,15 +138,37 @@ def main() -> None:
     )
 
     bpy.ops.wm.open_mainfile(filepath=str(blend), load_ui=False)
+    wiper_repair = None
+    if args.wiper_scratch_repair:
+        wiper_repair = install_scratch_wiper_repair(
+            bpy, sdk_misc, blend_sha256=blend_before,
+            sdk_misc_sha256=_sha(sdk / "saber/blender/lib/usf/misc.py"),
+            sdk_scene_sha256=_sha(sdk / "saber/blender/lib/usf/scene.py"),
+        )
     config_path = sdk / "saber/blender/blender_to_usf/name_convention_config.json"
     config = json.loads(config_path.read_text(encoding="utf-8"))
     config.update({"src_fmt": "blend", "src_filename": blend.name})
     export_to_usf(bpy.context.scene, str(candidate), config)
+    if wiper_repair is not None:
+        if (wiper_repair["actionOrder"] !=
+                ["d11_wipers_backward", "d11_wipers_forward"] or
+                wiper_repair["sampleCounts"] !=
+                {"d11_wipers_backward": 18, "d11_wipers_forward": 18}):
+            raise RuntimeError("scratch SDK wiper bake did not run both actions")
 
     _, native_scene = usf_read(str(candidate))
     native_root_name = native_scene._root_node.name
     native_summary = _semantic_summary(native_scene)
     native_rows = _node_rows(native_scene)
+    if wiper_repair is not None:
+        wiper_path = "|@root|D11T_Rig.005|BoneChassis_cdt|BoneAnim_WiperFront"
+        splines = native_rows.get(wiper_path, {}).get("animation", {})
+        wiper_repair["nativeSplineKeys"] = {
+            name: splines.get(name, {}).get("keys")
+            for name in ("spl_translate", "spl_rotation", "spl_scale")
+        }
+        wiper_repair["nativeSplineKeyCountMatchesRepaired"] = all(
+            value == 36 for value in wiper_repair["nativeSplineKeys"].values())
     del native_scene
     gc.collect()
     _, baseline_scene = usf_read(str(baseline))
@@ -171,6 +196,7 @@ def main() -> None:
         "rootNameMatches": baseline_root_name == native_root_name,
         "nodeDiff": compare_node_rows(baseline_rows, native_rows),
         "nativeBlendExportApproved": False,
+        "wiperRepair": wiper_repair,
     }
     result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n",
                            encoding="utf-8")

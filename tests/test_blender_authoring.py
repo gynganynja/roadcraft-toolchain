@@ -15,6 +15,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from roadcraft import blender_authoring as authoring  # noqa: E402
+from roadcraft import blender_wiper_repair as wiper_repair  # noqa: E402
 from roadcraft.blender_parity_evidence import package_evidence  # noqa: E402
 from roadcraft.blender_parity_diff import compare_node_rows  # noqa: E402
 from roadcraft.source import capture_source_inventory, file_sha256  # noqa: E402
@@ -186,6 +187,59 @@ class BlenderAuthoringTests(unittest.TestCase):
         with self.assertRaisesRegex(authoring.BlenderAuthoringError, "threads"):
             self._run(blender_threads=0)
         self.assertFalse(self.scratch.exists())
+
+    def test_wiper_repair_refuses_unreviewed_blend_before_launch(self) -> None:
+        with self.assertRaisesRegex(authoring.BlenderAuthoringError,
+                                    "wiper scratch source or SDK"):
+            self._run(wiper_scratch_repair=True)
+        self.assertFalse(self.scratch.exists())
+
+    def test_opt_in_wiper_repair_is_pinned_and_keeps_gate_closed(self) -> None:
+        sdk_misc = self.sdk / "saber/blender/lib/usf/misc.py"
+        sdk_scene = self.sdk / "saber/blender/lib/usf/scene.py"
+        sdk_misc.write_text("# synthetic misc\n", encoding="utf-8")
+        sdk_scene.write_text("# synthetic scene\n", encoding="utf-8")
+
+        def fake_blender(command, **kwargs):
+            if "--version" in command:
+                return subprocess.CompletedProcess(command, 0,
+                                                   stdout="Blender 5.2.0 LTS\n")
+            self.assertIn("--wiper-scratch-repair", command)
+            candidate = Path(command[command.index("--candidate-usf") + 1])
+            helper_result = Path(command[command.index("--result") + 1])
+            candidate.write_bytes(b"scratch candidate only")
+            helper_result.write_text(json.dumps({
+                "blendSha256": file_sha256(self.blend),
+                "baselineUsfSha256": file_sha256(self.usf),
+                "candidateUsfSha256": file_sha256(candidate),
+                "candidateUsfBytes": candidate.stat().st_size,
+                "nativeBlendExportApproved": False,
+                "wiperRepair": {"nativeSplineKeys": {
+                    "spl_translate": 36, "spl_rotation": 36, "spl_scale": 36},
+                    "nativeBlendExportApproved": False},
+                "baselineSemantic": {"nodes": 2},
+                "candidateSemantic": {"nodes": 1},
+                "nodeDiff": {"matchesIndexedFields": False,
+                             "missingNodePaths": ["|root|Missing"]},
+            }), encoding="utf-8")
+            return subprocess.CompletedProcess(command, 0)
+
+        with mock.patch.object(wiper_repair, "BLEND_SHA256",
+                               file_sha256(self.blend)), \
+                mock.patch.object(wiper_repair, "SDK_MISC_SHA256",
+                                  file_sha256(sdk_misc)), \
+                mock.patch.object(wiper_repair, "SDK_SCENE_SHA256",
+                                  file_sha256(sdk_scene)), \
+                mock.patch.object(authoring.subprocess, "run",
+                                  side_effect=fake_blender):
+            result = self._run(dry_run=False, wiper_scratch_repair=True)
+        self.assertEqual(result["status"], "PARITY_DIFFERENT")
+        self.assertEqual(result["exportGate"]["status"], "BLOCKED")
+        self.assertTrue(result["wiperRepairModuleUnchanged"])
+        summary = json.loads(self.receipt.read_text(encoding="utf-8"))
+        self.assertTrue(summary["wiperRepairRequested"])
+        self.assertEqual(summary["wiperRepair"]["nativeSplineKeys"]["spl_rotation"], 36)
+        self.assertFalse(summary["nativeBlendExportApproved"])
 
 
 if __name__ == "__main__":
