@@ -841,6 +841,23 @@ difference after blade reparenting. This is payload evidence, not a correct
 hierarchy, exact bind table or exportable replacement. See
 `D11_SKINNED_LENS_PROJECTION_20260929.md`.
 
+A broader pinned no-save survey found all 1,213 material slots across the 52
+missing meshes reproduce the reviewed SDK's simple-material text template.
+All 52 have one UV set; 49 have no color set and three have one. The 51
+skinned meshes use only one to three distinct weighted bones per mesh, though
+their stored bone tables contain 1, 2, 3, 381 or 382 entries. Three material
+names map to conflicting texts across meshes, so the current SDK cannot
+represent every slot in one Blender scene by name alone. See
+`D11_REPAIRED_MESH_RECONSTRUCTABILITY_20260929.md`.
+
+The same no-save work reconstructed all 15 mesh nodes in five front/rear/side/
+inner lens LOD families in one live scene. Their predicted SDK paths, 949
+faces, 2,847 positions/normals/UVs, face metadata, material text/metadata and
+remapped skin weights matched. Tangents still drift, including sign differences
+in six meshes, and the SDK emits a 399-bone table rather than the accepted
+2- or 381-bone tables. No writer, native build or acceptance ran. See the
+same reconstructability record.
+
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
 2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
