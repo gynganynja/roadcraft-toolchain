@@ -27,6 +27,19 @@ receipt and archive would be the two listed `operations` files. The
 file-writing invocation shown here has **not** been run and requires its
 separate exact-command authorization.
 
+A second no-export check exercised the Blender helper's actual import order:
+SDK modules were imported and the historical Blend opened before the
+push-branch worker imported and reopened it. A disposable ignored script at
+`local/push_branch_helper_import_preflight_20260929.py` (SHA-256
+`662d6fb05b8113b54c1fc52a80ce5fc3ff70eb337d06491b8289b89274aef791`)
+ran with `--background --factory-startup --disable-autoexec --threads 1`
+and `--python-exit-code 1` in both pinned Blender 5.0.1 and 5.2.0. Both
+processes exited 0 and reported `IN_MEMORY_PUSH_BRANCH_MATCH`, 388 live scene
+bones, 386 shared paths, unchanged accepted Blend/USF pins, `blendSaved: false`
+and `usfExported: false`. The script imported `export_to_usf` for order fidelity
+but never called it. The scratch root and receipt/archive paths below remained
+absent. This checks the pre-export helper sequence, not actual USF output.
+
 ```powershell
 $tc = 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\Roadcraft Development Package\RoadCraftToolchain'
 $env:PYTHONPATH = "$tc\src"

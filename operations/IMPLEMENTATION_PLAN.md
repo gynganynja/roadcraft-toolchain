@@ -609,7 +609,9 @@ not a saved authoring source or exported parity result. See
 
 An opt-in `--push-branch-scratch-repair` is prepared in the scratch-only
 authoring diagnostic. A source-, SDK- and module-pinned no-write dry run passed
-on the accepted base asset. The exact file-writing scratch export remains
+on the accepted base asset. The helper's SDK-import/scene-open sequence also
+passed no-export probes in Blender 5.0.1 and 5.2.0. The exact file-writing
+scratch export remains
 unexecuted pending its separate authorization; it cannot promote a native
 Blend to build input. See `D11_PUSH_BRANCH_SCRATCH_REPAIR_PREP_20260929.md`.
 
