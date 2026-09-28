@@ -877,9 +877,24 @@ afterward. All 45 projected paths, positions, normals, UVs, face metadata,
 materials, packed colors and active skin influences match. The exact-output
 gaps remain: 399 projected bones per mesh versus target tables of 1–382,
 378 full skin-record mismatches from zero-weight slots and 21 meshes with
-tangent-component error at least 1. The six large interior/dashboard meshes
-remain untested. No Blend was saved or USF exported. See
+tangent-component error at least 1. No Blend was saved or USF exported. See
 `D11_REPAIRED_MESH_FAMILIES_45_20260929.md`.
+
+Five guarded no-save processes now cover the six large interior/dashboard
+meshes individually or as a small LOD2 pair. The maintained probes passed
+without crossing their resource floors. The coverage verifier reconciles
+these six with the earlier 45 against the accepted mesh roster: all 51
+skinned repaired-only paths, 351,565 faces and 1,054,695 corners have exact
+projected positions, normals, UVs, face metadata, material text/metadata,
+packed colors and active skin influences. Forty-seven paths are predicted
+exactly; four isolated LOD1/2 paths lack their LOD0 peer in those runs and
+are not path-verified. Across the 51 meshes, 378 full skin-slot records
+and 24 tangent arrays retain reported gaps, and the SDK still projects
+399 bones per mesh rather than the target tables. Bind matrices, animation,
+writer output, native compilation and visual/campaign acceptance remain
+open. The `usf-repair` route and pending scratch-export command are
+unchanged. See `D11_REPAIRED_LARGE_MESHES_20260929.md` and
+`d11_repaired_mesh_coverage_20260929.json`.
 
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.

@@ -142,15 +142,20 @@ def material_from_target(target_material, *, allow_aliases: bool):
     return material
 
 
-def family_targets(families: tuple[str, ...]) -> list[tuple[str, str]]:
+def family_targets(families: tuple[str, ...],
+                   lod_indices: tuple[int, ...]) -> list[tuple[str, str]]:
+    need(lod_indices and lod_indices == tuple(sorted(set(lod_indices))) and
+         set(lod_indices) <= {0, 1, 2},
+         "LOD selection must be unique ascending indices from 0, 1, 2")
     result = []
     for family in families:
         need(re.fullmatch(r'[A-Za-z0-9_]+_vis', family) is not None,
              "family name is not a reviewed mesh name")
         base = "|@root|D11T_Rig.005|" + family
-        result.extend(((base, family + "_LOD0"),
-                       (base + "|" + family + "_LOD1", family + "_LOD1"),
-                       (base + "|" + family + "_LOD2", family + "_LOD2")))
+        choices = ((base, family + "_LOD0"),
+                   (base + "|" + family + "_LOD1", family + "_LOD1"),
+                   (base + "|" + family + "_LOD2", family + "_LOD2"))
+        result.extend(choices[index] for index in lod_indices)
     need(len(result) == len(set(result)), "duplicate family target")
     return result
 
@@ -158,7 +163,8 @@ def family_targets(families: tuple[str, ...]) -> list[tuple[str, str]]:
 def reconstruct_families(*, repaired: Path, sdk_root: Path, arm,
                          families: tuple[str, ...],
                          allowed_paths: set[str],
-                         allow_material_aliases: bool = False) -> dict:
+                         allow_material_aliases: bool = False,
+                         lod_indices: tuple[int, ...] = (0, 1, 2)) -> dict:
     """Add whole flat-LOD families, then compare SDK projections in memory."""
     sys.path.insert(0, str(sdk_root))
     from saber.blender.lib.usf.mesh import UsfMesh
@@ -167,7 +173,7 @@ def reconstruct_families(*, repaired: Path, sdk_root: Path, arm,
     need(arm is not None and arm.name == "D11T_Rig.005" and
          arm.type == "ARMATURE" and len(arm.pose.bones) == 399,
          "live reconstructed rig differs")
-    pairs = family_targets(families)
+    pairs = family_targets(families, lod_indices)
     need(set(path for path, _ in pairs) <= allowed_paths,
          "family not in pinned repaired-only worklist")
     parsed, by_path, by_uid = read_nodes(repaired, sdk_root)
@@ -282,7 +288,10 @@ def reconstruct_families(*, repaired: Path, sdk_root: Path, arm,
                 "targetSkinBones": len(skin_names),
                 "projectedSkinBones": len(projected_names),
             }
-            need(row['predictedPath'] == path and
+            path_matches_scope = (row['predictedPath'] == path if
+                                  0 in lod_indices else
+                                  row['predictedPath'] is None)
+            need(path_matches_scope and
                  row['positionMaxError'] == 0 and
                  row['normalMaxError'] == 0 and
                  row['uvMaxError'] == 0 and
@@ -295,7 +304,10 @@ def reconstruct_families(*, repaired: Path, sdk_root: Path, arm,
                  "SDK family payload differs: " + json.dumps(row))
             rows.append(row)
     need(len(rows) == len(pairs), "family path coverage differs")
-    return {"status": "IN_MEMORY_FAMILY_PAYLOAD_MATCH_WITH_GAPS",
+    status = ("IN_MEMORY_FAMILY_PAYLOAD_MATCH_WITH_GAPS" if
+              0 in lod_indices else
+              "IN_MEMORY_ISOLATED_LOD_PAYLOAD_MATCH_WITH_GAPS")
+    return {"status": status,
             "families": list(families), "rows": rows,
             "materialAliases": sorted({material.name
                                        for _, obj, _, _ in new_objects

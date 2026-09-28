@@ -1,0 +1,37 @@
+{
+  "asset": "cat_d11t",
+  "blendSaved": false,
+  "corners": 1054695,
+  "faces": 351565,
+  "fullSkinMismatchCorners": 378,
+  "inputLogSha256": {
+    "dash_lod0": "48082bfc368365bd1b1d1f700810413b5d15a721fba553b1b3a12fe6e0b9ae55",
+    "dash_lod1": "34dd7a804888b9098a5b457eee8055d9091f2f723269a1d5babd34d7b0f55dfe",
+    "families45": "da161f87413097eb8249626d62e66f45dbf1d5d5ff734d0551ae3fbb507eaeaa",
+    "interior_lod0": "d238e4f4f11bde244ffcb6cfde379ce3e16c925df946ebd93fd61e9eb178e692",
+    "interior_lod1": "de4dc7d27e7f8b1c0ad6a56d6a9cca1d9464c0ffac069f0c30d2cb561ab011d5",
+    "lod2_pair": "ae5012eb7d622c72f8b27e5fd89a9941683712428e7d6375295ecdd882a59935",
+    "survey": "c3f6c94272513672ef5fe6c0b0b1f81e0ded98d80db50ab35b3f11d228b70fee"
+  },
+  "pathUnverified": [
+    "|@root|D11T_Rig.005|D11_DashV5_vis|D11_DashV5_vis_LOD1",
+    "|@root|D11T_Rig.005|D11_DashV5_vis|D11_DashV5_vis_LOD2",
+    "|@root|D11T_Rig.005|D11_InteriorV1_vis|D11_InteriorV1_vis_LOD1",
+    "|@root|D11T_Rig.005|D11_InteriorV1_vis|D11_InteriorV1_vis_LOD2"
+  ],
+  "pathVerifiedCount": 47,
+  "payloadExactFields": [
+    "positions",
+    "normals",
+    "uvs",
+    "face_material_and_edge_pairs",
+    "material_text_and_metadata",
+    "packed_colors",
+    "active_skin_influences"
+  ],
+  "projectedBoneTableLength": 399,
+  "skinnedMeshPaths": 51,
+  "status": "IN_MEMORY_51_SKINNED_MESH_PAYLOAD_COVERAGE_WITH_GAPS",
+  "tangentErrorAtLeastOneCount": 24,
+  "usfExported": false
+}

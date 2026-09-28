@@ -26,12 +26,12 @@ appearance have not been checked. The two large `D11_InteriorV1_vis` and
 
 The maintained probe is
 `operations/probes/repaired_mesh_families_45_check_20260929.py`, SHA-256
-`42e29192141f00e5db7f85ef72c71aad20d389e4991dd802918ff806d7cd880c`. It pins inventory, worklist, source Blend, repaired
+`2304ba09844a378837e7eacdf86da21ceabd3b7827b9f6cb8dd1f888951fd13e`. It pins inventory, worklist, source Blend, repaired
 USF, Blender executable, SDK and importer SHA-256 values. It checks the
 four-stage structural reconstruction before the family reconstruction,
 exact 45-row coverage, the known gaps, three alias names and restoration of
 both scoped SDK changes. The importer SHA-256 is
-`f20ae1d82a47875dc6ac63709d85a089e5c2814b1c0a756bd42c7c3913f474c3`.
+`7f86dd84a6867f609d6400a7a17d2c534cf9a62f61f6aaad4e9aa162281b4ad1`.
 
 To replay from the Steam development-package root, copy the probe unchanged
 to `RoadCraftToolchain/local/repaired_mesh_families_45_check_20260929.py`,

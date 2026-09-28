@@ -44,10 +44,10 @@ The source Blend and accepted USF were hash-checked before and after and
 remained unchanged. The existing pending scratch-export command is unchanged.
 
 The module SHA-256 is
-`f20ae1d82a47875dc6ac63709d85a089e5c2814b1c0a756bd42c7c3913f474c3`.
+`7f86dd84a6867f609d6400a7a17d2c534cf9a62f61f6aaad4e9aa162281b4ad1`.
 The exact probe is
 `operations/probes/repaired_mesh_families_check_20260929.py`, SHA-256
-`b53c963503c13acbedc3bf51c1674228cdb141312b2d9f729d1b64d86b1220a9`.
+`ac9eca4224649ccae80e469a7b3e988885d564633e36323d2318ac7f9b04779e`.
 To replay from the Steam development-package root, copy the probe unchanged
 to `RoadCraftToolchain/local/repaired_mesh_families_check_20260929.py`,
 verify its hash, and invoke:

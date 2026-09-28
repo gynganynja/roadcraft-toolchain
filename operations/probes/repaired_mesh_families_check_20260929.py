@@ -19,7 +19,7 @@ WORKLIST_SHA = 'a842c0e7dd355e64ace39a724a806f509328ba3fb1916fc7ab4bbb85062759c3
 BLEND_SHA = '1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731'
 USF_SHA = '49bfc77c1172a0e324934974d5612a13d121c3cee78ae7ca454468b61649e170'
 BLENDER_SHA = 'e27fbfea8564aa645d4463cb0949695fd85562b9de6df9561b06859a1074adf7'
-MODULE_SHA = 'f20ae1d82a47875dc6ac63709d85a089e5c2814b1c0a756bd42c7c3913f474c3'
+MODULE_SHA = '7f86dd84a6867f609d6400a7a17d2c534cf9a62f61f6aaad4e9aa162281b4ad1'
 
 inventory_path = ROOT / 'operations/d11_authoring_inventory.json'
 worklist_path = ROOT / 'operations/d11_blender_reconstruction_worklist_20260928.json'
