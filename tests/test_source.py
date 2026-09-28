@@ -69,7 +69,8 @@ class SourceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(prefix="roadcraft-test-source-")
         self.addCleanup(self.temporary.cleanup)
-        self.root = Path(self.temporary.name)
+        # Match the canonical paths returned by the source functions on Windows.
+        self.root = Path(self.temporary.name).resolve()
 
     def test_inventory_preserves_order_and_survives_relocation(self) -> None:
         first_root = self.root / "first"

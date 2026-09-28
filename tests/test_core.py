@@ -20,7 +20,9 @@ class CoreTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        # Windows runners may expose Temp through an 8.3 alias (RUNNER~1).
+        # Production paths are resolved, so fixtures must use the same form.
+        self.root = Path(self.temp.name).resolve()
 
     def write(self, name: str, data: bytes) -> Path:
         path = self.root / name

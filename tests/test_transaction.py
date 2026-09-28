@@ -18,7 +18,8 @@ class PackageTransactionTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(prefix="roadcraft-transaction-")
         self.addCleanup(self.temporary.cleanup)
-        self.root = Path(self.temporary.name)
+        # A Windows Temp 8.3 alias differs from Path.resolve() after I/O.
+        self.root = Path(self.temporary.name).resolve()
         self.accepted = self._write("archives/accepted.pak", b"accepted-package")
         self.candidate = self._write("archives/candidate.pak", b"candidate-package")
         self.installed = self._write("game/mods/d11.pak", b"previous-test-package")
