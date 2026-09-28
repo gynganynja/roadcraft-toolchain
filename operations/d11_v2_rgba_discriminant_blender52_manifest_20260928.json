@@ -1,0 +1,104 @@
+{
+  "asset": "cat_d11t_v2",
+  "code": {
+    "probeHostSha256": "28d3d24b82d234e67f95a67eb10e7e45679bbaee07ee4a3635134f3def7a877e",
+    "probeWorkerSha256": "9c66e62fd7c06e575d721c120dfc44aa3341c5d56f9b2bf66e948a6338b489d3",
+    "reviewedBaseMeshHostSha256": "2ec3051322517d68b07c99bd94710402bb32d2157e540996814e66e5925a1a4e",
+    "reviewedMapperWorkerSha256": "e29122c28bbe60a254a7c239fcc84be7d2f05a57c0ce305132069edd5b264113",
+    "reviewedVariantHostSha256": "f2cc1e997b8458e8fe279050a59dcdff7c9e20143d8fbfa0700da4147d6572fb",
+    "reviewedVariantWorkerSha256": "cfef0c5e5cdc6ed033c704a769b0c53d466bd1f79b77746343472f50f786bda0"
+  },
+  "date": "2026-09-28",
+  "freshProcessRuns": 3,
+  "inputs": {
+    "authoringInventory": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\operations\\d11_authoring_inventory.json",
+      "sha256": "03d3eae96720612ae3b1457a27cc797f8bc6ebb694b230f253bcadbe9d13b50d"
+    },
+    "blend": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\p\\mods_source\\models\\mods\\cat_d11t_v2.tpl.asset\\cat_d11t_v2.blend",
+      "sha256": "1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731"
+    },
+    "blenderExecutableSha256": "e27fbfea8564aa645d4463cb0949695fd85562b9de6df9561b06859a1074adf7",
+    "nativeSummary": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\operations\\d11_v2_blend_authoring_parity_summary.json",
+      "sha256": "ffcc6bb774911f0f1e7a1d865cb2b113f88305a07a2e4aef2f4e5aff07814dc0"
+    },
+    "nativeUsf": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\local\\blend-authoring-parity-v2-normalized\\candidate.usf",
+      "sha256": "0e533bbc80a95798824e69e5c6545cc50b9d98f0ba81e7f0e96d9e3a93c2dc3f"
+    },
+    "registry": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\project.json",
+      "sha256": "8c043cc4db89b3182d73212f45958c6e130882424870dc2cfbaa4c43cad0065b"
+    },
+    "repairedUsf": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\D11_Interior_Standalone_20260927\\p\\mods_source\\models\\mods\\cat_d11t_v2.tpl.asset\\export.usf",
+      "sha256": "096a3cc042e382becb69e25c722dbaf0e2c2a65608cf6ff01008705eb0bad24a"
+    },
+    "sdkFileSha256": {
+      "saber/__init__.py": "b8fc2d9ea0c7c919f124a0774a783e8c641684c1dd95615c8e2239e5250054c3",
+      "saber/blender/__init__.py": "3c2227f61523edf9627a09c4539c121fabd612abe983c44482026c0f1cc8b56c",
+      "saber/blender/lib/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "saber/blender/lib/binary_io.py": "b0f48e355b0c6a5c1038f948661ec8a6f46b34b369b174bf7ba0ad53474938cf",
+      "saber/blender/lib/trifles.py": "f6fa4a8016a2cfc7f256a6dd642a2f8ac1b4dcc924dd9d06cf108f4c6ea92a14",
+      "saber/blender/lib/usf/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "saber/blender/lib/usf/animation.py": "5aabb249c2bcecf82c229602f81538d3590011753733e9717d9c55706604f76f",
+      "saber/blender/lib/usf/export.py": "b5ac27895463abce897d15d7da6b0feb92b9419190b3f5af5010460166997a83",
+      "saber/blender/lib/usf/material.py": "dca9f8356ea24a30ba39be6947cf90ef37afddab1fbf669fa04f4fc450113d65",
+      "saber/blender/lib/usf/mesh.py": "4ab671128044524524028dbea32a5c7dcaf5274630348de151592c87b08be337",
+      "saber/blender/lib/usf/misc.py": "301d79c7e98edee58da0c4e77229524291968ce504a99be07dc76e1a09358a1c",
+      "saber/blender/lib/usf/node.py": "a3849da13777e5a89c7951cba23b8fb2f4991bba18205e2c0ce466ae49417797",
+      "saber/blender/lib/usf/scene.py": "386567f324799274fc7b1ab6c3c92898b19d0d04de6f072ab5b4a47001c551fd",
+      "saber/blender/lib/usf/transform.py": "c79cd0947590abf36bd23c590e642ee69d2c93fb9d042f944b7a2bdc857d0101"
+    },
+    "sdkRoot": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\tools\\bin\\blender_to_usf_script",
+    "sourceAssetDigest": "6f6d47667c5dd24aa18fa1734aa2cbc7c6af48ac28bc57c67e8609f899f22d6f",
+    "worklist": {
+      "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RoadCraft\\Roadcraft Development Package\\RoadCraftToolchain\\operations\\d11_blender_reconstruction_worklist_20260928.json",
+      "sha256": "a842c0e7dd355e64ace39a724a806f509328ba3fb1916fc7ab4bbb85062759c3"
+    }
+  },
+  "purpose": "Bounded no-save v2 Blender 5.2 RGBA_CACHE discriminant",
+  "receiptIdentityCaveat": "Each process emitted the same deterministic JSON. Separate execution is evidenced by the invocation transcript and local write times, not by distinct receipt bytes or embedded process IDs.",
+  "receipts": [
+    {
+      "file": "d11_v2_rgba_discriminant_blender52_run1_20260928.json",
+      "finding": "MISMATCH_NOT_REPRODUCED",
+      "localWriteTimeUtc": "2026-09-28T09:10:27.522430+00:00",
+      "matchingNativeColorsRows": 126,
+      "rowsDigestSha256": "5965d7327d72a81aa04f7ef1255265b6da6fba14cdd2c737b91f184db1f6a6b0",
+      "run": 1,
+      "sha256": "85aa1ea500441241ab509bde331fbc0b09c9df46664047d725185b9f022c34c2",
+      "targetCacheHits": 9060,
+      "targetSdkStatelessDifferent": 0,
+      "targetSourceNativeDifferent": 0
+    },
+    {
+      "file": "d11_v2_rgba_discriminant_blender52_run2_20260928.json",
+      "finding": "MISMATCH_NOT_REPRODUCED",
+      "localWriteTimeUtc": "2026-09-28T09:12:38.346709+00:00",
+      "matchingNativeColorsRows": 126,
+      "rowsDigestSha256": "5965d7327d72a81aa04f7ef1255265b6da6fba14cdd2c737b91f184db1f6a6b0",
+      "run": 2,
+      "sha256": "85aa1ea500441241ab509bde331fbc0b09c9df46664047d725185b9f022c34c2",
+      "targetCacheHits": 9060,
+      "targetSdkStatelessDifferent": 0,
+      "targetSourceNativeDifferent": 0
+    },
+    {
+      "file": "d11_v2_rgba_discriminant_blender52_run3_20260928.json",
+      "finding": "MISMATCH_NOT_REPRODUCED",
+      "localWriteTimeUtc": "2026-09-28T09:14:30.795941+00:00",
+      "matchingNativeColorsRows": 126,
+      "rowsDigestSha256": "5965d7327d72a81aa04f7ef1255265b6da6fba14cdd2c737b91f184db1f6a6b0",
+      "run": 3,
+      "sha256": "85aa1ea500441241ab509bde331fbc0b09c9df46664047d725185b9f022c34c2",
+      "targetCacheHits": 9060,
+      "targetSdkStatelessDifferent": 0,
+      "targetSourceNativeDifferent": 0
+    }
+  ],
+  "schemaVersion": 1,
+  "targetPath": "|@root|D11T_Rig.005|Ripper_vis|Ripper_vis_LOD1"
+}

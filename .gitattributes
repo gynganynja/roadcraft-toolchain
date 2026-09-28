@@ -31,3 +31,5 @@ src/roadcraft/blender_tangent_variants.py text eol=lf
 src/roadcraft/blender_mesh_payload.py text eol=lf
 src/roadcraft/blender_mesh_variant_payload_worker.py text eol=lf
 src/roadcraft/blender_mesh_variant_payload.py text eol=lf
+src/roadcraft/blender_rgba_discriminant.py text eol=lf
+src/roadcraft/blender_rgba_discriminant_worker.py text eol=lf
