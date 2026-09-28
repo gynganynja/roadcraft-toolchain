@@ -36,7 +36,7 @@ visually accepted and campaign accepted are different states.
 |---|---|---|
 | Core CLI, jobs and transactions | Implemented | `src/roadcraft/cli.py`, `jobs.py`, `transaction.py`. CLI job/transaction operations default to dry-run; `--apply` executes. A failed phase after native launch retains its lock; `jobs-recover` requires exact lock/receipt/installed/registry/config pins and verified terminal external state before release. No live job lock was released. |
 | Local inspect and synthetic tests | Source mirror, dedicated checkout and hosted CI passed | Both checkouts completed 218 offline tests: 6 skips in the source mirror and 4 in the dedicated environment. The 3 Painter dispatch-gate tests also passed locally. The fifth native probe's offline, no-send preflight passed. [Windows CI #17](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36375506767) passed 218 core tests with one CI skip and 3 Painter gate tests at the probe/wiper commit. Earlier inspect/test receipts remain under `jobs/20260927T233929Z-cab582e7350c/receipt.json` and `jobs/20260927T234050Z-66e61f71fca5/receipt.json`. Disclose the skips. |
-| Project verification | Current source check passed | Target `verify --project` previously verified all 5 pins and 2,817 source files; a post-Blender `source-check` again matched the accepted inventory digest with no changes. The older source `d11_verify_20260928.json` is a four-pin snapshot and does not replace the newer result. |
+| Project verification | Current source and project checks passed | A fresh read-only target `verify --project` passed all 5 registry pins, the source manifest and authoring inventory; `source-check` matched the accepted digest with no changes. The source manifest covers 2,817 files. The older source `d11_verify_20260928.json` is a four-pin snapshot and does not replace the newer result. |
 | Accepted vs AAA candidate | Installed accepted; no recovery required; AAA unaccepted | Post-change target status reports installed SHA-256 `3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16`, relation `accepted`, `recoveryRequired: false`, and no candidate-capture lock. AAA's historical capture still reports `FAIL_ROLLBACK_PENDING`, with `BASELINE_RESTORED` rollback evidence. Refresh status before native work. |
 | Project-local MCP and workflow plugin | Dedicated CLI ready; this desktop task cannot yet call the project-local tools | User approved trust for the dedicated checkout. Codex CLI `mcp list` there sees `roadcraft`, `substance_painter`, `roadcraft_blender_scratch` enabled. Local marketplace is registered and `roadcraft-workflow` installed/enabled. Real stdio inventories: RoadCraft 11, Painter 79, Blender 2. This task is rooted at the Steam project, where no `.codex/config.toml` exists and none of those tools appears in its callable inventory. `MCP_DESKTOP_SCOPE_20260928.md` records the read-only comparison and the separate desktop verification step. RoadCraft remains read-only; tool scopes differ across servers. |
 | Dedicated environment | Installed and verified | RoadCraft, Painter MCP and PyYAML are installed in `C:\RC\RoadCraftDev\toolchain\.venv`; project-local config is parsed and loaded by Codex CLI. The maintained source handoff was hash-checked. |
@@ -276,6 +276,21 @@ The weather and level-name maroon preflights passed; no transport request was se
 exact-PID smoke would write a new ignored scratch receipt and can establish
 only partial runtime readback, not a matched capture pair or loaded-scene proof.
 
+The guarded legacy runner's current no-write `--plan --run-id c0de2026`
+recheck passed with status
+`CAPTURE_OUTPUTS_DECLARED_NO_SWAP` and the same contract SHA-256
+`64137c9b05bca412e41ecce8b490be978d414c6c74aefcd7963425e90d90484f`.
+Its 383 required files and six optional files were declared without launching
+the editor or changing the package.
+
+`NATIVE_LOADED_SCENE_PROOF_AUDIT_20260928.md` records the pinned editor's
+candidate actor/editor scene-name bindings and the absence of a demonstrated
+SSL getter for loaded scene bytes or screenshot origin. It separates a level
+or actor label, a mounted on-disk source tree, and a consistent screenshot
+receipt from actual runtime scene and producer authentication. The two proof
+flags remain false until an engine-origin check tied to the capture interval
+has been tested in a disposable editor and reviewed.
+
 `NATIVE_PARTIAL_VIEW_LINKAGE.md` defines a fail-closed handoff for
 `ReadPreCapture` immediately before each screenshot request. The maintained
 runner now emits one partial link per view, the 383-file contract declares its
@@ -438,9 +453,10 @@ both endpoint frames. Its exact unexecuted command and output paths are in
 `D11_WIPER_SCRATCH_REPAIR_20260928.md`. Synthetic tests and the no-write dry
 run passed. This is a repair hypothesis, not animation parity evidence, and
 the native-Blend gate remains blocked. A read-only Blender check confirmed
-the guarded action order and unchanged source hashes. The SDK still copies
-source action frame ranges into actor metadata, which differ from the repaired
-USF, so the helper cannot by itself reach full animation parity.
+the guarded action order and unchanged source hashes. Read-only parsing also
+confirmed that actor animation metadata already matches between the retained
+native scratch USF and repaired USF; the missing wiper splines remain the
+specific animation gap. The helper cannot by itself reach full asset parity.
 
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.

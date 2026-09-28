@@ -33,11 +33,14 @@ consistent with the two source actions in that order. This is a mapping
 hypothesis; the exact transform values have not been reproduced by a native
 scratch export.
 
-The SDK also copies each source action's original frame range into actor
-metadata. Those ranges are backward 20–37 and forward 1–18, whereas the
-repaired USF records 1–18 and 19–36. The scratch repair does not rewrite
-actor metadata, so even a 36-key node result cannot establish complete
-animation parity.
+The bundled SDK's `UsfActorInfo.add_anim` rebases each source action onto a
+contiguous one-based timeline. Read-only parsing found that the retained
+native scratch USF (`80c856b07b3ae1447f2748b5f6f8ec13c688c2594f3ebfaeada9e0d11da21370`)
+already matches the repaired USF's actor name, action order, 1–18 and 19–36
+spans, durations and empty marker lists. The current animation gap is the
+native export's missing animated wiper node and its three 36-key splines.
+The guarded repair addresses node sampling, but spline byte parity and the
+other asset differences remain unproven.
 
 `blender_wiper_repair.py` adds an opt-in repair to the authoring diagnostic.
 After every pin and source-shape check passes, it binds the existing forward
