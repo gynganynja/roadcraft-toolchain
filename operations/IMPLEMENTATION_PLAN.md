@@ -32,14 +32,14 @@ visually accepted and campaign accepted are different states.
 
 ## Current evidence
 
-At `65813ed2cc36e278d550e6dc3863618db1718af0`, private `main` and
-[Windows CI #42](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36408099661)
-passed 329 synthetic tests (one hosted skip) and all three Painter write-gate
-tests. The Steam mirror and dedicated checkout each passed 329 tests with four
+At `84f7edc9da07c86ed900789da051b335129036fc`, private `main` and
+[Windows CI #43](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36409570202)
+passed 339 synthetic tests (one hosted skip) and all three Painter write-gate
+tests. The Steam mirror and dedicated checkout each passed 339 tests with four
 machine-specific skips. The native pre-trigger guard, no-write `c0de2027`
-output contract and live RGBA discriminator are offline evidence only; the
-accepted PAK remains installed, and no native capture or Blender export was
-performed.
+output contract, live RGBA discriminator and scratch-only cache guard are
+offline evidence only; the accepted PAK remains installed, and no native
+capture or Blender export was performed in this checkpoint.
 
 | Area | State at this snapshot | Evidence and limit |
 |---|---|---|
@@ -76,6 +76,7 @@ performed.
 | D11 SDK RGBA cache lifetime | Stale cached color reproduced in Blender 5.0.1 and 5.2.0; historical v2 cause still unproved | A pinned, no-save diagnostic created only disposable in-memory meshes. In both versions the SDK returned cached white for raw gray after temporary-mesh reuse; clearing only the process-local cache made the same gray input pack correctly. Separate receipts and an execution manifest are retained. This establishes a reachable SDK mechanism, not that it caused the prior 2,650-value v2 mismatch or that a native export is safe. See `D11_RGBA_CACHE_LIFETIME_20260928.md`. |
 | D11 v2 live RGBA discriminator | SDK packed output diverged while live raw input matched native | Two fresh, no-save Blender 5.2 processes used unwrapped SDK color functions. The second reproduced a `Ripper_vis_LOD1` mismatch: 1,200/59,238 SDK packed values differed, while stateless packing of live raw RGBA matched the retained native values 59,238/59,238. The first process matched completely. The SDK packing path is implicated, consistent with the separately reproduced cache-lifetime fault, but no call-time cache key was recorded and this is not the historical 2,650-value sequence. Native export remains blocked. See `D11_V2_RGBA_LIVE_DISCRIMINANT_20260928.md`. |
 | D11 scratch RGBA cache guard | Opt-in implementation prepared; no export run | The scratch authoring wrapper now has a pinned v2/Blender 5.2-only option that passes an immutable RGBA snapshot to the original SDK packer for the export call, then restores the method and clears the process-local cache. The installed SDK and default scratch command are unchanged. The host and helper attest the exact guard module, input pins and post-run state; the native-Blend export gate remains closed. Synthetic tests cover collision prevention and failure cleanup. A guarded scratch export would be a new exact invocation requiring review. See `D11_RGBA_CACHE_GUARD_IMPLEMENTATION_20260928.md`. |
+| D11 guarded v2 color readback | Two pinned no-save runs matched native colors; export still blocked | In two fresh Blender 5.2 processes, one immutable-key guard context spanned all 126 SDK source projections. Each run matched the retained native packed colors on 126/126 rows and all 59,238 `Ripper_vis_LOD1` values, with 194,121 guarded pack calls; both restored the SDK packer and hook and retained input hashes. Distinct UTC intervals are in the manifest; the compact receipts have identical bytes because they omit invocation time. This verifies in-memory color projection only, not USF writer, repaired parity or native behavior. See `D11_V2_RGBA_GUARDED_READBACK_20260928.md`. |
 | D11 blade collision relocation | Static hierarchy/transform target identified; export remains blocked | A pinned, no-save readback covered all 60 `cdt_blade_*` leaves under `BoneBlade_cdt`. Both Blender versions returned the same 60-row digest: source, retained native USF and repaired USF world matrices agree within `1e-5`, while all 60 native/repaired USF local matrices differ beneath the inserted `BoneBladeRoll_cdt` parent. Mesh-count maps and evaluated source/native face counts match. The differing paths are not marked equivalent; geometry payloads, binds, animation and native behavior remain untested. See `D11_BLADE_COLLISION_RELOCATION_READBACK_20260928.md`. |
 | Painter integration | Capabilities verified; scratch project deferred; write gate added | Real stdio probe listed 79 tools, connected to Painter 12.1.5/API 0.3.5 and called `get_capabilities` successfully while no project was open. Baking presets, auto-rebake control and skew-painting control are unavailable. The server now leaves 34 inspection/planning tools enabled and denies 45 authoring/output tools unless its local process has `SP_MCP_ALLOW_PROJECT_WRITES=1`; synthetic FastMCP dispatch tests cover all 45. The user intentionally ended the Painter session to avoid interference and chose to leave it closed; no `.spp` was created and no accepted asset changed. |
 | Storage | First exact batch complete; expansion dry run passed but deletion unapproved | `STORAGE_REVIEW.md`: 159 template copies removed, 6.30 GiB freed, retained originals verified. The separate 23,604-file / 5.93 GiB expansion remains untouched. Its 33 MB raw manifest is local and a verified 1.6 MB gzip copy is versioned. A full sandboxed dry run verified every candidate and counterpart but reported `applyReady: false` because CIM process inspection was denied. A distinct elevated full dry run reported `applyReady: true` with zero active processes at its inspection time, 21 retained packages, 166 retained source files and zero deletions. Any future apply needs specific authorization and a fresh pinned preflight. Git temporary pack remains separate. |
@@ -751,8 +752,8 @@ new local integration config if transport cannot be made reliable.
 
 ## Immediate execution order
 
-1. Private `main`, remote commit comparison, and Windows CI run #42 at
-   `65813ed` are complete. Keep later changes versioned and recheck CI after
+1. Private `main`, remote commit comparison, and Windows CI run #43 at
+   `84f7edc` are complete. Keep later changes versioned and recheck CI after
    each push.
 2. Use the registered, smoke-tested local integrations through their dedicated
    checkout, then confirm desktop tool visibility in a task rooted there. The
