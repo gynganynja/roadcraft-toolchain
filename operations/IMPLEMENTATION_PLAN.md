@@ -55,6 +55,16 @@ output roster; the dedicated checkout passed 371 local tests with four skips.
 No baseline run was executed. The current native Read response still lacks the
 complete measured context and engine-origin scene/PNG proof required by step 5.
 
+After that snapshot, a separate one-view accepted-project baseline diagnostic
+started the native editor but failed before its screenshot because C: fell
+below the inner runner's 1.5 GB free-space guard. The failure receipt and logs
+are retained, the editor and lock are gone, and the installed PAK remains the
+accepted hash. The baseline preflight floor was raised to 16 GB to prevent a
+repeat at the same starting free space. A fresh elevated read-only check of
+the exact 23,604-file/5.93-GiB generated-export cleanup passed with zero
+deletions; applying it awaits specific approval. See
+`NATIVE_BASELINE_CAPTURE_20260928.md`.
+
 | Area | State at this snapshot | Evidence and limit |
 |---|---|---|
 | Core CLI, jobs and transactions | Implemented | `src/roadcraft/cli.py`, `jobs.py`, `transaction.py`. CLI job/transaction operations default to dry-run; `--apply` executes. A failed phase after native launch retains its lock; `jobs-recover` requires exact lock/receipt/installed/registry/config pins and verified terminal external state before release. No live job lock was released. |

@@ -5,8 +5,9 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from roadcraft import native_baseline_capture as baseline
 from roadcraft import native_baseline_postflight as postflight
@@ -70,6 +71,28 @@ class BaselineSourceIsolationTests(unittest.TestCase):
             path.write_bytes(b'{"status":"ready","status":"failed"}')
             with self.assertRaises(postflight.BaselinePostflightError):
                 postflight._json(path, digest(path), "baseline plan")
+
+    def test_low_disk_blocks_before_hashing_accepted_source(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project = root / "accepted" / "p"
+            project.mkdir(parents=True)
+            package = root / "accepted.pak"
+            package.write_bytes(b"package")
+            registry = {"accepted": {
+                "sourceRoot": str(project),
+                "package": {"path": str(package), "sha256": "a" * 64},
+            }}
+            with patch.object(baseline.core, "read_registry", return_value=registry), \
+                    patch.object(baseline.core, "read_config",
+                                 return_value={"sdkRoot": str(root)}), \
+                    patch.object(baseline.shutil, "disk_usage",
+                                 return_value=SimpleNamespace(free=0)), \
+                    patch.object(baseline, "_source_is_accepted") as source_check:
+                with self.assertRaisesRegex(baseline.BaselineCaptureError,
+                                            "Less than 16 GB"):
+                    baseline._prepare("a1b2c3d4")
+                source_check.assert_not_called()
 
 
 if __name__ == "__main__":

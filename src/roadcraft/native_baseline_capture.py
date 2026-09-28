@@ -21,6 +21,7 @@ from . import core
 
 
 SDK_RUNNER_SHA256 = "78e2f3634cbfde8d2b64b15652275474646338efe7f1f25a760a2140cfdc73dc"
+MIN_CAPTURE_FREE_BYTES = 16_000_000_000
 RUN_ID = re.compile(r"[0-9a-f]{8}\Z")
 
 
@@ -171,6 +172,9 @@ def _prepare(run_id: str, requested_variants: tuple[str, ...] | None = None,
     project = Path(accepted["sourceRoot"]).resolve(strict=True)
     package = Path(accepted["package"]["path"]).resolve(strict=True)
     accepted_sha = accepted["package"]["sha256"]
+    machine = core.read_config(toolchain / "local" / "machine.json")
+    need(shutil.disk_usage(Path(machine["sdkRoot"])).free >= MIN_CAPTURE_FREE_BYTES,
+         "Less than 16 GB free for baseline native capture")
     _source_is_accepted(registry, project)
     need(core.file_identity(package, accepted_sha).get("matchesExpected") is True,
          "Accepted package source differs from registry pin")
@@ -179,8 +183,8 @@ def _prepare(run_id: str, requested_variants: tuple[str, ...] | None = None,
          "Installed package differs from accepted baseline")
     need(not inner.NATIVE.is_symlink() and not inner.RUNS.is_symlink(),
          "Native evidence path is linked")
-    need(shutil.disk_usage(inner.HERE).free >= 4_000_000_000,
-         "Less than 4 GB free for native capture")
+    need(shutil.disk_usage(inner.HERE).free >= MIN_CAPTURE_FREE_BYTES,
+         "Less than 16 GB free for baseline native capture")
     base, survey = inner.old_helpers()
     need(not base.runner.LOCK.exists() and not base.processes(),
          "Another native job, RoadCraft or Mod Editor is running")

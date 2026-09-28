@@ -55,5 +55,38 @@ one-view diagnostic checks 16 declared outputs and one view. A successful result
 This adapter and postflight do not fill the current editor helper's missing
 runtime observation fields or prove engine-origin scene/PNG bytes. The 45-view
 pair protocol therefore remains blocked even if a baseline run and its partial
-postflight pass. No native execution has been attempted for this adapter; its
-current evidence is preflight only.
+postflight pass.
+
+## One-view native diagnostic, failed before capture
+
+The reviewed `b1c2d3e4` plan selected only `maroon/front_seat`, declared 16
+outputs and no PAK swap, and had contract SHA-256
+`93ad113a69682d64ccf812ad4931873387c4257b019fd26bf60657b471cd05c6`.
+Its ignored local plan file hashes to
+`d9e08fac5680521644e30764e8c491c97b26858ebff0e571062c23cc1b09583c`.
+Hosted [CI #56](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36425332848)
+passed before the diagnostic was launched. The runner did start its owned
+Mod Editor against the accepted project. During scene startup, free C: space
+fell below the inner runner's 1.5 GB safety floor; it stopped before any
+`front_seat` screenshot. The outer receipt is `FAIL` (SHA-256
+`44b43afd400faa6d22a3dedd6b7170821e9873072923a1a8b99ba5b36b3ec2f0`);
+the maroon report is also `FAIL` (SHA-256
+`af2ae06f4056bd57edcc2aa65bb55aa897489e69bda65beedffe0c9fd71184f0`).
+The editor exited, its baseline lock was released, and the installed PAK
+still hashes to the accepted
+`3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16`.
+The failed run and logs remain untouched as evidence.
+
+The preflight floor is now 16,000,000,000 free bytes, above the approximately
+10.9 GB available before that launch. This prevents another start under the
+same observed disk condition; it is not a guarantee that every editor run fits.
+Changing the runner invalidates the old contract, so a future diagnostic needs
+a fresh run ID and reviewed plan. A separate read-only storage preflight after
+the failure reverified the 23,604 exact generated export-copy candidates in
+`storage_expansion_review_20260928.json` (SHA-256
+`aa5aad369e601cf9bf076d11101fd3925f396de5898338fc150b4cfed69e7ec7`).
+They total 6,368,972,800 allocated bytes; its new dry-run receipt hashes to
+`d0339967e6337ac9f9c9cf6305a16a630518ae162815c9b8b75e2051d6d4bb52`.
+It found 21 retained packages, 166 retained source files, no tracked
+candidates, no active process owners, `applyReady: true`, and zero deletions.
+That separate cleanup has not been authorized or applied.
