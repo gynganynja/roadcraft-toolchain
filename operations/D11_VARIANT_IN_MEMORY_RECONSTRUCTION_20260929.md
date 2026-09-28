@@ -57,3 +57,37 @@ It does not verify USF writer output, variant meshes, materials, binds,
 animation payloads, collision, compilation, native appearance, or campaign
 acceptance. Both variants retain `usf-repair` build inputs and separate
 `native-blend` parity gates.
+
+## Maintained rerun command
+
+`roadcraft.blender_variant_reconstruction` now resolves and pins the accepted
+inventory, each variant's separate Blend and repaired USF, the base repaired
+USF used by the edit workers, Blender, reviewed SDK imports and the worker
+source. It checks the complete result and all input hashes again after the
+no-save run. From the dedicated checkout, run once per variant, replacing
+`cat_d11t_v2` with `cat_d11t_v3` and `5.2` with `5.0` as needed:
+
+```powershell
+$env:PYTHONPATH = (Resolve-Path 'src').Path
+& '.\.venv\Scripts\python.exe' -B `
+  -m roadcraft.blender_variant_reconstruction `
+  --asset cat_d11t_v2 --registry project.json `
+  --blender 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' `
+  --sdk-script-root 'C:\Program Files (x86)\Steam\steamapps\common\RoadCraft\tools\bin\blender_to_usf_script'
+```
+
+The maintained command still derives edit-bone lengths locally because the
+USF does not encode them. Matching static paths does not imply an exported
+USF will retain this result.
+
+The maintained command passed for v2 under Blender 5.2.0 LTS and v3 under
+Blender 5.0.1, reproducing `400/400`, zero changed paths, a
+`2.2687017917633057e-6` maximum matrix error, and zero source mesh
+world-matrix error. Its pinned worker SHA-256 is
+`86e003a80db00ca4fb36e154db314cd122db1a19258480be4b96c2d7a133146f`.
+The historical archived probe above separately covers both variants under
+both Blender versions.
+The Steam and dedicated checkout suites each passed 408 tests with four
+machine-specific skips after the maintained command was added.
+An additional maintained v2 / Blender 5.2.0 run from the dedicated checkout
+returned the same match and verified its post-run input pins there.

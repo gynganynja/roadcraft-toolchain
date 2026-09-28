@@ -800,7 +800,9 @@ matched 400/400 paths with no missing paths or changed matrices and a maximum
 matrix element error of `2.269e-6`. The edits still use the base USF as their
 target; each variant USF is independently parsed for the final comparison.
 This remains static evidence without a USF export or variant payload parity.
-See `D11_VARIANT_IN_MEMORY_RECONSTRUCTION_20260929.md`.
+The variant-specific no-save check is now available as a maintained, pinned
+command in both source trees. See
+`D11_VARIANT_IN_MEMORY_RECONSTRUCTION_20260929.md`.
 
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
