@@ -32,15 +32,17 @@ visually accepted and campaign accepted are different states.
 
 ## Current evidence
 
-At `589dcc9b2a20c30bf9e01e69792f1ab988835931`, private `main` and
-[Windows CI #44](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36411238936)
-passed 342 synthetic tests (one hosted skip) and all three Painter write-gate
-tests. The Steam mirror and dedicated checkout each passed 342 tests with four
-machine-specific skips. The native pre-trigger guard, no-write `c0de2027`
-output contract, live RGBA discriminator, scratch-only cache guard and two
-guarded in-memory color readbacks are offline evidence only; the accepted PAK
-remains installed, and no native capture or Blender export was performed in
-this checkpoint.
+At `8a10c56d8f22516dbcfef57bef7eba24f5af4ea3`, private `main` and
+[Windows CI #48](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36415762720)
+passed 355 synthetic tests (one hosted skip) and all three Painter write-gate
+tests. The dedicated checkout passed 355 tests with four machine-specific
+skips. The Steam mirror's newer read-only blade-geometry diagnostic passed
+359 local tests with four skips and has two pinned Blender readbacks; its code
+and receipts await a separate hosted checkpoint. The native pre-trigger guard,
+`c0de2027` no-write contract, candidate-only receipt-link scaffold, guarded
+color readbacks and blade readbacks are offline evidence only. The accepted
+PAK remains installed; no native capture or Blender export ran in this
+checkpoint.
 
 | Area | State at this snapshot | Evidence and limit |
 |---|---|---|
@@ -80,7 +82,8 @@ this checkpoint.
 | D11 scratch RGBA cache guard | Opt-in implementation prepared; no export run | The scratch authoring wrapper now has a pinned v2/Blender 5.2-only option that passes an immutable RGBA snapshot to the original SDK packer for the export call, then restores the method and clears the process-local cache. The installed SDK and default scratch command are unchanged. The host and helper attest the exact guard module, input pins and post-run state; the native-Blend export gate remains closed. Synthetic tests cover collision prevention and failure cleanup. A guarded scratch export would be a new exact invocation requiring review. See `D11_RGBA_CACHE_GUARD_IMPLEMENTATION_20260928.md`. |
 | D11 guarded v2 color readback | Two pinned no-save runs matched native colors; export still blocked | In two fresh Blender 5.2 processes, one immutable-key guard context spanned all 126 SDK source projections. Each run matched the retained native packed colors on 126/126 rows and all 59,238 `Ripper_vis_LOD1` values, with 194,121 guarded pack calls; both restored the SDK packer and hook and retained input hashes. Distinct UTC intervals are in the manifest; the compact receipts have identical bytes because they omit invocation time. This verifies in-memory color projection only, not USF writer, repaired parity or native behavior. See `D11_V2_RGBA_GUARDED_READBACK_20260928.md`. |
 | D11 blade collision relocation | Static hierarchy/transform target identified; export remains blocked | A pinned, no-save readback covered all 60 `cdt_blade_*` leaves under `BoneBlade_cdt`. Both Blender versions returned the same 60-row digest: source, retained native USF and repaired USF world matrices agree within `1e-5`, while all 60 native/repaired USF local matrices differ beneath the inserted `BoneBladeRoll_cdt` parent. Mesh-count maps and evaluated source/native face counts match. The differing paths are not marked equivalent. That static diagnostic did not compare payloads; binds, animation and native behavior remain untested. See `D11_BLADE_COLLISION_RELOCATION_READBACK_20260928.md`. |
-| D11 blade mesh payload | Source/native six fields match 60/60; repaired positions/normals differ | Two pinned, no-save Blender versions produced the same 60-row digest. Repaired positions matched only 2/60 (`cdt_blade_49` and `50`) and repaired normals 0/60; face indices, UVs, packed colors and skin indices/weights matched 60/60. These ordered fields do not prove material/bone identity, tangents, animation or collision behavior. No export or accepted-asset change occurred; see `D11_BLADE_PAYLOAD_READBACK_20260928.md`. |
+| D11 blade mesh payload | Source/native six fields match 60/60; repaired exact positions/normals differ | Two pinned, no-save Blender versions produced the same 60-row digest. Repaired exact positions matched only 2/60 (`cdt_blade_49` and `50`) and exact normals 0/60; face indices, UVs, packed colors and skin indices/weights matched 60/60. The separate numeric diagnostic below bounds the position drift and isolates real stored-normal outliers. These ordered fields do not prove material/bone identity, tangents, animation or collision behavior. No export or accepted-asset change occurred; see `D11_BLADE_PAYLOAD_READBACK_20260928.md`. |
+| D11 blade geometry and normals | Positions within tolerance; stored-normal gap remains | Two pinned, no-export Blender processes parsed 60 retained native/repaired USF leaves and 6,486 triangle corners. World matrices were identical and maximum local/world position difference was `4.815e-7` (all 60 rows within `1e-5`), explaining the 58 exact position-digest mismatches as low-bit drift. Twenty-four stored normals across five leaves differed by over 0.1°, maximum 13.24°; a 0.229 pairwise-dot change rules out a single rigid rotation for the worst leaf. Collision behavior and the cause of the normal change remain unproved. See `D11_BLADE_GEOMETRY_READBACK_20260928.md`. |
 | Painter integration | Capabilities verified; scratch project deferred; write gate added | Real stdio probe listed 79 tools, connected to Painter 12.1.5/API 0.3.5 and called `get_capabilities` successfully while no project was open. Baking presets, auto-rebake control and skew-painting control are unavailable. The server now leaves 34 inspection/planning tools enabled and denies 45 authoring/output tools unless its local process has `SP_MCP_ALLOW_PROJECT_WRITES=1`; synthetic FastMCP dispatch tests cover all 45. The user intentionally ended the Painter session to avoid interference and chose to leave it closed; no `.spp` was created and no accepted asset changed. |
 | Storage | First exact batch complete; expansion dry run passed but deletion unapproved | `STORAGE_REVIEW.md`: 159 template copies removed, 6.30 GiB freed, retained originals verified. The separate 23,604-file / 5.93 GiB expansion remains untouched. Its 33 MB raw manifest is local and a verified 1.6 MB gzip copy is versioned. A full sandboxed dry run verified every candidate and counterpart but reported `applyReady: false` because CIM process inspection was denied. A distinct elevated full dry run reported `applyReady: true` with zero active processes at its inspection time, 21 retained packages, 166 retained source files and zero deletions. Any future apply needs specific authorization and a fresh pinned preflight. Git temporary pack remains separate. |
 
@@ -698,6 +701,22 @@ USF mesh-count maps and source/native evaluated face counts matched. This
 narrows the hierarchy and transform work; it does not establish node,
 geometry, bind, animation or game-view equivalence. No Blend save or USF
 export ran. See `D11_BLADE_COLLISION_RELOCATION_READBACK_20260928.md`.
+
+The subsequent source/native blade-payload readback matched six ordered fields
+on all 60 relocated leaves. Native/repaired exact positions differed on 58
+leaves and exact normals on all 60, while face indices, UVs, packed colors and
+skin indices/weights matched. A separate pinned, read-only native/repaired USF
+geometry comparison showed identical stored world matrices and maximum
+local/world position drift of `4.815e-7` over 6,486 corners. Every leaf was
+within the declared `1e-5` positional tolerance. Stored normals still differ:
+24 corners on five leaves exceed 0.1°, and the worst reaches 13.24°; their
+pairwise-dot invariant excludes a single rigid rotation as a full explanation.
+This narrows positional work but does not establish normal provenance,
+collision/physics behavior, binds, materials or native-view parity. The
+next repair decision should inspect the normal computation and thin triangles
+on a disposable copy before any native-Blend export. See
+`D11_BLADE_PAYLOAD_READBACK_20260928.md` and
+`D11_BLADE_GEOMETRY_READBACK_20260928.md`.
 
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.

@@ -1,0 +1,3108 @@
+{
+  "asset": "cat_d11t",
+  "blendSaved": false,
+  "blenderSha256": "e27fbfea8564aa645d4463cb0949695fd85562b9de6df9561b06859a1074adf7",
+  "blenderVersion": "5.2.0 LTS",
+  "equivalenceVerified": false,
+  "hostSha256": "e0c14b70a6cd5425016d0184dc3a689d4cd48ab0b2d11c56616a13d210dfa055",
+  "inventorySha256": "03d3eae96720612ae3b1457a27cc797f8bc6ebb694b230f253bcadbe9d13b50d",
+  "nativeBlendExportApproved": false,
+  "nativeUsfSha256": "80c856b07b3ae1447f2748b5f6f8ec13c688c2594f3ebfaeada9e0d11da21370",
+  "nativeUsfUnchanged": true,
+  "repairedUsfSha256": "49bfc77c1172a0e324934974d5612a13d121c3cee78ae7ca454468b61649e170",
+  "rows": [
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 66,
+      "leafName": "cdt_blade_0",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.228781230931777e-07,
+        "rms": 9.203987238751218e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_0",
+      "normals": {
+        "maxAngleDegrees": 0.0021850728191268715,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 3.860528939450547e-05,
+        "pairwiseDotNative": 0.13510612251902396,
+        "pairwiseDotRepaired": 0.13506751722962945,
+        "pairwiseDotWitness": [
+          21,
+          36
+        ],
+        "worstCorner": 36,
+        "worstNative": [
+          0.14209166169166565,
+          -0.4699987471103668,
+          0.8711550831794739
+        ],
+        "worstRepaired": [
+          0.1420971006155014,
+          -0.4699651598930359,
+          0.871172308921814
+        ],
+        "worstTriangleNativeArea": 0.0010211746943826357,
+        "worstTriangleRepairedArea": 0.0010211889833238988
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.228781230931777e-07,
+        "rms": 9.203987238751218e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.3439132213307857e-07,
+        "rms": 7.545964214455347e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_0",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.228781230931777e-07,
+        "rms": 9.203987238751218e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 78,
+      "leafName": "cdt_blade_1",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 9.956410288520543e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_1",
+      "normals": {
+        "maxAngleDegrees": 0.0003333655385240019,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 3.875997811597642e-06,
+        "pairwiseDotNative": 0.7036521529713461,
+        "pairwiseDotRepaired": 0.7036560289691577,
+        "pairwiseDotWitness": [
+          6,
+          63
+        ],
+        "worstCorner": 9,
+        "worstNative": [
+          -0.011398587375879288,
+          -0.9390189051628113,
+          -0.34367644786834717
+        ],
+        "worstRepaired": [
+          -0.011398536153137684,
+          -0.9390209317207336,
+          -0.3436709940433502
+        ],
+        "worstTriangleNativeArea": 0.0023710762472697417,
+        "worstTriangleRepairedArea": 0.002371068648835511
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 9.956410288520543e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.6358215266520153e-07,
+        "rms": 8.654678724289331e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_1",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 9.956410288520543e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 72,
+      "leafName": "cdt_blade_2",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 2.3964506127956855e-07,
+        "rms": 1.1911156407874216e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_2",
+      "normals": {
+        "maxAngleDegrees": 0.0028929443165143735,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 4.701552505882722e-05,
+        "pairwiseDotNative": -0.08621177113372805,
+        "pairwiseDotRepaired": -0.08616475560866922,
+        "pairwiseDotWitness": [
+          18,
+          33
+        ],
+        "worstCorner": 18,
+        "worstNative": [
+          -0.9903591275215149,
+          0.08621163666248322,
+          0.10842696577310562
+        ],
+        "worstRepaired": [
+          -0.9903651475906372,
+          0.08616475760936737,
+          0.10840920358896255
+        ],
+        "worstTriangleNativeArea": 0.0017816690846329134,
+        "worstTriangleRepairedArea": 0.00178165926099546
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 2.3964506127956855e-07,
+        "rms": 1.1911156407874216e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.5958368882126077e-07,
+        "rms": 8.485686476145614e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_2",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 2.3964506127956855e-07,
+        "rms": 1.1911156407874216e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 96,
+      "leafName": "cdt_blade_3",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 2.9802322387695312e-08,
+        "rms": 1.7215040773428582e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_3",
+      "normals": {
+        "maxAngleDegrees": 0.0006941153490216094,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 1.2114604031942275e-05,
+        "pairwiseDotNative": -1.2114604031942275e-05,
+        "pairwiseDotRepaired": 0.0,
+        "pairwiseDotWitness": [
+          39,
+          87
+        ],
+        "worstCorner": 87,
+        "worstNative": [
+          1.0,
+          1.2114604032831267e-05,
+          0.0
+        ],
+        "worstRepaired": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 3.843864457062085e-05,
+        "worstTriangleRepairedArea": 3.843793377155888e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 2.9802322387695312e-08,
+        "rms": 1.7215040773428582e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 3.7645075428954403e-08,
+        "rms": 1.6255989660433667e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_3",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 2.9802322387695312e-08,
+        "rms": 1.7215040773428582e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 90,
+      "leafName": "cdt_blade_4",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 2.4027400458748785e-07,
+        "rms": 1.8364134149448994e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_4",
+      "normals": {
+        "maxAngleDegrees": 0.00041262625056154767,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 7.197412318180052e-06,
+        "pairwiseDotNative": 0.02818080153199107,
+        "pairwiseDotRepaired": 0.02817360411967289,
+        "pairwiseDotWitness": [
+          6,
+          36
+        ],
+        "worstCorner": 6,
+        "worstNative": [
+          -0.9999945163726807,
+          0.0009893071837723255,
+          -0.0031519236508756876
+        ],
+        "worstRepaired": [
+          -0.9999945759773254,
+          0.0009888650383800268,
+          -0.0031447357032448053
+        ],
+        "worstTriangleNativeArea": 0.010362803884259237,
+        "worstTriangleRepairedArea": 0.010362803884259237
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 2.4027400458748785e-07,
+        "rms": 1.8364134149448994e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 3.499455320144512e-07,
+        "rms": 1.3897513308192645e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_4",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 2.4027400458748785e-07,
+        "rms": 1.8364134149448994e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 114,
+      "leafName": "cdt_blade_5",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.1093888271197134e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_5",
+      "normals": {
+        "maxAngleDegrees": 0.045892244513071626,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0010363889854252406,
+        "pairwiseDotNative": 0.4661062070861547,
+        "pairwiseDotRepaired": 0.46714259607157993,
+        "pairwiseDotWitness": [
+          81,
+          87
+        ],
+        "worstCorner": 81,
+        "worstNative": [
+          0.17130763828754425,
+          -0.29218631982803345,
+          0.9408935904502869
+        ],
+        "worstRepaired": [
+          0.1714133471250534,
+          -0.29293882846832275,
+          0.940640389919281
+        ],
+        "worstTriangleNativeArea": 2.222378769835159e-05,
+        "worstTriangleRepairedArea": 2.222378769835159e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.1093888271197134e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 8.794908775757846e-08,
+        "rms": 4.098212798867101e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_5",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.1093888271197134e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 114,
+      "leafName": "cdt_blade_6",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.852169131530398e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_6",
+      "normals": {
+        "maxAngleDegrees": 1.4405332715923769,
+        "over0p1Degrees": 9,
+        "over1Degree": 3,
+        "pairwiseDotMaxDifference": 0.02513939984798533,
+        "pairwiseDotNative": 0.02513939984798533,
+        "pairwiseDotRepaired": 0.0,
+        "pairwiseDotWitness": [
+          60,
+          111
+        ],
+        "worstCorner": 111,
+        "worstNative": [
+          -0.9996839165687561,
+          0.025139398872852325,
+          0.0
+        ],
+        "worstRepaired": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 2.962371468129277e-07,
+        "worstTriangleRepairedArea": 2.9613573104825264e-07
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.852169131530398e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 8.80535069416692e-08,
+        "rms": 4.462355016654566e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_6",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.852169131530398e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 138,
+      "leafName": "cdt_blade_7",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 9.424321830774485e-08,
+        "rms": 5.073865731707326e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_7",
+      "normals": {
+        "maxAngleDegrees": 0.00650821274033361,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.00010800022822793354,
+        "pairwiseDotNative": -0.31220731724388967,
+        "pairwiseDotRepaired": -0.3123153174721176,
+        "pairwiseDotWitness": [
+          9,
+          48
+        ],
+        "worstCorner": 48,
+        "worstNative": [
+          -0.0022694349754601717,
+          -0.7529267072677612,
+          -0.658100426197052
+        ],
+        "worstRepaired": [
+          -0.002269129501655698,
+          -0.7528519630432129,
+          -0.6581859588623047
+        ],
+        "worstTriangleNativeArea": 0.00047572524852206505,
+        "worstTriangleRepairedArea": 0.0004757292442687661
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 9.424321830774485e-08,
+        "rms": 5.073865731707326e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 8.210548279328252e-08,
+        "rms": 4.5331087227049056e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_7",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 9.424321830774485e-08,
+        "rms": 5.073865731707326e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 42,
+      "leafName": "cdt_blade_8",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 9.424321830774485e-08,
+        "rms": 6.84886288302028e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_8",
+      "normals": {
+        "maxAngleDegrees": 0.04049797115706857,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0007068228782957388,
+        "pairwiseDotNative": 0.0007068228783079538,
+        "pairwiseDotRepaired": 1.2214989287520801e-14,
+        "pairwiseDotWitness": [
+          12,
+          21
+        ],
+        "worstCorner": 12,
+        "worstNative": [
+          0.9999997019767761,
+          -0.000706822844222188,
+          0.0
+        ],
+        "worstRepaired": [
+          1.0,
+          -1.2214989287520801e-14,
+          -7.744825424428961e-15
+        ],
+        "worstTriangleNativeArea": 2.108171739578779e-05,
+        "worstTriangleRepairedArea": 2.1082165994945612e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 9.424321830774485e-08,
+        "rms": 6.84886288302028e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 5.2790800822197467e-08,
+        "rms": 4.7382549485302227e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_8",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 9.424321830774485e-08,
+        "rms": 6.84886288302028e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 72,
+      "leafName": "cdt_blade_9",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 9.8843121241194e-08,
+        "rms": 6.063419392980115e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_9",
+      "normals": {
+        "maxAngleDegrees": 0.0036560475681537146,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 5.957416362384338e-05,
+        "pairwiseDotNative": 0.3504483757265015,
+        "pairwiseDotRepaired": 0.35050794989012535,
+        "pairwiseDotWitness": [
+          9,
+          27
+        ],
+        "worstCorner": 27,
+        "worstNative": [
+          0.0,
+          -1.0,
+          6.381006824085489e-05
+        ],
+        "worstRepaired": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.0009340944485636271,
+        "worstTriangleRepairedArea": 0.0009340734111584759
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 9.8843121241194e-08,
+        "rms": 6.063419392980115e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 6.394091017717279e-08,
+        "rms": 4.771386671611744e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_9",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 9.8843121241194e-08,
+        "rms": 6.063419392980115e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 72,
+      "leafName": "cdt_blade_10",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 9.424321830774485e-08,
+        "rms": 5.466580565535808e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_10",
+      "normals": {
+        "maxAngleDegrees": 0.0010986839500727338,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 1.9175650991971536e-05,
+        "pairwiseDotNative": 1.9175651007407523e-05,
+        "pairwiseDotRepaired": 1.5435987923517573e-14,
+        "pairwiseDotWitness": [
+          18,
+          33
+        ],
+        "worstCorner": 18,
+        "worstNative": [
+          0.9999999403953552,
+          1.9175649867975153e-05,
+          0.0
+        ],
+        "worstRepaired": [
+          1.0,
+          1.5435987923517573e-14,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.0003885437089401478,
+        "worstTriangleRepairedArea": 0.0003885437089401478
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 9.424321830774485e-08,
+        "rms": 5.466580565535808e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 6.605510307718117e-08,
+        "rms": 4.492323067358801e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_10",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 9.424321830774485e-08,
+        "rms": 5.466580565535808e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 108,
+      "leafName": "cdt_blade_11",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 9.453726962543667e-08,
+        "rms": 6.06687540824518e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_11",
+      "normals": {
+        "maxAngleDegrees": 0.002589095575098736,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 5.538710193974186e-05,
+        "pairwiseDotNative": -0.019079566872997843,
+        "pairwiseDotRepaired": -0.0190241797710581,
+        "pairwiseDotWitness": [
+          30,
+          105
+        ],
+        "worstCorner": 105,
+        "worstNative": [
+          0.0,
+          1.0,
+          4.518824425758794e-05
+        ],
+        "worstRepaired": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.00010304875814526326,
+        "worstTriangleRepairedArea": 0.0001030489040818594
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 9.453726962543667e-08,
+        "rms": 6.06687540824518e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.1672277260704191e-07,
+        "rms": 5.39607150945448e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_11",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 9.453726962543667e-08,
+        "rms": 6.06687540824518e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 162,
+      "leafName": "cdt_blade_12",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 6.21378223260085e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_12",
+      "normals": {
+        "maxAngleDegrees": 0.0060894168664967965,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.000140238676657356,
+        "pairwiseDotNative": -0.5641904349095913,
+        "pairwiseDotRepaired": -0.564050196232934,
+        "pairwiseDotWitness": [
+          18,
+          87
+        ],
+        "worstCorner": 87,
+        "worstNative": [
+          -0.03933640196919441,
+          0.5421901941299438,
+          0.8393344283103943
+        ],
+        "worstRepaired": [
+          -0.03934401646256447,
+          0.5422791242599487,
+          0.8392767310142517
+        ],
+        "worstTriangleNativeArea": 0.0003775180701936134,
+        "worstTriangleRepairedArea": 0.00037751835254299564
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 6.21378223260085e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.1743634611299502e-07,
+        "rms": 5.4554867133450764e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_12",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 6.21378223260085e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 120,
+      "leafName": "cdt_blade_13",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 2.4027400458748785e-07,
+        "rms": 6.80311857452604e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_13",
+      "normals": {
+        "maxAngleDegrees": 0.02668443143131634,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.00040817877647275624,
+        "pairwiseDotNative": -0.483229755563505,
+        "pairwiseDotRepaired": -0.48282157678703225,
+        "pairwiseDotWitness": [
+          24,
+          99
+        ],
+        "worstCorner": 99,
+        "worstNative": [
+          0.0,
+          0.9999998807907104,
+          -0.0004657311656046659
+        ],
+        "worstRepaired": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 3.1995366036596806e-05,
+        "worstTriangleRepairedArea": 3.198095547318758e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 2.4027400458748785e-07,
+        "rms": 6.80311857452604e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 2.2536454761487088e-07,
+        "rms": 6.408969654824873e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_13",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 2.4027400458748785e-07,
+        "rms": 6.80311857452604e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 108,
+      "leafName": "cdt_blade_14",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 2.4027400458748785e-07,
+        "rms": 5.905826266396487e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_14",
+      "normals": {
+        "maxAngleDegrees": 0.06372036151388327,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0009395944393049138,
+        "pairwiseDotNative": 0.5347748526547903,
+        "pairwiseDotRepaired": 0.5357144470940952,
+        "pairwiseDotWitness": [
+          30,
+          105
+        ],
+        "worstCorner": 105,
+        "worstNative": [
+          0.0,
+          -0.9999992847442627,
+          0.0011121297720819712
+        ],
+        "worstRepaired": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 3.14033067425612e-05,
+        "worstTriangleRepairedArea": 3.139567890997341e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 2.4027400458748785e-07,
+        "rms": 5.905826266396487e-08
+      },
+      "properRigidFit": {
+        "determinant": 0.9999999999999999,
+        "max": 2.218274907056112e-07,
+        "rms": 5.6534356070956244e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_14",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 2.4027400458748785e-07,
+        "rms": 5.905826266396487e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 96,
+      "leafName": "cdt_blade_15",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 2.9802322387695312e-08,
+        "rms": 1.708835232322773e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_15",
+      "normals": {
+        "maxAngleDegrees": 0.006430660569949214,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.00011252720334940791,
+        "pairwiseDotNative": -0.015957390269028655,
+        "pairwiseDotRepaired": -0.016069917472378063,
+        "pairwiseDotWitness": [
+          54,
+          63
+        ],
+        "worstCorner": 63,
+        "worstNative": [
+          0.0,
+          -1.0,
+          -0.00011223620094824582
+        ],
+        "worstRepaired": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 6.638311767659388e-05,
+        "worstTriangleRepairedArea": 6.637003586895673e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 2.9802322387695312e-08,
+        "rms": 1.708835232322773e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 3.096943244389141e-08,
+        "rms": 1.6129989835070982e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_15",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 2.9802322387695312e-08,
+        "rms": 1.708835232322773e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 84,
+      "leafName": "cdt_blade_16",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 3.6932212056639946e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_16",
+      "normals": {
+        "maxAngleDegrees": 0.000590133630945122,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 1.0936997156679729e-05,
+        "pairwiseDotNative": 0.13073517296724882,
+        "pairwiseDotRepaired": 0.1307461099644055,
+        "pairwiseDotWitness": [
+          0,
+          78
+        ],
+        "worstCorner": 78,
+        "worstNative": [
+          0.0,
+          -1.0,
+          -1.0299783752998337e-05
+        ],
+        "worstRepaired": [
+          -5.261520514159948e-18,
+          -1.0,
+          -6.107641603976749e-15
+        ],
+        "worstTriangleNativeArea": 0.00027126460067705693,
+        "worstTriangleRepairedArea": 0.00027123757579872176
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 3.6932212056639946e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.030852566535902e-07,
+        "rms": 3.4535268210627015e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_16",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 3.6932212056639946e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 120,
+      "leafName": "cdt_blade_17",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.3698782618687095e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_17",
+      "normals": {
+        "maxAngleDegrees": 0.019359134415180924,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.00033788062950161255,
+        "pairwiseDotNative": 0.00033788062950161255,
+        "pairwiseDotRepaired": 0.0,
+        "pairwiseDotWitness": [
+          63,
+          84
+        ],
+        "worstCorner": 63,
+        "worstNative": [
+          0.9999999403953552,
+          0.00033788062864914536,
+          0.0
+        ],
+        "worstRepaired": [
+          1.0,
+          -0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.0003528181984755463,
+        "worstTriangleRepairedArea": 0.0003528182480039277
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.3698782618687095e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 7.681562912473413e-08,
+        "rms": 4.0092498088190264e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_17",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.3698782618687095e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 120,
+      "leafName": "cdt_blade_18",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 8.746105784672015e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_18",
+      "normals": {
+        "maxAngleDegrees": 0.019359134415180924,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.00033788062950161255,
+        "pairwiseDotNative": -0.00033788062950161255,
+        "pairwiseDotRepaired": 0.0,
+        "pairwiseDotWitness": [
+          60,
+          102
+        ],
+        "worstCorner": 102,
+        "worstNative": [
+          -0.9999999403953552,
+          -0.00033788062864914536,
+          0.0
+        ],
+        "worstRepaired": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.0003528181984755463,
+        "worstTriangleRepairedArea": 0.0003528182480039277
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 8.746105784672015e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 4.536241091982984e-07,
+        "rms": 8.376165811535688e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_18",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 8.746105784672015e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 108,
+      "leafName": "cdt_blade_19",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.0347222075928378e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_19",
+      "normals": {
+        "maxAngleDegrees": 0.0033877957755511444,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 5.9128193139580745e-05,
+        "pairwiseDotNative": 5.9128193139580745e-05,
+        "pairwiseDotRepaired": 0.0,
+        "pairwiseDotWitness": [
+          66,
+          105
+        ],
+        "worstCorner": 105,
+        "worstNative": [
+          0.0,
+          1.0,
+          5.912819324294105e-05
+        ],
+        "worstRepaired": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.001008058513249921,
+        "worstTriangleRepairedArea": 0.0010080367653531042
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.0347222075928378e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 4.5472284111082645e-07,
+        "rms": 1.0093253224721217e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_19",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.0347222075928378e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 42,
+      "leafName": "cdt_blade_20",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 5.960464477539063e-08,
+        "rms": 2.6491877148521037e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_20",
+      "normals": {
+        "maxAngleDegrees": 0.000413016476020675,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 7.045900474447717e-06,
+        "pairwiseDotNative": 7.045900474447717e-06,
+        "pairwiseDotRepaired": 0.0,
+        "pairwiseDotWitness": [
+          30,
+          39
+        ],
+        "worstCorner": 15,
+        "worstNative": [
+          0.033872704952955246,
+          -0.9156467914581299,
+          -0.40055400133132935
+        ],
+        "worstRepaired": [
+          0.03387277573347092,
+          -0.9156439304351807,
+          -0.4005606174468994
+        ],
+        "worstTriangleNativeArea": 0.0006176428492477704,
+        "worstTriangleRepairedArea": 0.0006176416324567645
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 5.960464477539063e-08,
+        "rms": 2.6491877148521037e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 5.5314576907813596e-08,
+        "rms": 2.555826508796576e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_20",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 5.960464477539063e-08,
+        "rms": 2.6491877148521037e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 72,
+      "leafName": "cdt_blade_21",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 3.332000937312528e-08,
+        "rms": 2.0207664137726522e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_21",
+      "normals": {
+        "maxAngleDegrees": 0.0033877957755511444,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 5.4792958338711895e-05,
+        "pairwiseDotNative": 0.35284923605524604,
+        "pairwiseDotRepaired": 0.35279444309690733,
+        "pairwiseDotWitness": [
+          9,
+          39
+        ],
+        "worstCorner": 39,
+        "worstNative": [
+          0.0,
+          -1.0,
+          -5.912819324294105e-05
+        ],
+        "worstRepaired": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.001008058513249921,
+        "worstTriangleRepairedArea": 0.0010080367653531042
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 3.332000937312528e-08,
+        "rms": 2.0207664137726522e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 3.205974795655289e-08,
+        "rms": 1.9612840596681014e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_21",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 3.332000937312528e-08,
+        "rms": 2.0207664137726522e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 114,
+      "leafName": "cdt_blade_22",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 9.055422853013304e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_22",
+      "normals": {
+        "maxAngleDegrees": 0.0008935988332219336,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 1.559624708536835e-05,
+        "pairwiseDotNative": 1.559624708536835e-05,
+        "pairwiseDotRepaired": 0.0,
+        "pairwiseDotWitness": [
+          39,
+          69
+        ],
+        "worstCorner": 39,
+        "worstNative": [
+          -0.9999999403953552,
+          -1.5596246157656424e-05,
+          0.0
+        ],
+        "worstRepaired": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.0014555360230921188,
+        "worstTriangleRepairedArea": 0.0014555360230921188
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 9.055422853013304e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 4.5832624632320706e-07,
+        "rms": 8.869229096478362e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_22",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 9.055422853013304e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 144,
+      "leafName": "cdt_blade_23",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 8.953622408638575e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_23",
+      "normals": {
+        "maxAngleDegrees": 0.0004837175883550501,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 8.126000627078911e-06,
+        "pairwiseDotNative": -0.24960961714888344,
+        "pairwiseDotRepaired": -0.24961774314951052,
+        "pairwiseDotWitness": [
+          72,
+          90
+        ],
+        "worstCorner": 72,
+        "worstNative": [
+          0.08293360471725464,
+          0.24960961937904358,
+          -0.9647886157035828
+        ],
+        "worstRepaired": [
+          0.0829325020313263,
+          0.24961774051189423,
+          -0.9647865891456604
+        ],
+        "worstTriangleNativeArea": 0.001676558221813783,
+        "worstTriangleRepairedArea": 0.0016765582603725541
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 8.953622408638575e-08
+      },
+      "properRigidFit": {
+        "determinant": 0.9999999999999999,
+        "max": 4.5398724082648774e-07,
+        "rms": 8.733799421776013e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_23",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 8.953622408638575e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 72,
+      "leafName": "cdt_blade_24",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.7288629496054961e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_24",
+      "normals": {
+        "maxAngleDegrees": 0.0022348999065002198,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 3.900636144623884e-05,
+        "pairwiseDotNative": 3.900636144623884e-05,
+        "pairwiseDotRepaired": 0.0,
+        "pairwiseDotWitness": [
+          48,
+          57
+        ],
+        "worstCorner": 48,
+        "worstNative": [
+          -1.0,
+          3.9006361475912854e-05,
+          0.0
+        ],
+        "worstRepaired": [
+          -1.0,
+          0.0,
+          -0.0
+        ],
+        "worstTriangleNativeArea": 0.0015280775761183918,
+        "worstTriangleRepairedArea": 0.00152808010881067
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.7288629496054961e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 5.051244911769712e-07,
+        "rms": 1.6977986645018903e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_24",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.7288629496054961e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 78,
+      "leafName": "cdt_blade_25",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 2.029066936728043e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_25",
+      "normals": {
+        "maxAngleDegrees": 0.005725155767601512,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 5.9261305662139385e-05,
+        "pairwiseDotNative": -0.8252500273712426,
+        "pairwiseDotRepaired": -0.8253092886769048,
+        "pairwiseDotWitness": [
+          3,
+          66
+        ],
+        "worstCorner": 3,
+        "worstNative": [
+          0.015587244182825089,
+          -0.825252890586853,
+          -0.5645482540130615
+        ],
+        "worstRepaired": [
+          0.015587595291435719,
+          -0.8253092765808105,
+          -0.5644657611846924
+        ],
+        "worstTriangleNativeArea": 0.00021104336072918083,
+        "worstTriangleRepairedArea": 0.00021104683183188237
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 2.029066936728043e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 4.7471910341440863e-07,
+        "rms": 2.0101268116397828e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_25",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 2.029066936728043e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 72,
+      "leafName": "cdt_blade_26",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.4944624203738153e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_26",
+      "normals": {
+        "maxAngleDegrees": 0.0013451904870230773,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 2.2527155317753067e-05,
+        "pairwiseDotNative": -0.148072432521942,
+        "pairwiseDotRepaired": -0.14809495967725975,
+        "pairwiseDotWitness": [
+          6,
+          21
+        ],
+        "worstCorner": 21,
+        "worstNative": [
+          0.9852010607719421,
+          0.10833842307329178,
+          0.13282182812690735
+        ],
+        "worstRepaired": [
+          0.9851972460746765,
+          0.1083582416176796,
+          0.1328338235616684
+        ],
+        "worstTriangleNativeArea": 0.0040712677233010345,
+        "worstTriangleRepairedArea": 0.0040712674783648945
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.4944624203738153e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 4.098185204459809e-07,
+        "rms": 1.3883219844168804e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_26",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.4944624203738153e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 108,
+      "leafName": "cdt_blade_27",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.0327062958186561e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_27",
+      "normals": {
+        "maxAngleDegrees": 0.0013893219064234435,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 2.4219366899107253e-05,
+        "pairwiseDotNative": 0.048778614640637145,
+        "pairwiseDotRepaired": 0.04875439527373804,
+        "pairwiseDotWitness": [
+          39,
+          45
+        ],
+        "worstCorner": 39,
+        "worstNative": [
+          0.02503599412739277,
+          -0.04877861589193344,
+          -0.9984958171844482
+        ],
+        "worstRepaired": [
+          0.025035984814167023,
+          -0.04875439405441284,
+          -0.998496949672699
+        ],
+        "worstTriangleNativeArea": 0.0001512158607781616,
+        "worstTriangleRepairedArea": 0.0001512158607781616
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.0327062958186561e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 4.4800604908845577e-07,
+        "rms": 1.0002220253643769e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_27",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 1.0327062958186561e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 90,
+      "leafName": "cdt_blade_28",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 8.75808627442169e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_28",
+      "normals": {
+        "maxAngleDegrees": 0.0007760783659564875,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 1.363650669830574e-05,
+        "pairwiseDotNative": -0.09409494067985681,
+        "pairwiseDotRepaired": -0.09410857718655512,
+        "pairwiseDotWitness": [
+          9,
+          42
+        ],
+        "worstCorner": 9,
+        "worstNative": [
+          0.991958498954773,
+          -0.028526639565825462,
+          0.12330730259418488
+        ],
+        "worstRepaired": [
+          0.9919567704200745,
+          -0.02853177860379219,
+          0.12331971526145935
+        ],
+        "worstTriangleNativeArea": 0.013196883237020052,
+        "worstTriangleRepairedArea": 0.013196900019903982
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 8.75808627442169e-08
+      },
+      "properRigidFit": {
+        "determinant": 0.9999999999999999,
+        "max": 4.5236633270438233e-07,
+        "rms": 8.515563682929638e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_28",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.770699320310986e-07,
+        "rms": 8.75808627442169e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 132,
+      "leafName": "cdt_blade_29",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 8.186397189301864e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_29",
+      "normals": {
+        "maxAngleDegrees": 0.0013142435886079158,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 2.4907252058503637e-05,
+        "pairwiseDotNative": 0.4577374260676195,
+        "pairwiseDotRepaired": 0.457712518815561,
+        "pairwiseDotWitness": [
+          72,
+          78
+        ],
+        "worstCorner": 78,
+        "worstNative": [
+          0.1307598352432251,
+          -0.9775084257125854,
+          0.1654662936925888
+        ],
+        "worstRepaired": [
+          0.13075581192970276,
+          -0.9775052070617676,
+          0.16548864543437958
+        ],
+        "worstTriangleNativeArea": 0.0003881863946916159,
+        "worstTriangleRepairedArea": 0.00038818594914295193
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 8.186397189301864e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.2514827196335819e-07,
+        "rms": 7.092179743058894e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_29",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 8.186397189301864e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 84,
+      "leafName": "cdt_blade_30",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 1.0179431007265647e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_30",
+      "normals": {
+        "maxAngleDegrees": 0.0028567990858779794,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 4.608090053237479e-05,
+        "pairwiseDotNative": 0.3840161917093264,
+        "pairwiseDotRepaired": 0.38406227260985876,
+        "pairwiseDotWitness": [
+          15,
+          33
+        ],
+        "worstCorner": 15,
+        "worstNative": [
+          -0.16937203705310822,
+          -0.5123526453971863,
+          -0.8419072031974792
+        ],
+        "worstRepaired": [
+          -0.16936221718788147,
+          -0.5123118162155151,
+          -0.841934084892273
+        ],
+        "worstTriangleNativeArea": 0.0005836890469218765,
+        "worstTriangleRepairedArea": 0.0005836921331319447
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 1.0179431007265647e-07
+      },
+      "properRigidFit": {
+        "determinant": 0.9999999999999999,
+        "max": 1.165890366713735e-07,
+        "rms": 7.645512547442032e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_30",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 1.0179431007265647e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 138,
+      "leafName": "cdt_blade_31",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.26578491339653e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_31",
+      "normals": {
+        "maxAngleDegrees": 0.10708247288115749,
+        "over0p1Degrees": 3,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0018932677435344325,
+        "pairwiseDotNative": 0.10984752122751246,
+        "pairwiseDotRepaired": 0.10795425348397802,
+        "pairwiseDotWitness": [
+          54,
+          69
+        ],
+        "worstCorner": 69,
+        "worstNative": [
+          -0.9937306642532349,
+          0.022584788501262665,
+          0.10949589312076569
+        ],
+        "worstRepaired": [
+          -0.9935941696166992,
+          0.024225782603025436,
+          0.1103798896074295
+        ],
+        "worstTriangleNativeArea": 4.618027661204015e-06,
+        "worstTriangleRepairedArea": 4.6223267994855025e-06
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.26578491339653e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.3331464190595607e-07,
+        "rms": 5.564749506005622e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_31",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.26578491339653e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 114,
+      "leafName": "cdt_blade_32",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.664001874625056e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_32",
+      "normals": {
+        "maxAngleDegrees": 0.024618983367041648,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0004464279940734617,
+        "pairwiseDotNative": 0.6863773893851561,
+        "pairwiseDotRepaired": 0.6868238173792296,
+        "pairwiseDotWitness": [
+          30,
+          60
+        ],
+        "worstCorner": 30,
+        "worstNative": [
+          -0.12660489976406097,
+          -0.7680370211601257,
+          -0.6277661919593811
+        ],
+        "worstRepaired": [
+          -0.12669065594673157,
+          -0.7682948112487793,
+          -0.6274333000183105
+        ],
+        "worstTriangleNativeArea": 5.035046839476548e-07,
+        "worstTriangleRepairedArea": 5.035046839476548e-07
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.664001874625056e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.2217258250063846e-07,
+        "rms": 5.842047270099713e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_32",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.664001874625056e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 96,
+      "leafName": "cdt_blade_33",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 5.803168537988227e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_33",
+      "normals": {
+        "maxAngleDegrees": 0.007578084260759763,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.00012829116478640934,
+        "pairwiseDotNative": 0.12911034233397747,
+        "pairwiseDotRepaired": 0.12898205116919106,
+        "pairwiseDotWitness": [
+          33,
+          60
+        ],
+        "worstCorner": 33,
+        "worstNative": [
+          0.04906897246837616,
+          -0.7295379042625427,
+          0.6821779012680054
+        ],
+        "worstRepaired": [
+          0.04905746132135391,
+          -0.7294483184814453,
+          0.6822745203971863
+        ],
+        "worstTriangleNativeArea": 4.0594074211929846e-05,
+        "worstTriangleRepairedArea": 4.059394079868481e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 5.803168537988227e-08
+      },
+      "properRigidFit": {
+        "determinant": 0.9999999999999999,
+        "max": 1.0704493905241831e-07,
+        "rms": 5.120142120218872e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_33",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 5.803168537988227e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 60,
+      "leafName": "cdt_blade_34",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 5.960464477539063e-08,
+        "rms": 2.176453898370926e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_34",
+      "normals": {
+        "maxAngleDegrees": 0.00041149409834226043,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 7.111799802774091e-06,
+        "pairwiseDotNative": -9.165736776220986e-06,
+        "pairwiseDotRepaired": -2.053936973446895e-06,
+        "pairwiseDotWitness": [
+          42,
+          48
+        ],
+        "worstCorner": 42,
+        "worstNative": [
+          1.0,
+          9.508731636742596e-06,
+          1.7938506289283396e-06
+        ],
+        "worstRepaired": [
+          1.0,
+          2.3267798496817704e-06,
+          1.793849264686287e-06
+        ],
+        "worstTriangleNativeArea": 0.0031342092383532627,
+        "worstTriangleRepairedArea": 0.0031342092383532627
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 5.960464477539063e-08,
+        "rms": 2.176453898370926e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 4.557595554751584e-08,
+        "rms": 1.8459610278753764e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_34",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 5.960464477539063e-08,
+        "rms": 2.176453898370926e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 48,
+      "leafName": "cdt_blade_35",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 4.125944705266791e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_35",
+      "normals": {
+        "maxAngleDegrees": 0.00027593140047138445,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 4.7690418118460145e-06,
+        "pairwiseDotNative": -4.7690418118460145e-06,
+        "pairwiseDotRepaired": 0.0,
+        "pairwiseDotWitness": [
+          6,
+          30
+        ],
+        "worstCorner": 30,
+        "worstNative": [
+          -1.0,
+          4.815934971702518e-06,
+          0.0
+        ],
+        "worstRepaired": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.0030941354873732507,
+        "worstTriangleRepairedArea": 0.003094138832281601
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 4.125944705266791e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 9.64181812034044e-08,
+        "rms": 3.812627599304336e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_35",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 4.125944705266791e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 48,
+      "leafName": "cdt_blade_36",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 4.125944705266791e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_36",
+      "normals": {
+        "maxAngleDegrees": 0.00046560497070635107,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 8.047229973341737e-06,
+        "pairwiseDotNative": 8.047229973341737e-06,
+        "pairwiseDotRepaired": 0.0,
+        "pairwiseDotWitness": [
+          6,
+          36
+        ],
+        "worstCorner": 36,
+        "worstNative": [
+          1.0,
+          -8.126356988213956e-06,
+          0.0
+        ],
+        "worstRepaired": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.01466945553164578,
+        "worstTriangleRepairedArea": 0.01466945553164578
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 4.125944705266791e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 9.64181812034044e-08,
+        "rms": 3.812627597820165e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_36",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 4.125944705266791e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 156,
+      "leafName": "cdt_blade_37",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.814712530792806e-07,
+        "rms": 1.6470973244077642e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_37",
+      "normals": {
+        "maxAngleDegrees": 13.240519621865587,
+        "over0p1Degrees": 6,
+        "over1Degree": 3,
+        "pairwiseDotMaxDifference": 0.22903932874220842,
+        "pairwiseDotNative": -0.22903932874220842,
+        "pairwiseDotRepaired": 0.0,
+        "pairwiseDotWitness": [
+          114,
+          138
+        ],
+        "worstCorner": 114,
+        "worstNative": [
+          0.9734172224998474,
+          -0.22903934121131897,
+          0.0
+        ],
+        "worstRepaired": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 6.477248604142005e-08,
+        "worstTriangleRepairedArea": 6.363359617012065e-08
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.814712530792806e-07,
+        "rms": 1.6470973244077642e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 4.341322021427141e-07,
+        "rms": 1.5220168334142635e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_37",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.814712530792806e-07,
+        "rms": 1.6470973244077642e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 72,
+      "leafName": "cdt_blade_38",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 1.4583188549581366e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_38",
+      "normals": {
+        "maxAngleDegrees": 0.023114595616649348,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0004206540960992322,
+        "pairwiseDotNative": 0.037402672542719846,
+        "pairwiseDotRepaired": 0.03782332663881908,
+        "pairwiseDotWitness": [
+          45,
+          69
+        ],
+        "worstCorner": 45,
+        "worstNative": [
+          0.9999998807907104,
+          0.00040342577267438173,
+          0.0
+        ],
+        "worstRepaired": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 9.003125077811092e-05,
+        "worstTriangleRepairedArea": 9.003125812867552e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 1.4583188549581366e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 4.2777267093826943e-07,
+        "rms": 1.367012035395976e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_38",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 1.4583188549581366e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 114,
+      "leafName": "cdt_blade_39",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 5.0858872101211435e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_39",
+      "normals": {
+        "maxAngleDegrees": 0.08889124155016938,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0017063041371805088,
+        "pairwiseDotNative": 0.1300555954358325,
+        "pairwiseDotRepaired": 0.131761899573013,
+        "pairwiseDotWitness": [
+          24,
+          36
+        ],
+        "worstCorner": 24,
+        "worstNative": [
+          -0.04822302609682083,
+          -0.7335281372070312,
+          0.677946150302887
+        ],
+        "worstRepaired": [
+          -0.04804932698607445,
+          -0.7345798015594482,
+          0.67681884765625
+        ],
+        "worstTriangleNativeArea": 7.253069790027066e-06,
+        "worstTriangleRepairedArea": 7.2585573332189e-06
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 5.0858872101211435e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.0694865876429533e-07,
+        "rms": 4.194842911688675e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_39",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 5.0858872101211435e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 96,
+      "leafName": "cdt_blade_40",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.814712530792806e-07,
+        "rms": 1.7696762741520822e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_40",
+      "normals": {
+        "maxAngleDegrees": 0.010025298389701964,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0001733172617928158,
+        "pairwiseDotNative": -0.16968814949696423,
+        "pairwiseDotRepaired": -0.16986146675875705,
+        "pairwiseDotWitness": [
+          6,
+          72
+        ],
+        "worstCorner": 6,
+        "worstNative": [
+          -0.9040855169296265,
+          0.16968904435634613,
+          -0.3922180235385895
+        ],
+        "worstRepaired": [
+          -0.9040591716766357,
+          0.16986146569252014,
+          -0.3922041356563568
+        ],
+        "worstTriangleNativeArea": 0.00040641645591686117,
+        "worstTriangleRepairedArea": 0.00040641906713336233
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.814712530792806e-07,
+        "rms": 1.7696762741520822e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 4.1039245249148945e-07,
+        "rms": 1.6229553231794333e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_40",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.814712530792806e-07,
+        "rms": 1.7696762741520822e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 84,
+      "leafName": "cdt_blade_41",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 5.3232622525553056e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_41",
+      "normals": {
+        "maxAngleDegrees": 0.640289023942308,
+        "over0p1Degrees": 3,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.01070745287358317,
+        "pairwiseDotNative": -0.11193464787643635,
+        "pairwiseDotRepaired": -0.10122719500285318,
+        "pairwiseDotWitness": [
+          33,
+          75
+        ],
+        "worstCorner": 33,
+        "worstNative": [
+          0.9794281721115112,
+          0.11193464696407318,
+          0.16790197789669037
+        ],
+        "worstRepaired": [
+          0.9800502061843872,
+          0.10122719407081604,
+          0.17103984951972961
+        ],
+        "worstTriangleNativeArea": 1.58975521384483e-06,
+        "worstTriangleRepairedArea": 1.5861605579202743e-06
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 5.3232622525553056e-08
+      },
+      "properRigidFit": {
+        "determinant": 0.9999999999999999,
+        "max": 5.8876595319684904e-08,
+        "rms": 3.736449326410151e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_41",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 5.3232622525553056e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 168,
+      "leafName": "cdt_blade_42",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 1.628449261095292e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_42",
+      "normals": {
+        "maxAngleDegrees": 0.0787722571436361,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.00119501832188737,
+        "pairwiseDotNative": 0.06731062825127895,
+        "pairwiseDotRepaired": 0.06850564657316632,
+        "pairwiseDotWitness": [
+          15,
+          102
+        ],
+        "worstCorner": 15,
+        "worstNative": [
+          -0.5578911900520325,
+          -0.6261082291603088,
+          -0.5447439551353455
+        ],
+        "worstRepaired": [
+          -0.558607280254364,
+          -0.6250419616699219,
+          -0.5452343225479126
+        ],
+        "worstTriangleNativeArea": 6.001272187581398e-05,
+        "worstTriangleRepairedArea": 6.001272187581398e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 1.628449261095292e-07
+      },
+      "properRigidFit": {
+        "determinant": 0.9999999999999999,
+        "max": 5.127114097321261e-07,
+        "rms": 1.59398682766044e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_42",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 1.628449261095292e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 78,
+      "leafName": "cdt_blade_43",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 2.114893715151496e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_43",
+      "normals": {
+        "maxAngleDegrees": 0.014742400672664174,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.00034028115946940773,
+        "pairwiseDotNative": -0.08161527317881861,
+        "pairwiseDotRepaired": -0.08127499201934921,
+        "pairwiseDotWitness": [
+          0,
+          6
+        ],
+        "worstCorner": 6,
+        "worstNative": [
+          -0.22911222279071808,
+          0.5038774609565735,
+          0.8328356146812439
+        ],
+        "worstRepaired": [
+          -0.22912338376045227,
+          0.5036561489105225,
+          0.8329663872718811
+        ],
+        "worstTriangleNativeArea": 0.0003254110559833586,
+        "worstTriangleRepairedArea": 0.0003254110559833586
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 2.114893715151496e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 5.505149650249308e-07,
+        "rms": 2.0107995173922233e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_43",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 2.114893715151496e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 144,
+      "leafName": "cdt_blade_44",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 9.657056180250435e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_44",
+      "normals": {
+        "maxAngleDegrees": 0.05595289189378777,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0009794492880808164,
+        "pairwiseDotNative": -0.08425018767614516,
+        "pairwiseDotRepaired": -0.08522963696422597,
+        "pairwiseDotWitness": [
+          66,
+          138
+        ],
+        "worstCorner": 138,
+        "worstNative": [
+          0.0009765620343387127,
+          0.0,
+          -0.9999995231628418
+        ],
+        "worstRepaired": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "worstTriangleNativeArea": 9.614785483336163e-07,
+        "worstTriangleRepairedArea": 9.614785483336163e-07
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 9.657056180250435e-08
+      },
+      "properRigidFit": {
+        "determinant": 0.9999999999999999,
+        "max": 4.5661305510799133e-07,
+        "rms": 9.354435088454235e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_44",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 9.657056180250435e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 96,
+      "leafName": "cdt_blade_45",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.838099017435848e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_45",
+      "normals": {
+        "maxAngleDegrees": 0.0019383380867960438,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 2.1559625131617466e-05,
+        "pairwiseDotNative": 0.7778376165844684,
+        "pairwiseDotRepaired": 0.7778591762096,
+        "pairwiseDotWitness": [
+          30,
+          39
+        ],
+        "worstCorner": 39,
+        "worstNative": [
+          0.006222729571163654,
+          -0.8764145970344543,
+          -0.4815172255039215
+        ],
+        "worstRepaired": [
+          0.006225764751434326,
+          -0.8763983249664307,
+          -0.4815467298030853
+        ],
+        "worstTriangleNativeArea": 2.140362574639663e-05,
+        "worstTriangleRepairedArea": 2.1403551504341888e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.838099017435848e-08
+      },
+      "properRigidFit": {
+        "determinant": 0.9999999999999999,
+        "max": 6.901421552808007e-08,
+        "rms": 3.875679183823815e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_45",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 8.429369702178807e-08,
+        "rms": 4.838099017435848e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 126,
+      "leafName": "cdt_blade_46",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 8.560065398421926e-08,
+        "rms": 5.1042897669183537e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_46",
+      "normals": {
+        "maxAngleDegrees": 0.00044883815226166266,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 1.1824783545277828e-05,
+        "pairwiseDotNative": -0.3485213347521216,
+        "pairwiseDotRepaired": -0.3485331595356669,
+        "pairwiseDotWitness": [
+          9,
+          21
+        ],
+        "worstCorner": 21,
+        "worstNative": [
+          0.005701374262571335,
+          0.81235271692276,
+          -0.583138644695282
+        ],
+        "worstRepaired": [
+          0.005700957961380482,
+          0.8123572468757629,
+          -0.583132266998291
+        ],
+        "worstTriangleNativeArea": 3.4511639589647726e-05,
+        "worstTriangleRepairedArea": 3.451165108592546e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 8.560065398421926e-08,
+        "rms": 5.1042897669183537e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 6.875550087627674e-08,
+        "rms": 3.734857481214382e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_46",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 8.560065398421926e-08,
+        "rms": 5.1042897669183537e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 150,
+      "leafName": "cdt_blade_47",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.31148176924806e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_47",
+      "normals": {
+        "maxAngleDegrees": 0.004478527829624702,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 7.768821382372892e-05,
+        "pairwiseDotNative": 0.20406269315297315,
+        "pairwiseDotRepaired": 0.20414038136679688,
+        "pairwiseDotWitness": [
+          6,
+          30
+        ],
+        "worstCorner": 6,
+        "worstNative": [
+          -0.752365231513977,
+          0.3512786328792572,
+          0.5572699904441833
+        ],
+        "worstRepaired": [
+          -0.7523137927055359,
+          0.35130712389945984,
+          0.5573214888572693
+        ],
+        "worstTriangleNativeArea": 0.00018323499680604306,
+        "worstTriangleRepairedArea": 0.00018322548253266248
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.31148176924806e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.271697247686873e-07,
+        "rms": 5.610791494364761e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_47",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.31148176924806e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 168,
+      "leafName": "cdt_blade_48",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.017041009213876e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_48",
+      "normals": {
+        "maxAngleDegrees": 0.002752097865070998,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 4.6556715822709815e-05,
+        "pairwiseDotNative": 0.1670838503127033,
+        "pairwiseDotRepaired": 0.16713040702852602,
+        "pairwiseDotWitness": [
+          48,
+          81
+        ],
+        "worstCorner": 81,
+        "worstNative": [
+          0.9937464594841003,
+          -0.11165966838598251,
+          -8.598653948865831e-05
+        ],
+        "worstRepaired": [
+          0.9937511682510376,
+          -0.1116182878613472,
+          -6.205604586284608e-05
+        ],
+        "worstTriangleNativeArea": 0.0006065367071931677,
+        "worstTriangleRepairedArea": 0.0006065295963692993
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.017041009213876e-08
+      },
+      "properRigidFit": {
+        "determinant": 0.9999999999999999,
+        "max": 1.3844529843958645e-07,
+        "rms": 5.437006539600192e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_48",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.3328003749250113e-07,
+        "rms": 6.017041009213876e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 168,
+      "leafName": "cdt_blade_49",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 0.0,
+        "rms": 0.0
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_49",
+      "normals": {
+        "maxAngleDegrees": 0.015635599470837563,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.00026886549709372043,
+        "pairwiseDotNative": 0.03596563228003847,
+        "pairwiseDotRepaired": 0.03623449777713219,
+        "pairwiseDotWitness": [
+          105,
+          141
+        ],
+        "worstCorner": 141,
+        "worstNative": [
+          0.8468058705329895,
+          -0.25584277510643005,
+          -0.46633049845695496
+        ],
+        "worstRepaired": [
+          0.8468258380889893,
+          -0.2555905282497406,
+          -0.46643269062042236
+        ],
+        "worstTriangleNativeArea": 8.852446120839811e-05,
+        "worstTriangleRepairedArea": 8.852446120839811e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 0.0,
+        "rms": 0.0
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 0.0,
+        "rms": 0.0
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_49",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 0.0,
+        "rms": 0.0
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 36,
+      "leafName": "cdt_blade_50",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 0.0,
+        "rms": 0.0
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_50",
+      "normals": {
+        "maxAngleDegrees": 2.1933842111273517e-05,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 3.900370278420162e-07,
+        "pairwiseDotNative": -0.3484352086863641,
+        "pairwiseDotRepaired": -0.3484355987233919,
+        "pairwiseDotWitness": [
+          6,
+          12
+        ],
+        "worstCorner": 6,
+        "worstNative": [
+          0.11003371328115463,
+          0.911340057849884,
+          -0.3966759443283081
+        ],
+        "worstRepaired": [
+          0.1100337952375412,
+          0.9113399386405945,
+          -0.39667630195617676
+        ],
+        "worstTriangleNativeArea": 0.45929048783479126,
+        "worstTriangleRepairedArea": 0.45929048783479126
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 0.0,
+        "rms": 0.0
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 0.0,
+        "rms": 0.0
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_50",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 0.0,
+        "rms": 0.0
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 72,
+      "leafName": "cdt_blade_51",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.228781230931777e-07,
+        "rms": 8.968249005708986e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_51",
+      "normals": {
+        "maxAngleDegrees": 0.00046787263206714643,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 8.060261709543631e-06,
+        "pairwiseDotNative": 0.018693630508902104,
+        "pairwiseDotRepaired": 0.01868557024719256,
+        "pairwiseDotWitness": [
+          6,
+          69
+        ],
+        "worstCorner": 69,
+        "worstNative": [
+          1.0,
+          8.165931831172202e-06,
+          0.0
+        ],
+        "worstRepaired": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.00045620118918066055,
+        "worstTriangleRepairedArea": 0.0004562085355672707
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.228781230931777e-07,
+        "rms": 8.968249005708986e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0000000000000002,
+        "max": 1.4363030637904367e-07,
+        "rms": 7.320090840801984e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_51",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.228781230931777e-07,
+        "rms": 8.968249005708986e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 102,
+      "leafName": "cdt_blade_52",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.228781230931777e-07,
+        "rms": 7.390809242938382e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_52",
+      "normals": {
+        "maxAngleDegrees": 0.015966714972992766,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0002727155924851857,
+        "pairwiseDotNative": 0.010670577838444583,
+        "pairwiseDotRepaired": 0.010943293430929769,
+        "pairwiseDotWitness": [
+          33,
+          90
+        ],
+        "worstCorner": 90,
+        "worstNative": [
+          0.9999999403953552,
+          -0.0002786717377603054,
+          0.0
+        ],
+        "worstRepaired": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.000360935098168369,
+        "worstTriangleRepairedArea": 0.00036093716664620246
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.228781230931777e-07,
+        "rms": 7.390809242938382e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 8.85320507543997e-08,
+        "rms": 6.270131472470947e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_52",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.228781230931777e-07,
+        "rms": 7.390809242938382e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 102,
+      "leafName": "cdt_blade_53",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 5.960464477539063e-08,
+        "rms": 2.658854711599064e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_53",
+      "normals": {
+        "maxAngleDegrees": 0.0036799569557155747,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 6.201059570609831e-05,
+        "pairwiseDotNative": 6.209489920920402e-05,
+        "pairwiseDotRepaired": 8.430350310570553e-08,
+        "pairwiseDotWitness": [
+          15,
+          90
+        ],
+        "worstCorner": 90,
+        "worstNative": [
+          -1.0,
+          -6.422736623790115e-05,
+          0.0
+        ],
+        "worstRepaired": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.0004640122764953958,
+        "worstTriangleRepairedArea": 0.0004640088682466015
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 5.960464477539063e-08,
+        "rms": 2.658854711599064e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 6.288033392157634e-08,
+        "rms": 2.6285649367271106e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_53",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 5.960464477539063e-08,
+        "rms": 2.658854711599064e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 60,
+      "leafName": "cdt_blade_54",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 3.3763545454900184e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_54",
+      "normals": {
+        "maxAngleDegrees": 0.002524818425564939,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 3.8158187860681814e-05,
+        "pairwiseDotNative": -0.5073433097809354,
+        "pairwiseDotRepaired": -0.5073814679687961,
+        "pairwiseDotWitness": [
+          15,
+          57
+        ],
+        "worstCorner": 57,
+        "worstNative": [
+          0.0,
+          -0.924251914024353,
+          0.3817830979824066
+        ],
+        "worstRepaired": [
+          -1.2111107139389787e-07,
+          -0.9242687821388245,
+          0.381742388010025
+        ],
+        "worstTriangleNativeArea": 0.002422662015877996,
+        "worstTriangleRepairedArea": 0.0024227046478420564
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 3.3763545454900184e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 2.462075133156023e-07,
+        "rms": 2.3890906700828363e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_54",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 3.3763545454900184e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 108,
+      "leafName": "cdt_blade_55",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 2.6168721966066847e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_55",
+      "normals": {
+        "maxAngleDegrees": 0.008774154966859592,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.00014998788929935364,
+        "pairwiseDotNative": -0.03475960782726166,
+        "pairwiseDotRepaired": -0.034609619937962306,
+        "pairwiseDotWitness": [
+          51,
+          90
+        ],
+        "worstCorner": 90,
+        "worstNative": [
+          1.0,
+          -0.00015313789481297135,
+          0.0
+        ],
+        "worstRepaired": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.0003892223472519163,
+        "worstTriangleRepairedArea": 0.0003892241853264977
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 2.6168721966066847e-07
+      },
+      "properRigidFit": {
+        "determinant": 0.9999999999999999,
+        "max": 3.446816139661154e-07,
+        "rms": 2.1911058317122697e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_55",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.805480091749757e-07,
+        "rms": 2.6168721966066847e-07
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 72,
+      "leafName": "cdt_blade_56",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 4.879356102245177e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_56",
+      "normals": {
+        "maxAngleDegrees": 0.008774154966859592,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0001512151695741669,
+        "pairwiseDotNative": 0.018836673079965862,
+        "pairwiseDotRepaired": 0.018685457910391695,
+        "pairwiseDotWitness": [
+          6,
+          69
+        ],
+        "worstCorner": 69,
+        "worstNative": [
+          -1.0,
+          0.00015313789481297135,
+          0.0
+        ],
+        "worstRepaired": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "worstTriangleNativeArea": 0.0003892223472519163,
+        "worstTriangleRepairedArea": 0.0003892241853264977
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 4.879356102245177e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 9.107533329977546e-08,
+        "rms": 4.2266340192941405e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_56",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 4.879356102245177e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 318,
+      "leafName": "cdt_blade_57",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 5.990262603597157e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_57",
+      "normals": {
+        "maxAngleDegrees": 0.11236456801344638,
+        "over0p1Degrees": 3,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0019593995838323858,
+        "pairwiseDotNative": -0.11032578534182255,
+        "pairwiseDotRepaired": -0.11228518492565494,
+        "pairwiseDotWitness": [
+          60,
+          150
+        ],
+        "worstCorner": 60,
+        "worstNative": [
+          0.9999684691429138,
+          0.007469854783266783,
+          -0.002728247782215476
+        ],
+        "worstRepaired": [
+          0.9999517798423767,
+          0.009430903941392899,
+          -0.002734896494075656
+        ],
+        "worstTriangleNativeArea": 9.97428912379802e-07,
+        "worstTriangleRepairedArea": 9.974289357454028e-07
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 5.990262603597157e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 1.2435334378348266e-07,
+        "rms": 5.5393417336543e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_57",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.1920928955078125e-07,
+        "rms": 5.990262603597157e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 198,
+      "leafName": "cdt_blade_58",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 1.0745380149674383e-07,
+        "rms": 5.758550501379252e-08
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_58",
+      "normals": {
+        "maxAngleDegrees": 0.09752155260879485,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0016979853108085446,
+        "pairwiseDotNative": -0.04995663433010817,
+        "pairwiseDotRepaired": -0.051654619640916714,
+        "pairwiseDotWitness": [
+          6,
+          90
+        ],
+        "worstCorner": 6,
+        "worstNative": [
+          -0.10705962032079697,
+          0.9553796648979187,
+          -0.2752961814403534
+        ],
+        "worstRepaired": [
+          -0.10684081166982651,
+          0.9549335241317749,
+          -0.27692410349845886
+        ],
+        "worstTriangleNativeArea": 1.4625196360735941e-05,
+        "worstTriangleRepairedArea": 1.462519400309138e-05
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 1.0745380149674383e-07,
+        "rms": 5.758550501379252e-08
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 9.211883804029473e-08,
+        "rms": 4.806105267359819e-08
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_58",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 1.0745380149674383e-07,
+        "rms": 5.758550501379252e-08
+      }
+    },
+    {
+      "compensationMaxFromIdentity": 0.0,
+      "corners": 306,
+      "leafName": "cdt_blade_59",
+      "localMatrixMaxElementDifference": 0.8908867835998535,
+      "localPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 1.1047713297890496e-07
+      },
+      "nativePath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBlade_cdt|cdt_blade_59",
+      "normals": {
+        "maxAngleDegrees": 0.008013655938257654,
+        "over0p1Degrees": 0,
+        "over1Degree": 0,
+        "pairwiseDotMaxDifference": 0.0001487194395725644,
+        "pairwiseDotNative": 0.27787210521105626,
+        "pairwiseDotRepaired": 0.27802082465062883,
+        "pairwiseDotWitness": [
+          81,
+          228
+        ],
+        "worstCorner": 150,
+        "worstNative": [
+          0.0029620174318552017,
+          -0.928246259689331,
+          -0.3719543218612671
+        ],
+        "worstRepaired": [
+          0.0029618917033076286,
+          -0.9281942844390869,
+          -0.3720841705799103
+        ],
+        "worstTriangleNativeArea": 0.0003334501502025845,
+        "worstTriangleRepairedArea": 0.0003334501502025845
+      },
+      "parentCompensatedLocalPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 1.1047713297890496e-07
+      },
+      "properRigidFit": {
+        "determinant": 1.0,
+        "max": 4.4193950555779746e-07,
+        "rms": 1.065449899079956e-07
+      },
+      "repairedPath": "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt|cdt_blade_59",
+      "worldMatrixMaxElementDifference": 0.0,
+      "worldPositions": {
+        "max": 4.76837158203125e-07,
+        "rms": 1.1047713297890496e-07
+      }
+    }
+  ],
+  "schemaVersion": 1,
+  "sdkUnchanged": true,
+  "sourceBlendSha256": "1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731",
+  "sourceUnchanged": true,
+  "status": "BLADE_GEOMETRY_READBACK",
+  "summary": {
+    "corners": 6486,
+    "localPositions": {
+      "max": 4.814712530792806e-07,
+      "rms": 1.0170290968075304e-07
+    },
+    "maxNormalAngleDegrees": 13.240519621865587,
+    "maxNormalPairwiseDotDifference": 0.22903932874220842,
+    "normalCornersOver0p1Degrees": 24,
+    "normalCornersOver1Degree": 6,
+    "normalRowsOver0p1Degrees": 5,
+    "parentCompensatedLocalPositions": {
+      "max": 4.814712530792806e-07,
+      "rms": 1.0170290968075304e-07
+    },
+    "positionRowsWithinTolerance": 60,
+    "properRigidFitMax": 5.505149650249308e-07,
+    "properRigidFitRms": 9.065430167315829e-08,
+    "worldMatrixMaxElementDifference": 0.0,
+    "worldPositions": {
+      "max": 4.814712530792806e-07,
+      "rms": 1.0170290968075304e-07
+    }
+  },
+  "summarySha256": "b116ea18837df190eec539b1173deb55926f79ad9b14339f3217c1b86128c87f",
+  "usfExported": false,
+  "workerSha256": "5c1b39a11b4f897a7d40ec5c1b4baf09f9a120754b2a31fad3ed803f25fa7fbc",
+  "worklistSha256": "a842c0e7dd355e64ace39a724a806f509328ba3fb1916fc7ab4bbb85062759c3"
+}

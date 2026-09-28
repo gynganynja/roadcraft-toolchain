@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "roadcraft.d11.blade-geometry-readback",
+  "asset": "cat_d11t",
+  "status": "BLADE_GEOMETRY_READBACK",
+  "scope": "Read-only retained native/repaired USF triangle-corner comparison; no Blend load or export",
+  "sourceBlendSha256": "1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731",
+  "nativeUsfSha256": "80c856b07b3ae1447f2748b5f6f8ec13c688c2594f3ebfaeada9e0d11da21370",
+  "repairedUsfSha256": "49bfc77c1172a0e324934974d5612a13d121c3cee78ae7ca454468b61649e170",
+  "authoringInventorySha256": "03d3eae96720612ae3b1457a27cc797f8bc6ebb694b230f253bcadbe9d13b50d",
+  "worklistSha256": "a842c0e7dd355e64ace39a724a806f509328ba3fb1916fc7ab4bbb85062759c3",
+  "paritySummarySha256": "b116ea18837df190eec539b1173deb55926f79ad9b14339f3217c1b86128c87f",
+  "hostSha256": "e0c14b70a6cd5425016d0184dc3a689d4cd48ab0b2d11c56616a13d210dfa055",
+  "workerSha256": "5c1b39a11b4f897a7d40ec5c1b4baf09f9a120754b2a31fad3ed803f25fa7fbc",
+  "runs": [
+    {
+      "blenderVersion": "5.0.1",
+      "blenderSha256": "f81d3bca0af0d917e03fdf09255981b2ed0750d3a2815da991ea5425a87f8f7c",
+      "receipt": "d11_blade_geometry_blender50_20260928.json",
+      "receiptSha256": "c7becd55adfa8999189cf1062d74d41676942eb82f75a4fed4e21a35558234b3"
+    },
+    {
+      "blenderVersion": "5.2.0 LTS",
+      "blenderSha256": "e27fbfea8564aa645d4463cb0949695fd85562b9de6df9561b06859a1074adf7",
+      "receipt": "d11_blade_geometry_blender52_20260928.json",
+      "receiptSha256": "11e4908e150a269d24d778393755d98aec249f09c0f8d1aef15441a195465441"
+    }
+  ],
+  "commonSummary": {
+    "leaves": 60,
+    "triangleCorners": 6486,
+    "worldMatrixMaxElementDifference": 0.0,
+    "positionRowsWithin1eMinus5": 60,
+    "maximumLocalAndWorldPositionDifference": 4.814712530792806e-7,
+    "rmsLocalAndWorldPositionDifference": 1.0170290968075304e-7,
+    "normalCornersOver0p1Degrees": 24,
+    "normalCornersOver1Degree": 6,
+    "normalRowsOver0p1Degrees": 5,
+    "maximumNormalAngleDegrees": 13.240519621865587,
+    "maximumNormalPairwiseDotDifference": 0.22903932874220842
+  },
+  "sourceUnchanged": true,
+  "sdkUnchanged": true,
+  "retainedNativeUnchanged": true,
+  "blendSaved": false,
+  "usfExported": false,
+  "nativeBlendExportApproved": false,
+  "equivalenceVerified": false
+}
