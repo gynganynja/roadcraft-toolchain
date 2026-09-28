@@ -79,7 +79,7 @@ class BlenderAuthoringTests(unittest.TestCase):
         self.scratch = self.root / "local/authoring"
         self.receipt = self.root / "operations/authoring.json"
 
-    def _run(self, *, dry_run: bool = True):
+    def _run(self, *, dry_run: bool = True, blender_threads: int | None = None):
         return authoring.run_authoring_probe(
             asset_name="test", inventory_path=self.inventory,
             inventory_sha256=file_sha256(self.inventory),
@@ -87,6 +87,7 @@ class BlenderAuthoringTests(unittest.TestCase):
             blender_sha256=file_sha256(self.blender),
             sdk_script_root=self.sdk, scratch_root=self.scratch,
             receipt_path=self.receipt, dry_run=dry_run,
+            blender_threads=blender_threads,
         )
 
     def test_dry_run_verifies_pins_without_output(self) -> None:
@@ -104,6 +105,7 @@ class BlenderAuthoringTests(unittest.TestCase):
             if "--version" in command:
                 return subprocess.CompletedProcess(command, 0,
                                                    stdout="Blender 5.2.0 LTS\n")
+            self.assertEqual(command[command.index("--threads") + 1], "1")
             candidate = Path(command[command.index("--candidate-usf") + 1])
             result_path = Path(command[command.index("--result") + 1])
             candidate.write_bytes(b"different native export")
@@ -121,13 +123,15 @@ class BlenderAuthoringTests(unittest.TestCase):
             return subprocess.CompletedProcess(command, 0)
 
         with mock.patch.object(authoring.subprocess, "run", side_effect=fake_blender):
-            result = self._run(dry_run=False)
+            result = self._run(dry_run=False, blender_threads=1)
         self.assertEqual(result["status"], "PARITY_DIFFERENT")
+        self.assertEqual(result["blenderThreads"], 1)
         self.assertEqual(result["exportGate"]["status"], "BLOCKED")
         self.assertFalse(result["nativeBlendExportApproved"])
         self.assertTrue((self.scratch / "candidate.usf").is_file())
         summary = json.loads(self.receipt.read_text())
         self.assertEqual(summary["status"], "PARITY_DIFFERENT")
+        self.assertEqual(summary["blenderThreads"], 1)
         self.assertNotIn("diagnostic", summary)
         raw = (self.scratch / "full_receipt.json").read_bytes()
         archive = self.receipt.with_suffix(".json.gz").read_bytes()
@@ -144,6 +148,11 @@ class BlenderAuthoringTests(unittest.TestCase):
         self.blend.write_bytes(b"changed")
         with self.assertRaisesRegex(authoring.BlenderAuthoringError, "differs"):
             self._run()
+
+    def test_invalid_thread_count_rejects_before_export(self) -> None:
+        with self.assertRaisesRegex(authoring.BlenderAuthoringError, "threads"):
+            self._run(blender_threads=0)
+        self.assertFalse(self.scratch.exists())
 
 
 if __name__ == "__main__":

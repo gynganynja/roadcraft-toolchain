@@ -164,7 +164,11 @@ only. Numerical, visual and campaign acceptance stay distinct.
 capture and metric evidence chain against explicit required views and numeric
 thresholds. Technical results do not grant visual or campaign acceptance;
 those stages require detached approvals from externally trusted reviewer keys.
-The current AAA interior policy and replayable result are in `operations/`.
+Install the `review` extra (`python -m pip install -e ".[review]"`) to enable
+Ed25519 verification. The CLI exit code covers the technical gate; inspect
+`releaseReady` before any release decision. The current AAA interior policy
+and replayable result are in `operations/`; the genuine reviewer handoff is
+documented in `operations/REVIEWER_CLAIM_HANDOFF.md`.
 
 ## Asset and native preflight gates
 

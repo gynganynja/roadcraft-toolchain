@@ -109,6 +109,7 @@ def run_authoring_probe(
     receipt_path: str | Path,
     archive_path: str | Path | None = None,
     timeout_seconds: int = 900,
+    blender_threads: int | None = None,
     dry_run: bool = True,
 ) -> dict[str, Any]:
     """Compare one pinned .blend to its repaired USF without adopting output."""
@@ -134,6 +135,10 @@ def run_authoring_probe(
         raise BlenderAuthoringError("receipt or archive already exists")
     if not isinstance(timeout_seconds, int) or timeout_seconds <= 0:
         raise BlenderAuthoringError("timeout must be a positive number of seconds")
+    if blender_threads is not None and (
+            isinstance(blender_threads, bool) or not isinstance(blender_threads, int) or
+            not 1 <= blender_threads <= 1024):
+        raise BlenderAuthoringError("Blender threads must be between 1 and 1024")
     version = subprocess.run([str(blender), "--version"], capture_output=True,
                              text=True, timeout=30, check=True).stdout.splitlines()[0]
     base = {
@@ -145,6 +150,7 @@ def run_authoring_probe(
         "baselineUsfPath": str(baseline), "baselineUsfSha256": file_sha256(baseline),
         "blenderPath": str(blender), "blenderSha256": actual_blender_sha,
         "blenderVersion": version,
+        "blenderThreads": blender_threads,
         "sdkScriptRoot": str(sdk), "sdkFileHashes": sdk_hashes,
         "helperSha256": file_sha256(HELPER),
         "diffSha256": file_sha256(DIFF),
@@ -167,6 +173,7 @@ def run_authoring_probe(
     log = scratch / "blender.log"
     command = [
         str(blender), "--background", "--factory-startup", "--disable-autoexec",
+        *(["--threads", str(blender_threads)] if blender_threads is not None else []),
         "--python-exit-code", "1", "--python", str(HELPER), "--",
         "--blend", str(blend), "--blend-sha256", base["blendSha256"],
         "--baseline-usf", str(baseline), "--baseline-sha256", base["baselineUsfSha256"],
@@ -257,6 +264,8 @@ def main() -> None:
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--archive", type=Path)
     parser.add_argument("--timeout-seconds", type=int, default=900)
+    parser.add_argument("--blender-threads", type=int,
+                        help="Pin Blender worker threads for a scratch determinism probe")
     parser.add_argument("--run", action="store_true")
     args = parser.parse_args()
     result = run_authoring_probe(
@@ -265,7 +274,7 @@ def main() -> None:
         blender_executable=args.blender, blender_sha256=args.blender_sha256,
         sdk_script_root=args.sdk_script_root, scratch_root=args.scratch_root,
         receipt_path=args.receipt, archive_path=args.archive,
-        timeout_seconds=args.timeout_seconds,
+        timeout_seconds=args.timeout_seconds, blender_threads=args.blender_threads,
         dry_run=not args.run,
     )
     print(json.dumps(result, indent=2, sort_keys=True))

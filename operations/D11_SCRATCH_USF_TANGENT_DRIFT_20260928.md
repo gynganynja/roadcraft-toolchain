@@ -49,6 +49,51 @@ implying a different node count or mesh topology. The source of the float
 variation inside Blender's tangent calculation is **not proven** by these
 retained artifacts.
 
+## Same-helper cross-variant check and likely mechanism
+
+A further read-only comparison used the final base, v2, and v3 scratch exports.
+All three receipts pin the same Blender 5.2.0 executable, SDK scripts, helper
+SHA-256 `cf5469b31b33d2f33bfdd66d77c6498b6f7cde0e1653c2698ad567ff64e59642`,
+and byte-identical `.blend` content. The configured `src_filename` and output
+root names differ, so this is still **not** a controlled same-command test.
+All 210 mesh records in each file have matching array layouts. Across every
+pair, vertex, normal, color, and UV arrays match exactly. Only the tangent
+arrays of mesh ordinals 102, 147, and 148 differ:
+
+| Compared retained outputs | Differing tangent bytes | Differing float32 values | Maximum absolute difference |
+| --- | ---: | ---: | ---: |
+| Base / v2 | 16,009 | 15,126 | `1.7881393432617188e-7` |
+| Base / v3 | 13,807 | 12,982 | `1.7881393432617188e-7` |
+| v2 / v3 | 11,185 | 10,649 | `1.7881393432617188e-7` |
+
+Those ordinals serialize 13,140, 31,962, and 19,746 triangles. The bundled
+SDK takes the tangent vectors directly from Blender's `Mesh.calc_tangents`;
+its source has not changed. The installed Blender 5.2.0 includes `tbb12.dll`.
+[Blender 5.2.0's MikkTSpace source](https://raw.githubusercontent.com/blender/blender/v5.2.0/intern/mikktspace/mikktspace.hh)
+selects a parallel path when TBB concurrency exceeds one and a mesh has more
+than 10,000 faces; that path sums float tangent contributions into shared
+groups with atomic additions. Thread scheduling can change floating-point
+addition order and thus low tangent bits. This is a strong explanation for the
+observed tiny differences, but it is an **inference**, not a proven runtime
+root cause. Four other exported meshes also exceed 10,000 triangles and did
+not drift in these retained comparisons. The USF records the *triangulated*
+count; these receipts do not record Blender's face count before triangulation,
+so they cannot alone prove which meshes crossed MikkTSpace's 10,000-face
+parallel threshold.
+
+A bounded confirmation would repeat the exact same pinned `.blend`, helper,
+config, and Blender executable into separate disposable directories, first
+with its current thread setting and then with Blender's documented
+`--threads 1` option (the scratch authoring probe now exposes this as
+`--blender-threads 1` and seals the chosen count into its receipts). It must
+rehash inputs, compare the entire USF and mesh
+arrays, and keep the native-blend export gate blocked regardless of the
+determinism result. No new Blender asset run or scratch export was made for this
+investigation because the `game-dev` CLI was unavailable. A pinned
+`cat_d11t` probe dry run with `--blender-threads 1` returned `DRY_RUN`,
+revalidated the `.blend`, repaired USF, Blender executable, and SDK hashes,
+and created no scratch or receipt files.
+
 The full scratch USFs and raw probe receipts remain under ignored
 `RoadCraftToolchain/local/blend-authoring-parity-*`. The checked-in compact
 parity summaries retain the source, SDK, candidate hashes and structural

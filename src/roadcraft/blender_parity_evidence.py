@@ -108,6 +108,7 @@ def compact_summary(
         "blenderPath": full["blenderPath"],
         "blenderSha256": full["blenderSha256"],
         "blenderVersion": full["blenderVersion"],
+        "blenderThreads": full.get("blenderThreads"),
         "sdkFileHashes": full["sdkFileHashes"],
         "helperSha256": full["helperSha256"],
         "diffSha256": full["diffSha256"],

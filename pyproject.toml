@@ -9,6 +9,9 @@ description = "Pinned RoadCraft source, package and evidence workflow orchestrat
 requires-python = ">=3.12"
 dependencies = []
 
+[project.optional-dependencies]
+review = ["cryptography>=42"]
+
 [project.scripts]
 roadcraft = "roadcraft.cli:main"
 
