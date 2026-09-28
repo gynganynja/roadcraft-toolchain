@@ -216,8 +216,8 @@ class RegressionTests(unittest.TestCase):
         result = self.evaluate(policy, trusted_keys=trusted)
         self.assertTrue(result["releaseReady"])
         self.assertEqual(result["acceptance"]["visual"]["state"], "approved")
-        self.assertEqual(result["acceptance"]["visual"]["evidence"]["path"],
-                         str(self.root / "visual_review.md"))
+        self.assertTrue(Path(result["acceptance"]["visual"]["evidence"]["path"]).samefile(
+            self.root / "visual_review.md"))
         trusted["External reviewer"] = base64.b64encode(b"x" * 32).decode()
         result = self.evaluate(policy, trusted_keys=trusted)
         self.assertFalse(result["releaseReady"])
