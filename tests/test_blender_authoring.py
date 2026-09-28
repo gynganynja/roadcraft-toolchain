@@ -219,6 +219,15 @@ class BlenderAuthoringTests(unittest.TestCase):
         self.assertFalse(self.scratch.exists())
         self.assertFalse(self.receipt.exists())
 
+    def test_blade_roll_requires_pinned_push_repair_before_launch(self) -> None:
+        with mock.patch.object(authoring.subprocess, "run") as launch:
+            with self.assertRaisesRegex(authoring.BlenderAuthoringError,
+                                        "blade-roll scratch source or tool"):
+                self._run(blade_roll_scratch_repair=True)
+        launch.assert_not_called()
+        self.assertFalse(self.scratch.exists())
+        self.assertFalse(self.receipt.exists())
+
     def test_blade_normal_repair_rejects_unreviewed_asset_before_launch(self) -> None:
         with mock.patch.object(authoring.subprocess, "run") as launch:
             with self.assertRaisesRegex(authoring.BlenderAuthoringError,

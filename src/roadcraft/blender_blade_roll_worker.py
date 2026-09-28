@@ -40,7 +40,8 @@ def _max_flat_error(left: list[float], right: list[float]) -> float:
 
 
 def run(*, blend: Path, usf: Path, sdk_root: Path,
-        worker_sha256: str, blender_sha256: str) -> dict:
+        worker_sha256: str, blender_sha256: str,
+        loaded_scene: bool = False, push_branches_present: bool = False) -> dict:
     need(blender_sha256 in BLENDER_VERSION_PINS,
          "Blender executable pin is not reviewed")
     require_hash(Path(bpy.app.binary_path), blender_sha256, "Blender executable")
@@ -83,7 +84,13 @@ def run(*, blend: Path, usf: Path, sdk_root: Path,
     need(sorted(child.name for child in blade_node.children) ==
          sorted(mesh_nodes), "repaired blade child roster differs")
 
-    bpy.ops.wm.open_mainfile(filepath=str(blend), load_ui=False)
+    if loaded_scene:
+        need(Path(bpy.data.filepath).resolve() == blend.resolve(),
+             "loaded scene is not the pinned source Blend")
+    else:
+        need(not push_branches_present,
+             "push branches require an explicitly loaded scene")
+        bpy.ops.wm.open_mainfile(filepath=str(blend), load_ui=False)
     arms = [obj for obj in bpy.context.scene.objects if obj.type == "ARMATURE"]
     need(len(arms) == 1 and arms[0].name == ARMATURE,
          "source armature is not unique")
@@ -91,10 +98,12 @@ def run(*, blend: Path, usf: Path, sdk_root: Path,
     arm = arms[0]
     before = source_paths(arm, convert_to_saber_transform)
     baseline = compare_static_armature(before, repaired)
+    expected_baseline = ((388, 386, 2, 14, 0) if push_branches_present else
+                         (384, 378, 6, 22, 0))
     need((len(before), baseline["sharedPathCount"],
           len(baseline["sourceOnlyPaths"]),
           len(baseline["repairedOnlyPaths"]),
-          baseline["changedMatrixCount"]) == (384, 378, 6, 22, 0),
+          baseline["changedMatrixCount"]) == expected_baseline,
          "source static baseline differs")
     lift = arm.pose.bones.get(LIFT)
     blade = arm.pose.bones.get(BLADE)
@@ -185,9 +194,11 @@ def run(*, blend: Path, usf: Path, sdk_root: Path,
     require_hash(blend, BLEND_SHA256, "source Blend after diagnostic")
     require_hash(usf, USF_SHA256, "repaired USF after diagnostic")
     require_sdk_pins(sdk)
-    matched = (len(after) == 385 and comparison["sharedPathCount"] == 380 and
-               len(comparison["sourceOnlyPaths"]) == 5 and
-               len(comparison["repairedOnlyPaths"]) == 20 and
+    expected_after = ((389, 388, 1, 12) if push_branches_present else
+                      (385, 380, 5, 20))
+    matched = ((len(after), comparison["sharedPathCount"],
+                len(comparison["sourceOnlyPaths"]),
+                len(comparison["repairedOnlyPaths"])) == expected_after and
                comparison["changedMatrixCount"] == 0 and
                comparison["maxSharedMatrixError"] <= TOLERANCE and
                all(row["maxElementError"] <= TOLERANCE for row in targets) and
@@ -202,6 +213,7 @@ def run(*, blend: Path, usf: Path, sdk_root: Path,
         "blenderSha256": blender_sha256,
         "blenderVersion": bpy.app.version_string,
         "sceneFrame": bpy.context.scene.frame_current,
+        "pushBranchesPresent": push_branches_present,
         "beforeSourceBoneCount": len(before),
         "afterSourceBoneCount": len(after),
         "repairedStructuralCount": len(repaired),

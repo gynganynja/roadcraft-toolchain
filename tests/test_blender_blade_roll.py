@@ -20,6 +20,7 @@ def complete_result() -> dict:
         "sceneFrame": 1, "beforeSourceBoneCount": 384,
         "afterSourceBoneCount": 385, "repairedStructuralCount": 400,
         "beforeSharedPathCount": 378, "afterSharedPathCount": 380,
+        "pushBranchesPresent": False,
         "afterChangedMatrixCount": 0, "afterMaxSharedMatrixError": 0.0,
         "afterSourceOnlyPaths": source,
         "afterRepairedOnlyPaths": repaired,
@@ -58,6 +59,22 @@ class BladeRollValidationTests(unittest.TestCase):
         result = complete_result()
         result["blendSaved"] = True
         with self.assertRaisesRegex(probe.BladeRollError, "no-write"):
+            probe.validate_result(result, result["blenderSha256"])
+
+    def test_combined_push_and_roll_has_exact_residual(self) -> None:
+        result = complete_result()
+        result.update({
+            "beforeSourceBoneCount": 388, "afterSourceBoneCount": 389,
+            "beforeSharedPathCount": 386, "afterSharedPathCount": 388,
+            "pushBranchesPresent": True,
+        })
+        source, repaired = probe._residual_paths(True)
+        result["afterSourceOnlyPaths"] = source
+        result["afterRepairedOnlyPaths"] = repaired
+        self.assertIs(probe.validate_result(
+            result, result["blenderSha256"],
+            push_branches_present=True), result)
+        with self.assertRaisesRegex(probe.BladeRollError, "identity"):
             probe.validate_result(result, result["blenderSha256"])
 
 

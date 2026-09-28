@@ -43,9 +43,9 @@ asset through the pinned inventory, pins its worker and imported diagnostic
 dependencies, checks source/tool bytes before and after Blender, and validates
 the exact two target paths, five source-only paths, 20 repaired-only paths,
 60-mesh coverage, matrix bounds and no-write fields. Host SHA-256 is
-`b8417528ca746f69a56bf1a636779efafd3ae42342a939184c753c0c711d4541`;
+`24d4b9513617d0638af52dac95238199a2bfd880c6926d68f7a230adf1bc4d89`;
 worker SHA-256 is
-`df8d94c1712e35ec7aee87883d3b1bfd571b1bbbe688cd46b9ddf39be79c2787`.
+`ced27a3f52a0a80764eecbd07edce6e9c6b32d6f5f6b77a5f35e57be1b2399be`.
 The maintained command also exited 0 with `IN_MEMORY_BLADE_ROLL_MATCH` in both
 Blender 5.0.1 and 5.2.0, reproducing the table above. Four focused validator
 tests passed. Run it with either pinned Blender version:
@@ -62,8 +62,8 @@ $env:PYTHONPATH = "$tc\src"
 The command accepts no save, export or output-file argument. It is a
 diagnostic and is not connected to an export wrapper.
 
-The existing normal scratch installer expects the old blade hierarchy. If a
-future combined repair inserts the roll first, its path mapping must be
-updated and revalidated for all 60 meshes. Neither Blender process saved a
+The separate combined no-save preparation now validates the repaired blade
+lineage and all 60 normal attributes; see
+`D11_COMBINED_BLADE_REPAIR_PREP_20260929.md`. Neither Blender process saved a
 Blend or exported a USF. The accepted repaired USF remains the build input;
 the `native-blend` gate remains blocked.

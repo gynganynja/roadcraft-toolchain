@@ -109,6 +109,9 @@ def main() -> None:
     parser.add_argument("--push-branch-scratch-repair", action="store_true")
     parser.add_argument("--push-branch-host-sha256")
     parser.add_argument("--push-branch-worker-sha256")
+    parser.add_argument("--blade-roll-scratch-repair", action="store_true")
+    parser.add_argument("--blade-roll-host-sha256")
+    parser.add_argument("--blade-roll-worker-sha256")
     parser.add_argument("--blade-normal-scratch-repair", action="store_true")
     parser.add_argument("--blade-normal-repair-sha256")
     parser.add_argument("--blade-normal-native-usf", type=Path)
@@ -147,6 +150,18 @@ def main() -> None:
     elif (args.push_branch_host_sha256 is not None or
           args.push_branch_worker_sha256 is not None):
         raise ValueError("push-branch hashes require opt-in")
+    roll_host_file = Path(__file__).with_name("blender_blade_roll.py")
+    roll_worker_file = Path(__file__).with_name("blender_blade_roll_worker.py")
+    if args.blade_roll_scratch_repair:
+        if (not args.push_branch_scratch_repair or
+                not args.blade_roll_host_sha256 or
+                not args.blade_roll_worker_sha256 or
+                _sha(roll_host_file) != args.blade_roll_host_sha256 or
+                _sha(roll_worker_file) != args.blade_roll_worker_sha256):
+            raise ValueError("blade-roll module differs from host pin")
+    elif (args.blade_roll_host_sha256 is not None or
+          args.blade_roll_worker_sha256 is not None):
+        raise ValueError("blade-roll hashes require opt-in")
     blade_repair_file = Path(__file__).with_name(
         "blender_blade_normal_scratch_repair.py")
     blade_native = None
@@ -222,6 +237,22 @@ def main() -> None:
                 push_branch_repair["nativeBlendExportApproved"] is not False):
             raise RuntimeError("in-memory push-branch reconstruction differs")
         push_branch_repair["workerSha256"] = args.push_branch_worker_sha256
+    blade_roll_repair = None
+    if args.blade_roll_scratch_repair:
+        from blender_blade_roll_worker import run as reconstruct_blade_roll
+        from roadcraft.blender_blade_roll import validate_result as validate_roll
+
+        blender_sha = _sha(Path(bpy.app.binary_path))
+        blade_roll_repair = reconstruct_blade_roll(
+            blend=blend, usf=baseline, sdk_root=sdk,
+            worker_sha256=args.blade_roll_worker_sha256,
+            blender_sha256=blender_sha,
+            loaded_scene=True, push_branches_present=True)
+        validate_roll(blade_roll_repair, blender_sha,
+                      push_branches_present=True)
+        if blade_roll_repair["status"] != "IN_MEMORY_BLADE_ROLL_MATCH":
+            raise RuntimeError("in-memory blade-roll reconstruction differs")
+        blade_roll_repair["workerSha256"] = args.blade_roll_worker_sha256
     blade_normal_repair = None
     if args.blade_normal_scratch_repair:
         from blender_blade_normal_scratch_repair import (
@@ -233,7 +264,8 @@ def main() -> None:
         blade_normal_repair = install_in_memory_blade_normals(
             blend=blend, repaired=baseline, native=blade_native,
             native_sha256=args.blade_normal_native_sha256, sdk_root=sdk,
-            blender_sha256=_sha(Path(bpy.app.binary_path)))
+            blender_sha256=_sha(Path(bpy.app.binary_path)),
+            blade_roll_present=args.blade_roll_scratch_repair)
         if (blade_normal_repair["status"] !=
                 "IN_MEMORY_BLADE_NORMALS_INSTALLED" or
                 blade_normal_repair["normalAttributesInLiveScene"] != 60):
@@ -279,7 +311,8 @@ def main() -> None:
     native_rows = _node_rows(native_scene)
     if blade_normal_repair is not None:
         candidate_blade_normals = blade_normals_by_leaf(
-            native_scene._root_node, NATIVE_PARENT)
+            native_scene._root_node,
+            REPAIRED_PARENT if blade_roll_repair is not None else NATIVE_PARENT)
     if push_branch_repair is not None:
         target_paths = [row["path"] for row in
                         push_branch_repair["targetMatrixErrors"]]
@@ -287,6 +320,17 @@ def main() -> None:
             path in native_rows for path in target_paths)
         push_branch_repair["nativeTargetPathCount"] = sum(
             path in native_rows for path in target_paths)
+    if blade_roll_repair is not None:
+        target_paths = [row["path"] for row in
+                        blade_roll_repair["targetMatrixErrors"]]
+        blade_roll_repair["nativeTargetPathsPresent"] = all(
+            path in native_rows for path in target_paths)
+        blade_roll_repair["nativeTargetPathCount"] = sum(
+            path in native_rows for path in target_paths)
+        parent = "|@root|D11T_Rig.005|BoneChassis_cdt|BoneBladeLift_cdt|BoneBladeRoll_cdt|BoneBlade_cdt"
+        blade_roll_repair["nativeBladeMeshPathCount"] = sum(
+            parent + f"|cdt_blade_{index}" in native_rows
+            for index in range(60))
     if wiper_repair is not None:
         wiper_path = "|@root|D11T_Rig.005|BoneChassis_cdt|BoneAnim_WiperFront"
         splines = native_rows.get(wiper_path, {}).get("animation", {})
@@ -320,6 +364,10 @@ def main() -> None:
             _sha(Path(blender_armature_parity.__file__)) !=
             ARMATURE_PARITY_SHA256):
         raise RuntimeError("push-branch module changed during scratch export")
+    if blade_roll_repair is not None and (
+            _sha(roll_host_file) != args.blade_roll_host_sha256 or
+            _sha(roll_worker_file) != args.blade_roll_worker_sha256):
+        raise RuntimeError("blade-roll module changed during scratch export")
     if blade_normal_repair is not None and (
             _sha(blade_repair_file) != args.blade_normal_repair_sha256 or
             _sha(blade_native) != args.blade_normal_native_sha256):
@@ -344,6 +392,7 @@ def main() -> None:
         "nativeBlendExportApproved": False,
         "wiperRepair": wiper_repair,
         "pushBranchRepair": push_branch_repair,
+        "bladeRollRepair": blade_roll_repair,
         "bladeNormalRepair": blade_normal_repair,
     }
     if rgba_guard_detail is not None:

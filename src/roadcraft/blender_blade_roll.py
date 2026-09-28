@@ -21,7 +21,7 @@ from .source import file_sha256
 
 TOOLCHAIN_ROOT = Path(__file__).resolve().parents[2]
 WORKER = Path(__file__).with_name("blender_blade_roll_worker.py")
-WORKER_SHA256 = "df8d94c1712e35ec7aee87883d3b1bfd571b1bbbe688cd46b9ddf39be79c2787"
+WORKER_SHA256 = "ced27a3f52a0a80764eecbd07edce6e9c6b32d6f5f6b77a5f35e57be1b2399be"
 PUSH_WORKER = Path(__file__).with_name("blender_push_branches_worker.py")
 PUSH_WORKER_SHA256 = "974df2d86d1045a57acf392ad8367a2db19a0367a1a717fe3b04baf9e7ca63d0"
 LEFT_PROBE_SHA256 = "003e0f6d38cf37976fc4c91eeba2df5dff6c9882d3cbbe29d53d8a516234da72"
@@ -40,7 +40,7 @@ def _finite_nonnegative(value: object) -> bool:
     return type(value) in (int, float) and math.isfinite(value) and value >= 0
 
 
-def _residual_paths() -> tuple[list[str], list[str]]:
+def _residual_paths(push_branches_present: bool = False) -> tuple[list[str], list[str]]:
     source = [CHASSIS_PREFIX + "|BoneAccess_Ladder"]
     repaired = [
         CHASSIS_PREFIX + "|BoneAccess_LadderMount",
@@ -53,13 +53,14 @@ def _residual_paths() -> tuple[list[str], list[str]]:
           ("coolant", "fuel", "hyd_temp", "tach", "trans_temp")),
         CHASSIS_PREFIX + "|sfx",
     ]
-    for side in ("left", "right"):
-        tilt = ROOT_PREFIX + f"|IK_tilt_{side}_base"
-        source.extend((tilt, tilt + f"|IK_tilt_{side}_tip"))
-        push = ROOT_PREFIX + f"|IK_push_arm_{side}_base"
-        repaired.extend((push, push + f"|IK_push_arm_{side}_tip",
-                         push + f"|IK_tilt_{side}_base",
-                         push + f"|IK_tilt_{side}_base|IK_tilt_{side}_tip"))
+    if not push_branches_present:
+        for side in ("left", "right"):
+            tilt = ROOT_PREFIX + f"|IK_tilt_{side}_base"
+            source.extend((tilt, tilt + f"|IK_tilt_{side}_tip"))
+            push = ROOT_PREFIX + f"|IK_push_arm_{side}_base"
+            repaired.extend((push, push + f"|IK_push_arm_{side}_tip",
+                             push + f"|IK_tilt_{side}_base",
+                             push + f"|IK_tilt_{side}_base|IK_tilt_{side}_tip"))
     return sorted(source), sorted(repaired)
 
 
@@ -68,16 +69,22 @@ def _target_paths() -> list[str]:
     return [roll, roll + "|BoneBlade_cdt"]
 
 
-def validate_result(value: object, blender_sha256: str) -> dict:
+def validate_result(value: object, blender_sha256: str, *,
+                    push_branches_present: bool = False) -> dict:
     if not isinstance(value, dict) or value.get("schemaVersion") != 1:
         raise BladeRollError("Blender result schema differs")
+    if type(push_branches_present) is not bool:
+        raise BladeRollError("push-branch option must be boolean")
     expected = {
         "asset": "cat_d11t", "blendSha256": BLEND_SHA256,
         "repairedUsfSha256": USF_SHA256,
         "blenderSha256": blender_sha256, "sceneFrame": 1,
-        "beforeSourceBoneCount": 384, "afterSourceBoneCount": 385,
+        "beforeSourceBoneCount": 388 if push_branches_present else 384,
+        "afterSourceBoneCount": 389 if push_branches_present else 385,
         "repairedStructuralCount": 400,
-        "beforeSharedPathCount": 378, "afterSharedPathCount": 380,
+        "beforeSharedPathCount": 386 if push_branches_present else 378,
+        "afterSharedPathCount": 388 if push_branches_present else 380,
+        "pushBranchesPresent": push_branches_present,
         "afterChangedMatrixCount": 0,
         "bladeMeshCount": 60,
         "newBoneEditLength": 0.25,
@@ -93,7 +100,7 @@ def validate_result(value: object, blender_sha256: str) -> dict:
             not value["blenderVersion"].startswith(
                 BLENDER_VERSION_PINS[blender_sha256])):
         raise BladeRollError("Blender version differs")
-    source, repaired = _residual_paths()
+    source, repaired = _residual_paths(push_branches_present)
     if (value.get("afterSourceOnlyPaths") != source or
             value.get("afterRepairedOnlyPaths") != repaired):
         raise BladeRollError("Residual hierarchy paths differ")

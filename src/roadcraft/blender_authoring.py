@@ -36,8 +36,12 @@ PUSH_BRANCH_HOST = Path(__file__).with_name("blender_push_branches.py")
 PUSH_BRANCH_HOST_SHA256 = "f0a684c03983cd9d89b739bc7f5aa48b503cd2831b9de6f5a5f1d06d34a523f7"
 PUSH_BRANCH_WORKER = Path(__file__).with_name("blender_push_branches_worker.py")
 PUSH_BRANCH_WORKER_SHA256 = "974df2d86d1045a57acf392ad8367a2db19a0367a1a717fe3b04baf9e7ca63d0"
+BLADE_ROLL_HOST = Path(__file__).with_name("blender_blade_roll.py")
+BLADE_ROLL_HOST_SHA256 = "24d4b9513617d0638af52dac95238199a2bfd880c6926d68f7a230adf1bc4d89"
+BLADE_ROLL_WORKER = Path(__file__).with_name("blender_blade_roll_worker.py")
+BLADE_ROLL_WORKER_SHA256 = "ced27a3f52a0a80764eecbd07edce6e9c6b32d6f5f6b77a5f35e57be1b2399be"
 BLADE_NORMAL_REPAIR = Path(__file__).with_name("blender_blade_normal_scratch_repair.py")
-BLADE_NORMAL_REPAIR_SHA256 = "679214409dd738fe3ca7340558690592a77fe6f87fc9ae0b375acdcfc5ed5bf2"
+BLADE_NORMAL_REPAIR_SHA256 = "9f1461a3aa24077f77fcef831f8abf96101fd89a60457c3fee4912a85bc3b1cf"
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -122,6 +126,7 @@ def run_authoring_probe(
     blender_threads: int | None = 1,
     wiper_scratch_repair: bool = False,
     push_branch_scratch_repair: bool = False,
+    blade_roll_scratch_repair: bool = False,
     blade_normal_scratch_repair: bool = False,
     rgba_cache_guard: bool = False,
     dry_run: bool = True,
@@ -169,6 +174,25 @@ def run_authoring_probe(
         try:
             blender_push_branches.require_sdk_pins(sdk)
         except blender_push_branches.LeftPushProbeError as error:
+            raise BlenderAuthoringError(str(error)) from error
+    if not isinstance(blade_roll_scratch_repair, bool):
+        raise BlenderAuthoringError("blade-roll scratch repair option must be boolean")
+    if blade_roll_scratch_repair:
+        from . import blender_blade_roll
+        if (not push_branch_scratch_repair or asset_name != "cat_d11t" or
+                file_sha256(blend) != blender_blade_roll.BLEND_SHA256 or
+                file_sha256(baseline) != blender_blade_roll.USF_SHA256 or
+                actual_blender_sha not in blender_blade_roll.BLENDER_VERSION_PINS or
+                file_sha256(BLADE_ROLL_HOST) != BLADE_ROLL_HOST_SHA256 or
+                file_sha256(BLADE_ROLL_WORKER) != BLADE_ROLL_WORKER_SHA256 or
+                blender_blade_roll.WORKER_SHA256 != BLADE_ROLL_WORKER_SHA256 or
+                blender_blade_roll.PUSH_WORKER_SHA256 !=
+                PUSH_BRANCH_WORKER_SHA256):
+            raise BlenderAuthoringError(
+                "blade-roll scratch source or tool differs from reviewed pins")
+        try:
+            blender_blade_roll.require_sdk_pins(sdk)
+        except blender_blade_roll.LeftPushProbeError as error:
             raise BlenderAuthoringError(str(error)) from error
     if not isinstance(blade_normal_scratch_repair, bool):
         raise BlenderAuthoringError("blade-normal scratch repair option must be boolean")
@@ -257,6 +281,11 @@ def run_authoring_probe(
                                  push_branch_scratch_repair else None),
         "pushBranchWorkerSha256": (PUSH_BRANCH_WORKER_SHA256 if
                                    push_branch_scratch_repair else None),
+        "bladeRollRepairRequested": blade_roll_scratch_repair,
+        "bladeRollHostSha256": (BLADE_ROLL_HOST_SHA256 if
+                                blade_roll_scratch_repair else None),
+        "bladeRollWorkerSha256": (BLADE_ROLL_WORKER_SHA256 if
+                                  blade_roll_scratch_repair else None),
         "bladeNormalRepairRequested": blade_normal_scratch_repair,
         "bladeNormalRepairSha256": (BLADE_NORMAL_REPAIR_SHA256 if
                                     blade_normal_scratch_repair else None),
@@ -294,6 +323,10 @@ def run_authoring_probe(
            "--push-branch-host-sha256", PUSH_BRANCH_HOST_SHA256,
            "--push-branch-worker-sha256", PUSH_BRANCH_WORKER_SHA256]
           if push_branch_scratch_repair else []),
+        *(["--blade-roll-scratch-repair",
+           "--blade-roll-host-sha256", BLADE_ROLL_HOST_SHA256,
+           "--blade-roll-worker-sha256", BLADE_ROLL_WORKER_SHA256]
+          if blade_roll_scratch_repair else []),
         *(["--blade-normal-scratch-repair",
            "--blade-normal-repair-sha256", BLADE_NORMAL_REPAIR_SHA256,
            "--blade-normal-native-usf", str(blade_native),
@@ -356,6 +389,12 @@ def run_authoring_probe(
             blender_push_branches.LEFT_PROBE_SHA256 and
             file_sha256(Path(blender_armature_parity.__file__)) ==
             blender_push_branches.ARMATURE_PARITY_SHA256)
+    if blade_roll_scratch_repair:
+        result["bladeRollHostSha256After"] = file_sha256(BLADE_ROLL_HOST)
+        result["bladeRollWorkerSha256After"] = file_sha256(BLADE_ROLL_WORKER)
+        result["bladeRollModulesUnchanged"] = (
+            result["bladeRollHostSha256After"] == BLADE_ROLL_HOST_SHA256 and
+            result["bladeRollWorkerSha256After"] == BLADE_ROLL_WORKER_SHA256)
     if blade_normal_scratch_repair:
         result["bladeNormalRepairSha256After"] = file_sha256(BLADE_NORMAL_REPAIR)
         result["bladeNormalNativeUsfSha256After"] = file_sha256(blade_native)
@@ -390,6 +429,20 @@ def run_authoring_probe(
         push_detail.get("nativeBlendExportApproved") is False and
         push_detail.get("workerSha256") == PUSH_BRANCH_WORKER_SHA256
     ) if push_branch_scratch_repair else push_detail is None
+    roll_detail = diagnostic.get("bladeRollRepair") if isinstance(diagnostic, dict) else None
+    roll_detail_valid = (
+        isinstance(roll_detail, dict) and
+        roll_detail.get("status") == "IN_MEMORY_BLADE_ROLL_MATCH" and
+        roll_detail.get("pushBranchesPresent") is True and
+        roll_detail.get("afterSourceBoneCount") == 389 and
+        roll_detail.get("afterSharedPathCount") == 388 and
+        roll_detail.get("nativeTargetPathsPresent") is True and
+        roll_detail.get("nativeBladeMeshPathCount") == 60 and
+        roll_detail.get("blendSaved") is False and
+        roll_detail.get("usfExported") is False and
+        roll_detail.get("nativeBlendExportApproved") is False and
+        roll_detail.get("workerSha256") == BLADE_ROLL_WORKER_SHA256
+    ) if blade_roll_scratch_repair else roll_detail is None
     blade_detail = diagnostic.get("bladeNormalRepair") if isinstance(diagnostic, dict) else None
     blade_detail_valid = (
         isinstance(blade_detail, dict) and
@@ -404,6 +457,7 @@ def run_authoring_probe(
         blade_detail.get("triangles") == 2162 and
         blade_detail.get("corners") == 6486 and
         blade_detail.get("normalAttributesInLiveScene") == 60 and
+        blade_detail.get("bladeRollPresent") is blade_roll_scratch_repair and
         blade_detail.get("normalAttributesAfterExport") == 60 and
         blade_detail.get("nativeNormalMatchesRepaired") == 60 and
         blade_detail.get("rowsDigestSha256") ==
@@ -418,6 +472,7 @@ def run_authoring_probe(
         elif (not result["sourceUnchanged"] or not result["sdkUnchanged"] or
               result.get("wiperRepairModuleUnchanged") is False or
               result.get("pushBranchModulesUnchanged") is False or
+              result.get("bladeRollModulesUnchanged") is False or
               result.get("bladeNormalInputsUnchanged") is False or
               result.get("rgbaCacheGuardModuleUnchanged") is False):
             result["status"] = "INPUT_CHANGED"
@@ -431,6 +486,7 @@ def run_authoring_probe(
               (not wiper_scratch_repair and
                diagnostic.get("wiperRepair") not in (None, {})) or
               not guard_detail_valid or not push_detail_valid or
+              not roll_detail_valid or
               not blade_detail_valid):
             result["status"] = "HELPER_MISMATCH"
         elif (diagnostic.get("rootNameMatches") is False or
@@ -486,6 +542,8 @@ def main() -> None:
                         help="Opt-in in-memory wiper action repair during scratch export")
     parser.add_argument("--push-branch-scratch-repair", action="store_true",
                         help="Opt-in base D11 push-arm hierarchy repair during scratch export")
+    parser.add_argument("--blade-roll-scratch-repair", action="store_true",
+                        help="Opt-in base D11 blade-roll hierarchy repair after push branches")
     parser.add_argument("--blade-normal-scratch-repair", action="store_true",
                         help="Opt-in base D11 blade normal repair during scratch export")
     parser.add_argument("--rgba-cache-guard", action="store_true",
@@ -500,6 +558,7 @@ def main() -> None:
         timeout_seconds=args.timeout_seconds, blender_threads=args.blender_threads,
         wiper_scratch_repair=args.wiper_scratch_repair,
         push_branch_scratch_repair=args.push_branch_scratch_repair,
+        blade_roll_scratch_repair=args.blade_roll_scratch_repair,
         blade_normal_scratch_repair=args.blade_normal_scratch_repair,
         rgba_cache_guard=args.rgba_cache_guard,
         dry_run=not args.run,

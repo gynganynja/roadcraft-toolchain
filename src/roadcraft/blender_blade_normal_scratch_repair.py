@@ -50,9 +50,34 @@ def require_dependency_pins() -> None:
         projection.require_hash(path, digest, label)
 
 
+def _source_path_with_roll(obj) -> str:
+    """Require the exact repaired blade lineage in the loaded scratch scene."""
+    projection._require(obj is not None and obj.type == "MESH" and
+                        bpy.context.scene.objects.get(obj.name) == obj and
+                        obj.visible_get(),
+                        "source blade mesh is outside visible scene")
+    armature = obj.parent
+    projection._require(
+        armature is not None and armature.type == "ARMATURE" and
+        armature.name == "D11T_Rig.005" and obj.parent_type == "BONE" and
+        obj.parent_bone == "BoneBlade_cdt" and armature.visible_get() and
+        bpy.context.scene.collection.objects.get(armature.name) == armature,
+        f"source blade parent differs: {obj.name}")
+    bone = armature.pose.bones.get(obj.parent_bone)
+    lineage = []
+    while bone is not None:
+        lineage.append(bone.name)
+        bone = bone.parent
+    path = "|@root|" + armature.name + "|" + "|".join(reversed(lineage)) + "|" + obj.name
+    projection._require(path == projection.REPAIRED_PARENT + "|" + obj.name,
+                        f"source blade-roll path differs: {obj.name}")
+    return path
+
+
 def install_in_memory_blade_normals(*, blend: Path, repaired: Path,
                                     native: Path, native_sha256: str,
-                                    sdk_root: Path, blender_sha256: str) -> dict:
+                                    sdk_root: Path, blender_sha256: str,
+                                    blade_roll_present: bool = False) -> dict:
     """Verify the 60 source meshes and keep exact normal attributes in RAM."""
     projection._require(blender_sha256 in projection.BLENDER_VERSION_PINS and
                         bpy.app.version_string.startswith(
@@ -73,6 +98,8 @@ def install_in_memory_blade_normals(*, blend: Path, repaired: Path,
                     if obj.type == "MESH"}
     projection._require(len(scene_meshes) == 210,
                         "source scene mesh coverage differs")
+    projection._require(type(blade_roll_present) is bool,
+                        "blade-roll option must be boolean")
 
     native_blades = _usf_blades(native, projection.NATIVE_PARENT)
     repaired_blades = _usf_blades(repaired, projection.REPAIRED_PARENT)
@@ -81,9 +108,12 @@ def install_in_memory_blade_normals(*, blend: Path, repaired: Path,
     try:
         for leaf in projection.LEAVES:
             obj = scene_meshes.get(leaf)
+            expected_parent = (projection.REPAIRED_PARENT if
+                               blade_roll_present else projection.NATIVE_PARENT)
+            path = (_source_path_with_roll(obj) if blade_roll_present else
+                    _source_path(obj))
             projection._require(obj is not None and
-                                _source_path(obj) ==
-                                projection.NATIVE_PARENT + "|" + leaf,
+                                path == expected_parent + "|" + leaf,
                                 f"source blade path differs: {leaf}")
             native_row = native_blades[projection.NATIVE_PARENT + "|" + leaf]
             repaired_row = repaired_blades[projection.REPAIRED_PARENT + "|" + leaf]
@@ -137,6 +167,7 @@ def install_in_memory_blade_normals(*, blend: Path, repaired: Path,
         "corners": projection.EXPECTED_CORNERS,
         "rowsDigestSha256": row_digest,
         "normalAttributesInLiveScene": len(installed),
+        "bladeRollPresent": blade_roll_present,
         "blendSaved": False,
         "usfExported": False,
         "nativeBlendExportApproved": False,
