@@ -15,6 +15,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from roadcraft import blender_authoring as authoring  # noqa: E402
+from roadcraft import blender_rgba_cache_guard as rgba_guard  # noqa: E402
 from roadcraft import blender_wiper_repair as wiper_repair  # noqa: E402
 from roadcraft.blender_parity_evidence import package_evidence  # noqa: E402
 from roadcraft.blender_parity_diff import compare_node_rows  # noqa: E402
@@ -90,6 +91,17 @@ class BlenderAuthoringTests(unittest.TestCase):
             receipt_path=self.receipt, dry_run=dry_run, **options,
         )
 
+    def _guard_pin_patch(self):
+        mesh = self.sdk / "saber/blender/lib/usf/mesh.py"
+        mesh.write_text("# synthetic reviewed mesh\n", encoding="utf-8")
+        return mock.patch.multiple(
+            rgba_guard, ASSET_NAME="test",
+            BLEND_SHA256=file_sha256(self.blend),
+            BASELINE_USF_SHA256=file_sha256(self.usf),
+            BLENDER_SHA256=file_sha256(self.blender),
+            SDK_MESH_SHA256=file_sha256(mesh),
+        )
+
     def test_dry_run_verifies_pins_without_output(self) -> None:
         with mock.patch.object(authoring.subprocess, "run", return_value=
                                subprocess.CompletedProcess([], 0,
@@ -107,6 +119,7 @@ class BlenderAuthoringTests(unittest.TestCase):
                 return subprocess.CompletedProcess(command, 0,
                                                    stdout="Blender 5.2.0 LTS\n")
             self.assertEqual(command[command.index("--threads") + 1], "1")
+            self.assertNotIn("--rgba-cache-guard", command)
             candidate = Path(command[command.index("--candidate-usf") + 1])
             result_path = Path(command[command.index("--result") + 1])
             candidate.write_bytes(b"different native export")
@@ -193,6 +206,111 @@ class BlenderAuthoringTests(unittest.TestCase):
                                     "wiper scratch source or SDK"):
             self._run(wiper_scratch_repair=True)
         self.assertFalse(self.scratch.exists())
+
+    def test_rgba_guard_rejects_unreviewed_asset_before_launch_or_write(self) -> None:
+        with mock.patch.object(authoring.subprocess, "run") as launch:
+            with self.assertRaisesRegex(authoring.BlenderAuthoringError,
+                                        "RGBA cache guard source"):
+                self._run(rgba_cache_guard=True)
+        launch.assert_not_called()
+        self.assertFalse(self.scratch.exists())
+        self.assertFalse(self.receipt.exists())
+
+    def test_rgba_guard_rejects_changed_module_before_launch_or_write(self) -> None:
+        real_hash = authoring.file_sha256
+
+        def changed_guard_hash(path):
+            if Path(path) == authoring.RGBA_CACHE_GUARD:
+                return "0" * 64
+            return real_hash(path)
+
+        with self._guard_pin_patch(), \
+                mock.patch.object(authoring, "file_sha256",
+                                  side_effect=changed_guard_hash), \
+                mock.patch.object(authoring.subprocess, "run") as launch:
+            with self.assertRaisesRegex(authoring.BlenderAuthoringError,
+                                        "guard module differs"):
+                self._run(rgba_cache_guard=True)
+        launch.assert_not_called()
+        self.assertFalse(self.scratch.exists())
+        self.assertFalse(self.receipt.exists())
+
+    def test_rgba_guard_dry_run_is_pinned_and_has_no_output(self) -> None:
+        with self._guard_pin_patch(), mock.patch.object(
+                authoring.subprocess, "run", return_value=
+                subprocess.CompletedProcess([], 0,
+                                            stdout="Blender 5.2.0 LTS\n")):
+            result = self._run(rgba_cache_guard=True)
+        self.assertEqual(result["status"], "DRY_RUN")
+        self.assertTrue(result["rgbaCacheGuardRequested"])
+        self.assertEqual(result["rgbaCacheGuardSha256"],
+                         authoring.RGBA_CACHE_GUARD_SHA256)
+        self.assertFalse(self.scratch.exists())
+
+    def test_rgba_guard_command_receipt_and_native_gate(self) -> None:
+        def fake_blender(command, **kwargs):
+            if "--version" in command:
+                return subprocess.CompletedProcess(command, 0,
+                                                   stdout="Blender 5.2.0 LTS\n")
+            self.assertIn("--rgba-cache-guard", command)
+            self.assertEqual(command[command.index("--asset") + 1], "test")
+            guard_sha = command[command.index("--rgba-cache-guard-sha256") + 1]
+            self.assertEqual(guard_sha, file_sha256(authoring.RGBA_CACHE_GUARD))
+            candidate = Path(command[command.index("--candidate-usf") + 1])
+            helper_result = Path(command[command.index("--result") + 1])
+            candidate.write_bytes(b"scratch candidate only")
+            helper_result.write_text(json.dumps({
+                "blendSha256": file_sha256(self.blend),
+                "baselineUsfSha256": file_sha256(self.usf),
+                "candidateUsfSha256": file_sha256(candidate),
+                "candidateUsfBytes": candidate.stat().st_size,
+                "nativeBlendExportApproved": False,
+                "baselineSemantic": {"nodes": 2},
+                "candidateSemantic": {"nodes": 1},
+                "nodeDiff": {"matchesIndexedFields": False},
+                "rgbaCacheGuard": {"schemaVersion": 1, "enabled": True,
+                                   "packCalls": 10, "restored": True,
+                                   "cacheClearedAfter": True,
+                                   "moduleSha256": guard_sha},
+            }), encoding="utf-8")
+            return subprocess.CompletedProcess(command, 0)
+
+        with self._guard_pin_patch(), mock.patch.object(
+                authoring.subprocess, "run", side_effect=fake_blender):
+            result = self._run(dry_run=False, rgba_cache_guard=True)
+        self.assertEqual(result["status"], "PARITY_DIFFERENT")
+        self.assertEqual(result["exportGate"]["status"], "BLOCKED")
+        self.assertTrue(result["rgbaCacheGuardModuleUnchanged"])
+        self.assertFalse(result["nativeBlendExportApproved"])
+        summary = json.loads(self.receipt.read_text(encoding="utf-8"))
+        self.assertTrue(summary["rgbaCacheGuardRequested"])
+        self.assertEqual(summary["rgbaCacheGuard"]["packCalls"], 10)
+
+    def test_rgba_guard_rejects_missing_helper_attestation(self) -> None:
+        def fake_blender(command, **kwargs):
+            if "--version" in command:
+                return subprocess.CompletedProcess(command, 0,
+                                                   stdout="Blender 5.2.0 LTS\n")
+            candidate = Path(command[command.index("--candidate-usf") + 1])
+            helper_result = Path(command[command.index("--result") + 1])
+            candidate.write_bytes(b"scratch candidate only")
+            helper_result.write_text(json.dumps({
+                "blendSha256": file_sha256(self.blend),
+                "baselineUsfSha256": file_sha256(self.usf),
+                "candidateUsfSha256": file_sha256(candidate),
+                "candidateUsfBytes": candidate.stat().st_size,
+                "nativeBlendExportApproved": False,
+                "baselineSemantic": {"nodes": 1},
+                "candidateSemantic": {"nodes": 1},
+                "nodeDiff": {"matchesIndexedFields": True},
+            }), encoding="utf-8")
+            return subprocess.CompletedProcess(command, 0)
+
+        with self._guard_pin_patch(), mock.patch.object(
+                authoring.subprocess, "run", side_effect=fake_blender):
+            result = self._run(dry_run=False, rgba_cache_guard=True)
+        self.assertEqual(result["status"], "HELPER_MISMATCH")
+        self.assertEqual(result["exportGate"]["status"], "BLOCKED")
 
     def test_opt_in_wiper_repair_is_pinned_and_keeps_gate_closed(self) -> None:
         sdk_misc = self.sdk / "saber/blender/lib/usf/misc.py"

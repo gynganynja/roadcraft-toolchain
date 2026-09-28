@@ -20,6 +20,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from blender_parity_diff import compare_node_rows
 from blender_usf_helper import _semantic_summary
 from blender_wiper_repair import install_scratch_wiper_repair
+from blender_rgba_cache_guard import (SDK_MESH_SHA256, immutable_rgba_cache,
+                                      require_pins as require_rgba_guard_pins)
 
 
 def _sha(path: Path) -> str:
@@ -104,6 +106,9 @@ def main() -> None:
     parser.add_argument("--scratch-root", type=Path, required=True)
     parser.add_argument("--sdk-script-root", type=Path, required=True)
     parser.add_argument("--wiper-scratch-repair", action="store_true")
+    parser.add_argument("--rgba-cache-guard", action="store_true")
+    parser.add_argument("--rgba-cache-guard-sha256")
+    parser.add_argument("--asset")
     args = parser.parse_args(argv)
 
     blend = args.blend.resolve(strict=True)
@@ -124,12 +129,31 @@ def main() -> None:
     if (blend_before != args.blend_sha256.lower() or
             baseline_before != args.baseline_sha256.lower()):
         raise ValueError("authoring source differs from its inventory pin")
+    rgba_guard_file = Path(__file__).with_name("blender_rgba_cache_guard.py")
+    sdk_mesh_file = sdk / "saber/blender/lib/usf/mesh.py"
+    if args.rgba_cache_guard:
+        if (not args.rgba_cache_guard_sha256 or
+                _sha(rgba_guard_file) != args.rgba_cache_guard_sha256):
+            raise ValueError("RGBA cache guard module differs from host pin")
+        require_rgba_guard_pins(
+            asset_name=args.asset, blend_sha256=blend_before,
+            baseline_usf_sha256=baseline_before,
+            blender_sha256=_sha(Path(bpy.app.binary_path)),
+            sdk_mesh_sha256=_sha(sdk_mesh_file),
+            blender_version=bpy.app.version_string)
+    elif args.rgba_cache_guard_sha256 is not None or args.asset is not None:
+        raise ValueError("RGBA cache guard arguments require opt-in")
 
     sys.path.insert(0, str(sdk))
     from saber.blender.lib.binary_io import BinaryIO
     from saber.blender.lib.usf.export import export_to_usf
     from saber.blender.lib.usf.scene import usf_read
     from saber.blender.lib.usf import misc as sdk_misc
+    if args.rgba_cache_guard:
+        from saber.blender.lib.usf.mesh import RGBA_CACHE, UsfMeshColorSet
+        if Path(UsfMeshColorSet.rgba_to_saber.__code__.co_filename).resolve() != \
+                sdk_mesh_file.resolve():
+            raise ValueError("RGBA cache packer is outside reviewed SDK mesh")
 
     original_reader = BinaryIO.read_bytearray
     BinaryIO.read_bytearray = (
@@ -148,7 +172,20 @@ def main() -> None:
     config_path = sdk / "saber/blender/blender_to_usf/name_convention_config.json"
     config = json.loads(config_path.read_text(encoding="utf-8"))
     config.update({"src_fmt": "blend", "src_filename": blend.name})
-    export_to_usf(bpy.context.scene, str(candidate), config)
+    rgba_guard_detail = None
+    if args.rgba_cache_guard:
+        with immutable_rgba_cache(UsfMeshColorSet, RGBA_CACHE) as rgba_guard_detail:
+            export_to_usf(bpy.context.scene, str(candidate), config)
+        if not (rgba_guard_detail["restored"] and
+                rgba_guard_detail["cacheClearedAfter"] and
+                rgba_guard_detail["packCalls"] > 0):
+            raise RuntimeError("RGBA cache guard did not complete")
+        rgba_guard_detail["moduleSha256"] = _sha(rgba_guard_file)
+        if rgba_guard_detail["moduleSha256"] != args.rgba_cache_guard_sha256 or \
+                _sha(sdk_mesh_file) != SDK_MESH_SHA256:
+            raise RuntimeError("RGBA cache guard or SDK changed during scratch export")
+    else:
+        export_to_usf(bpy.context.scene, str(candidate), config)
     if wiper_repair is not None:
         if (wiper_repair["actionOrder"] !=
                 ["d11_wipers_backward", "d11_wipers_forward"] or
@@ -198,6 +235,8 @@ def main() -> None:
         "nativeBlendExportApproved": False,
         "wiperRepair": wiper_repair,
     }
+    if rgba_guard_detail is not None:
+        result["rgbaCacheGuard"] = rgba_guard_detail
     result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n",
                            encoding="utf-8")
     print("ROADCRAFT_AUTHORING_PROBE " + json.dumps({

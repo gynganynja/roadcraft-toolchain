@@ -90,7 +90,7 @@ def compact_summary(
     baseline = diagnostic.get("baselineSemantic", {})
     candidate = diagnostic.get("candidateSemantic", {})
     diff = diagnostic.get("nodeDiff", {})
-    return {
+    summary = {
         "schemaVersion": 1,
         "asset": full["asset"],
         "status": full["status"],
@@ -143,6 +143,14 @@ def compact_summary(
         "archiveSha256": archive_sha256,
         "archiveBytes": archive_bytes,
     }
+    if full.get("rgbaCacheGuardRequested") is True:
+        summary.update({
+            "rgbaCacheGuardRequested": True,
+            "rgbaCacheGuardSha256": full.get("rgbaCacheGuardSha256"),
+            "rgbaCacheGuardModuleUnchanged": full.get("rgbaCacheGuardModuleUnchanged"),
+            "rgbaCacheGuard": diagnostic.get("rgbaCacheGuard"),
+        })
+    return summary
 
 
 def package_evidence(

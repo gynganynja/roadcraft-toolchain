@@ -20,7 +20,7 @@ import subprocess
 from typing import Any
 
 from .blender_parity_evidence import package_evidence
-from . import blender_wiper_repair
+from . import blender_rgba_cache_guard, blender_wiper_repair
 from .source import (ExportBlockedError, compare_source_baselines, file_sha256,
                      require_export_allowed)
 
@@ -30,6 +30,8 @@ HELPER = Path(__file__).with_name("blender_authoring_helper.py")
 DIFF = Path(__file__).with_name("blender_parity_diff.py")
 SUMMARY = Path(__file__).with_name("blender_usf_helper.py")
 WIPER_REPAIR = Path(__file__).with_name("blender_wiper_repair.py")
+RGBA_CACHE_GUARD = Path(__file__).with_name("blender_rgba_cache_guard.py")
+RGBA_CACHE_GUARD_SHA256 = "9a8454527dde123a7f6fdcc4daf55b53662c570b844b2a9614a01a1e53b5813c"
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -113,6 +115,7 @@ def run_authoring_probe(
     timeout_seconds: int = 900,
     blender_threads: int | None = 1,
     wiper_scratch_repair: bool = False,
+    rgba_cache_guard: bool = False,
     dry_run: bool = True,
 ) -> dict[str, Any]:
     """Compare one pinned .blend to its repaired USF without adopting output."""
@@ -138,6 +141,19 @@ def run_authoring_probe(
             sdk_hashes.get("saber/blender/lib/usf/scene.py") !=
             blender_wiper_repair.SDK_SCENE_SHA256):
         raise BlenderAuthoringError("wiper scratch source or SDK differs from reviewed pins")
+    if not isinstance(rgba_cache_guard, bool):
+        raise BlenderAuthoringError("RGBA cache guard option must be boolean")
+    if rgba_cache_guard:
+        if file_sha256(RGBA_CACHE_GUARD) != RGBA_CACHE_GUARD_SHA256:
+            raise BlenderAuthoringError("RGBA cache guard module differs from reviewed pin")
+        try:
+            blender_rgba_cache_guard.require_pins(
+                asset_name=asset_name, blend_sha256=file_sha256(blend),
+                baseline_usf_sha256=file_sha256(baseline),
+                blender_sha256=actual_blender_sha,
+                sdk_mesh_sha256=sdk_hashes.get("saber/blender/lib/usf/mesh.py", ""))
+        except blender_rgba_cache_guard.RgbaCacheGuardError as exc:
+            raise BlenderAuthoringError(str(exc)) from exc
     scratch = _inside(Path(scratch_root), TOOLCHAIN_ROOT / "local", "scratch root")
     receipt = _inside(Path(receipt_path), TOOLCHAIN_ROOT, "receipt")
     archive = _inside(Path(archive_path) if archive_path is not None else
@@ -153,6 +169,16 @@ def run_authoring_probe(
         raise BlenderAuthoringError("Blender threads must be between 1 and 1024")
     version = subprocess.run([str(blender), "--version"], capture_output=True,
                              text=True, timeout=30, check=True).stdout.splitlines()[0]
+    if rgba_cache_guard:
+        try:
+            blender_rgba_cache_guard.require_pins(
+                asset_name=asset_name, blend_sha256=file_sha256(blend),
+                baseline_usf_sha256=file_sha256(baseline),
+                blender_sha256=actual_blender_sha,
+                sdk_mesh_sha256=sdk_hashes["saber/blender/lib/usf/mesh.py"],
+                blender_version=version)
+        except blender_rgba_cache_guard.RgbaCacheGuardError as exc:
+            raise BlenderAuthoringError(str(exc)) from exc
     base = {
         "schemaVersion": 1, "asset": asset_name,
         "inventoryPath": str(inventory_file),
@@ -173,6 +199,9 @@ def run_authoring_probe(
         "archivePath": str(archive),
         "nativeBlendExportApproved": False,
     }
+    if rgba_cache_guard:
+        base.update({"rgbaCacheGuardRequested": True,
+                     "rgbaCacheGuardSha256": RGBA_CACHE_GUARD_SHA256})
     if dry_run:
         return {**base, "status": "DRY_RUN", "dryRun": True}
 
@@ -194,6 +223,9 @@ def run_authoring_probe(
         "--candidate-usf", str(candidate), "--result", str(helper_result),
         "--scratch-root", str(scratch), "--sdk-script-root", str(sdk),
         *(["--wiper-scratch-repair"] if wiper_scratch_repair else []),
+        *(["--rgba-cache-guard", "--asset", asset_name,
+           "--rgba-cache-guard-sha256", base["rgbaCacheGuardSha256"]]
+          if rgba_cache_guard else []),
     ]
     environment = dict(os.environ)
     environment.update({
@@ -238,12 +270,28 @@ def run_authoring_probe(
         result["wiperRepairSha256After"] = file_sha256(WIPER_REPAIR)
         result["wiperRepairModuleUnchanged"] = (
             result["wiperRepairSha256After"] == base["wiperRepairSha256"])
+    if rgba_cache_guard:
+        result["rgbaCacheGuardSha256After"] = file_sha256(RGBA_CACHE_GUARD)
+        result["rgbaCacheGuardModuleUnchanged"] = (
+            result["rgbaCacheGuardSha256After"] == base["rgbaCacheGuardSha256"])
     diagnostic = result.get("diagnostic", {})
+    guard_detail = diagnostic.get("rgbaCacheGuard") if isinstance(diagnostic, dict) else None
+    guard_detail_valid = (
+        isinstance(guard_detail, dict) and
+        guard_detail.get("schemaVersion") == 1 and
+        guard_detail.get("enabled") is True and
+        type(guard_detail.get("packCalls")) is int and
+        guard_detail["packCalls"] > 0 and
+        guard_detail.get("restored") is True and
+        guard_detail.get("cacheClearedAfter") is True and
+        guard_detail.get("moduleSha256") == base.get("rgbaCacheGuardSha256")
+    ) if rgba_cache_guard else guard_detail is None
     if result.get("status") not in ("TIMEOUT", "INVALID_HELPER_RESULT"):
         if result.get("blenderExitCode") != 0 or not diagnostic:
             result["status"] = "EXPORT_FAILED"
         elif (not result["sourceUnchanged"] or not result["sdkUnchanged"] or
-              result.get("wiperRepairModuleUnchanged") is False):
+              result.get("wiperRepairModuleUnchanged") is False or
+              result.get("rgbaCacheGuardModuleUnchanged") is False):
             result["status"] = "INPUT_CHANGED"
         elif (diagnostic.get("blendSha256") != base["blendSha256"] or
               diagnostic.get("baselineUsfSha256") != base["baselineUsfSha256"] or
@@ -253,7 +301,8 @@ def run_authoring_probe(
               (wiper_scratch_repair and not
                isinstance(diagnostic.get("wiperRepair"), dict)) or
               (not wiper_scratch_repair and
-               diagnostic.get("wiperRepair") not in (None, {}))):
+               diagnostic.get("wiperRepair") not in (None, {})) or
+              not guard_detail_valid):
             result["status"] = "HELPER_MISMATCH"
         elif (diagnostic.get("rootNameMatches") is False or
               diagnostic["nodeDiff"]["matchesIndexedFields"] is False or
@@ -306,6 +355,8 @@ def main() -> None:
     parser.add_argument("--run", action="store_true")
     parser.add_argument("--wiper-scratch-repair", action="store_true",
                         help="Opt-in in-memory wiper action repair during scratch export")
+    parser.add_argument("--rgba-cache-guard", action="store_true",
+                        help="Opt-in immutable RGBA cache keys for pinned v2 scratch export")
     args = parser.parse_args()
     result = run_authoring_probe(
         asset_name=args.asset, inventory_path=args.inventory,
@@ -315,6 +366,7 @@ def main() -> None:
         receipt_path=args.receipt, archive_path=args.archive,
         timeout_seconds=args.timeout_seconds, blender_threads=args.blender_threads,
         wiper_scratch_repair=args.wiper_scratch_repair,
+        rgba_cache_guard=args.rgba_cache_guard,
         dry_run=not args.run,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
