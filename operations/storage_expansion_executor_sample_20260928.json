@@ -18,8 +18,23 @@
     "trackedStatusSha256": "b6a931025009341c7c3f2689c7f70646b85b2e2a798ebed916400d43d8cf6413",
     "trackedStatusEntries": 5
   },
-  "activeProcesses": [],
-  "processInspectionError": "export-job command-line inspection unavailable: Get-CimInstance : Access denied \nAt line:1 char:32\n+ $ErrorActionPreference='Stop'; Get-CimInstance Win32_Process | Where- ...\n+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : PermissionDenied: (root\\cimv2:Win32_Process:String) [Get-CimInstance], CimException\n    + FullyQualifiedErrorId : HRESULT 0x80041003,Microsoft.Management.Infrastructure.CimCmdlets.GetCimInstanceCommand",
-  "checkedUtc": "2026-09-28T00:06:06.159611+00:00",
+  "activeProcesses": [
+    {
+      "pid": 11248,
+      "name": "python.exe",
+      "reason": "uninspectable-script-host"
+    }
+  ],
+  "processInspectionError": "command-line query failed: Get-CimInstance : Access denied \nAt line:1 char:32\n+ $ErrorActionPreference='Stop'; Get-CimInstance Win32_Process | Select ...\n+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : PermissionDenied: (root\\cimv2:Win32_Process:String) [Get-CimInstance], CimException\n    + FullyQualifiedErrorId : HRESULT 0x80041003,Microsoft.Management.Infrastructure.CimCmdlets.GetCimInstanceCommand",
+  "processInspection": {
+    "method": "toolhelp-conservative-script-host-block",
+    "complete": false,
+    "commandLinesAvailable": false,
+    "commandLineQueryError": "command-line query failed: Get-CimInstance : Access denied \nAt line:1 char:32\n+ $ErrorActionPreference='Stop'; Get-CimInstance Win32_Process | Select ...\n+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : PermissionDenied: (root\\cimv2:Win32_Process:String) [Get-CimInstance], CimException\n    + FullyQualifiedErrorId : HRESULT 0x80041003,Microsoft.Management.Infrastructure.CimCmdlets.GetCimInstanceCommand",
+    "snapshotMatchingProcessCount": 2,
+    "commandLineProcessCount": 0,
+    "ownPidExcluded": 33196
+  },
+  "checkedUtc": "2026-09-28T01:36:02.312428+00:00",
   "deletedCount": 0
 }

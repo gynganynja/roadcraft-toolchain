@@ -35,18 +35,18 @@ visually accepted and campaign accepted are different states.
 | Area | State at this snapshot | Evidence and limit |
 |---|---|---|
 | Core CLI, jobs and transactions | Implemented | `src/roadcraft/cli.py`, `jobs.py`, `transaction.py`. CLI job/transaction operations default to dry-run; `--apply` executes. A failed phase after native launch retains its lock; `jobs-recover` requires exact lock/receipt/installed/registry/config pins and verified terminal external state before release. No live job lock was released. |
-| Local inspect and synthetic tests | Dedicated environment passed | After the native observation audit, the target run completed 151 tests with 4 skips (the extra skip is the optional Windows symlink fixture); `git diff --check` passed. Earlier inspect/test receipts remain under `jobs/20260927T233929Z-cab582e7350c/receipt.json` and `jobs/20260927T234050Z-66e61f71fca5/receipt.json`. Repeat affected checks after new code edits; disclose skips. |
+| Local inspect and synthetic tests | Dedicated environment passed | After the native observation audit, the target run completed 151 tests with 4 skips (the extra skip is the optional Windows symlink fixture); `git diff --check` passed. The source mirror then completed 163 tests with 4 skips after the runtime probes, storage executor and native-runner telemetry changes. Earlier inspect/test receipts remain under `jobs/20260927T233929Z-cab582e7350c/receipt.json` and `jobs/20260927T234050Z-66e61f71fca5/receipt.json`. Repeat affected checks in the dedicated checkout after syncing; disclose skips. |
 | Project verification | Current expanded check passed | Target `verify --project` verified all 5 pins and 2,817 source files; `source-check` passed. The older source `d11_verify_20260928.json` is a four-pin snapshot and does not replace the newer result. |
 | Accepted vs AAA candidate | Installed accepted; no recovery required; AAA unaccepted | Latest target status reports installed accepted and `recoveryRequired: false`. AAA's historical capture still reports `FAIL_ROLLBACK_PENDING`, with `BASELINE_RESTORED` rollback evidence. Refresh status before native work. |
 | Project-local MCP and workflow plugin | Trust approved; enabled and smoke-tested | User approved trust. Codex CLI `mcp list` sees `roadcraft`, `substance_painter`, `roadcraft_blender_scratch` enabled. Local marketplace is registered and `roadcraft-workflow` installed/enabled. Real stdio inventories: RoadCraft 11, Painter 79, Blender 2. RoadCraft remains read-only; tool scopes differ across servers. |
 | Dedicated environment | Installed and verified | RoadCraft, Painter MCP and PyYAML are installed in `C:\RC\RoadCraftDev\toolchain\.venv`; project-local config is parsed and loaded by Codex CLI. The maintained source handoff was hash-checked. |
-| New code Git repo/private remote | Pushed; Windows CI passed through `fe715cf` | Target `main` and private origin were verified at `fe715cf5d35ed140de8f58da06fc14704bbcda5e`. [CI run #6](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36364759916) completed successfully with `actions/checkout@v7` and `actions/setup-python@v7` and no annotation. Recheck CI after the current diagnostics are pushed. |
+| New code Git repo/private remote | Pushed; Windows CI passed through `e9fcdcb` | Target `main` and private origin were verified at `e9fcdcb19be709a7f8bc2ca0b03d24a47345eddf`. [CI run #7](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36365430781) completed successfully with `actions/checkout@v7` and `actions/setup-python@v7` and no annotation. Recheck CI after the current diagnostics are pushed. |
 | Asset migration/Git LFS | Deferred by user choice; keep verified assets in place | `d11_asset_migration_preflight_20260928.json` verified 2,817 files / 3,477,364,242 bytes but failed its space gate. No copy occurred. Future migration requires a new decision and a fresh space check. |
-| Native build/test/capture recipes | Preflight-only checks and output contract passed; execution blocked | `d11_aaa_native_preflight_recipe.json` passed `build`, `inspect` and `capture` dry runs without `--execute`. The guarded runner's read-only `--plan` pins a collision-free run ID, all declared outputs, source/package/scene/camera inputs and contract digest; `NATIVE_CAPTURE_OUTPUT_CONTRACT.md` describes the 248 required files and 45 screenshots. The postflight validator still rejects the historical failed receipt. `jobs-recover` is synthetic-tested, not applied to a live lock. The capture-pair validator requires observed lighting, camera, resolution and an exact 3×15 roster. A read-only editor API audit found only partial camera/local-light readback: 0 truck lights enabled at front-seat setup versus 8 at capture, with no proven global lighting query. Native observation and postflight linkage remain future work. The separate lighting fixture needs over 14 GiB; the AAA runner has 4 GB start / 1.5 GB loop guards. Its historical nearnew editor process vanished, with cause unknown. |
+| Native build/test/capture recipes | Preflight-only checks and output contract passed; execution blocked | `d11_aaa_native_preflight_recipe.json` passed `build`, `inspect` and `capture` dry runs without `--execute`. The guarded runner's read-only `--plan` pins a collision-free run ID, all declared outputs, source/package/scene/camera inputs and contract digest; `NATIVE_CAPTURE_OUTPUT_CONTRACT.md` describes the 248 required files and 45 screenshots. The postflight validator still rejects the historical failed receipt. `jobs-recover` is synthetic-tested, not applied to a live lock. The capture-pair validator requires observed lighting, camera, resolution and an exact 3×15 roster. A read-only editor API audit found partial camera/local-light readback: 0 truck lights enabled at front-seat setup versus 8 at capture. A deeper SDK/binary audit identified source-backed runtime rain-state access and unverified sun/daytime getter names; four bounded read-only SSL probes and a fail-closed parser are prepared but have not run in the editor. Global lighting and complete renderer readback remain unproven, so native observation and postflight linkage remain future work. The separate lighting fixture needs over 14 GiB; the AAA runner has 4 GB start / 1.5 GB loop guards. Its historical nearnew editor process vanished, with cause unknown. |
 | AAA regression | Failed; acceptance pending | `d11_aaa_interior_regression_result.json`: technical gate false, releaseReady false, zero matched capture pairs and 45 required views failing. Existing capture contexts omit lighting/protocol; visual and campaign approvals are pending. |
 | Blender no-edit USF bridge | Three roundtrips passed; native Blend export proven different and blocked | No-edit USF roundtrips remain byte-identical and scratch MCP status was ready with pinned Blender 5.2.0. The three historical `.blend` files are byte-identical to one another. Native SDK exports differ from each repaired USF by 133 repaired-only, 76 native-only and 132 changed matched paths; material, rig and animation parity is missing. All three direct export-gate checks returned `BLOCKED`. `D11_BLENDER_AUTHORING_PARITY_20260928.md` links digest-sealed compact and full evidence. The scratch output hash drift is confined to tiny tangent-float differences in three meshes, with underlying cause unproven; see `D11_SCRATCH_USF_TANGENT_DRIFT_20260928.md`. |
 | Painter integration | Capabilities verified earlier; scratch project deferred by user | Real stdio probe listed 79 tools, connected to Painter 12.1.5/API 0.3.5 and called `get_capabilities` successfully while no project was open. Baking presets, auto-rebake control and skew-painting control are unavailable. The user intentionally ended the Painter session to avoid interference and chose to leave it closed; `PAINTER_CAPABILITIES_20260928.md` and `painter_disposable_probe_20260928.json` record the checks. No `.spp` was created and no accepted asset changed. |
-| Storage | First exact batch complete; additional review pending | `STORAGE_REVIEW.md`: 159 template copies removed, 6.30 GiB freed, retained originals verified. The 23,604-file / 5.93 GiB expansion review remains untouched; its 33 MB raw manifest is local and a verified 1.6 MB gzip copy is versioned. `storage_expansion_executor_sample_20260928.json` checked eight files, removed zero and reports `applyReady: false` because process command-line inspection was denied. Git temporary pack remains separate. |
+| Storage | First exact batch complete; expansion dry run passed but deletion unapproved | `STORAGE_REVIEW.md`: 159 template copies removed, 6.30 GiB freed, retained originals verified. The separate 23,604-file / 5.93 GiB expansion remains untouched. Its 33 MB raw manifest is local and a verified 1.6 MB gzip copy is versioned. A full sandboxed dry run verified every candidate and counterpart but reported `applyReady: false` because CIM process inspection was denied. A distinct elevated full dry run reported `applyReady: true` with zero active processes at its inspection time, 21 retained packages, 166 retained source files and zero deletions. Any future apply needs specific authorization and a fresh pinned preflight. Git temporary pack remains separate. |
 
 ## 1. Finish checkout handoff and retain verified local tools
 
@@ -57,7 +57,7 @@ dedicated environment installation and local integration registration are done.
    preserve its `.venv`, local paths, jobs and receipts. Record the compared
    file list and hashes. Verify imports resolve from the dedicated checkout,
    not the earlier editable source installation.
-2. Retain the completed target evidence: 116 tests with 3 skips, all 5 project
+2. Retain the completed target evidence: 151 tests with 4 skips, all 5 project
    pins and 2,817 files verified, `source-check` passed, installed accepted,
    no recovery required. Run only checks warranted by subsequent changes;
    refresh live status before native work. Keep dated old receipts intact.
@@ -141,14 +141,17 @@ staging need additional budget beyond the copy preflight.
 
 1. Refresh free space and exact candidate state. Do not count the completed
    6.30 GiB cleanup twice. The expansion review establishes only 5.93 GiB,
-   not a 15–20 GiB saving. Its active-ownership check remains outstanding.
+   not a 15–20 GiB saving. Its elevated read-only preflight found no active
+   owner at one instant; recheck immediately before any authorized apply.
 2. For an authorized expansion batch, pin the reviewed manifest, establish
    process/job ownership, and recheck each file's retained counterpart,
    SHA-256, identity, exclusive allocation, link count and reparse ancestry.
    Preserve enclosing directories, accepted/AAA projects, captures, PAKs,
    logs, fixtures and source. The existing `cleanup_commit` executor is
-   template-specific; it does not authorize or execute the expansion schema.
-   Implement/review a compatible exact-file executor before applying it.
+   template-specific. The separate `expansion_cleanup` executor is implemented
+   and defaults to dry-run; apply requires the exact manifest SHA-256 and a
+   per-file durable journal. Review its full receipt and obtain authorization
+   for this exact expansion batch before using its apply path.
 3. Keep `C:\RC\D11_Development\.git\objects\pack\tmp_pack_vOMJaY` separate.
    Its recorded allocation is 4,014,342,144 bytes (3.74 GiB), one link, and Git
    classified it as garbage. The previous connectivity check passed, but
@@ -203,14 +206,21 @@ start / 1.5 GB loop guards are different; its prior run failed after the editor
 process vanished during nearnew view 4. The guarded runner now declares a
 collision-free eight-hex-digit run ID and a digest-sealed output contract
 before execution; its `--plan` is read-only. The reviewed
-`d11_aaa_native_capture_plan_a1b2c3d4.json` declares 248 required files,
+`d11_aaa_native_capture_plan_c0de2026.json` declares 248 required files,
 six optional hidden-probe files, 45 screenshot source paths, transient paths
 and opaque editor runtime roots. It pins the runner, installed and candidate
 packages, audited package receipt, 1,644 source pins and validation
-scene/camera inputs. Planned resolution and lighting remain unknown. See
+scene/camera inputs. The earlier `a1b2c3d4` plan is archival because the
+runner changed. Planned resolution and lighting remain unknown. See
 `NATIVE_CAPTURE_OUTPUT_CONTRACT.md` and
-`NATIVE_CAPTURE_FAILURE_ANALYSIS_20260928.md`. No new native build,
-installation or capture is claimed.
+`NATIVE_CAPTURE_FAILURE_ANALYSIS_20260928.md`. The subsequent
+`AAA_NEARNEW_EDITOR_EXIT_AUDIT.md` pins the last successful camera reply,
+editor disconnect, and failed PID precheck: the fourth screenshot request was
+never sent, and no accessible crash record proves an exit cause. The guarded
+runner now retains the owned engine process handle and records timestamped
+camera, settle, capture, screenshot and cleanup boundaries with exit status;
+this is code-only synthetic evidence until a future native run exercises it.
+No new native build, installation or capture is claimed.
 
 The job runner keeps its shared lock after any failure following native launch.
 `jobs-recover` is a separate dry-run-first recovery command. It verifies the
@@ -238,6 +248,16 @@ the screenshot trigger occurred before the latter reply. Camera up and global
 environment/exposure/tonemap/renderer state have no proven readback in the
 available scripts. The result is `PARTIAL_CONTEXT_ONLY` and never eligible for
 pair comparison. See `NATIVE_EDITOR_OBSERVATION_API_AUDIT.md`.
+
+`NATIVE_EDITOR_RUNTIME_API_PROBE.md` pins a deeper local search. Shipped SSL
+source proves `$weather_manager_sys.GetWeatherState()` and its rain fields;
+the installed editor binary contains `GetCurrentSunDirection` and
+`PresetSys.GetDayTime` names, but their SSL signatures are unverified. Four
+independent scratch SSL fragments and a fail-closed parser are ready for a
+future disposable editor smoke. They were not compiled or run, and cannot
+fill missing exposure, tonemap, ambient color, renderer mode or complete light
+state. Keep capture-pair eligibility false until actual readback and timing
+linkage exist.
 
 The read-only `python -m roadcraft.native_capture_postflight` check now
 requires exact run ID, candidate/baseline/installed hashes, successful
@@ -407,7 +427,7 @@ new local integration config if transport cannot be made reliable.
 ## Immediate execution order
 
 1. Git credential sign-in, private `main` push, remote commit comparison,
-   and the `b5fb481` Windows CI run are complete. Keep later workflow/plan
+   and the `e9fcdcb` Windows CI run are complete. Keep later workflow/plan
    changes versioned and recheck CI after each push.
 2. Use the registered, smoke-tested local integrations; confirm tool visibility
    in the actual desktop task after reconnect if needed. Painter capability

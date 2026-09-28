@@ -42,10 +42,12 @@ changed. The failed `bd58bce0` capture remains failed.
   runtime weather, time of day, sun direction, or ambient lighting.
 
 The SDK's `predefined_types.ssl` is a short generic type prelude; it does not
-declare renderer, weather, tonemap, or camera-query interfaces. Searches of
-the available text scripts found no proven getters for runtime environment,
-exposure, tonemap, or renderer mode. Absence from those text files does not
-prove the native engine lacks an API; it means this workflow cannot claim one.
+declare renderer, weather, tonemap, or camera-query interfaces. A subsequent
+[deeper local API probe audit](NATIVE_EDITOR_RUNTIME_API_PROBE.md) found actual
+SSL source use of `$weather_manager_sys.GetWeatherState()` for rain state and
+candidate `GetCurrentSunDirection` / `GetDayTime` names in the installed editor
+binary. Those findings narrow the next experiment but do not establish
+complete runtime environment, exposure, tonemap, or renderer-mode readback.
 
 ## Implemented read-only diagnostic
 

@@ -7,11 +7,14 @@ write an installed package, or perform a native capture.
 from __future__ import annotations
 
 from contextlib import redirect_stdout
+import difflib
 from hashlib import sha256
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
+import subprocess
 from types import SimpleNamespace
 import sys
 import tempfile
@@ -66,6 +69,32 @@ class NativeCaptureContractTests(unittest.TestCase):
             prototype=False, package_receipt=self.package_receipt,
             package_receipt_sha=self.runner.sha(self.package_receipt),
             package_receipt_status="D11_AAA_PACKAGE_AUDITED")
+
+    def test_versioned_patch_and_current_plan_pin_reviewed_runner(self) -> None:
+        operations = RUNNER.parents[1]
+        manifest = json.loads((RUNNER.parent /
+                               "capture_candidate_native.patch_manifest.json").read_text(
+                                   encoding="utf-8"))
+        base = RUNNER.parent / "capture_candidate_native.base_b3670ff3.py"
+        self.assertEqual(sha256(base.read_bytes()).hexdigest(), manifest["baseSha256"])
+        self.assertEqual(sha256(RUNNER.read_bytes()).hexdigest(),
+                         manifest["patchedSha256"])
+        expected_diff = "".join(difflib.unified_diff(
+            base.read_text(encoding="utf-8").splitlines(keepends=True),
+            RUNNER.read_text(encoding="utf-8").splitlines(keepends=True),
+            fromfile=f"capture_candidate_native.py@{manifest['baseSha256'][:8]}",
+            tofile=f"capture_candidate_native.py@{manifest['patchedSha256'][:8]}"))
+        self.assertEqual((RUNNER.parent / manifest["patch"]).read_text(
+                             encoding="utf-8"), expected_diff)
+        plan = json.loads((operations /
+                           "d11_aaa_native_capture_plan_c0de2026.json").read_text(
+                               encoding="utf-8"))
+        self.assertEqual(plan["status"], "CAPTURE_OUTPUTS_DECLARED_NO_SWAP")
+        self.assertEqual(plan["outputContract"]["runnerSha256"],
+                         manifest["patchedSha256"])
+        self.assertEqual(self.runner.canonical_sha256(plan["outputContract"]),
+                         plan["outputContractSha256"])
+        self.assertEqual(len(plan["outputContract"]["expectedOutputFiles"]), 248)
 
     def test_predeclares_exact_full_capture_without_writing(self) -> None:
         contract = self.contract()
@@ -223,6 +252,7 @@ class NativeCaptureContractTests(unittest.TestCase):
 
     def test_action_telemetry_keeps_owned_identity_and_failure(self) -> None:
         proc = SimpleNamespace(pid=42, poll=lambda: -1)
+        engine = SimpleNamespace(pid=43, sample=lambda: {"status": "running"})
         base = SimpleNamespace(processes=lambda: [
             {"ProcessId": 42, "ParentProcessId": 0,
              "Name": "IntegrationStudio.exe"},
@@ -230,16 +260,95 @@ class NativeCaptureContractTests(unittest.TestCase):
              "Name": "Roadcraft ModEditor.exe"},
         ])
         report = {}
-        self.runner.timed_action(report, base, proc, 43, "SetCabRight", lambda: None)
+        self.runner.timed_action(report, base, proc, engine, "SetCabRight",
+                                 lambda: None, view="right")
         with self.assertRaisesRegex(ValueError, "lost engine"):
-            self.runner.timed_action(report, base, proc, 43, "CaptureCabRight",
-                                     lambda: (_ for _ in ()).throw(ValueError("lost engine")))
+            self.runner.timed_action(
+                report, base, proc, engine, "CaptureCabRight",
+                lambda: (_ for _ in ()).throw(ValueError("lost engine")),
+                view="right")
         passed, failed = report["actionEvents"]
         self.assertEqual((passed["status"], failed["status"]), ("PASS", "FAIL"))
+        self.assertEqual((passed["view"], failed["view"]), ("right", "right"))
         self.assertEqual(failed["editorExitCode"], -1)
         self.assertEqual([item["pid"] for item in failed["ownedProcessesAfter"]],
                          [42, 43])
         self.assertTrue(passed["startedUtc"] <= passed["finishedUtc"])
+        self.assertTrue(passed["ownedBefore"]["observedUtc"])
+        self.assertEqual(failed["ownedAfter"]["engineExit"], {"status": "running"})
+
+    def test_view_records_engine_exit_during_camera_settle(self) -> None:
+        state = {"engineExited": False}
+        engine = SimpleNamespace(
+            pid=43, sample=lambda: (
+                {"status": "exited", "exitCodeUnsigned": 0xC0000005,
+                 "exitCodeHex": "0xc0000005"}
+                if state["engineExited"] else {"status": "running"}))
+        proc = SimpleNamespace(pid=42, poll=lambda: None)
+        base = SimpleNamespace(processes=lambda: [
+            {"ProcessId": 42, "ParentProcessId": 0,
+             "Name": "IntegrationStudio.exe"},
+            *([] if state["engineExited"] else [
+                {"ProcessId": 43, "ParentProcessId": 42,
+                 "Name": "Roadcraft ModEditor.exe"}]),
+        ])
+        report = {}
+
+        def engine_exits() -> None:
+            state["engineExited"] = True
+            raise RuntimeError("engine disconnected during settle")
+
+        with self.assertRaisesRegex(RuntimeError, "during settle"):
+            with self.runner.view_boundary(report, base, proc, engine, "right_down"):
+                self.runner.timed_action(report, base, proc, engine,
+                                         "SetCabRightDown", lambda: None,
+                                         view="right_down")
+                self.runner.timed_action(report, base, proc, engine,
+                                         "SettleCamera", engine_exits,
+                                         view="right_down")
+        view = report["viewEvents"][0]
+        settle = report["actionEvents"][1]
+        self.assertEqual(view["status"], "FAIL")
+        self.assertEqual(settle["status"], "FAIL")
+        self.assertEqual(settle["engineExitCode"], 0xC0000005)
+        self.assertEqual(view["ownedAfter"]["engineExit"]["exitCodeHex"],
+                         "0xc0000005")
+        self.assertTrue(view["startedUtc"] <= view["finishedUtc"])
+
+    def test_action_refuses_command_if_retained_engine_already_exited(self) -> None:
+        proc = SimpleNamespace(pid=42, poll=lambda: None)
+        engine = SimpleNamespace(pid=43, sample=lambda: {
+            "status": "exited", "exitCodeUnsigned": 17,
+            "exitCodeHex": "0x00000011"})
+        base = SimpleNamespace(processes=lambda: [])
+        invoked = []
+        report = {}
+        with self.assertRaisesRegex(RuntimeError, "not running before CaptureCabRight"):
+            self.runner.timed_action(report, base, proc, engine, "CaptureCabRight",
+                                     lambda: invoked.append(True), view="right")
+        self.assertEqual(invoked, [])
+        self.assertEqual(report["actionEvents"][0]["engineExitCode"], 17)
+        self.assertEqual(report["actionEvents"][0]["status"], "FAIL")
+
+    @unittest.skipUnless(os.name == "nt", "Windows process handle API")
+    def test_retained_engine_handle_reports_exact_child_exit_code(self) -> None:
+        child = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(0.2); raise SystemExit(17)"],
+            creationflags=subprocess.CREATE_NO_WINDOW)
+        try:
+            engine = self.runner.OwnedEngineHandle(child.pid)
+            try:
+                self.assertEqual(engine.sample(), {"status": "running"})
+                self.assertEqual(child.wait(timeout=10), 17)
+                self.assertEqual(engine.sample(),
+                                 {"status": "exited", "exitCodeUnsigned": 17,
+                                  "exitCodeHex": "0x00000011"})
+            finally:
+                engine.close()
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.wait(timeout=10)
 
     def test_png_dimensions_are_observed_not_assumed(self) -> None:
         path = self.root / "capture.png"

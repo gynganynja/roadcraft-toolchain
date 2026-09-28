@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from contextlib import contextmanager
 import datetime as dt
 import hashlib
 import importlib.util
@@ -427,6 +428,77 @@ def close_owned_editor(base, proc: subprocess.Popen | None, streams: tuple,
                 stream.close()
 
 
+class OwnedEngineHandle:
+    """Keep the observed child process object alive for an exact exit code."""
+
+    def __init__(self, pid: int) -> None:
+        guard(os.name == "nt" and pid > 0, "Engine exit probe requires a Windows PID")
+        import ctypes
+
+        self.pid = pid
+        self._ctypes = ctypes
+        self._kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        self._kernel.OpenProcess.argtypes = (ctypes.c_uint32, ctypes.c_int,
+                                             ctypes.c_uint32)
+        self._kernel.OpenProcess.restype = ctypes.c_void_p
+        self._kernel.WaitForSingleObject.argtypes = (ctypes.c_void_p,
+                                                      ctypes.c_uint32)
+        self._kernel.WaitForSingleObject.restype = ctypes.c_uint32
+        self._kernel.GetExitCodeProcess.argtypes = (ctypes.c_void_p,
+                                                    ctypes.POINTER(ctypes.c_uint32))
+        self._kernel.GetExitCodeProcess.restype = ctypes.c_int
+        self._kernel.CloseHandle.argtypes = (ctypes.c_void_p,)
+        self._kernel.CloseHandle.restype = ctypes.c_int
+        # SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION. The handle pins the
+        # process object even if its numeric PID is later reused.
+        self._handle = self._kernel.OpenProcess(0x00100000 | 0x1000, 0, pid)
+        if not self._handle:
+            raise OSError(ctypes.get_last_error(), f"OpenProcess engine PID {pid}")
+
+    def sample(self) -> dict:
+        guard(self._handle is not None, "Engine exit handle was closed")
+        result = self._kernel.WaitForSingleObject(self._handle, 0)
+        if result == 0x102:  # WAIT_TIMEOUT
+            return {"status": "running"}
+        if result != 0:  # WAIT_OBJECT_0
+            raise OSError(self._ctypes.get_last_error(),
+                          f"WaitForSingleObject engine PID {self.pid}: {result:#x}")
+        code = self._ctypes.c_uint32()
+        if not self._kernel.GetExitCodeProcess(self._handle,
+                                               self._ctypes.byref(code)):
+            raise OSError(self._ctypes.get_last_error(),
+                          f"GetExitCodeProcess engine PID {self.pid}")
+        return {"status": "exited", "exitCodeUnsigned": code.value,
+                "exitCodeHex": f"0x{code.value:08x}"}
+
+    def close(self) -> None:
+        if self._handle is not None:
+            handle, self._handle = self._handle, None
+            if not self._kernel.CloseHandle(handle):
+                raise OSError(self._ctypes.get_last_error(),
+                              f"CloseHandle engine PID {self.pid}")
+
+
+def owned_snapshot(base, proc: subprocess.Popen, engine: OwnedEngineHandle) -> dict:
+    """Best-effort process census plus the retained engine object's exit state."""
+    snapshot = {"observedUtc": dt.datetime.now(dt.timezone.utc).isoformat(),
+                "editorPid": proc.pid, "editorExitCode": proc.poll(),
+                "enginePid": engine.pid}
+    try:
+        snapshot["engineExit"] = engine.sample()
+    except BaseException as exc:
+        snapshot["engineExit"] = {"status": "unavailable", "error": repr(exc)}
+    try:
+        snapshot["ownedProcesses"] = [
+            {"pid": int(row["ProcessId"]),
+             "parentPid": int(row["ParentProcessId"]), "name": row["Name"]}
+            for row in base.processes()
+            if int(row["ProcessId"]) in (proc.pid, engine.pid)]
+    except BaseException as exc:
+        snapshot["processProbeError"] = repr(exc)
+    return snapshot
+
+
 def capture_contract(run_id: str, variants: tuple[str, ...],
                      views: tuple[str, ...], candidate: Path,
                      candidate_sha: str, pins: dict[str, str],
@@ -520,13 +592,19 @@ def capture_contract(run_id: str, variants: tuple[str, ...],
 
 
 def timed_action(report: dict, base, proc: subprocess.Popen,
-                 engine_pid: int, action: str, callback) -> None:
-    """Record action outcome and the owned editor/engine identity for diagnosis."""
+                 engine: OwnedEngineHandle, action: str, callback,
+                 *, view: str | None = None) -> None:
+    """Bracket a native command with timestamps and retained process state."""
     event = {"action": action,
              "startedUtc": dt.datetime.now(dt.timezone.utc).isoformat(),
-             "editorPid": proc.pid, "enginePid": engine_pid}
+             "editorPid": proc.pid, "enginePid": engine.pid,
+             "ownedBefore": owned_snapshot(base, proc, engine)}
+    if view is not None:
+        event["view"] = view
     report.setdefault("actionEvents", []).append(event)
     try:
+        guard(event["ownedBefore"]["engineExit"]["status"] == "running",
+              f"Owned engine was not running before {action}")
         callback()
         event["status"] = "PASS"
     except BaseException as exc:
@@ -534,18 +612,33 @@ def timed_action(report: dict, base, proc: subprocess.Popen,
         raise
     finally:
         event["finishedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
-        event["editorExitCode"] = proc.poll()
-        event["engineExitCode"] = {"status": "unavailable"}
-        try:
-            event["ownedProcessesAfter"] = [
-                {"pid": int(row["ProcessId"]),
-                 "parentPid": int(row["ParentProcessId"]),
-                 "name": row["Name"]}
-                for row in base.processes()
-                if int(row["ProcessId"]) in (proc.pid, engine_pid)]
-        except BaseException as exc:
-            # Telemetry cannot turn a completed capture action into a failure.
-            event["processProbeError"] = repr(exc)
+        after = owned_snapshot(base, proc, engine)
+        event["ownedAfter"] = after
+        event["editorExitCode"] = after["editorExitCode"]
+        event["engineExitCode"] = after["engineExit"].get("exitCodeUnsigned")
+        if "ownedProcesses" in after:
+            event["ownedProcessesAfter"] = after["ownedProcesses"]
+        if "processProbeError" in after:
+            event["processProbeError"] = after["processProbeError"]
+
+
+@contextmanager
+def view_boundary(report: dict, base, proc: subprocess.Popen,
+                  engine: OwnedEngineHandle, view: str):
+    """Keep the full camera-to-file interval, including pauses, in evidence."""
+    event = {"view": view,
+             "startedUtc": dt.datetime.now(dt.timezone.utc).isoformat(),
+             "ownedBefore": owned_snapshot(base, proc, engine)}
+    report.setdefault("viewEvents", []).append(event)
+    try:
+        yield
+        event["status"] = "PASS"
+    except BaseException as exc:
+        event.update(status="FAIL", error=repr(exc))
+        raise
+    finally:
+        event["finishedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
+        event["ownedAfter"] = owned_snapshot(base, proc, engine)
 
 
 def png_dimensions(path: Path) -> list[int]:
@@ -590,8 +683,11 @@ exit
     }
     proc = out = err = None
     engine_pid = None
+    engine = None
     try:
         proc, out, err = base.h.launch_editor(run, scenario)
+        report["editorPid"] = proc.pid
+        report["editorLaunchedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
         deadline = time.monotonic() + 170
         while time.monotonic() < deadline:
             guard(proc.poll() is None, "Editor exited before scene readiness")
@@ -609,33 +705,46 @@ exit
         report["runtimeResourceMount"] = runtime_resource_mount(log)
         engine_pid = base.find_engine_pid(proc.pid)
         report["enginePid"] = engine_pid
+        engine = OwnedEngineHandle(engine_pid)
+        report["engineHandleAttachedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
+        report["ownedAtAttach"] = owned_snapshot(base, proc, engine)
+        guard(report["ownedAtAttach"]["engineExit"]["status"] == "running"
+              and any(row["pid"] == engine_pid
+                      and row["parentPid"] == proc.pid
+                      and row["name"] == "Roadcraft ModEditor.exe"
+                      for row in report["ownedAtAttach"].get("ownedProcesses", [])),
+              "Owned child engine exited or changed identity before capture")
         loaded_geom = []
-        timed_action(report, base, proc, engine_pid, "InspectInteriorGeom",
+        timed_action(report, base, proc, engine, "InspectInteriorGeom",
                      lambda: loaded_geom.append(inspect_loaded_geom(
                          base, run, helper, engine_pid, variant)))
         report["loadedInteriorGeom"] = loaded_geom[0]
         for name in views:
             mode = name.title().replace("_", "")
-            timed_action(report, base, proc, engine_pid, "SetCab" + mode,
-                         lambda name=name, mode=mode: base.h.probe(
-                             run, "camera_" + name, helper, engine_pid,
-                             "SetCab" + mode))
-            time.sleep(1.5)
-            source = base.h.SDK / "root/bin/pc" / f"d11_cab_{run_id}_{name}.png"
-            guard(not source.exists() and not source.is_symlink(),
-                  f"Native screenshot output already exists: {source}")
-            timed_action(report, base, proc, engine_pid, "CaptureCab" + mode,
-                         lambda name=name, mode=mode: base.h.probe(
-                             run, "capture_" + name, helper, engine_pid,
-                             "CaptureCab" + mode))
-            target = run / f"cab_{name}.png"
-            timed_action(report, base, proc, engine_pid, "SaveScreenshot:" + name,
-                         lambda: base.screenshot(source, target, proc))
-            report["views"].append({
-                "view": name, "path": str(target), "sha256": sha(target),
-                "cameraProbeSha256": sha(run / f"camera_{name}.json"),
-                "resolutionPixels": png_dimensions(target),
-            })
+            with view_boundary(report, base, proc, engine, name):
+                timed_action(report, base, proc, engine, "SetCab" + mode,
+                             lambda name=name, mode=mode: base.h.probe(
+                                 run, "camera_" + name, helper, engine_pid,
+                                 "SetCab" + mode), view=name)
+                timed_action(report, base, proc, engine, "SettleCamera",
+                             lambda: time.sleep(1.5), view=name)
+                source = base.h.SDK / "root/bin/pc" / f"d11_cab_{run_id}_{name}.png"
+                timed_action(report, base, proc, engine, "ScreenshotSourceGuard",
+                             lambda: guard(not source.exists() and not source.is_symlink(),
+                                           f"Native screenshot output already exists: {source}"),
+                             view=name)
+                timed_action(report, base, proc, engine, "CaptureCab" + mode,
+                             lambda name=name, mode=mode: base.h.probe(
+                                 run, "capture_" + name, helper, engine_pid,
+                                 "CaptureCab" + mode), view=name)
+                target = run / f"cab_{name}.png"
+                timed_action(report, base, proc, engine, "SaveScreenshot:" + name,
+                             lambda: base.screenshot(source, target, proc), view=name)
+                report["views"].append({
+                    "view": name, "path": str(target), "sha256": sha(target),
+                    "cameraProbeSha256": sha(run / f"camera_{name}.json"),
+                    "resolutionPixels": png_dimensions(target),
+                })
         guard(project_pins(PROJECT) == pins, "Candidate project changed during capture")
         guard(sha(LIVE) == package_sha, "Installed candidate changed during capture")
         report["status"] = ("D11_AAA_NATIVE_CAPTURES_READY"
@@ -644,12 +753,24 @@ exit
     except Exception as exc:
         report.update(status="FAIL", error=repr(exc))
     finally:
+        report["cleanupStartedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
+        if proc is not None and engine is not None:
+            report["ownedBeforeCleanup"] = owned_snapshot(base, proc, engine)
         try:
             close_owned_editor(base, proc, (out, err), engine_pid)
         except BaseException as cleanup_error:
             report.update(status="FAIL", cleanupError=repr(cleanup_error))
             raise
         finally:
+            report["cleanupFinishedUtc"] = dt.datetime.now(dt.timezone.utc).isoformat()
+            if proc is not None:
+                report["editorExitCodeAfterCleanup"] = proc.poll()
+            if proc is not None and engine is not None:
+                report["ownedAfterCleanup"] = owned_snapshot(base, proc, engine)
+                try:
+                    engine.close()
+                except BaseException as close_error:
+                    report.update(status="FAIL", engineHandleCloseError=repr(close_error))
             save(run / "report.json", report)
     guard(report["status"] in ("D11_AAA_NATIVE_CAPTURES_READY",
                                "D11_AAA_NATIVE_TRIAGE_CAPTURES_READY"),

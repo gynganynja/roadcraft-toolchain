@@ -8,9 +8,12 @@ package, mount, disk, and process checks, then prints a deterministic JSON
 contract without creating `native/`, `runs/`, a lock, a backup, or a screenshot.
 The contract-hash flag is rejected outside `--execute`.
 
-The [reviewed plan](d11_aaa_native_capture_plan_a1b2c3d4.json) uses run ID
-`a1b2c3d4` and contract SHA-256
-`d27f6dc4b6dfdbb3a2f2feab6d059abc02db65ba43e24a6ce4c9cf10d8fa1ad1`.
+The [current no-write plan](d11_aaa_native_capture_plan_c0de2026.json) uses run ID
+`c0de2026` and contract SHA-256
+`8cd248a4ee027f8de22113dc653b18e7a08b04a288dbbd3ee2dd9619e2be5d33`.
+The earlier [a1b2c3d4 plan](d11_aaa_native_capture_plan_a1b2c3d4.json)
+is retained as historical evidence; its runner hash and contract hash no longer
+authorize `--execute` after the exit-telemetry patch.
 It declares 248 required evidence files, including the outer receipt, baseline
 backup, three nested reports, 45 camera and 45 capture probe records with
 transport logs, and 45 copied PNGs. Six hidden-geometry probe files are
@@ -36,9 +39,15 @@ or package writes. Incomplete stage and restore files stay in place for
 inspection, and an unswapped run must still verify the accepted baseline
 before clearing its lock. A run receipt carries the contract hash, and each nested
 report carries the scene/camera context plus action start/end UTC timestamps,
-editor and engine PIDs, observed owned-process identities, and editor exit code
-after each geometry, camera, screenshot-trigger, and copy action. A failed
-action is marked `FAIL` even if rollback later restores the baseline.
+editor and engine PIDs, observed owned-process identities, and process exit
+states before and after each geometry, camera, screenshot-trigger, and copy
+action. The runner retains a Windows handle to the observed child engine and
+records its exact unsigned exit code and hexadecimal form if that object exits.
+Each view also has a full start/end interval, including the 1.5-second camera
+settle and screenshot-source guard, so an exit between camera response and
+capture request is localized. A failed action is marked `FAIL` even if rollback
+later restores the baseline. These are code and synthetic-test results, not a
+new native capture or an explanation of the historical exit.
 
 This is an **output identity and diagnostic step**, not a successful native
 capture. The existing [`capture` recipe](d11_aaa_native_preflight_recipe.json)
@@ -76,7 +85,7 @@ editor disconnect or establish visual or campaign acceptance. Do not place
 The [versioned patch manifest](patches/capture_candidate_native.patch_manifest.json)
 records base SHA-256 `b3670ff30afeb06e94301f68e12bf62d3857c5f21f1958ccc982ced2fb04831d`
 and patched SHA-256
-`195360f86df7774393f8259143f7c1b7030f0fa3b86fad4081a3175279731fed`.
+`89fc71ee14751f77ba7b79a1c0714b0d6df85bee4c526955d312e23c234914da`.
 The archived base, patched copy, and unified diff are adjacent to that manifest.
 The synthetic contract tests import the patched copy; local verification also
 checks that the live Steam runner has the same patched hash.

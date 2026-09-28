@@ -1,0 +1,2 @@
+var sun = $weather_manager_sys.GetCurrentSunDirection()
+return StringFormat("D11R_SUN_DIRECTION %.9f %.9f %.9f", sun.x, sun.y, sun.z)

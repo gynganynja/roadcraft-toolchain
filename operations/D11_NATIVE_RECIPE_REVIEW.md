@@ -23,17 +23,17 @@ command into the current project would either fail or threaten existing
 evidence.
 
 The AAA `capture_candidate_native.py --execute` is a transaction over the
-installed `root/mods/cat_d11t.pak`, not a pure capture command. It generates a
-random run ID, writes a baseline backup and lock, swaps the candidate into
+installed `root/mods/cat_d11t.pak`, not a pure capture command. It requires a
+predeclared run ID, writes a baseline backup and lock, swaps the candidate into
 the live game path, launches native editor sessions, and attempts restoration
 in `finally`. Its receipt and per-view outputs have run-ID-dependent paths,
-which the current declarative job schema cannot name as expected outputs.
+which the guarded `--plan` declares with a contract SHA-256 before any swap.
+This preflight recipe still does not call `--execute`.
 The latest AAA receipt is `FAIL_ROLLBACK_PENDING`, with nested
 `BASELINE_RESTORED`; that does not make the capture successful. Before an
-executable capture recipe is admitted, the runner needs a deterministic
-output/receipt contract, ownership of its editor processes, explicit lock and
-rollback verification, and an evidence check that treats failure and missing
-views as failure even when the installed baseline was restored.
+executable capture recipe is admitted, the guarded runner still needs a
+successful authorized native run and an evidence check that treats failure
+and missing views as failure even when the installed baseline was restored.
 
 The preserved `C:\RC\D11_Development\build.ps1` route is also unsuitable as a
 drop-in native step. `dependencies/run_isolated.py build` imports six `.blend`

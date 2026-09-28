@@ -193,10 +193,12 @@ native execution recipe.
 retail-export candidates against an exact manifest SHA-256, live file
 identities, retained PAK members, Git state and active processes. It defaults
 to dry-run; `--sample-candidates N` is a labeled partial check that can never
-apply. The 28 September sample checked eight files and removed none. A full
-dry run, complete process inspection, and separate authorization are still
-needed before the additional 23,604-file batch could be considered for
-deletion.
+apply. The eight-file sample checked eight files and removed none. A full
+28 September dry run verified all 23,604 candidates and removed none. Its
+sandboxed receipt remains blocked because CIM command-line inspection was
+denied; a separate elevated, read-only full receipt passed the process gate
+at its check time. `operations/STORAGE_EXPANSION_REVIEW_20260928.md` records
+both receipts. Neither receipt authorizes deletion.
 
 ## MCP and local plugin
 

@@ -106,6 +106,70 @@ class ExpansionCleanupTests(unittest.TestCase):
         self.assertTrue(Path(fixture.rows[0]["path"]).exists())
         self.assertFalse(fixture.receipt.exists())
 
+    def test_process_fallback_blocks_uninspectable_python_but_excludes_self(self):
+        snapshot = [{"pid": 41, "name": "python.exe"},
+                    {"pid": 42, "name": "python.exe"},
+                    {"pid": 43, "name": "RoadCraft.exe"}]
+        with patch.object(expansion.core, "_editor_processes", return_value=(snapshot, None)), \
+                patch.object(expansion, "_command_line_processes",
+                             return_value=({}, "CIM access denied")), \
+                patch.object(expansion.os, "getpid", return_value=41):
+            active, error, details = expansion._process_state()
+        self.assertEqual(error, "CIM access denied")
+        self.assertEqual([(row["pid"], row["reason"]) for row in active],
+                         [(42, "uninspectable-script-host"),
+                          (43, "known-game-or-export-process")])
+        self.assertEqual(details["method"], "toolhelp-conservative-script-host-block")
+        self.assertFalse(details["complete"])
+        self.assertFalse(details["commandLinesAvailable"])
+
+    def test_complete_command_line_query_distinguishes_unrelated_python(self):
+        snapshot = [{"pid": 41, "name": "python.exe"},
+                    {"pid": 42, "name": "python.exe"},
+                    {"pid": 43, "name": "python.exe"},
+                    {"pid": 44, "name": "python.exe"},
+                    {"pid": 46, "name": "python.exe"}]
+        commands = {
+            42: {"Name": "python.exe", "CommandLine": "python unrelated.py"},
+            43: {"Name": "python.exe", "CommandLine": "python retail_export.py"},
+            44: {"Name": "python.exe", "CommandLine": None},
+            45: {"Name": "custom.exe", "CommandLine": "custom.exe retail_export.py"},
+            46: {"Name": "reused.exe", "CommandLine": "reused.exe harmless"},
+        }
+        active = expansion._classify_processes(snapshot, commands, None, own_pid=41)
+        self.assertEqual([(row["pid"], row["reason"]) for row in active],
+                         [(43, "retail-export-script"),
+                          (44, "uninspectable-script-host"),
+                          (46, "uninspectable-script-host"),
+                          (45, "retail-export-script")])
+
+    def test_process_snapshot_error_fails_closed(self):
+        with patch.object(expansion.core, "_editor_processes",
+                          return_value=([], "snapshot denied")):
+            active, error, details = expansion._process_state()
+        self.assertEqual(active, [])
+        self.assertEqual(error, "snapshot denied")
+        self.assertFalse(details["complete"])
+
+    def test_cim_denial_blocks_even_when_no_other_process_is_visible(self):
+        with patch.object(expansion.core, "_editor_processes",
+                          return_value=([{"pid": 41, "name": "python.exe"}], None)), \
+                patch.object(expansion, "_command_line_processes",
+                             return_value=({}, "CIM access denied")), \
+                patch.object(expansion.os, "getpid", return_value=41):
+            active, error, details = expansion._process_state()
+        self.assertEqual(active, [])
+        self.assertEqual(error, "CIM access denied")
+        self.assertFalse(details["complete"])
+
+    def test_command_line_query_rejects_missing_process_identity(self):
+        response = expansion.subprocess.CompletedProcess(
+            args=[], returncode=0, stdout='[{"Name":"python.exe"}]', stderr="")
+        with patch.object(expansion.subprocess, "run", return_value=response):
+            rows, error = expansion._command_line_processes()
+        self.assertEqual(rows, {})
+        self.assertIn("invalid", error)
+
     def test_bounded_sample_is_labeled_incomplete_and_cannot_apply(self):
         fixture = self.fixture
         result = expansion.execute_expansion_cleanup(

@@ -1,0 +1,2 @@
+var daytime = $preset_sys.GetDayTime()
+return StringFormat("D11R_DAYTIME %.9f", daytime)

@@ -1,0 +1,9 @@
+var camera = GetActivePlayCamera()
+if camera == null
+ return "D11R_CAMERA_UP_NO_CAMERA"
+end
+var transform = camera.GetTransform()
+var position = transform.GetPosition()
+var forward = transform.GetForward()
+var up = transform.GetUp()
+return StringFormat("D11R_CAMERA_UP pos %.9f %.9f %.9f forward %.9f %.9f %.9f up %.9f %.9f %.9f", position.x, position.y, position.z, forward.x, forward.y, forward.z, up.x, up.y, up.z)

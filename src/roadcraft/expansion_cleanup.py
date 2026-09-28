@@ -28,6 +28,7 @@ SHA256 = re.compile(r"^[0-9a-f]{64}$")
 UNSAFE_ATTRIBUTES = 0x400 | 0x800 | 0x200  # reparse, compressed, sparse
 PROCESS_TOKENS = ("roadcraft", "modeditor", "integrationstudio", "furnace",
                   "mod_pak_builder", "retail_export")
+SCRIPT_HOST_TOKENS = ("python", "pypy", "py.exe", "pyw.exe")
 
 
 class ExpansionCleanupBlocked(RuntimeError):
@@ -263,32 +264,109 @@ def _git_state(scope: Path, candidates: list[dict[str, Any]]) -> dict[str, Any]:
             "trackedStatusEntries": status.count(b"\0")}
 
 
-def _process_state() -> tuple[list[dict[str, Any]], str | None]:
-    processes, error = core._editor_processes()
-    active = [row for row in processes if any(
-        token in str(row.get("name", "")).casefold() for token in PROCESS_TOKENS)]
-    if os.name != "nt":
-        return active, error or "Windows export-job inspection is unavailable"
-    # A Python retail_export.py job has an ordinary python.exe name.  CIM
-    # exposes its command line; inability to inspect it blocks apply.
+def _command_line_processes() -> tuple[dict[int, dict[str, Any]], str | None]:
+    """Read all command lines so missing interpreter rows cannot look idle."""
     script = ("$ErrorActionPreference='Stop'; "
-              "Get-CimInstance Win32_Process | Where-Object { "
-              "$_.CommandLine -match 'retail_export[.]py' } | "
+              "Get-CimInstance Win32_Process | "
               "Select-Object ProcessId,Name,CommandLine | ConvertTo-Json -Compress")
-    result = subprocess.run(["powershell", "-NoProfile", "-Command", script],
-                            capture_output=True, text=True, check=False)
+    try:
+        result = subprocess.run(["powershell", "-NoProfile", "-Command", script],
+                                capture_output=True, text=True, check=False)
+    except OSError as exc:
+        return {}, f"command-line query failed: {exc}"
     if result.returncode:
-        detail = result.stderr.strip() or "unknown error"
-        return active, error or f"export-job command-line inspection unavailable: {detail}"
-    if result.stdout.strip():
-        try:
-            rows = json.loads(result.stdout)
-            for row in rows if isinstance(rows, list) else [rows]:
-                active.append({"pid": row.get("ProcessId"), "name": row.get("Name"),
-                               "commandLine": row.get("CommandLine")})
-        except (ValueError, AttributeError) as exc:
-            return active, error or f"export-job process response is invalid: {exc}"
-    return active, error
+        return {}, f"command-line query failed: {result.stderr.strip() or 'unknown error'}"
+    try:
+        raw = json.loads(result.stdout)
+        rows = raw if isinstance(raw, list) else [raw]
+        if not rows or not all(isinstance(row, dict) and
+                               isinstance(row.get("ProcessId"), int) and
+                               isinstance(row.get("Name"), str) for row in rows):
+            raise ValueError("missing process rows or identity fields")
+        return {row["ProcessId"]: row for row in rows}, None
+    except (ValueError, TypeError) as exc:
+        return {}, f"command-line process response is invalid: {exc}"
+
+
+def _script_host(name: str) -> bool:
+    name = name.casefold()
+    return "python" in name or "pypy" in name or name in ("py.exe", "pyw.exe")
+
+
+def _classify_processes(snapshot: list[dict[str, Any]],
+                        command_lines: dict[int, dict[str, Any]],
+                        command_line_error: str | None,
+                        *, own_pid: int) -> list[dict[str, Any]]:
+    """Fail closed for script hosts whose command line was not inspected."""
+    active: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    for row in snapshot:
+        pid = row["pid"]
+        name = str(row["name"])
+        lowered = name.casefold()
+        named = any(token in lowered for token in PROCESS_TOKENS)
+        host = _script_host(name)
+        if pid == own_pid and host and not named:
+            continue
+        if not (named or host):
+            continue
+        seen.add(pid)
+        cim_row = command_lines.get(pid, {})
+        # A PID reused between snapshots is not evidence about the earlier
+        # script host.  Require its process name to agree as well.
+        command = (cim_row.get("CommandLine") if
+                   str(cim_row.get("Name", "")).casefold() == lowered else None)
+        if named:
+            reason = "known-game-or-export-process"
+        elif command_line_error or not isinstance(command, str) or not command:
+            reason = "uninspectable-script-host"
+        elif "retail_export.py" in command.casefold():
+            reason = "retail-export-script"
+        else:
+            continue
+        finding = {"pid": pid, "name": name, "reason": reason}
+        if reason == "retail-export-script":
+            finding["commandLine"] = command
+        active.append(finding)
+    # A process can start between the Toolhelp and CIM snapshots.  A newly
+    # observed export command is still active even if Toolhelp missed it.
+    for pid, row in command_lines.items():
+        command = row.get("CommandLine")
+        if pid not in seen and pid != own_pid and isinstance(command, str) and \
+                "retail_export.py" in command.casefold():
+            active.append({"pid": pid, "name": row["Name"],
+                           "reason": "retail-export-script", "commandLine": command})
+    return active
+
+
+def _process_state() -> tuple[list[dict[str, Any]], str | None, dict[str, Any]]:
+    snapshot, error = core._editor_processes(tokens=PROCESS_TOKENS + SCRIPT_HOST_TOKENS)
+    if error:
+        return [], error, {"method": "toolhelp-process-names", "complete": False}
+    if os.name != "nt":
+        return [], "Windows export-job inspection is unavailable", \
+            {"method": "toolhelp-process-names", "complete": False}
+    command_lines, command_line_error = _command_line_processes()
+    active = _classify_processes(snapshot, command_lines, command_line_error,
+                                 own_pid=os.getpid())
+    return active, command_line_error, {
+        "method": "toolhelp-plus-cim" if command_line_error is None else
+                  "toolhelp-conservative-script-host-block",
+        "complete": command_line_error is None,
+        "commandLinesAvailable": command_line_error is None,
+        "commandLineQueryError": command_line_error,
+        "snapshotMatchingProcessCount": len(snapshot),
+        "commandLineProcessCount": len(command_lines),
+        "ownPidExcluded": os.getpid(),
+    }
+
+
+def _checked_processes(checker: Callable[..., Any]) -> tuple[list[dict[str, Any]], str | None, dict[str, Any]]:
+    checked = checker()
+    if len(checked) == 2:
+        processes, error = checked
+        return processes, error, {"method": "external-checker", "complete": not bool(error)}
+    return checked
 
 
 @contextmanager
@@ -396,7 +474,7 @@ def execute_expansion_cleanup(
     apply: bool = False, receipt_path: str | Path | None = None,
     dry_run_output: str | Path | None = None,
     sample_candidates: int | None = None,
-    process_checker: Callable[[], tuple[list[dict[str, Any]], str | None]] = _process_state,
+    process_checker: Callable[..., Any] = _process_state,
     git_checker: Callable[[Path, list[dict[str, Any]]], dict[str, Any]] = _git_state,
 ) -> dict[str, Any]:
     """Verify all listed files; optionally unlink exact files with resume journal.
@@ -434,7 +512,7 @@ def execute_expansion_cleanup(
                         archives[key] = stack.enter_context(zipfile.ZipFile(path))
                 _verify_retained(row, archives, source_cache)
             git = git_checker(scope, rows)
-            processes, process_error = process_checker()
+            processes, process_error, process_inspection = _checked_processes(process_checker)
         result = {"operation": "remove-reviewed-retail-export-files", "dryRun": True,
                   "partialSample": True, "applyReady": False,
                   "manifest": str(manifest), "manifestSha256": manifest_hash,
@@ -443,7 +521,8 @@ def execute_expansion_cleanup(
                   "sampledRetainedSourceFiles": len(source_cache),
                   "sampledRetainedPackages": len(archives),
                   "git": git, "activeProcesses": processes,
-                  "processInspectionError": process_error, "checkedUtc": _utc(),
+                  "processInspectionError": process_error,
+                  "processInspection": process_inspection, "checkedUtc": _utc(),
                   "deletedCount": 0}
         if dry_run_output is not None:
             output = _absolute(dry_run_output, "dry-run output")
@@ -481,7 +560,7 @@ def execute_expansion_cleanup(
                     raise ExpansionCleanupBlocked(f"pending candidate parent is invalid: {candidate.parent}")
                 _verify_retained(row, archives, source_cache)
             git = git_checker(scope, rows)
-            processes, process_error = process_checker()
+            processes, process_error, process_inspection = _checked_processes(process_checker)
             ready = not git.get("trackedCandidateCount") and not processes and not process_error
             result = {"operation": "remove-reviewed-retail-export-files", "dryRun": not apply,
                       "manifest": str(manifest), "manifestSha256": manifest_hash,
@@ -491,7 +570,8 @@ def execute_expansion_cleanup(
                       "verifiedRetainedPackages": len(archives),
                       "alreadyDeletedCount": next_index,
                       "git": git, "activeProcesses": processes,
-                      "processInspectionError": process_error, "applyReady": ready,
+                      "processInspectionError": process_error,
+                      "processInspection": process_inspection, "applyReady": ready,
                       "checkedUtc": _utc(), "deletedCount": 0}
             return result, archives, stack
         except BaseException:
@@ -528,7 +608,7 @@ def execute_expansion_cleanup(
                 row = rows[index]
                 candidate = Path(row["path"])
                 if row["stage"] != current_stage:
-                    processes, process_error = process_checker()
+                    processes, process_error, _ = _checked_processes(process_checker)
                     if processes or process_error or git_checker(scope, rows) != baseline_git:
                         raise ExpansionCleanupBlocked("process or Git state changed before stage deletion")
                     current_stage = row["stage"]

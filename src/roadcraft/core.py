@@ -284,8 +284,8 @@ def doctor(config: dict[str, Any] | None = None) -> dict[str, Any]:
             "warnings": warnings}
 
 
-def _editor_processes() -> tuple[list[dict[str, Any]], str | None]:
-    """Enumerate relevant process names without querying protected process memory."""
+def _editor_processes(*, tokens: tuple[str, ...] | None = None) -> tuple[list[dict[str, Any]], str | None]:
+    """Enumerate selected process names without querying protected process memory."""
     if os.name != "nt":
         return [], "Windows process inspection is unavailable on this host"
     try:
@@ -320,13 +320,19 @@ def _editor_processes() -> tuple[list[dict[str, Any]], str | None]:
             entry.dwSize = ctypes.sizeof(ProcessEntry)
             if not first(handle, ctypes.byref(entry)):
                 return [], f"Process32FirstW failed with Windows error {ctypes.get_last_error()}"
-            tokens = ("roadcraft", "modeditor", "integrationstudio", "blender", "painter", "furnace", "mod_pak_builder")
+            if tokens is None:
+                tokens = ("roadcraft", "modeditor", "integrationstudio", "blender", "painter", "furnace", "mod_pak_builder")
             while True:
                 name = entry.szExeFile
                 if any(token in name.casefold() for token in tokens):
                     found.append({"pid": entry.th32ProcessID, "name": name})
                 entry.dwSize = ctypes.sizeof(ProcessEntry)
                 if not next_entry(handle, ctypes.byref(entry)):
+                    # ERROR_NO_MORE_FILES is the only successful endpoint.
+                    # Any other enumeration failure must not look like an idle host.
+                    code = ctypes.get_last_error()
+                    if code != 18:
+                        return [], f"Process32NextW failed with Windows error {code}"
                     break
         finally:
             close(handle)

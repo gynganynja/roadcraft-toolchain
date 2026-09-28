@@ -1,0 +1,2 @@
+var weather = $weather_manager_sys.GetWeatherState()
+return StringFormat("D11R_WEATHER_STATE rainEnabled %s rainPower %.9f", BoolToString(weather.rainEnabled, "true", "false"), weather.rainPower)
