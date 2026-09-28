@@ -68,7 +68,7 @@ $env:PYTHONPATH = "$tc\src"
 ```
 
 The final no-save rerun used host SHA-256
-`69c6c387cae1f802597f2e03b3e6c25bda0dbe580a6859e8dc2a82fd38979b7a`
+`003e0f6d38cf37976fc4c91eeba2df5dff6c9882d3cbbe29d53d8a516234da72`
 and worker SHA-256
 `7a1a56a04c8946c115f33292dc8d47c6ee60d4b4032a45ee0574da4d756ea67b`.
 It returned `IN_MEMORY_STATIC_PATH_MATCH`, `sourceUnchanged: true`,
@@ -80,6 +80,6 @@ asset. It deliberately reports `nativeBlendExportApproved: false` even on a
 static-path match.
 
 The host also pins the two Python SDK package initializers loaded before the
-reader modules, and rejects a linked inventory source root before resolving
-the declared asset paths. The final no-save rerun above passed with these
-guards active.
+reader modules and the exact worker bytes before and after launch. It rejects
+a linked inventory source root before resolving the declared asset paths.
+The final no-save rerun above passed with these guards active.

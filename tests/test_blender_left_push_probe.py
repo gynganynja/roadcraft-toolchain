@@ -108,6 +108,17 @@ class BlenderLeftPushProbeTests(unittest.TestCase):
                                 sdk_script_root=self.sdk)
             run.assert_not_called()
 
+    def test_rejects_modified_worker_before_blender_launch(self) -> None:
+        worker = self.root / "modified_worker.py"
+        worker.write_bytes(b"unreviewed worker")
+        with (mock.patch.object(probe, "WORKER", worker),
+              mock.patch.object(probe.subprocess, "run") as run):
+            with self.assertRaisesRegex(probe.LeftPushProbeError, "diagnostic worker"):
+                probe.run_probe(registry_path=self.registry,
+                                blender_executable=self.blender,
+                                sdk_script_root=self.sdk)
+            run.assert_not_called()
+
     def test_rejects_input_change_during_blender_process(self) -> None:
         def drift(*args, **kwargs):
             self.blend.write_bytes(b"changed during run")

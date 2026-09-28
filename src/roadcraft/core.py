@@ -14,8 +14,9 @@ from ctypes import wintypes
 from hashlib import sha256
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import shutil
+import stat
 import sys
 from typing import Any
 from zipfile import BadZipFile, ZipFile, ZipInfo, is_zipfile
@@ -23,6 +24,51 @@ from zipfile import BadZipFile, ZipFile, ZipInfo, is_zipfile
 
 class RoadcraftError(ValueError):
     """An input is missing, malformed, or failed verification."""
+
+
+def _is_remote_namespace(value: str | Path) -> bool:
+    """Recognize UNC shares and Win32 device paths before filesystem access."""
+    return str(value).replace("/", "\\").startswith("\\\\")
+
+
+def _require_local_path(value: str | Path) -> Path:
+    """Reject network/device syntax and reparse ancestors before resolution.
+
+    Inspect each existing component with lstat, stopping before a missing one.
+    In particular, resolve() itself can access a UNC target through a local
+    junction, so its result cannot be the first locality check.
+    """
+    if _is_remote_namespace(value):
+        raise RoadcraftError("UNC and device paths are not supported")
+    path = Path(value).expanduser()
+    if _is_remote_namespace(path):
+        raise RoadcraftError("UNC and device paths are not supported")
+    if os.name == "nt":
+        if path.drive and not path.is_absolute():
+            raise RoadcraftError("Drive-relative paths are not supported")
+        tail = str(path)[len(path.drive):]
+        if ":" in tail or any(PureWindowsPath(part).is_reserved() for part in path.parts):
+            raise RoadcraftError("Windows device names and alternate data streams are not supported")
+    absolute = path if path.is_absolute() else Path.cwd() / path
+    if _is_remote_namespace(absolute):
+        raise RoadcraftError("UNC and device paths are not supported")
+    if os.name == "nt" and absolute.drive:
+        drive_type = ctypes.windll.kernel32.GetDriveTypeW(str(Path(absolute.anchor)))
+        if drive_type == 4:  # DRIVE_REMOTE, including mapped SMB drives.
+            raise RoadcraftError("Remote mapped drives are not supported")
+    current = Path(absolute.anchor)
+    for part in absolute.parts[1:]:
+        current /= part
+        try:
+            info = current.lstat()
+        except (FileNotFoundError, NotADirectoryError):
+            break
+        except OSError as exc:
+            raise RoadcraftError(f"Cannot verify local path component {current}: {exc}") from exc
+        if stat.S_ISLNK(info.st_mode) or (
+                os.name == "nt" and getattr(info, "st_file_attributes", 0) & 0x400):
+            raise RoadcraftError(f"Reparse or symbolic-link path component is not supported: {current}")
+    return path
 
 
 def sha256_file(path: str | Path) -> str:
@@ -34,7 +80,7 @@ def sha256_file(path: str | Path) -> str:
 
 
 def load_json(path: str | Path) -> dict[str, Any]:
-    source = Path(path).expanduser().resolve()
+    source = _require_local_path(path).resolve()
     try:
         data = json.loads(source.read_text(encoding="utf-8-sig"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
@@ -47,10 +93,17 @@ def load_json(path: str | Path) -> dict[str, Any]:
 def resolve_path(value: str | Path, document: str | Path) -> Path:
     if not isinstance(value, (str, Path)) or not str(value):
         raise RoadcraftError(f"Expected a nonempty path in {document}")
+    if _is_remote_namespace(value):
+        raise RoadcraftError(f"UNC and device paths are not supported in {document}")
     path = Path(value).expanduser()
     if not path.is_absolute():
-        path = Path(document).expanduser().resolve().parent / path
-    return path.resolve()
+        source = _require_local_path(document).resolve()
+        path = source.parent / path
+    _require_local_path(path)
+    resolved = path.resolve()
+    if _is_remote_namespace(resolved):
+        raise RoadcraftError(f"UNC and device paths are not supported in {document}")
+    return resolved
 
 
 def _pin(value: Any, document: str | Path) -> dict[str, Any] | None:
@@ -125,7 +178,11 @@ def file_identity(path: str | Path, expected_sha256: str | None = None) -> dict[
                                          any(c not in "0123456789abcdefABCDEF"
                                              for c in expected_sha256)):
         raise RoadcraftError(f"Invalid SHA-256 for {path}")
-    item = Path(path).expanduser().resolve()
+    if _is_remote_namespace(path):
+        raise RoadcraftError("UNC and device paths are not supported")
+    item = _require_local_path(path).resolve()
+    if _is_remote_namespace(item):
+        raise RoadcraftError("UNC and device paths are not supported")
     result: dict[str, Any] = {"path": str(item), "exists": item.is_file()}
     if not result["exists"]:
         if expected_sha256:
@@ -443,7 +500,8 @@ def verify_manifest(path: str | Path, base: str | Path | None = None) -> dict[st
     rows = manifest.get("files")
     if not isinstance(rows, list):
         raise RoadcraftError("Manifest needs a files array")
-    root = Path(base).expanduser().resolve() if base else Path(path).expanduser().resolve().parent
+    root = (_require_local_path(base).resolve() if base else
+            _require_local_path(path).resolve().parent)
     results = []
     for row in rows:
         if not isinstance(row, dict):

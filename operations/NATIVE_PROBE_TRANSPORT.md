@@ -53,3 +53,40 @@ does not prove the loaded scene bytes. Ordinary method-smoke receipts are labele
 tonemap, renderer mode, complete local-light roster, and fresh pre-screenshot
 linkage remain unobserved. Do not feed these probe receipts to the matched
 baseline/candidate gate.
+
+## Complete offline matrix, 2026-09-28
+
+At `2026-09-28T04:55:41Z`, all 15 combinations of the five allowlisted
+fragments and three validation variants returned `PREFLIGHT_VERIFIED` with
+`transportSent: false` and `pairProtocolEligible: false`. Each call used
+`python -B -m roadcraft.native_probe_transport --kind KIND --variant VARIANT`
+from the Steam source mirror, with `PYTHONPATH` set to that mirror's `src`.
+
+| Fragment | Maroon | Nearnew | Worn |
+| --- | --- | --- | --- |
+| `weather_state` | passed | passed | passed |
+| `camera_up` | passed | passed | passed |
+| `sun_direction` | passed | passed | passed |
+| `daytime` | passed | passed | passed |
+| `level_name` | passed | passed | passed |
+
+The same 15-command matrix passed from the dedicated checkout at
+`2026-09-28T05:04Z`, with its `src` on `PYTHONPATH`. The dedicated checkout's
+Python module, PowerShell helper, and ignored machine config matched the
+hashes below. This is 15 passing combinations in each checkout, not 30
+independent runtime method results.
+
+The checked Python module SHA-256 was
+`1b2e8f925279ea3ae4e9904817ac721fe4bbb36edb0f8d2aa7929569b2b9ca1e`;
+the PowerShell helper SHA-256 was
+`6f2f16c6781773ea6f68be4da6aaa4123b25b1b363200fcf67e69bbcf730e3f9`.
+The ignored machine config matched SHA-256
+`5c442e89f2e23fa7528da05e26b05f02b97f22a1c139535483a8d08d931e677d`
+at the check. The interpreter was Python 3.12.14 and the helper used
+PowerShell 7.6.5. The installed accepted PAK still matched
+`3e3d21b877ad6e52c61de7665a90fe3a9e4dd3761c0f3115fc734938caf4aa16`.
+No `--execute` flag, engine PID, output path, or installed-package swap was
+supplied. This matrix verifies current pinned input availability and offline
+transport preparation only; it does not prove the fragments compile or return
+values in an editor session. Recheck pins and process state before any native
+method smoke.

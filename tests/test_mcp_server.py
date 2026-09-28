@@ -7,9 +7,11 @@ import importlib.metadata
 import io
 import json
 from pathlib import Path
+import stat
 import struct
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 from zipfile import ZipFile
@@ -183,6 +185,116 @@ class MCPTests(unittest.TestCase):
         for path in ("relative.pak", "https://example.com/file.pak", ""):
             with self.subTest(path=path), self.assertRaises(ValueError):
                 self.tools.verify_file(path, "0" * 64)
+
+    def test_unc_and_device_paths_are_rejected_before_resolution(self):
+        paths = (r"\\server\share\file.pak", "//server/share/file.pak",
+                 r"\\.\pipe\roadcraft", r"\\?\UNC\server\share\file.pak")
+        for path in paths:
+            with self.subTest(path=path):
+                with patch.object(server.Path, "resolve", side_effect=AssertionError("resolution touched a remote path")):
+                    with self.assertRaisesRegex(ValueError, "local absolute filesystem path"):
+                        self.tools.inspect_file(path)
+
+    def test_local_path_resolving_to_unc_is_rejected(self):
+        with patch.object(server.Path, "resolve", return_value=server.Path(r"\\server\share\file.pak")):
+            with self.assertRaisesRegex(ValueError, "local absolute filesystem path"):
+                self.tools.inspect_file(str(self.package))
+
+    @unittest.skipUnless(sys.platform == "win32", "Windows path syntax")
+    def test_windows_reserved_device_and_stream_paths_reject_before_resolution(self):
+        paths = (self.root / "NUL", self.root / "COM1.txt",
+                 self.root / "ordinary.txt:secret")
+        for path in paths:
+            with self.subTest(path=str(path)):
+                with patch.object(server.Path, "lstat", side_effect=AssertionError("unsafe path was inspected")):
+                    with patch.object(server.Path, "resolve", side_effect=AssertionError("unsafe path was resolved")):
+                        with self.assertRaisesRegex(ValueError, "local absolute filesystem path"):
+                            self.tools.inspect_file(str(path))
+        with self.assertRaisesRegex(server.core.RoadcraftError, "Drive-relative paths"):
+            server.core._require_local_path(f"{self.root.drive}relative.txt")
+        self.assertTrue(self.tools.verify_file(str(self.package), sha(self.package.read_bytes()))["passed"])
+
+    @unittest.skipUnless(sys.platform == "win32", "Windows reparse attributes")
+    def test_local_reparse_component_rejects_before_resolution(self):
+        junction = self.root / "junction"
+        original_lstat = server.Path.lstat
+
+        def marked_reparse(path, *args, **kwargs):
+            if path == junction:
+                return SimpleNamespace(st_mode=stat.S_IFDIR, st_file_attributes=0x400)
+            return original_lstat(path, *args, **kwargs)
+
+        with patch.object(server.Path, "lstat", new=marked_reparse):
+            with patch.object(server.Path, "resolve", side_effect=AssertionError("reparse target was resolved")):
+                with self.assertRaisesRegex(ValueError, "Reparse or symbolic-link"):
+                    self.tools.inspect_file(str(junction / "remote.pak"))
+
+    @unittest.skipUnless(sys.platform == "win32", "Windows reparse attributes")
+    def test_nested_reparse_paths_reject_before_resolution(self):
+        junction = self.root / "junction"
+        manifest = self.root / "nested-files.json"
+        manifest.write_text(json.dumps({"files": [{"path": "junction/remote.pak", "sha256": "0" * 64}]}))
+        receipt = self.root / "nested-receipt.json"
+        receipt.write_text(json.dumps({"captures": [{"path": "junction/remote.png", "sha256": "0" * 64}]}))
+        original_lstat = server.Path.lstat
+        original_resolve = server.Path.resolve
+
+        def marked_reparse(path, *args, **kwargs):
+            if path == junction:
+                return SimpleNamespace(st_mode=stat.S_IFDIR, st_file_attributes=0x400)
+            return original_lstat(path, *args, **kwargs)
+
+        def local_only_resolve(path, *args, **kwargs):
+            if junction in path.parents or path == junction:
+                raise AssertionError("reparse target was resolved")
+            return original_resolve(path, *args, **kwargs)
+
+        with patch.object(server.Path, "lstat", new=marked_reparse):
+            with patch.object(server.Path, "resolve", new=local_only_resolve):
+                with self.assertRaisesRegex(server.core.RoadcraftError, "Reparse or symbolic-link"):
+                    self.tools.verify_manifest(str(manifest))
+                with self.assertRaisesRegex(server.review.ReviewError, "Reparse or symbolic-link"):
+                    self.tools.evidence_report([{"path": str(receipt)}])
+
+    def test_nested_receipt_paths_cannot_resolve_unc(self):
+        remote = r"\\server\share\capture.png"
+        receipt = self.root / "nested.json"
+        original_resolve = server.Path.resolve
+
+        def local_only(path, *args, **kwargs):
+            if server.core._is_remote_namespace(path):
+                raise AssertionError("remote path reached resolve")
+            return original_resolve(path, *args, **kwargs)
+
+        documents = ({"captures": [{"path": remote, "sha256": "0" * 64}]},
+                     {"variants": [{"report": remote, "reportSha256": "0" * 64}]})
+        for document in documents:
+            receipt.write_text(json.dumps(document))
+            with self.subTest(document=document), patch.object(server.Path, "resolve", new=local_only):
+                with self.assertRaisesRegex(server.review.ReviewError, "UNC and device evidence paths"):
+                    self.tools.evidence_report([{"path": str(receipt)}])
+
+    def test_nested_manifest_registry_and_config_paths_cannot_resolve_unc(self):
+        remote = r"\\server\share\file.pak"
+        original_resolve = server.Path.resolve
+
+        def local_only(path, *args, **kwargs):
+            if server.core._is_remote_namespace(path):
+                raise AssertionError("remote path reached resolve")
+            return original_resolve(path, *args, **kwargs)
+
+        manifest = self.root / "remote-files.json"
+        manifest.write_text(json.dumps({"files": [{"path": remote, "sha256": "0" * 64}]}))
+        self.registry.write_text(json.dumps({"schemaVersion": 1, "accepted": {"package": {"path": remote}},
+                                             "candidates": {}}))
+        self.config.write_text(json.dumps({"schemaVersion": 1, "installedPackage": remote, "tools": {}}))
+        with patch.object(server.Path, "resolve", new=local_only):
+            with self.assertRaisesRegex(server.core.RoadcraftError, "UNC and device paths"):
+                self.tools.verify_manifest(str(manifest))
+            with self.assertRaisesRegex(server.core.RoadcraftError, "UNC and device paths"):
+                self.tools.project_status()
+            with self.assertRaisesRegex(server.core.RoadcraftError, "UNC and device paths"):
+                self.tools.project_doctor()
 
     def test_real_sdk_schemas_when_dependency_is_available(self):
         try:

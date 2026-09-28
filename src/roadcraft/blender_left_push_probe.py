@@ -22,6 +22,7 @@ from .source import file_sha256
 
 TOOLCHAIN_ROOT = Path(__file__).resolve().parents[2]
 WORKER = Path(__file__).with_name("blender_left_push_worker.py")
+WORKER_SHA256 = "7a1a56a04c8946c115f33292dc8d47c6ee60d4b4032a45ee0574da4d756ea67b"
 INVENTORY_SHA256 = "03d3eae96720612ae3b1457a27cc797f8bc6ebb694b230f253bcadbe9d13b50d"
 BLEND_SHA256 = "1eadf10af8525e2bd72e0db43cba20e05bcb1014c4e8e09354228f7c79115731"
 USF_SHA256 = "49bfc77c1172a0e324934974d5612a13d121c3cee78ae7ca454468b61649e170"
@@ -94,7 +95,7 @@ def build_command(blender: Path, worker: Path, blend: Path, usf: Path,
             "--disable-autoexec", "--threads", "1", "--python-exit-code", "1",
             "--python", str(worker), "--", "--blend", str(blend),
             "--repaired-usf", str(usf), "--sdk-script-root", str(sdk_root),
-            "--worker-sha256", file_sha256(worker)]
+            "--worker-sha256", WORKER_SHA256]
 
 
 def parse_result(stdout: str) -> dict:
@@ -180,8 +181,8 @@ def run_probe(*, registry_path: Path, blender_executable: Path,
     require_hash(usf, USF_SHA256, "repaired USF")
     blender = require_hash(blender_executable, BLENDER_SHA256, "Blender executable")
     sdk = require_sdk_pins(sdk_script_root)
-    worker = _unlinked_path(WORKER, "diagnostic worker")
-    worker_sha = file_sha256(worker)
+    worker = require_hash(WORKER, WORKER_SHA256, "diagnostic worker")
+    worker_sha = WORKER_SHA256
     command = build_command(blender, worker, blend, usf, sdk)
     environment = dict(os.environ)
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
@@ -203,7 +204,7 @@ def run_probe(*, registry_path: Path, blender_executable: Path,
     require_hash(usf, USF_SHA256, "repaired USF after diagnostic")
     require_sdk_pins(sdk_script_root)
     require_hash(blender_executable, BLENDER_SHA256, "Blender executable after diagnostic")
-    require_hash(WORKER, worker_sha, "diagnostic worker after run")
+    require_hash(WORKER, WORKER_SHA256, "diagnostic worker after run")
     if result.get("status") not in {"IN_MEMORY_STATIC_PATH_MATCH", "IN_MEMORY_STATIC_PATH_DIFFERENT"}:
         raise LeftPushProbeError("Blender reported an invalid diagnostic status")
     result.update({"sourceUnchanged": True, "sdkUnchanged": True,

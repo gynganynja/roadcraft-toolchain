@@ -20,12 +20,15 @@ from __future__ import annotations
 
 import argparse
 import base64
+import ctypes
 import hashlib
 import html
 import json
 import math
-from pathlib import Path
+import os
+from pathlib import Path, PureWindowsPath
 import re
+import stat
 import struct
 from typing import Any, Iterable, Mapping
 
@@ -67,14 +70,55 @@ def _pin(content: bytes, expected: Any, path: Path, *, required: bool = True) ->
     return actual
 
 
+def _is_remote_namespace(value: str | Path) -> bool:
+    return str(value).replace("/", "\\").startswith("\\\\")
+
+
+def _require_local_evidence_path(path: Path) -> None:
+    """Check local path syntax and existing reparse components before resolve."""
+    if _is_remote_namespace(path):
+        raise ReviewError("UNC and device evidence paths are not supported")
+    if os.name == "nt":
+        if path.drive and not path.is_absolute():
+            raise ReviewError("Drive-relative evidence paths are not supported")
+        tail = str(path)[len(path.drive):]
+        if ":" in tail or any(PureWindowsPath(part).is_reserved() for part in path.parts):
+            raise ReviewError("Device names and alternate data streams are not supported in evidence paths")
+    absolute = path if path.is_absolute() else Path.cwd() / path
+    if _is_remote_namespace(absolute):
+        raise ReviewError("UNC and device evidence paths are not supported")
+    if os.name == "nt" and absolute.drive:
+        if ctypes.windll.kernel32.GetDriveTypeW(str(Path(absolute.anchor))) == 4:
+            raise ReviewError("Remote mapped drives are not supported for evidence")
+    current = Path(absolute.anchor)
+    for part in absolute.parts[1:]:
+        current /= part
+        try:
+            info = current.lstat()
+        except (FileNotFoundError, NotADirectoryError):
+            break
+        except OSError as exc:
+            raise ReviewError(f"Cannot verify local evidence path component {current}: {exc}") from exc
+        if stat.S_ISLNK(info.st_mode) or (
+                os.name == "nt" and getattr(info, "st_file_attributes", 0) & 0x400):
+            raise ReviewError(f"Reparse or symbolic-link evidence path component is not supported: {current}")
+
+
 def _path(value: Any, relative_to: Path) -> Path:
     if not isinstance(value, (str, Path)) or not str(value):
         raise ReviewError("Evidence path must be a nonempty local path")
     value = str(value)
     if re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", value):
         raise ReviewError("Remote evidence URLs are not supported")
+    if _is_remote_namespace(value):
+        raise ReviewError("UNC and device evidence paths are not supported")
     path = Path(value).expanduser()
-    return (path if path.is_absolute() else relative_to / path).resolve()
+    candidate = path if path.is_absolute() else relative_to / path
+    _require_local_evidence_path(candidate)
+    resolved = candidate.resolve()
+    if _is_remote_namespace(resolved):
+        raise ReviewError("UNC and device evidence paths are not supported")
+    return resolved
 
 
 def _image_info(data: bytes) -> tuple[str, list[int]]:

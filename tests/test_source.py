@@ -107,7 +107,7 @@ class SourceTests(unittest.TestCase):
 
     def test_inventory_rejects_paths_outside_tree(self) -> None:
         source_tree(self.root)
-        for bad in ("../outside.usf", "C:\\outside.usf", "/outside.usf",
+        for bad in ("../outside.usf", "C:\\outside.usf", r"\\server\share\outside.usf", "/outside.usf",
                     "models/./cat_d11t/export.usf"):
             with self.subTest(path=bad):
                 declarations = declared_assets()

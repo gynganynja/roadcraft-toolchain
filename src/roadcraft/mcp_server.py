@@ -80,12 +80,23 @@ def _sdk_components() -> tuple[Any, Any]:
 
 
 def _absolute(path: str | Path) -> Path:
-    if not str(path) or re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", str(path)):
+    raw = str(path)
+    # Reject UNC shares and Win32 device namespaces before resolve() can touch
+    # a remote server or named pipe. MCP callers may only supply local paths.
+    if (not raw or re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", raw) or
+            core._is_remote_namespace(raw)):
         raise core.RoadcraftError("Use a local absolute filesystem path")
     result = Path(path).expanduser()
     if not result.is_absolute():
         raise core.RoadcraftError("Use an absolute path; relative paths are only allowed inside evidence documents")
-    return result.resolve()
+    try:
+        core._require_local_path(result)
+    except core.RoadcraftError as exc:
+        raise core.RoadcraftError(f"Use a local absolute filesystem path: {exc}") from exc
+    result = result.resolve()
+    if core._is_remote_namespace(result):
+        raise core.RoadcraftError("Use a local absolute filesystem path")
+    return result
 
 
 @dataclass(frozen=True)
