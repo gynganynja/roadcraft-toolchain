@@ -32,14 +32,16 @@ visually accepted and campaign accepted are different states.
 
 ## Current evidence
 
-At `529e70cb432c41f80de5eee1574b98ecf7d73510`, private `main` and
-[Windows CI #51](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36418958532)
-passed 364 synthetic tests (one hosted skip) and all three Painter write-gate
-tests. The Steam mirror and dedicated checkout each passed 364 tests with four
+At `4ae7e978e24b550470417d7f634e4b74e1fc202c`, private `main` and
+[Windows CI #53](https://github.com/gynganynja/roadcraft-toolchain/actions/runs/36420864676)
+passed 368 synthetic tests (one hosted skip) and all three Painter write-gate
+tests. The Steam mirror and dedicated checkout each passed 368 tests with four
 machine-specific skips. Two pinned Blender versions agreed on the read-only
 blade geometry result; a further pinned no-save readback isolated the stored
 normal outliers to eight triangles and located the largest change in Blender's
-SDK axis-conversion path. The native pre-trigger guard, `c0de2027` no-write
+SDK axis-conversion path. A no-save normal projection matched all 6,486
+accepted repaired blade normals without changing the five other measured
+payload fields. The native pre-trigger guard, `c0de2027` no-write
 contract, schema-2 candidate-only receipt-link scaffold, guarded color
 readbacks and blade readbacks are offline evidence only. The accepted PAK
 remains installed; no native capture or Blender export ran in this checkpoint.
@@ -85,6 +87,7 @@ remains installed; no native capture or Blender export ran in this checkpoint.
 | D11 blade mesh payload | Source/native six fields match 60/60; repaired exact positions/normals differ | Two pinned, no-save Blender versions produced the same 60-row digest. Repaired exact positions matched only 2/60 (`cdt_blade_49` and `50`) and exact normals 0/60; face indices, UVs, packed colors and skin indices/weights matched 60/60. The separate numeric diagnostic below bounds the position drift and isolates real stored-normal outliers. These ordered fields do not prove material/bone identity, tangents, animation or collision behavior. No export or accepted-asset change occurred; see `D11_BLADE_PAYLOAD_READBACK_20260928.md`. |
 | D11 blade geometry and normals | Positions within tolerance; stored-normal gap remains | Two pinned, no-export Blender processes parsed 60 retained native/repaired USF leaves and 6,486 triangle corners. World matrices were identical and maximum local/world position difference was `4.815e-7` (all 60 rows within `1e-5`), explaining the 58 exact position-digest mismatches as low-bit drift. Twenty-four stored normals across five leaves differed by over 0.1°, maximum 13.24°; a 0.229 pairwise-dot change rules out a single rigid rotation for the worst leaf. Collision behavior and the cause of the normal change remain unproved. See `D11_BLADE_GEOMETRY_READBACK_20260928.md`. |
 | D11 blade normal origin | Eight flat triangles isolated; repair origin unproved | A pinned, no-save SDK projection exactly reproduced all 24 native outlier corners. All eight source polygons are flat, have no custom-normal or `saber_normals` attribute, and have `has_custom_normals=false`. Blender 5.0.1/5.2.0 stage probes on three witnesses found the SDK axis transform changes corner normals while geometric face normals remain aligned. The accepted repaired normals mostly align with face normals, but their creation stage is unknown; no blanket recalculation or export is justified. See `D11_BLADE_NORMAL_ORIGIN_READBACK_20260928.md` and its pinned JSON receipt. |
+| D11 blade normal projection | In-memory normal arrays matched; authored/export parity blocked | Pinned Blender 5.0.1/5.2.0 no-save processes temporarily assigned repaired USF corner normals to `saber_normals` on all 60 source blade meshes. Both SDK projections matched all 6,486 repaired normals exactly and retained source/native positions, face material/edge indices, UVs, packed colors and skin indices/weights on all rows. The source Blend and both USFs stayed unchanged. Persistence after a Blend save, fresh USF export, collision behavior and other asset parity remain unproved; the native-Blend export gate stays blocked. See `D11_BLADE_NORMAL_PROJECTION_READBACK_20260928.md` and its pinned two-run manifest. |
 | Painter integration | Capabilities verified; scratch project deferred; write gate added | Real stdio probe listed 79 tools, connected to Painter 12.1.5/API 0.3.5 and called `get_capabilities` successfully while no project was open. Baking presets, auto-rebake control and skew-painting control are unavailable. The server now leaves 34 inspection/planning tools enabled and denies 45 authoring/output tools unless its local process has `SP_MCP_ALLOW_PROJECT_WRITES=1`; synthetic FastMCP dispatch tests cover all 45. The user intentionally ended the Painter session to avoid interference and chose to leave it closed; no `.spp` was created and no accepted asset changed. |
 | Storage | First exact batch complete; expansion dry run passed but deletion unapproved | `STORAGE_REVIEW.md`: 159 template copies removed, 6.30 GiB freed, retained originals verified. The separate 23,604-file / 5.93 GiB expansion remains untouched. Its 33 MB raw manifest is local and a verified 1.6 MB gzip copy is versioned. A full sandboxed dry run verified every candidate and counterpart but reported `applyReady: false` because CIM process inspection was denied. A distinct elevated full dry run reported `applyReady: true` with zero active processes at its inspection time, 21 retained packages, 166 retained source files and zero deletions. Any future apply needs specific authorization and a fresh pinned preflight. Git temporary pack remains separate. |
 
@@ -779,8 +782,8 @@ new local integration config if transport cannot be made reliable.
 
 ## Immediate execution order
 
-1. Private `main`, remote commit comparison, and Windows CI run #51 at
-   `529e70c` are complete. Keep later changes versioned and recheck CI after
+1. Private `main`, remote commit comparison, and Windows CI run #53 at
+   `4ae7e97` are complete. Keep later changes versioned and recheck CI after
    each push.
 2. Use the registered, smoke-tested local integrations through their dedicated
    checkout, then confirm desktop tool visibility in a task rooted there. The
