@@ -16,7 +16,7 @@ and identical bundled SDK file hashes. The probe helper changed from
 to `cf5469b31b33d2f33bfdd66d77c6498b6f7cde0e1653c2698ad567ff64e59642`
 between each pair while node-path comparison was corrected. Thus these are
 comparable retained outputs, **not** a controlled same-helper reproducibility
-test. No fresh Blender run was made for this analysis.
+test. The later four-run probe is recorded below.
 
 | Asset | Earlier scratch USF SHA-256 | Later scratch USF SHA-256 | Size in both | Structural digest in both |
 | --- | --- | --- | ---: | --- |
@@ -88,8 +88,8 @@ with its current thread setting and then with Blender's documented
 `--blender-threads 1` and seals the chosen count into its receipts). It must
 rehash inputs, compare the entire USF and mesh
 arrays, and keep the native-blend export gate blocked regardless of the
-determinism result. No new Blender asset run or scratch export was made for this
-investigation because the `game-dev` CLI was unavailable. A pinned
+determinism result. At that initial stage, no new Blender asset run was made
+because the `game-dev` CLI was unavailable. A pinned
 `cat_d11t` probe dry run with `--blender-threads 1` returned `DRY_RUN`,
 revalidated the `.blend`, repaired USF, Blender executable, and SDK hashes,
 and created no scratch or receipt files.
@@ -97,7 +97,40 @@ and created no scratch or receipt files.
 The full scratch USFs and raw probe receipts remain under ignored
 `RoadCraftToolchain/local/blend-authoring-parity-*`. The checked-in compact
 parity summaries retain the source, SDK, candidate hashes and structural
-digests. A future controlled experiment would hold the exact helper binary
-constant and repeat in fresh disposable scratch, then trace
-`Mesh.calc_tangents`; it should not be used to relax the native-export parity
-gate or normalize the authoritative asset.
+digests. The controlled repeat below holds those inputs constant and varies
+Blender's thread setting. Tracing `Mesh.calc_tangents` itself remains a
+separate investigation; this probe cannot relax the native-export parity gate
+or normalize the authoritative asset.
+
+## Four-run Blender thread probe
+
+That bounded experiment was subsequently run with the maintained
+`roadcraft.blender_authoring` scratch diagnostic on the pinned `cat_d11t` Blend
+with the same inventory, Blender 5.2.0 executable, helper, diff/summary code,
+and 14 SDK file hashes. Four fresh, separate scratch directories were used;
+each input was rehashed before and after. All four Blender processes exited
+zero. Every result was `PARITY_DIFFERENT`, with `nativeBlendExportApproved:
+false` and `exportGate.status: BLOCKED`. No scratch USF was adopted. The
+compact summaries and deterministic full-diagnostic gzip archives are retained
+under `operations/d11_blend_determinism_*_summary.json[.gz]`; the 113 MB USFs
+and raw receipts remain under ignored `local/`.
+
+| Scratch probe | Blender threads | USF SHA-256 | Bytes |
+| --- | ---: | --- | ---: |
+| `t1a` | 1 | `02b3aaf5fe37358a5b36c014bd1e3337187fc987b2d41cbf3017576e29c6ba00` | 113,076,211 |
+| `t1b` | 1 | `02b3aaf5fe37358a5b36c014bd1e3337187fc987b2d41cbf3017576e29c6ba00` | 113,076,211 |
+| `default-a` | Blender default | `58d17418cb8e9b6cbb452ffa4ea45d6353c449163d9fd1427f1f4645909399cc` | 113,076,211 |
+| `default-b` | Blender default | `2feda158603b5b5ac683615483ad869c9f13233166c6cad38d417d7fa2e4c946` | 113,076,211 |
+
+The two one-thread USFs match byte for byte. The two default-thread USFs differ
+in exactly 13,693 bytes. A read-only parser located all 210 USF mesh records
+using the pinned SDK's `0x107` layout; every difference is in tangent float32
+arrays of mesh ordinals 102, 147 and 148 (`Blade_vis`, `Ripper_vis`, and
+`Ripper_vis_LOD1`). Their tangent sign components and every byte outside
+those arrays agree. The maximum absolute float difference is
+`1.7881393432617188e-7`. The result demonstrates repeatability in these two
+one-thread trials and tangent-only drift in these two default-thread trials.
+It strongly supports thread-sensitive tangent calculation, but does not prove
+the Blender scheduler mechanism. Structural and material/rig/animation
+differences against the repaired USF remain, so the native Blend export gate
+stays blocked.
