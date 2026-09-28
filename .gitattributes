@@ -10,3 +10,5 @@ src/roadcraft/blender_mesh_inventory_worker.py text eol=lf
 src/roadcraft/blender_mesh_inventory.py text eol=lf
 src/roadcraft/blender_blade_relocation_worker.py text eol=lf
 src/roadcraft/blender_mesh_payload_worker.py text eol=lf
+src/roadcraft/blender_tangent_payload_worker.py text eol=lf
+src/roadcraft/blender_bind_identity_worker.py text eol=lf
