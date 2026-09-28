@@ -104,3 +104,4 @@ operations/D11_RESIDUAL_STRUCTURAL_NODES_*.md text eol=lf
 src/roadcraft/blender_residual_bones.py text eol=lf
 src/roadcraft/blender_residual_bones_worker.py text eol=lf
 tests/test_blender_residual_bones.py text eol=lf
+operations/D11_VARIANT_STRUCTURAL_TARGETS_*.md text eol=lf

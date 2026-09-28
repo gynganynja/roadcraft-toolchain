@@ -785,6 +785,13 @@ a separately authorized scratch export is still needed before native-Blend
 parity can advance. See
 `D11_RESIDUAL_STRUCTURAL_NODES_20260929.md`.
 
+The accepted base, v2 and v3 repaired USFs have identical 400-path static
+structural targets: world matrices, child rosters and animation-presence flags
+match exactly in pinned Blender 5.0.1 and 5.2.0 read-only parses. Their Blend
+references also have identical bytes. This narrows the variant hierarchy work
+but does not test variant-specific edits, export, mesh or material parity. See
+`D11_VARIANT_STRUCTURAL_TARGETS_20260929.md`.
+
 1. Keep the declared `usf-repair` route authoritative. Work on separate copies
    when reconciling native Blender authoring sources.
 2. For each asset, establish hierarchy, transforms, geometry, normals/tangents,
