@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 from roadcraft import cli, core, incremental, jobs, ps_format, vehicle_workflow as workflow
 
@@ -51,6 +52,22 @@ class VehicleWorkflowTests(unittest.TestCase):
         with self.assertRaisesRegex(core.RoadcraftError, "generate a new recipe"):
             workflow.require_checks({"phases": {"build": []}}, "build")
         workflow.require_checks(self.enhanced(), "build")
+
+    def test_new_cli_dependency_change_requires_recipe_regeneration(self):
+        runtime = self.root / "runtime"
+        runtime.mkdir()
+        for module in Path(workflow.__file__).parent.glob("*.py"):
+            (runtime / module.name).write_text("original shared module")
+        with mock.patch.object(workflow, "__file__", str(runtime / "vehicle_workflow.py")):
+            result = self.enhanced()
+        recipe = self.root / "recipe.json"
+        recipe.write_text(json.dumps(result))
+        self.assertEqual(jobs.run_recipe(recipe, "build", self.root / "jobs", dry_run=True)["status"],
+                         "dry_run")
+        (runtime / "onboard.py").write_text("changed shared CLI dependency")
+        with self.assertRaises(jobs.JobError):
+            jobs.run_recipe(recipe, "build", self.root / "jobs", dry_run=True)
+        self.assertFalse((self.root / "jobs").exists())
 
     def test_source_error_stops_before_model_command(self):
         result = self.enhanced()

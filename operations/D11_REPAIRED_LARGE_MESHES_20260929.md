@@ -63,11 +63,12 @@ The scratch-export invocation in
 
 The post-run coverage verifier
 `operations/probes/repaired_mesh_coverage_20260929.py` (SHA-256
-`00f928a90405823601d97122c2fb8568b18920d87fc952532a66717281014b54`)
+`c4bbe6634312c648753b0c0ddbc007544264074d5fc46fdcf35cd3ec20efe5f5`)
 matched the 45-mesh and five large-case result paths against the accepted
 52-mesh survey, excluding only the unskinned pivot. Its compact receipt is
 `operations/d11_repaired_mesh_coverage_20260929.json` (SHA-256
-`d4b1b58b624a7eb905980bf734a757a2f1fe64928d85005302c11d21e38adde8`).
-The receipt pins each input log SHA-256 and reports 47 predicted paths,
-four unresolved isolated LOD paths, 378 full-skin slot mismatches and 24
+`eb4b22565a0e67cf008aa73e937a487788ca690be86ae9baccc1218cd99ab399`).
+The receipt pins each input log SHA-256, including the passing full interior
+family and two dashboard pair scenes, and reports 51 path-verified meshes,
+zero unresolved paths, 378 full-skin slot mismatches and 24
 meshes with tangent-component error at least 1.

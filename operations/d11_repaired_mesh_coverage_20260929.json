@@ -6,20 +6,19 @@
   "fullSkinMismatchCorners": 378,
   "inputLogSha256": {
     "dash_lod0": "48082bfc368365bd1b1d1f700810413b5d15a721fba553b1b3a12fe6e0b9ae55",
+    "dash_lod01": "d088d6ad4fdceb7c38a8ba6160d77b4c2becaf74bd7e070aeb7f85c12293cf47",
+    "dash_lod02": "7c85b08a4df2769b4bccaecf13b6f2b5262558d1f91ea210210558bdea763145",
     "dash_lod1": "34dd7a804888b9098a5b457eee8055d9091f2f723269a1d5babd34d7b0f55dfe",
     "families45": "da161f87413097eb8249626d62e66f45dbf1d5d5ff734d0551ae3fbb507eaeaa",
+    "interior_full": "ab41de143271e0e2ec34c35771b142fe959b2edb122102b437473080a4f525f1",
     "interior_lod0": "d238e4f4f11bde244ffcb6cfde379ce3e16c925df946ebd93fd61e9eb178e692",
     "interior_lod1": "de4dc7d27e7f8b1c0ad6a56d6a9cca1d9464c0ffac069f0c30d2cb561ab011d5",
     "lod2_pair": "ae5012eb7d622c72f8b27e5fd89a9941683712428e7d6375295ecdd882a59935",
     "survey": "c3f6c94272513672ef5fe6c0b0b1f81e0ded98d80db50ab35b3f11d228b70fee"
   },
-  "pathUnverified": [
-    "|@root|D11T_Rig.005|D11_DashV5_vis|D11_DashV5_vis_LOD1",
-    "|@root|D11T_Rig.005|D11_DashV5_vis|D11_DashV5_vis_LOD2",
-    "|@root|D11T_Rig.005|D11_InteriorV1_vis|D11_InteriorV1_vis_LOD1",
-    "|@root|D11T_Rig.005|D11_InteriorV1_vis|D11_InteriorV1_vis_LOD2"
-  ],
-  "pathVerifiedCount": 47,
+  "pathUnverified": [],
+  "pathVerificationScope": "45 combined meshes; all three interior LODs; dashboard LOD0 paired separately with LOD1 and LOD2",
+  "pathVerifiedCount": 51,
   "payloadExactFields": [
     "positions",
     "normals",

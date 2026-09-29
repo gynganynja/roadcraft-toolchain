@@ -1,11 +1,12 @@
 # RoadCraft Toolchain
 
-This package records and checks D11 source, package, capture, and installed
-identities, and holds the vehicle-authoring library in `library/`: what has
-been learned building RoadCraft vehicle mods, with checks for truck BROs and
-compiled models. Read-only inspection is the default. Recipe execution and package
-transactions require an explicit `--apply` flag. Python 3.12 or newer is
-required; the core has no runtime dependencies outside the standard library.
+This package records and checks RoadCraft mod source, package, capture, and
+installed identities. D11 is the current case study and default checkout
+configuration, not a required mod name or schema. The vehicle-authoring library
+in `library/` holds findings from vehicle projects, with checks for truck BROs
+and compiled models. Read-only inspection is the default. Recipe execution and
+package transactions require an explicit `--apply` flag. Python 3.12 or newer
+is required; the core has no runtime dependencies outside the standard library.
 
 Install in a dedicated environment with `pip install -e .`, then use
 `roadcraft doctor`, `roadcraft status`, `roadcraft inspect`, and
@@ -14,11 +15,27 @@ folder's `src` directory and run `python -m roadcraft`.
 
 ## Configuration
 
-The versioned `project.json` defaults to this folder. Override it with
+The versioned D11 `project.json` defaults to this folder. Override it with
 `--registry` or `ROADCRAFT_REGISTRY`. The local `local/machine.json` defaults
-to this folder; override it with `--config` or `ROADCRAFT_CONFIG`. Relative
-paths resolve beside the JSON document that contains them. Do not infer an
+to the selected registry's folder; override it with `--config` or
+`ROADCRAFT_CONFIG`. Relative paths resolve beside the JSON document that
+contains them. Do not infer an
 accepted package from folder dates or the current installed package.
+
+For a new mod, preview a blank registry with `roadcraft onboard --project
+"My Mod"`; add `--output path/to/project.json` to create it. For an existing
+mod, use `roadcraft onboard --project "Other Mod" --package path/to/mod.pak
+--candidate-name imported` and optionally `--output`. The package is hashed
+and recorded only as an unreviewed candidate. No source files are invented,
+no accepted package is declared, and no game file is installed or changed.
+An existing output file is never overwritten. Point `status` and `verify` at
+the new `--registry`; their default machine config is now that registry's
+sibling `local/machine.json`, so D11's installed package and receipts do not
+appear in another mod's status. A package-free new registry has no verified
+pins yet; add a real source/package pin before treating `verify --project` as
+an identity check. The install transaction currently requires an accepted
+baseline and a separately configured installed package; onboarding alone
+does not establish either.
 
 Example registry:
 

@@ -49,6 +49,15 @@ class FakeMCP:
 
 
 class MCPTests(unittest.TestCase):
+    def test_registry_override_uses_its_own_machine_config(self):
+        with tempfile.TemporaryDirectory() as directory:
+            registry = Path(directory) / "project.json"
+            with patch.dict("os.environ", {"ROADCRAFT_REGISTRY": str(registry)}, clear=False):
+                with patch.dict("os.environ", {"ROADCRAFT_CONFIG": ""}, clear=False):
+                    settings = server.ServerSettings.defaults()
+            self.assertEqual(settings.registry, registry.resolve())
+            self.assertEqual(settings.config, (registry.parent / "local/machine.json").resolve())
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)

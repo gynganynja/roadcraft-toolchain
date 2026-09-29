@@ -18,7 +18,7 @@ from . import core
 
 RUNTIME_FILES = ("__init__.py", "__main__.py", "cli.py", "core.py", "jobs.py", "incremental.py",
                  "vehicle_workflow.py", "bro_lint.py", "ps_format.py", "vehicle.py", "tpl_reader.py",
-                 "library.py", "retail.py", "source.py", "transaction.py")
+                 "library.py", "retail.py", "source.py", "transaction.py", "onboard.py")
 
 
 PROJECT_AGENT_INSTRUCTIONS = """# RoadCraft vehicle project

@@ -52,6 +52,15 @@ verify before reuse. The first successful incremental build establishes the
 cache; shared checks continue running. `jobs-summary` reports actual elapsed
 times and reused stages. These commands do not establish driving acceptance.
 
+**Build:** When adding or merging a CLI dependency, include its shared module
+in `vehicle_workflow.RUNTIME_FILES`, even if a vehicle build does not call its
+subcommand: importing the CLI loads it. The onboarding integration required
+adding `onboard.py`. The regression test
+`VehicleWorkflowTests.test_new_cli_dependency_change_requires_recipe_regeneration`
+checks that a change to that module rejects the old recipe before execution.
+Generate a new pinned recipe after shared runtime changes; passing preflight
+does not mean the vehicle has been rebuilt or driven.
+
 1. `roadcraft lint-bro <bro> --class <auto_mod.cls> --tpl <body.tpl>`: no errors.
 2. The project's rig audit on the exported model (bone positions, parents, axes).
 3. The project's static validation: authored files current, compiled class carries the settings,
