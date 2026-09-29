@@ -1,7 +1,9 @@
 # RoadCraft Toolchain
 
 This package records and checks D11 source, package, capture, and installed
-identities. Read-only inspection is the default. Recipe execution and package
+identities, and holds the vehicle-authoring library in `library/`: what has
+been learned building RoadCraft vehicle mods, with checks for truck BROs and
+compiled models. Read-only inspection is the default. Recipe execution and package
 transactions require an explicit `--apply` flag. Python 3.12 or newer is
 required; the core has no runtime dependencies outside the standard library.
 
@@ -85,7 +87,98 @@ changed occurrences. `--allowed-path` globs restrict all three kinds of
 change. A manifest is an object with `files` rows containing `path` (or
 `relativePath`), `sha256`, and optional `bytes`.
 
+## Vehicle-authoring library
+
+Agents must integrate reusable findings during the same task, following
+[the learning policy](library/learning.md). This covers discoveries, failed
+approaches, fixes, feedback and workflow improvements across RoadCraft work.
+Supported repeatable lessons should become shared checks or helpers where
+practical, so later projects benefit without repeating the investigation.
+
+`library/README.md` indexes the articles (symptoms, frames, suspension and
+wheels, visual IK rigs, truck settings, cockpit and lamps, textures and
+materials, retail data, build pipeline, case studies, sources). Every rule
+carries an evidence grade: seen in the game, read from retail data, from the
+SDK, observed in a build, inferred, or open. The commands below read files
+only; `retail` reads the game installation named by `--game` or the machine
+configuration's `sdkRoot`.
+
+```text
+roadcraft library [topic] [--search REGEX]
+roadcraft lint-bro truck.bro --class auto_truck.cls --tpl body.tpl --json
+roadcraft suspension --sag 0.16 --share 0.205 --lift 0.06 --bump 0.16 --droop 0.20
+roadcraft suspension --calibrate '[{"axle": {...}, "rest": 0.12, "wheels": 2}, ...]'
+roadcraft tpl-nodes body.tpl --pattern "Wheel|IK" --json
+roadcraft retail find "*armiger*"
+roadcraft retail bro armiger_thunder_scout_new
+roadcraft retail survey
+```
+
+`lint-bro` exits 1 when it finds an error-level pitfall. The library reads the
+checkout's `library/` folder, so use a source checkout or an editable install.
+The Python modules are `roadcraft.ps_format`, `tpl_reader`, `vehicle`,
+`bro_lint`, `retail` and `library`. The skill is
+`skills/roadcraft-vehicle-authoring/SKILL.md`.
+
 ## Pinned workflow commands
+
+### Reusing the vehicle workflow
+
+Use one maintained checkout for vehicle work. Existing project adapters may
+select it with `local/toolchain.json` (`{"path": "..."}`), overridden by
+`ROADCRAFT_TOOLCHAIN`. Keep that file machine-local. A retained checkout with
+its own selector is a reference; continue toolchain work in the selected path.
+
+```text
+roadcraft vehicle-init --directory path/to/new_vehicle --name new_vehicle
+roadcraft vehicle-recipe --project path/to/new_vehicle --output path/to/new_vehicle/recipes/build-001.json
+roadcraft build --recipe path/to/recipe.json --jobs-root path/to/jobs --incremental
+roadcraft build --recipe path/to/recipe.json --jobs-root path/to/jobs --incremental --apply
+roadcraft jobs-summary --jobs-root path/to/jobs --json
+```
+
+`vehicle-init` creates the project layout, empty registry, local toolchain
+selector and a declarative recipe template based on the working vehicle
+adapters. Supply source art, vehicle-specific authoring scripts and reviewed
+SDK commands; the starter does not create a rig or a playable vehicle. List
+sources explicitly, including scripts and SDK dependencies. `vehicle-recipe`
+captures current input pins and writes a **new** recipe; it neither executes
+commands nor changes accepted identities. Existing recipes are not overwritten.
+
+Adapters can call `roadcraft.vehicle_workflow.enhance_recipe` to add source
+checks after `prepare`, compiled checks after `generate`, and a final check
+at the start of `test`. The shared runtime and adapter are pinned as inputs.
+`lint-bro --report PATH` writes a report and exits nonzero for errors. Vehicle
+checks always execute; passing them does not grant driving or campaign acceptance.
+
+### Verified reuse of build steps
+
+`--incremental` only reuses steps explicitly marked `cacheable: true` in a
+reviewed recipe. Native-gated and capture steps cannot be cached. Each step
+must declare every input and output; `dependsOn` names earlier steps whose
+outputs it consumes. `outputTrees` declares complete generated directories
+below the step's working directory, including compiler sidecars. Missing,
+changed or added files in a declared output tree invalidate reuse.
+
+The key covers the declared inputs, command, executable bytes, working
+directory, environment, runner and dependency outputs. A hit also verifies
+the saved successful receipt hash and the current output bytes. A failed job
+never seeds the cache. Input pins, disk checks and job locks still apply.
+Receipts distinguish `cached` from `passed`, link the original receipt and
+report executed/reused step counts. Omit `--incremental` for a full run.
+
+Legacy vehicle adapters retain their broad input declarations, so a change to
+their shared configuration conservatively invalidates all affected stages.
+Finer reuse requires splitting adapter inputs into reviewed stage-specific
+scopes. New recipe templates may put an ordered `sourceFiles` list on each
+step and explicitly set `dependsOn`; `vehicle-recipe` pins those files only
+for that step. Omitted dependencies conservatively include every earlier
+step. The cache does not infer that an undeclared input is irrelevant.
+The first successful incremental build seeds reuse; earlier receipts without
+cache keys cannot be retroactively treated as cached builds.
+
+`jobs-summary` reports recorded wall-clock durations and reuse counts. It
+does not infer a percentage speedup or vehicle acceptance from those records.
 
 `project.json` records the accepted package, source manifest and authoring
 inventory. `local/machine.json` records this machine's editor paths and

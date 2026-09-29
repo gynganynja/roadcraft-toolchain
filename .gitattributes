@@ -3,6 +3,10 @@
 .gitattributes text eol=lf
 operations/patches/capture_candidate_native.* -text -whitespace
 
+# Registry-pinned source evidence must retain its original LF bytes on Windows.
+operations/d11_accepted_source_manifest.json text eol=lf
+operations/d11_authoring_inventory.json text eol=lf
+
 # These exact-hash Python files must retain LF bytes in fresh Windows checkouts,
 # even when the user's Git uses core.autocrlf=true.
 src/roadcraft/blender_left_push_worker.py text eol=lf

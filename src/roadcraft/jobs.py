@@ -17,10 +17,11 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import uuid
 from typing import Any
 
-from . import core
+from . import core, incremental
 
 
 PHASES = frozenset({"build", "inspect", "test", "capture"})
@@ -38,6 +39,30 @@ class JobBusy(JobError):
 
 def _utc() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def summarize_jobs(jobs_root: str | Path) -> dict[str, Any]:
+    """Read recorded elapsed times; this is neither acceptance nor a speedup claim."""
+    root = core._require_local_path(jobs_root).resolve()
+    rows, errors = [], []
+    for path in sorted(root.glob("*/receipt.json")):
+        try:
+            data = core.load_json(path)
+            elapsed = None
+            if data.get("startedUtc") and data.get("finishedUtc"):
+                elapsed = (datetime.fromisoformat(data["finishedUtc"]) -
+                           datetime.fromisoformat(data["startedUtc"])).total_seconds()
+            rows.append({"runId": data["runId"], "phase": data.get("phase"), "status": data["status"],
+                         "startedUtc": data.get("startedUtc"), "finishedUtc": data.get("finishedUtc"),
+                         "elapsedSeconds": round(elapsed, 3) if elapsed is not None else None,
+                         "executedSteps": sum(s["status"] == "passed" for s in data.get("steps", [])),
+                         "reusedSteps": sum(s["status"] == "cached" for s in data.get("steps", [])),
+                         "receiptPath": str(path), "receiptSha256": core.sha256_file(path)})
+        except (core.RoadcraftError, OSError, KeyError, TypeError, ValueError) as exc:
+            errors.append({"path": str(path), "error": str(exc)})
+    rows.sort(key=lambda row: (row["startedUtc"] or "", row["runId"]))
+    return {"jobsRoot": str(root), "runs": rows, "unreadableReceipts": errors,
+            "timingObservationOnly": True}
 
 
 def _int(value: Any, label: str, *, minimum: int = 0) -> int:
@@ -124,6 +149,14 @@ def load_recipe(path: str | Path, phase: str) -> dict[str, Any]:
         native = row.get("native", defaults.get("native", True))
         if not isinstance(native, bool):
             raise JobError(f"Step {step_id} native must be boolean")
+        cacheable = row.get("cacheable", False)
+        if not isinstance(cacheable, bool) or (cacheable and (native or phase == "capture")):
+            raise JobError(f"Step {step_id}: only isolated non-capture steps may be cacheable")
+        depends_on = row.get("dependsOn", [])
+        prior_ids = {item["id"] for item in result_steps}
+        if (not isinstance(depends_on, list) or any(not isinstance(x, str) for x in depends_on)
+                or len(set(depends_on)) != len(depends_on) or not set(depends_on) <= prior_ids):
+            raise JobError(f"Step {step_id} dependsOn must name unique earlier steps")
         step_inputs = _items(row.get("inputs", []), f"Step {step_id} inputs", source, output=False)
         inputs = [*default_inputs, *step_inputs]
         if len({x["path"].casefold() for x in inputs}) != len(inputs):
@@ -131,6 +164,12 @@ def load_recipe(path: str | Path, phase: str) -> dict[str, Any]:
         outputs = _items(row.get("outputs", []), f"Step {step_id} outputs", source, output=True)
         if not outputs:
             raise JobError(f"Step {step_id} needs at least one expected output")
+        trees = row.get("outputTrees", [])
+        if not isinstance(trees, list) or any(not isinstance(p, str) for p in trees):
+            raise JobError(f"Step {step_id} outputTrees must be an array of directory paths")
+        trees = [str(core.resolve_path(p, source)) for p in trees]
+        if any(not Path(p).is_relative_to(cwd) or Path(p) == cwd for p in trees):
+            raise JobError(f"Step {step_id} outputTrees must be subdirectories of its working directory")
         env = row.get("env", defaults.get("env", {}))
         if (not isinstance(env, dict) or
                 any(not isinstance(k, str) or not k or not isinstance(v, str)
@@ -139,7 +178,8 @@ def load_recipe(path: str | Path, phase: str) -> dict[str, Any]:
         result_steps.append({"id": step_id, "command": command, "cwd": str(cwd),
                              "inputs": inputs, "outputs": outputs,
                              "timeoutSeconds": timeout, "minFreeBytes": minimum,
-                             "native": native, "env": env})
+                             "native": native, "env": env,
+                             "cacheable": cacheable, "dependsOn": depends_on, "outputTrees": trees})
     return {"name": name, "phase": phase, "recipePath": str(source),
             "recipeSha256": core.sha256_file(source), "steps": result_steps}
 
@@ -492,7 +532,7 @@ def _run_command(step: dict[str, Any], log_path: Path) -> int:
 
 
 def run_recipe(recipe_path: str | Path, phase: str, jobs_root: str | Path,
-               *, dry_run: bool = False) -> dict[str, Any]:
+               *, dry_run: bool = False, incremental_build: bool = False) -> dict[str, Any]:
     """Run one phase serially, recording every completed step atomically.
 
     Any phase failure after a native command starts retains the lock and reports
@@ -511,11 +551,14 @@ def run_recipe(recipe_path: str | Path, phase: str, jobs_root: str | Path,
                             "inputs": check["inputs"], "outputs": step["outputs"],
                             "freeBytes": check["freeBytes"],
                             "timeoutSeconds": step["timeoutSeconds"],
-                            "minFreeBytes": step["minFreeBytes"], "native": step["native"]})
+                            "minFreeBytes": step["minFreeBytes"], "native": step["native"],
+                            "cacheable": step["cacheable"], "dependsOn": step["dependsOn"],
+                            "outputTrees": step["outputTrees"]})
             generated.update(pin["path"] for pin in step["outputs"])
         return {"status": "dry_run", "recipePath": plan["recipePath"],
                 "recipeSha256": plan["recipeSha256"], "name": plan["name"],
-                "phase": phase, "steps": planned, "writesPerformed": False}
+                "phase": phase, "steps": planned, "writesPerformed": False,
+                "incrementalRequested": incremental_build}
 
     root = Path(jobs_root).expanduser().resolve()
     root.mkdir(parents=True, exist_ok=True)
@@ -531,6 +574,7 @@ def run_recipe(recipe_path: str | Path, phase: str, jobs_root: str | Path,
     retain_lock = False
     native_command_started = False
     current_step: dict[str, Any] | None = None
+    cache_entries = incremental.read_index(root) if incremental_build else {}
     try:
         run_dir.mkdir(exist_ok=False)
         _atomic_json(receipt_path, receipt)
@@ -548,7 +592,20 @@ def run_recipe(recipe_path: str | Path, phase: str, jobs_root: str | Path,
             check = _preflight_step(step)
             row.update(status="running", inputChecks=check["inputs"],
                        freeBytesAtStart=check["freeBytes"])
+            if incremental_build and step["cacheable"]:
+                row["cacheKey"] = incremental.fingerprint(step, receipt["steps"][:-1])
+                reuse = incremental.lookup(root, cache_entries, row["cacheKey"], step)
+                if reuse:
+                    outputs, valid = _verify_outputs(step)
+                    if valid and [p.get("sha256") for p in outputs] == [p.get("sha256") for p in reuse["outputChecks"]]:
+                        row.pop("log", None)  # A reused step has no new command log.
+                        row.update(status="cached", outputChecks=outputs, finishedUtc=_utc(),
+                                   reusedFrom={k: reuse[k] for k in ("receiptPath", "receiptSha256", "runId")},
+                                   executionSeconds=reuse["executionSeconds"], outputTreeChecks=reuse["outputTreeChecks"])
+                        _atomic_json(receipt_path, receipt)
+                        continue
             _atomic_json(receipt_path, receipt)
+            execution_started = time.monotonic()
             try:
                 # Any later phase failure leaves a native command's external
                 # package/editor state unproven, including a nonzero exit.
@@ -576,10 +633,20 @@ def run_recipe(recipe_path: str | Path, phase: str, jobs_root: str | Path,
             if not valid:
                 row["status"] = "failed"
                 raise JobError(f"Step {step['id']} missing or mismatched expected outputs")
-            row.update(status="passed", finishedUtc=_utc())
+            row["outputTreeChecks"] = incremental.capture_trees(step["outputTrees"])
+            row.update(status="passed", finishedUtc=_utc(),
+                       executionSeconds=round(time.monotonic() - execution_started, 6))
             _atomic_json(receipt_path, receipt)
         receipt.update(status="passed", finishedUtc=_utc())
+        receipt["incremental"] = {
+            "requested": incremental_build,
+            "executedSteps": sum(r["status"] == "passed" for r in receipt["steps"]),
+            "reusedSteps": sum(r["status"] == "cached" for r in receipt["steps"]),
+            "previousExecutionSecondsReused": round(sum(r.get("executionSeconds", 0)
+                                                       for r in receipt["steps"] if r["status"] == "cached"), 6)}
         _atomic_json(receipt_path, receipt)
+        if incremental_build:
+            _atomic_json(root / incremental.INDEX, incremental.add_receipt(cache_entries, receipt, receipt_path))
     except KeyboardInterrupt:
         retain_lock = native_command_started
         receipt.update(status="interrupted", recoveryRequired=retain_lock,

@@ -11,6 +11,8 @@ from typing import Any
 
 from . import core
 from . import jobs, source, transaction
+from . import bro_lint, library, ps_format, retail, tpl_reader, vehicle
+from . import vehicle_workflow
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
@@ -77,11 +79,17 @@ def make_parser() -> argparse.ArgumentParser:
         command.add_argument("--jobs-root", type=Path, default=PACKAGE_ROOT / "jobs")
         command.add_argument("--apply", action="store_true",
                              help="Execute the recipe; without this flag, preflight only")
+        command.add_argument("--incremental", action="store_true",
+                             help="Reuse opted-in isolated steps with verified inputs and outputs")
         _add_json(command)
 
     job_state = commands.add_parser("jobs-status", help="Inspect a durable job lock and receipt")
     job_state.add_argument("--jobs-root", type=Path, default=PACKAGE_ROOT / "jobs")
     _add_json(job_state)
+
+    timings = commands.add_parser("jobs-summary", help="Summarize recorded job duration and reused steps")
+    timings.add_argument("--jobs-root", type=Path, default=PACKAGE_ROOT / "jobs")
+    _add_json(timings)
 
     job_recovery = commands.add_parser("jobs-recover", help="Verify and release an abandoned native job lock")
     job_recovery.add_argument("--jobs-root", type=Path, default=PACKAGE_ROOT / "jobs")
@@ -100,6 +108,57 @@ def make_parser() -> argparse.ArgumentParser:
     source_check = commands.add_parser("source-check", help="Compare current source to its pinned authoring inventory")
     _add_registry(source_check)
     _add_json(source_check)
+
+    lib = commands.add_parser("library", help="List, read or search the vehicle-authoring library")
+    lib.add_argument("topic", nargs="?", help="Article to print (a file stem under library/)")
+    lib.add_argument("--search", help="Case-insensitive regular expression to find across all articles")
+    _add_json(lib)
+
+    starter = commands.add_parser("vehicle-init", help="Create a new vehicle workflow layout")
+    starter.add_argument("--directory", type=Path, required=True)
+    starter.add_argument("--name", required=True)
+    starter.add_argument("--python", type=Path, default=Path(sys.executable))
+    _add_json(starter)
+    recipe = commands.add_parser("vehicle-recipe", help="Pin a vehicle's declared sources and add shared checks")
+    recipe.add_argument("--project", type=Path, required=True)
+    recipe.add_argument("--output", type=Path, required=True)
+    _add_json(recipe)
+
+    lint = commands.add_parser("lint-bro", help="Check a truck BRO (and its compiled class / model) for known pitfalls")
+    lint.add_argument("bro", type=Path)
+    lint.add_argument("--class", dest="compiled_class", type=Path, help="Generated auto_<mod>.cls")
+    lint.add_argument("--tpl", type=Path, help="Compiled body model .tpl")
+    lint.add_argument("--beta", type=float, default=vehicle.SUSPENSION_BETA)
+    lint.add_argument("--report", type=Path, help="Write the check result to this explicit report path")
+    _add_json(lint)
+
+    nodes = commands.add_parser("tpl-nodes", help="List node names, world transforms and parents of a compiled .tpl")
+    nodes.add_argument("tpl", type=Path)
+    nodes.add_argument("--anchor", help="A node name that the wanted name table contains")
+    nodes.add_argument("--pattern", help="Only nodes whose name matches this regular expression")
+    nodes.add_argument("--no-parents", action="store_true", help="Skip the parent-array search")
+    _add_json(nodes)
+
+    susp = commands.add_parser("suspension", help="Design or check a SuspensionAxle with the library's model")
+    susp.add_argument("--sag", type=float, help="Static sag to design for (m)")
+    susp.add_argument("--share", type=float, help="One wheel's fraction of the weight (0.25 on an even 4x4)")
+    susp.add_argument("--lift", type=float, default=0.0, help="Rest this much higher than modelled (m)")
+    susp.add_argument("--bump", type=float, default=0.16, help="Travel up from rest (m)")
+    susp.add_argument("--droop", type=float, default=0.20, help="Travel down from rest (m)")
+    susp.add_argument("--damping", type=float, default=0.15)
+    susp.add_argument("--axle", help="Existing SuspensionAxle as JSON, to check instead of design")
+    susp.add_argument("--calibrate", help='Rests seen in the game, JSON list of {"axle": {...}, "rest": m, '
+                                          '"wheels": n} covering every axle: solve beta')
+    susp.add_argument("--beta", type=float, default=vehicle.SUSPENSION_BETA)
+    _add_json(susp)
+
+    ret = commands.add_parser("retail", help="Read the retail game's own vehicle data (read-only)")
+    ret.add_argument("action", choices=["find", "show", "bro", "survey"])
+    ret.add_argument("name", nargs="?", help="find: glob; show: pak member; bro: retail truck name")
+    ret.add_argument("--game", type=Path, help="Game root (default: sdkRoot of the machine configuration)")
+    ret.add_argument("--out", type=Path, help="show: write the member here instead of printing it")
+    _add_config(ret)
+    _add_json(ret)
 
     install = commands.add_parser("install", help="Dry-run or install one named pinned candidate")
     _add_registry(install)
@@ -196,10 +255,12 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
     if args.command in ("build", "test", "capture", "inspect-job"):
         phase = "inspect" if args.command == "inspect-job" else args.command
         result = jobs.run_recipe(args.recipe, phase, args.jobs_root,
-                                 dry_run=not args.apply)
+                                 dry_run=not args.apply, incremental_build=args.incremental)
         return result, result["status"] in ("passed", "dry_run")
     if args.command == "jobs-status":
         return jobs.inspect_jobs(args.jobs_root), True
+    if args.command == "jobs-summary":
+        return jobs.summarize_jobs(args.jobs_root), True
     if args.command == "jobs-recover":
         result = jobs.recover_jobs(args.jobs_root, args.run_id,
                                    args.expected_lock_sha256,
@@ -230,6 +291,70 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
         result = source.compare_source_baselines(expected, actual)
         result["inventoryPin"] = expected_identity
         return result, result["matches"]
+    if args.command == "library":
+        if args.search:
+            return {"search": args.search, "hits": library.search(args.search)}, True
+        if args.topic:
+            return {"topic": args.topic, "text": library.article(args.topic)}, True
+        return {"root": str(library.LIBRARY_ROOT), "topics": library.topics()}, True
+    if args.command == "vehicle-init":
+        return vehicle_workflow.scaffold(args.directory, args.name, args.python), True
+    if args.command == "vehicle-recipe":
+        return vehicle_workflow.make_recipe(args.project, args.output), True
+    if args.command == "lint-bro":
+        result = bro_lint.lint_files(args.bro, args.compiled_class, args.tpl, args.beta)
+        if args.report:
+            report = core._require_local_path(args.report).resolve()
+            sources = [p.resolve() for p in (args.bro, args.compiled_class, args.tpl) if p]
+            if report in sources:
+                raise core.RoadcraftError("Check report must not overwrite an input")
+            report.parent.mkdir(parents=True, exist_ok=True)
+            jobs._atomic_json(report, result)
+        return result, result["errors"] == 0
+    if args.command == "tpl-nodes":
+        found = tpl_reader.read_tpl(args.tpl, anchor=args.anchor, parents=not args.no_parents)
+        rows = []
+        for name in found.names:
+            if args.pattern and not __import__("re").search(args.pattern, name):
+                continue
+            rows.append({"name": name, "position": [round(v, 4) for v in found.position(name)],
+                         "axes": {k: [round(v, 4) for v in axis] for k, axis in found.axes(name).items()},
+                         "parent": found.parent(name)})
+        return {"tpl": str(args.tpl), "nodes": len(found.matrices), "names": len(found.names),
+                "parentsOffset": found.parents_offset, "notes": found.notes, "rows": rows}, True
+    if args.command == "suspension":
+        if args.calibrate:
+            return vehicle.calibrate_beta(json.loads(args.calibrate)), True
+        if args.share is None:
+            raise core.RoadcraftError("suspension needs --share to design or check an axle")
+        if args.axle:
+            axle = json.loads(args.axle)
+        elif args.sag is not None:
+            axle = vehicle.design_axle(args.sag, args.share, lift=args.lift, bump=args.bump, droop=args.droop,
+                                       damping=args.damping, beta=args.beta)
+        else:
+            raise core.RoadcraftError("suspension needs --sag to design or --axle to check")
+        return {"axle": axle, "report": vehicle.axle_report(axle, args.share, args.beta)}, True
+    if args.command == "retail":
+        game = args.game
+        if game is None:
+            config = core.read_config(args.config) if args.config.is_file() else {}
+            game = Path(config["sdkRoot"]) if config.get("sdkRoot") else None
+        if game is None:
+            raise core.RoadcraftError("retail needs --game or sdkRoot in the machine configuration")
+        if args.action == "survey":
+            return retail.suspension_survey(game), True
+        if not args.name:
+            raise core.RoadcraftError(f"retail {args.action} needs a name")
+        if args.action == "find":
+            return {"matches": [{"member": m, "pak": str(p)} for m, p in retail.find_members(game, args.name)]}, True
+        if args.action == "bro":
+            return retail.retail_bro(game, args.name), True
+        data = retail.read_member(game, args.name)
+        if args.out:
+            args.out.write_bytes(data)
+            return {"member": args.name, "written": str(args.out), "bytes": len(data)}, True
+        return {"member": args.name, "text": data.decode("utf-8", "replace")}, True
     if args.command == "install":
         registry = core.read_registry(args.registry)
         config = core.read_config(args.config)
@@ -266,7 +391,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         result, passed = execute(args)
     except (core.RoadcraftError, source.SourceError, transaction.PackageTransactionError,
-            OSError, KeyError, TypeError) as exc:
+            ps_format.PsSyntaxError, tpl_reader.TplFormatError, retail.RetailDataError,
+            OSError, KeyError, TypeError, LookupError, ValueError) as exc:
         print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
     print(json.dumps(result, ensure_ascii=False,

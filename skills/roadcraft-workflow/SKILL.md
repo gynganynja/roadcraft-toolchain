@@ -12,6 +12,19 @@ Report missing configuration instead of inventing a source, build or tool path.
 Continue within the user's existing authorization; this skill adds no approval
 step or authority to change unrelated files.
 
+## Integrate new findings
+
+For any new reusable fact, failure mode, fix, user feedback or workflow lesson,
+follow the maintained checkout's `library/learning.md`. Read a local
+`local/toolchain.json` selector or `ROADCRAFT_TOOLCHAIN` override to find that
+checkout. Update the relevant shared article with scope, evidence grade and
+supporting references in the same task, before reporting completion. Add and
+wire in a shared check/helper/recipe when the lesson is reliably automatable;
+otherwise record its limits and why automation is deferred. Preserve corrected
+and failed evidence. Chat or private memory alone is insufficient. Report the
+integration location or an explicit blocked handoff; do not invent findings,
+acceptance or additional execution authorization.
+
 ## Establish identity
 
 Use available RoadCraft MCP `project_status`, `project_doctor` and
