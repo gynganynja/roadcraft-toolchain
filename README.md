@@ -1,7 +1,9 @@
 # RoadCraft Toolchain
 
 This package records and checks D11 source, package, capture, and installed
-identities. Read-only inspection is the default. Recipe execution and package
+identities, and holds the vehicle-authoring library in `library/`: what has
+been learned building RoadCraft vehicle mods, with checks for truck BROs and
+compiled models. Read-only inspection is the default. Recipe execution and package
 transactions require an explicit `--apply` flag. Python 3.12 or newer is
 required; the core has no runtime dependencies outside the standard library.
 
@@ -84,6 +86,33 @@ comparison hashes decompressed member content and reports added, removed, and
 changed occurrences. `--allowed-path` globs restrict all three kinds of
 change. A manifest is an object with `files` rows containing `path` (or
 `relativePath`), `sha256`, and optional `bytes`.
+
+## Vehicle-authoring library
+
+`library/README.md` indexes the articles (symptoms, frames, suspension and
+wheels, visual IK rigs, truck settings, cockpit and lamps, textures and
+materials, retail data, build pipeline, case studies, sources). Every rule
+carries an evidence grade: seen in the game, read from retail data, from the
+SDK, observed in a build, inferred, or open. The commands below read files
+only; `retail` reads the game installation named by `--game` or the machine
+configuration's `sdkRoot`.
+
+```text
+roadcraft library [topic] [--search REGEX]
+roadcraft lint-bro truck.bro --class auto_truck.cls --tpl body.tpl --json
+roadcraft suspension --sag 0.16 --share 0.205 --lift 0.06 --bump 0.16 --droop 0.20
+roadcraft suspension --calibrate '[{"axle": {...}, "rest": 0.12, "wheels": 2}, ...]'
+roadcraft tpl-nodes body.tpl --pattern "Wheel|IK" --json
+roadcraft retail find "*armiger*"
+roadcraft retail bro armiger_thunder_scout_new
+roadcraft retail survey
+```
+
+`lint-bro` exits 1 when it finds an error-level pitfall. The library reads the
+checkout's `library/` folder, so use a source checkout or an editable install.
+The Python modules are `roadcraft.ps_format`, `tpl_reader`, `vehicle`,
+`bro_lint`, `retail` and `library`. The skill is
+`skills/roadcraft-vehicle-authoring/SKILL.md`.
 
 ## Pinned workflow commands
 

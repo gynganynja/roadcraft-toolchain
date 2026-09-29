@@ -6,6 +6,17 @@ For RoadCraft identity, source, package, evidence or storage work, read
 `plugin/roadcraft-workflow/skills/roadcraft-workflow/` is the distributable copy.
 Keep those two files identical when changing the workflow.
 
+For vehicle authoring (rigs, wheels, suspension, IK linkages, truck settings,
+lamps, textures, mod builds), read [the vehicle-authoring
+skill](skills/roadcraft-vehicle-authoring/SKILL.md) and the library in
+`library/` (`python -m roadcraft library`). The skill's distributable copy under
+`plugin/roadcraft-workflow/skills/roadcraft-vehicle-authoring/` must stay
+identical to it. Every library rule carries an evidence grade
+(`library/README.md`); when a drive contradicts a rule, change the rule and its
+grade and record the drive in `library/case-studies.md` instead of deleting the
+old evidence. Run `roadcraft lint-bro` on a truck BRO with its compiled class
+before handing over a candidate.
+
 Read `project.json` for accepted and candidate pins and `local/machine.json`
 for machine paths. Environment overrides are `ROADCRAFT_REGISTRY` and
 `ROADCRAFT_CONFIG`. Do not write a discovered installed hash into the accepted
