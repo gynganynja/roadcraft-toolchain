@@ -90,11 +90,32 @@ def _pin(value: Mapping[str, Any], label: str) -> dict[str, str]:
     return {"path": str(path), "sha256": expected}
 
 
-def _target(value: str | Path) -> Path:
+def _target(value: str | Path, *, allow_missing: bool = False) -> Path:
+    if allow_missing:
+        from .core import _require_local_path
+        proposed = _require_local_path(value).expanduser().absolute()
+        if not proposed.exists() and not proposed.is_symlink():
+            if not proposed.parent.is_dir() or proposed.suffix.lower() != ".pak":
+                raise PackageTransactionError("new installed package needs an existing directory and a .pak filename")
+            return proposed.parent.resolve() / proposed.name
     path = _existing_file(value, "installed package")
     if not path.parent.is_dir():
         raise PackageTransactionError("installed package directory is missing")
     return path
+
+
+def _current_sha(target: Path) -> str | None:
+    if not target.exists() and not target.is_symlink():
+        return None
+    return _sha(_existing_file(target, "installed package"))
+
+
+def _verify_backup(data: dict[str, Any]) -> None:
+    if data.get("previousAbsent") is True:
+        return
+    backup = _existing_file(data["backupPath"], "rollback backup")
+    if _sha(backup) != data["previousSha256"]:
+        raise RecoveryRequiredError("rollback would overwrite unknown or corrupted package bytes: backup is missing or corrupt")
 
 
 def _processes_clear(checker: ProcessChecker) -> None:
@@ -216,43 +237,55 @@ def _copy_verified(source: Path, destination: Path, expected: str) -> None:
 def _receipt(path: str | Path) -> tuple[Path, dict[str, Any], Path, Path]:
     receipt_path = _existing_file(path, "transaction receipt")
     data = _read_json(receipt_path)
-    if data.get("schemaVersion") != 1:
+    if data.get("schemaVersion") not in (1, 2):
         raise RecoveryRequiredError("unsupported transaction receipt schema")
     txid = data.get("transactionId")
     if (not isinstance(txid, str) or not re.fullmatch(r"[0-9a-f]{32}", txid) or
             receipt_path.name != "receipt.json" or receipt_path.parent.name != txid):
         raise RecoveryRequiredError("transaction receipt location does not match its identity")
     root = receipt_path.parent.parent
-    target = _target(data.get("installedPath", ""))
+    absent = data.get("schemaVersion") == 2 and data.get("previousAbsent") is True
+    if data.get("previousAbsent") and not absent:
+        raise RecoveryRequiredError("absence requires a version 2 transaction receipt")
+    target = _target(data.get("installedPath", ""), allow_missing=absent)
     expected_backup = receipt_path.parent / "before.pak"
     if (data.get("transactionRoot") != str(root) or
             data.get("backupPath") != str(expected_backup) or
             data.get("pendingPath") != str(target.parent / f".{target.name}.roadcraft-{txid}.pending")):
         raise RecoveryRequiredError("transaction receipt paths are inconsistent")
     for key in ("previousSha256", "candidateSha256", "acceptedSha256"):
+        if key == "previousSha256" and absent:
+            if data.get(key) is not None:
+                raise RecoveryRequiredError("absent previous state cannot contain a package hash")
+            continue
+        if key == "acceptedSha256" and data.get("schemaVersion") == 2 and data.get(key) is None:
+            continue
         _valid_hash(data.get(key), key)
     return receipt_path, data, root, target
 
 
 def install_package(
-    accepted_pin: Mapping[str, Any],
+    accepted_pin: Mapping[str, Any] | None,
     candidate_pin: Mapping[str, Any],
     installed_path: str | Path,
     transaction_root: str | Path,
-    expected_installed_sha256: str,
+    expected_installed_sha256: str | None,
     process_checker: ProcessChecker,
     *,
     dry_run: bool = True,
+    expect_absent: bool = False,
 ) -> dict[str, Any]:
     """Install a candidate only when the live package has the expected hash."""
-    accepted = _pin(accepted_pin, "accepted")
+    accepted = _pin(accepted_pin, "accepted") if accepted_pin is not None else {"path": None, "sha256": None}
     candidate = _pin(candidate_pin, "candidate")
-    target = _target(installed_path)
+    if expect_absent and expected_installed_sha256 is not None:
+        raise PackageTransactionError("choose expected absence or an installed hash, not both")
+    target = _target(installed_path, allow_missing=expect_absent)
     root = _state_root(transaction_root, create=False)
-    expected = _valid_hash(expected_installed_sha256, "expected installed package")
-    if target in (Path(accepted["path"]), Path(candidate["path"])):
+    expected = None if expect_absent else _valid_hash(expected_installed_sha256, "expected installed package")
+    if target in [Path(row["path"]) for row in (accepted, candidate) if row["path"]]:
         raise PackageTransactionError("installed path must be separate from pinned archives")
-    if _sha(target) != expected:
+    if _current_sha(target) != expected:
         raise RecoveryRequiredError("installed package has an unexpected hash")
     if candidate["sha256"] == expected:
         raise PackageTransactionError("candidate is already installed")
@@ -262,7 +295,8 @@ def install_package(
             "installedPath": str(target), "previousSha256": expected,
             "candidateSha256": candidate["sha256"],
             "acceptedSha256": accepted["sha256"],
-            "transactionRoot": str(root), "backupBytes": target.stat().st_size,
+            "previousAbsent": expect_absent,
+            "transactionRoot": str(root), "backupBytes": 0 if expect_absent else target.stat().st_size,
             "stagingBytes": Path(candidate["path"]).stat().st_size}
     if dry_run:
         return plan
@@ -272,7 +306,7 @@ def install_package(
     with _lock(root, txid, target):
         _processes_clear(process_checker)
         _ensure_no_incomplete(root, target)
-        if _sha(target) != expected or _sha(Path(candidate["path"])) != candidate["sha256"]:
+        if _current_sha(target) != expected or _sha(Path(candidate["path"])) != candidate["sha256"]:
             raise RecoveryRequiredError("package identity changed after preflight")
         txdir = root / txid
         txdir.mkdir()
@@ -281,27 +315,36 @@ def install_package(
         backup_pending = txdir / "before.pak.pending"
         pending = target.parent / f".{target.name}.roadcraft-{txid}.pending"
         data: dict[str, Any] = {
-            "schemaVersion": 1, "transactionId": txid,
+            "schemaVersion": 2 if expect_absent or accepted_pin is None else 1, "transactionId": txid,
             "transactionRoot": str(root), "installedPath": str(target),
             "acceptedPath": accepted["path"], "acceptedSha256": accepted["sha256"],
             "candidatePath": candidate["path"], "candidateSha256": candidate["sha256"],
             "previousSha256": expected, "backupPath": str(backup),
+            "previousAbsent": expect_absent,
             "pendingPath": str(pending), "state": "PREPARING", "events": [],
         }
         _advance(receipt_path, data, "PREPARING", "transaction created")
         try:
-            _copy_verified(target, backup_pending, expected)
-            os.replace(backup_pending, backup)
-            if _sha(backup) != expected:
-                raise RecoveryRequiredError("rollback backup failed verification")
-            _advance(receipt_path, data, "BACKUP_VERIFIED", "previous installed bytes retained")
+            if not expect_absent:
+                _copy_verified(target, backup_pending, expected)
+                os.replace(backup_pending, backup)
+                if _sha(backup) != expected:
+                    raise RecoveryRequiredError("rollback backup failed verification")
+            _advance(receipt_path, data, "BACKUP_VERIFIED",
+                     "previous absence recorded" if expect_absent else "previous installed bytes retained")
             _copy_verified(Path(candidate["path"]), pending, candidate["sha256"])
             _advance(receipt_path, data, "STAGED_VERIFIED", "candidate copied beside installed package")
             _processes_clear(process_checker)
-            if _sha(target) != expected or _sha(backup) != expected or _sha(pending) != candidate["sha256"]:
+            _verify_backup(data)
+            if _current_sha(target) != expected or _sha(pending) != candidate["sha256"]:
                 raise RecoveryRequiredError("identity changed before atomic swap")
             _advance(receipt_path, data, "SWAP_READY", "safe to inspect live hash after interruption")
-            os.replace(pending, target)
+            if expect_absent:
+                # Atomically create without replacing a file that appeared after preflight.
+                os.link(pending, target)
+                pending.unlink()
+            else:
+                os.replace(pending, target)
             if _sha(target) != candidate["sha256"]:
                 raise RecoveryRequiredError("installed package failed post-swap verification")
             _advance(receipt_path, data, "INSTALLED", "candidate installed and verified")
@@ -310,7 +353,7 @@ def install_package(
             # interrupted or unverified swap remains described by SWAP_READY.
             if data["state"] in ("PREPARING", "BACKUP_VERIFIED", "STAGED_VERIFIED"):
                 try:
-                    if _sha(target) == expected:
+                    if _current_sha(target) == expected:
                         _advance(receipt_path, data, "NOT_INSTALLED", "failed before live swap")
                 except Exception:
                     pass
@@ -322,6 +365,19 @@ def install_package(
 
 def _restore(receipt_path: Path, data: dict[str, Any], target: Path,
              process_checker: ProcessChecker) -> None:
+    if data.get("previousAbsent") is True:
+        _processes_clear(process_checker)
+        if _current_sha(target) != data["candidateSha256"]:
+            raise RecoveryRequiredError("rollback would remove unknown package bytes")
+        _advance(receipt_path, data, "ROLLBACK_READY", "verified candidate may be removed to restore absence")
+        _processes_clear(process_checker)
+        if _current_sha(target) != data["candidateSha256"]:
+            raise RecoveryRequiredError("installed package changed before rollback")
+        target.unlink()
+        if target.exists():
+            raise RecoveryRequiredError("rollback did not restore the empty mod slot")
+        _advance(receipt_path, data, "ROLLED_BACK", "previous package absence restored")
+        return
     backup = _existing_file(data["backupPath"], "rollback backup")
     previous = data["previousSha256"]
     candidate = data["candidateSha256"]
@@ -352,13 +408,13 @@ def rollback_package(
     """Restore precisely the bytes that preceded this transaction."""
     path, data, root, target = _receipt(receipt_path)
     _processes_clear(process_checker)
-    if data["state"] == "ROLLED_BACK" and _sha(target) == data["previousSha256"]:
+    if data["state"] == "ROLLED_BACK" and _current_sha(target) == data["previousSha256"]:
         return {"operation": "rollback", "dryRun": dry_run, "state": "ROLLED_BACK",
                 "receiptPath": str(path), "installedSha256": data["previousSha256"]}
     if data["state"] != "INSTALLED":
         raise RecoveryRequiredError(f"transaction is not ready for normal rollback: {data['state']}")
-    backup = _existing_file(data["backupPath"], "rollback backup")
-    if _sha(backup) != data["previousSha256"] or _sha(target) != data["candidateSha256"]:
+    _verify_backup(data)
+    if _current_sha(target) != data["candidateSha256"]:
         raise RecoveryRequiredError("rollback would overwrite unknown or corrupted package bytes")
     result = {"operation": "rollback", "dryRun": dry_run,
               "receiptPath": str(path), "installedPath": str(target),
@@ -386,7 +442,7 @@ def recover_package(
     """
     path, data, root, target = _receipt(receipt_path)
     _processes_clear(process_checker)
-    current = _sha(target)
+    current = _current_sha(target)
     previous = data["previousSha256"]
     candidate = data["candidateSha256"]
     state = data["state"]
@@ -399,9 +455,7 @@ def recover_package(
     elif state in _INCOMPLETE and current == previous:
         action = "mark-not-installed" if state != "ROLLBACK_READY" else "mark-rolled-back"
     elif state in ("SWAP_READY", "ROLLBACK_READY", "RECOVERY_REQUIRED") and current == candidate:
-        backup = _existing_file(data["backupPath"], "rollback backup")
-        if _sha(backup) != previous:
-            raise RecoveryRequiredError("rollback backup is missing or corrupt")
+        _verify_backup(data)
         action = "restore-previous"
     else:
         raise RecoveryRequiredError(f"receipt state and installed hash conflict: {state}")
@@ -419,7 +473,7 @@ def recover_package(
     with _lock(root, data["transactionId"], target,
                lock_owner_active=lock_owner_active):
         _processes_clear(process_checker)
-        if _sha(target) != current:
+        if _current_sha(target) != current:
             raise RecoveryRequiredError("installed package changed during recovery")
         if action == "restore-previous":
             _restore(path, data, target, process_checker)

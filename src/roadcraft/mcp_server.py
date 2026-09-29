@@ -26,7 +26,7 @@ import re
 import sys
 from typing import Any, NotRequired, TypedDict
 
-from . import cleanup, core, review, source
+from . import cleanup, core, review, source, project_context
 from .cli import _verify_project
 
 
@@ -106,11 +106,8 @@ class ServerSettings:
 
     @classmethod
     def defaults(cls) -> "ServerSettings":
-        registry = Path(os.environ.get("ROADCRAFT_REGISTRY", PACKAGE_ROOT / "project.json")).expanduser().resolve()
-        return cls(
-            registry,
-            Path(os.environ.get("ROADCRAFT_CONFIG") or registry.parent / "local/machine.json").expanduser().resolve(),
-        )
+        registry = project_context.registry_path()
+        return cls(registry, project_context.config_path(registry=registry))
 
 
 class RoadcraftTools:
@@ -248,16 +245,15 @@ def create_server(settings: ServerSettings | None = None) -> Any:
 
 
 def main(argv: list[str] | None = None) -> int:
-    defaults = ServerSettings.defaults()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--registry", type=Path, default=defaults.registry)
+    parser.add_argument("--registry", type=Path)
     parser.add_argument("--config", type=Path)
     args = parser.parse_args(argv)
     try:
-        registry = args.registry.expanduser().resolve()
-        config = (args.config or Path(os.environ.get("ROADCRAFT_CONFIG") or registry.parent / "local/machine.json")).expanduser().resolve()
+        registry = project_context.registry_path(args.registry)
+        config = project_context.config_path(args.config, registry=registry)
         server = create_server(ServerSettings(registry, config))
-    except MCPDependencyError as exc:
+    except (MCPDependencyError, core.RoadcraftError) as exc:
         print(str(exc), file=sys.stderr)
         return 2
     server.run(transport="stdio")

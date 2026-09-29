@@ -1,6 +1,6 @@
 """Read-only inventory and verification primitives for RoadCraft projects.
 
-No path or hash in this module is tied to a particular D11 build. Callers supply
+No path or hash in this module is tied to a particular mod. Callers supply
 an explicit project registry and machine configuration. ZIP entries are keyed by
 their normalized path *and occurrence* because RoadCraft packages can contain
 multiple entries with the same name.
@@ -246,6 +246,10 @@ def status(registry: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
                     row["candidateSha256"] = receipt.get("candidateSha256")
                     row["installedMatchesPrevious"] = (current == row["previousSha256"]
                                                        if current and row["previousSha256"] else None)
+                    if (receipt.get("schemaVersion") == 2 and receipt.get("previousAbsent") is True
+                            and row["previousSha256"] is None and installed_path):
+                        row["installedMatchesPrevious"] = (not Path(installed_path).exists()
+                                                           and not Path(installed_path).is_symlink())
                     row["installedMatchesCandidate"] = (current == row["candidateSha256"]
                                                         if current and row["candidateSha256"] else None)
                     terminal_ok = ((row["state"] == "INSTALLED" and

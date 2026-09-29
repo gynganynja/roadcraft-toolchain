@@ -102,6 +102,14 @@ def load_recipe(path: str | Path, phase: str) -> dict[str, Any]:
     """Validate and resolve one phase without executing or writing anything."""
     source = Path(path).expanduser().resolve()
     data = core.load_json(source)
+    result = validate_recipe_document(data, source, phase)
+    result["recipeSha256"] = core.sha256_file(source)
+    return result
+
+
+def validate_recipe_document(data: dict[str, Any], path: str | Path, phase: str) -> dict[str, Any]:
+    """Validate an unsaved recipe using its intended location, without executing it."""
+    source = core._require_local_path(path).expanduser().resolve()
     if data.get("schemaVersion") != 1:
         raise JobError("Unsupported recipe schemaVersion; expected 1")
     if phase not in PHASES:
@@ -181,7 +189,7 @@ def load_recipe(path: str | Path, phase: str) -> dict[str, Any]:
                              "native": native, "env": env,
                              "cacheable": cacheable, "dependsOn": depends_on, "outputTrees": trees})
     return {"name": name, "phase": phase, "recipePath": str(source),
-            "recipeSha256": core.sha256_file(source), "steps": result_steps}
+            "steps": result_steps}
 
 
 def editor_processes() -> tuple[list[dict[str, Any]], str | None]:

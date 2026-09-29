@@ -175,7 +175,7 @@ class MCPTests(unittest.TestCase):
         stderr, stdout = io.StringIO(), io.StringIO()
         with patch.object(server.importlib.metadata, "version", side_effect=importlib.metadata.PackageNotFoundError("mcp")):
             with redirect_stdout(stdout), redirect_stderr(stderr):
-                self.assertEqual(server.main([]), 2)
+                self.assertEqual(server.main(["--registry", str(self.registry)]), 2)
         self.assertEqual(stdout.getvalue(), "")
         self.assertIn("requirements-mcp.txt", stderr.getvalue())
 

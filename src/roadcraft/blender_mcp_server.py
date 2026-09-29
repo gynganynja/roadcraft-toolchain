@@ -17,7 +17,7 @@ import tempfile
 from threading import Lock
 from typing import Any
 
-from . import blender_bridge, core
+from . import blender_bridge, core, project_context
 from .mcp_server import MCPDependencyError, _sdk_components
 from .source import file_sha256
 
@@ -29,7 +29,7 @@ TOOL_NAMES = ("blender_status", "usf_roundtrip")
 INSTRUCTIONS = (
     "This is a separate Blender scratch diagnostic, not a Blender editing or export API. "
     "blender_status only probes the operator-pinned executable's version. "
-    "usf_roundtrip requires the inventory accepted by project.json, verifies "
+    "usf_roundtrip requires the inventory accepted by the selected mod registry, verifies "
     "its current authoring source, reads one pinned export.usf, and disposes of "
     "the serialized scratch copy. It never opens or writes a .blend, replaces source, "
     "or approves native export. Execution requires run=true; a durable receipt is "
@@ -63,6 +63,7 @@ class BlenderSettings:
     blender_sha256: str
     sdk_script_root: Path
     scratch_root: Path = TOOLCHAIN_ROOT / "local" / "blender-mcp-scratch"
+    registry: Path | None = None
 
     def __post_init__(self) -> None:
         if not SHA256.fullmatch(self.blender_sha256):
@@ -77,6 +78,7 @@ class BlenderSettings:
         object.__setattr__(self, "blender_sha256", self.blender_sha256.lower())
         object.__setattr__(self, "sdk_script_root", sdk)
         object.__setattr__(self, "scratch_root", scratch)
+        object.__setattr__(self, "registry", project_context.registry_path(self.registry))
 
 
 class BlenderTools:
@@ -96,10 +98,9 @@ class BlenderTools:
             raise BlenderMCPError("Blender executable is missing, changed, or unstable")
         return identity
 
-    @staticmethod
-    def _require_accepted_inventory(inventory: Path, supplied_sha256: str) -> None:
+    def _require_accepted_inventory(self, inventory: Path, supplied_sha256: str) -> None:
         """Bind the caller's inventory to this project's accepted, live source."""
-        registry_path = TOOLCHAIN_ROOT / "project.json"
+        registry_path = self.settings.registry
         try:
             before = file_sha256(registry_path)
             registry = core.read_registry(registry_path)
@@ -266,14 +267,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--blender-executable", type=Path, required=True)
     parser.add_argument("--blender-sha256", required=True)
     parser.add_argument("--sdk-script-root", type=Path, required=True)
+    parser.add_argument("--registry", type=Path, help="This mod's registry, or ROADCRAFT_REGISTRY")
     parser.add_argument("--scratch-root", type=Path,
                         default=TOOLCHAIN_ROOT / "local" / "blender-mcp-scratch")
     args = parser.parse_args(argv)
     try:
         settings = BlenderSettings(args.blender_executable, args.blender_sha256,
-                                   args.sdk_script_root, args.scratch_root)
+                                   args.sdk_script_root, args.scratch_root, args.registry)
         server = create_server(settings)
-    except (BlenderMCPError, MCPDependencyError) as exc:
+    except (BlenderMCPError, MCPDependencyError, core.RoadcraftError) as exc:
         print(str(exc), file=sys.stderr)
         return 2
     server.run(transport="stdio")

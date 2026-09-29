@@ -1,6 +1,6 @@
 ---
 name: roadcraft-vehicle-authoring
-description: Author, fix or review a RoadCraft vehicle mod (scout, truck or machine) with the vehicle-authoring library in RoadCraftToolchain - rig, wheels, suspension, IK linkages, truck settings, lamps, textures, build and install. Use when turning source art into a RoadCraft vehicle or when the game shows a vehicle fault; D11 identity, package and storage work belongs to roadcraft-workflow.
+description: Create, modify, fix or review a RoadCraft vehicle or machine using shared rig, wheel, suspension, IK, truck-setting, lamp and material findings. Use for new source art and existing vehicle mods; the roadcraft-workflow skill handles project identity, builds, packages and evidence for all mod types.
 ---
 
 # RoadCraft vehicle authoring
@@ -17,9 +17,13 @@ directory is not the project.
   finds a rule. Direct source execution needs the checkout's `src` on `PYTHONPATH`.
 - A fault seen in the game: `library/symptoms.md` first. When something *stopped* working, read the
   game's script crash dumps before the rig.
-- A new vehicle: use `roadcraft vehicle-init --directory PATH --name MOD_ID` for the shared
+- A new vehicle: use `roadcraft mod-init --directory PATH --name MOD_ID --kind vehicle` for the shared
   layout, then supply the vehicle-specific art/adapters and read
   `frames.md`, `suspension-and-wheels.md`, `ik-visual-rigs.md`, `truck-settings.md`.
+- Existing vehicle: select its registry and preserve its source route, rig IDs,
+  original package and acceptance history. Use `mod-adopt` only for an
+  unconfigured source folder. Package-only inputs need usable source or a
+  reviewed adapter; do not claim that importing a PAK reconstructs the vehicle.
 - Unsure how something compiles: compare with shipped vehicles (`python -m roadcraft retail find
   "*name*"`, `retail bro`, `retail show`; `library/retail-data.md`).
 
@@ -42,7 +46,8 @@ Existing adapters should call `vehicle_workflow.enhance_recipe` so the source,
 compiled and final checks run automatically. A new starter declares sources and
 commands in `vehicle.json` and `recipe-template.json`; `vehicle-recipe --project
 PATH --output NEW_RECIPE` pins them. Shared checks always run, including during
-incremental builds. Recipe `cacheable` steps need complete explicit inputs,
+incremental builds. New `mod.json` projects use `mod-recipe`; `vehicle.json`
+and `vehicle-recipe` remain supported. Recipe `cacheable` steps need complete explicit inputs,
 outputs and dependencies; capture/native-gated steps cannot be cached. Use
 `jobs-summary` to measure recorded time, and keep native speedup claims separate
 from synthetic tests. Read a machine-local `local/toolchain.json` selector when
@@ -66,7 +71,8 @@ drives: the owner's drive is the acceptance, and a candidate stays unaccepted un
 - Install only with the game and editor closed, keep the previous package and a receipt, and
   announce every install. Ask first unless the owner's request covers installing ("install it",
   "just fix it").
-- "What is wrong with X" means: find the cause, say it in a line or two, then fix, build and install.
+- Diagnose the reported fault, explain the supported cause, and complete fixes,
+  builds or installation within the owner's requested scope and existing authorization.
 - Another agent may work on the same mod elsewhere: build in a folder of your own, leave theirs alone.
 - When the named game is not installed, ask which game is meant.
 

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "roadcraft-toolchain"
 version = "0.1.0"
-description = "Pinned RoadCraft source, package and evidence workflow orchestration"
+description = "Create and modify RoadCraft mods with shared authoring workflows, checks and evidence"
 requires-python = ">=3.12"
 dependencies = []
 

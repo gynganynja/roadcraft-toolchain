@@ -1,30 +1,32 @@
+# Example only: replace paths for the shared checkout and the selected mod.
+# This file does not install or activate an integration.
 # Copy to .codex/config.toml in this trusted project after installing the
 # local virtual environment. The absolute paths below are generated per host.
 [plugins."roadcraft-workflow@roadcraft-local"]
 enabled = true
 
 [mcp_servers.roadcraft]
-command = "C:/RC/RoadCraftDev/toolchain/.venv/Scripts/python.exe"
-args = ["-m", "roadcraft.mcp_server", "--registry", "C:/RC/RoadCraftDev/toolchain/project.json", "--config", "C:/RC/RoadCraftDev/toolchain/local/machine.json"]
-cwd = "C:/RC/RoadCraftDev/toolchain"
+command = "C:/Path/To/roadcraft-toolchain/.venv/Scripts/python.exe"
+args = ["-m", "roadcraft.mcp_server", "--registry", "C:/Path/To/mod/project.json", "--config", "C:/Path/To/mod/local/machine.json"]
+cwd = "C:/Path/To/roadcraft-toolchain"
 startup_timeout_sec = 30
 tool_timeout_sec = 180
 
 [mcp_servers.substance_painter]
-command = "C:/RC/RoadCraftDev/toolchain/.venv/Scripts/python.exe"
+command = "C:/Path/To/roadcraft-toolchain/.venv/Scripts/python.exe"
 args = ["-m", "substance_painter_mcp.server"]
-cwd = "C:/RC/RoadCraftDev/toolchain"
+cwd = "C:/Path/To/roadcraft-toolchain"
 startup_timeout_sec = 30
 tool_timeout_sec = 180
 
 # Separate scratch diagnostic. Pin the exact installed blender.exe with
-# `roadcraft verify --file <absolute-blender.exe> --json` before enabling it.
-# Its USF tool accepts only the inventory pinned by this checkout's
-# project.json and verifies the accepted authoring source before execution.
+# `roadcraft inspect <absolute-blender.exe> --json` and verify the reviewed pin before enabling it.
+# Its USF tool accepts only the inventory pinned by the selected mod registry
+# and verifies that mod's accepted authoring source before execution.
 # This server exposes no Blender project editing or native .blend export.
 [mcp_servers.roadcraft_blender_scratch]
-command = "C:/RC/RoadCraftDev/toolchain/.venv/Scripts/python.exe"
-args = ["-m", "roadcraft.blender_mcp_server", "--blender-executable", "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe", "--blender-sha256", "<64-hex-digit-pin>", "--sdk-script-root", "C:/RC/RoadCraftDev/toolchain/sdk_scripts"]
-cwd = "C:/RC/RoadCraftDev/toolchain"
+command = "C:/Path/To/roadcraft-toolchain/.venv/Scripts/python.exe"
+args = ["-m", "roadcraft.blender_mcp_server", "--registry", "C:/Path/To/mod/project.json", "--blender-executable", "C:/Path/To/SDK-compatible-Blender/blender.exe", "--blender-sha256", "<64-hex-digit-pin>", "--sdk-script-root", "C:/Path/To/roadcraft-toolchain/sdk_scripts"]
+cwd = "C:/Path/To/roadcraft-toolchain"
 startup_timeout_sec = 30
 tool_timeout_sec = 960

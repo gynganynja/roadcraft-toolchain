@@ -1,9 +1,11 @@
 # Build pipeline and SDK tools
 
-How the vehicle mods here are built without the editor's user interface, and the traps met on the way.
+Vehicle SDK stages and their observed traps. The shared create/edit entry point
+for all mod types is [mod-workflow.md](mod-workflow.md).
 The mod projects (`<project>/tools/build.py`, `prepare.py`, `create_models.py`, `truck_bro.py`,
-`validate.py`, `install.py`, `toolchain.py`) follow one layout; copy the newest one (the buggy) when
-starting a vehicle. Every step is bound to a toolchain recipe (`run build|test --apply`, `pin`), so a
+`validate.py`, `install.py`, `toolchain.py`) historically follow one layout. New
+workspaces use `mod-init`; reuse an existing adapter only after reviewing its
+vehicle-specific assumptions. Every step is bound to a toolchain recipe (`run build|test --apply`, `pin`), so a
 candidate carries receipts for what built and checked it.
 
 ## Stages
@@ -42,8 +44,9 @@ A project for the tools is a relocatable SDK project folder (`.project` referenc
 
 The shared recipe helper `roadcraft.vehicle_workflow.enhance_recipe` now wires
 source, compiled and final checks into the adapter pipeline. New projects can
-start with `roadcraft vehicle-init`, fill their explicit source/adapter contract,
-and use `vehicle-recipe` to generate a new pinned recipe. It is a workflow
+start with `roadcraft mod-init --kind vehicle`, fill their explicit source/adapter contract,
+and use `mod-recipe` to generate a new pinned recipe. The older vehicle commands
+remain compatible. It is a workflow
 starter; source art and vehicle-specific rig generation still belong to the project.
 
 Reviewed isolated steps can opt into `--incremental` with complete output

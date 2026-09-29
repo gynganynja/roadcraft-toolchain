@@ -1,4 +1,4 @@
-"""The vehicle-authoring library: markdown articles under ``library/`` in this checkout.
+"""The shared modding library: markdown articles under ``library/`` in this checkout.
 
 Each article collects what is known about one subject, with the evidence behind every statement
 (verified in game, read from retail data, or inferred) so that later work can tell a rule from a guess.

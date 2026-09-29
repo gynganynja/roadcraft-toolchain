@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 import sys
 from typing import Any
@@ -12,10 +11,7 @@ from typing import Any
 from . import core
 from . import jobs, onboard, source, transaction
 from . import bro_lint, library, ps_format, retail, tpl_reader, vehicle
-from . import vehicle_workflow
-
-
-PACKAGE_ROOT = Path(__file__).resolve().parents[2]
+from . import vehicle_workflow, mod_workflow, project_context
 
 
 def _add_json(parser: argparse.ArgumentParser) -> None:
@@ -24,8 +20,7 @@ def _add_json(parser: argparse.ArgumentParser) -> None:
 
 def _add_registry(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--registry", type=Path,
-                        default=Path(os.environ.get("ROADCRAFT_REGISTRY",
-                                                    PACKAGE_ROOT / "project.json")),
+                        default=None,
                         help="Versioned project registry JSON")
 
 
@@ -35,14 +30,8 @@ def _add_config(parser: argparse.ArgumentParser) -> None:
                         help="Local machine configuration JSON")
 
 
-def _config_path(args: argparse.Namespace) -> Path:
-    if args.config is not None:
-        return args.config
-    override = os.environ.get("ROADCRAFT_CONFIG")
-    if override:
-        return Path(override)
-    root = args.registry.parent if hasattr(args, "registry") else PACKAGE_ROOT
-    return root / "local/machine.json"
+def _config_path(args: argparse.Namespace) -> Path | None:
+    return project_context.config_path(args.config, registry=getattr(args, "registry", None))
 
 
 def make_parser() -> argparse.ArgumentParser:
@@ -59,6 +48,7 @@ def make_parser() -> argparse.ArgumentParser:
     _add_json(start)
 
     doctor = commands.add_parser("doctor", help="Inspect local Python, disk, SDK and tool paths")
+    _add_registry(doctor)
     _add_config(doctor)
     _add_json(doctor)
 
@@ -94,7 +84,7 @@ def make_parser() -> argparse.ArgumentParser:
     for phase in ("build", "test", "capture", "inspect-job"):
         command = commands.add_parser(phase, help=f"Run a pinned {phase} recipe phase")
         command.add_argument("--recipe", type=Path, required=True)
-        command.add_argument("--jobs-root", type=Path, default=PACKAGE_ROOT / "jobs")
+        command.add_argument("--jobs-root", type=Path)
         command.add_argument("--apply", action="store_true",
                              help="Execute the recipe; without this flag, preflight only")
         command.add_argument("--incremental", action="store_true",
@@ -102,15 +92,17 @@ def make_parser() -> argparse.ArgumentParser:
         _add_json(command)
 
     job_state = commands.add_parser("jobs-status", help="Inspect a durable job lock and receipt")
-    job_state.add_argument("--jobs-root", type=Path, default=PACKAGE_ROOT / "jobs")
+    job_state.add_argument("--jobs-root", type=Path)
+    _add_registry(job_state)
     _add_json(job_state)
 
     timings = commands.add_parser("jobs-summary", help="Summarize recorded job duration and reused steps")
-    timings.add_argument("--jobs-root", type=Path, default=PACKAGE_ROOT / "jobs")
+    timings.add_argument("--jobs-root", type=Path)
+    _add_registry(timings)
     _add_json(timings)
 
     job_recovery = commands.add_parser("jobs-recover", help="Verify and release an abandoned native job lock")
-    job_recovery.add_argument("--jobs-root", type=Path, default=PACKAGE_ROOT / "jobs")
+    job_recovery.add_argument("--jobs-root", type=Path)
     job_recovery.add_argument("--run-id", required=True)
     job_recovery.add_argument("--expected-lock-sha256", required=True)
     job_recovery.add_argument("--expected-receipt-sha256", required=True)
@@ -127,10 +119,24 @@ def make_parser() -> argparse.ArgumentParser:
     _add_registry(source_check)
     _add_json(source_check)
 
-    lib = commands.add_parser("library", help="List, read or search the vehicle-authoring library")
+    lib = commands.add_parser("library", help="List, read or search the shared modding library")
     lib.add_argument("topic", nargs="?", help="Article to print (a file stem under library/)")
     lib.add_argument("--search", help="Case-insensitive regular expression to find across all articles")
     _add_json(lib)
+
+    for action in ("mod-init", "mod-adopt"):
+        mod = commands.add_parser(action, help="Create a mod workspace" if action == "mod-init" else
+                                  "Add workflow files to existing mod sources without overwriting files")
+        mod.add_argument("--directory", type=Path, required=True)
+        mod.add_argument("--name", required=True)
+        mod.add_argument("--kind", choices=mod_workflow.KINDS, default="general")
+        mod.add_argument("--package", type=Path, help="Pin an original package as an unreviewed imported candidate")
+        mod.add_argument("--python", type=Path, default=Path(sys.executable))
+        _add_json(mod)
+    mod_recipe = commands.add_parser("mod-recipe", help="Pin a mod's declared sources and workflow")
+    mod_recipe.add_argument("--project", type=Path, required=True)
+    mod_recipe.add_argument("--output", type=Path, required=True)
+    _add_json(mod_recipe)
 
     starter = commands.add_parser("vehicle-init", help="Create a new vehicle workflow layout")
     starter.add_argument("--directory", type=Path, required=True)
@@ -176,15 +182,17 @@ def make_parser() -> argparse.ArgumentParser:
     ret.add_argument("--game", type=Path, help="Game root (default: sdkRoot of the machine configuration)")
     ret.add_argument("--out", type=Path, help="show: write the member here instead of printing it")
     _add_config(ret)
+    _add_registry(ret)
     _add_json(ret)
 
     install = commands.add_parser("install", help="Dry-run or install one named pinned candidate")
     _add_registry(install)
     _add_config(install)
     install.add_argument("--candidate", required=True)
-    install.add_argument("--transaction-root", type=Path, default=PACKAGE_ROOT / "local" / "transactions")
+    install.add_argument("--transaction-root", type=Path)
     install.add_argument("--expect-installed-sha256",
                          help="Exact current installed SHA-256; defaults to accepted package pin")
+    install.add_argument("--expect-absent", action="store_true", help="First installation: require the mod slot to be empty")
     install.add_argument("--apply", action="store_true")
     _add_json(install)
 
@@ -235,18 +243,27 @@ def _verify_project(registry_path: Path, config_path: Path) -> dict[str, Any]:
 
 
 def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
+    if hasattr(args, "registry"):
+        required = args.command in ("status", "source-check", "install", "jobs-recover") or (
+            args.command == "verify" and args.project)
+        args.registry = project_context.registry_path(args.registry, required=required)
     if hasattr(args, "config"):
         args.config = _config_path(args)
+    if hasattr(args, "jobs_root"):
+        args.jobs_root = project_context.jobs_path(args.jobs_root, registry=getattr(args, "registry", None),
+                                                  recipe=getattr(args, "recipe", None))
+    if args.command == "install" and args.transaction_root is None:
+        args.transaction_root = args.registry.parent / "local/transactions"
     if args.command == "onboard":
         registry = onboard.draft_registry(args.project, args.package, args.candidate_name)
         output = onboard.write_registry(args.output, registry) if args.output else None
         return {"registry": registry, "writtenPath": str(output) if output else None,
                 "packageStatus": "unreviewed_candidate" if args.package else "none"}, True
     if args.command == "doctor":
-        config = core.read_config(args.config) if args.config.is_file() else None
+        config = core.read_config(args.config) if args.config and args.config.is_file() else None
         result = core.doctor(config)
-        result["configPath"] = str(args.config.resolve())
-        result["configFound"] = args.config.is_file()
+        result["configPath"] = str(args.config.resolve()) if args.config else None
+        result["configFound"] = bool(args.config and args.config.is_file())
         return result, True
     if args.command == "status":
         registry = core.read_registry(args.registry)
@@ -324,6 +341,11 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
         return {"root": str(library.LIBRARY_ROOT), "topics": library.topics()}, True
     if args.command == "vehicle-init":
         return vehicle_workflow.scaffold(args.directory, args.name, args.python), True
+    if args.command in ("mod-init", "mod-adopt"):
+        return mod_workflow.scaffold(args.directory, args.name, args.python, kind=args.kind,
+                                     adopt=args.command == "mod-adopt", package=args.package), True
+    if args.command == "mod-recipe":
+        return mod_workflow.make_recipe(args.project, args.output), True
     if args.command == "vehicle-recipe":
         return vehicle_workflow.make_recipe(args.project, args.output), True
     if args.command == "lint-bro":
@@ -363,7 +385,7 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
     if args.command == "retail":
         game = args.game
         if game is None:
-            config = core.read_config(args.config) if args.config.is_file() else {}
+            config = core.read_config(args.config) if args.config and args.config.is_file() else {}
             game = Path(config["sdkRoot"]) if config.get("sdkRoot") else None
         if game is None:
             raise core.RoadcraftError("retail needs --game or sdkRoot in the machine configuration")
@@ -386,14 +408,16 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
         accepted = registry.get("accepted", {}).get("package")
         candidate = registry.get("candidates", {}).get(args.candidate, {}).get("package")
         installed = config.get("installedPackage")
-        if not accepted or not candidate or not installed:
-            raise core.RoadcraftError("Named candidate, accepted package and installed path are required")
-        expected = args.expect_installed_sha256 or accepted.get("sha256")
-        if not expected:
-            raise core.RoadcraftError("Expected installed SHA-256 is required")
+        if not candidate or not installed:
+            raise core.RoadcraftError("Named candidate and installed path are required")
+        if args.expect_absent and args.expect_installed_sha256:
+            raise core.RoadcraftError("Choose --expect-absent or --expect-installed-sha256")
+        expected = None if args.expect_absent else args.expect_installed_sha256 or (accepted or {}).get("sha256")
+        if not expected and not args.expect_absent:
+            raise core.RoadcraftError("Expected installed SHA-256 or --expect-absent is required")
         result = transaction.install_package(
             accepted, candidate, installed, args.transaction_root, expected,
-            _transaction_process_check, dry_run=not args.apply)
+            _transaction_process_check, dry_run=not args.apply, expect_absent=args.expect_absent)
         return result, True
     if args.command == "rollback":
         return transaction.rollback_package(args.receipt, _transaction_process_check,

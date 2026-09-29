@@ -74,6 +74,7 @@ class BlenderMCPTests(unittest.TestCase):
         self.settings = adapter.BlenderSettings(
             self.blender, file_sha256(self.blender), self.sdk,
             self.root / "local/blender-mcp-scratch",
+            registry=self.root / "project.json",
         )
         self.tools = adapter.BlenderTools(self.settings)
         self.commands = []
@@ -228,7 +229,8 @@ class BlenderMCPTests(unittest.TestCase):
             code = adapter.main(["--blender-executable", str(self.blender),
                                  "--blender-sha256", file_sha256(self.blender),
                                  "--sdk-script-root", str(self.sdk),
-                                 "--scratch-root", str(self.settings.scratch_root)])
+                                 "--scratch-root", str(self.settings.scratch_root),
+                                 "--registry", str(self.root / "project.json")])
         self.assertEqual(code, 0)
         self.assertEqual(server.transport, "stdio")
 

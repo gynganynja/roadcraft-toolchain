@@ -1,15 +1,18 @@
-# RoadCraft vehicle-authoring library
+# RoadCraft modding library
 
-What has been learned building RoadCraft vehicle mods (a CAT 793D, a D11T, a Hitachi EX5600, the
-Roamer 105, a 16M3 grader, a 994 loader, an M12 Warthog and an Apocalypse Buggy): how the engine, the
+Shared workflows and findings for creating and modifying mods. Vehicle findings
+come from a CAT 793D, a D11T, a Hitachi EX5600, the
+Roamer 105, a 16M3 grader, a 994 loader, an M12 Warthog and an Apocalypse Buggy: how the engine, the
 SDK generator and the retail vehicles actually behave, and the code in this checkout that checks for
 it.
 
-Start with **[symptoms.md](symptoms.md)** when something looks wrong in the game: it maps what you
+Start with **[mod-workflow.md](mod-workflow.md)** to create or modify a mod. Use
+**[symptoms.md](symptoms.md)** when something looks wrong in the game: it maps what you
 see to the cause and the fix. Read the subject articles when authoring:
 
 | Article | Subject |
 |---|---|
+| [mod-workflow.md](mod-workflow.md) | New mods, existing source/package edits, project selection, build and installation lifecycle |
 | [learning.md](learning.md) | Required integration of discoveries, failures, fixes and feedback into shared knowledge and tools |
 | [frames.md](frames.md) | Axes, units, bone frames, hinge axes, centre of mass, source-art conversion |
 | [suspension-and-wheels.md](suspension-and-wheels.md) | Wheel slots, axle controller, steering racks, wheel models, suspension values |
@@ -21,6 +24,10 @@ see to the cause and the fix. Read the subject articles when authoring:
 | [build-pipeline.md](build-pipeline.md) | SDK tools, class generation, packaging, installation, process rules |
 | [case-studies.md](case-studies.md) | Each mod built so far: what went wrong and what it taught |
 | [sources.md](sources.md) | Official documentation, the community guide, the unofficial route, support channels |
+
+The [D11 case study](../docs/case-studies/d11.md) preserves its source-repair and
+capture findings. [Components](../docs/components.md) distinguishes shared tooling
+from historical probes. Apply a case's rules only within their stated scope.
 
 ## Evidence grades
 

@@ -1,351 +1,202 @@
 # RoadCraft Toolchain
 
-This package records and checks RoadCraft mod source, package, capture, and
-installed identities. D11 is the current case study and default checkout
-configuration, not a required mod name or schema. The vehicle-authoring library
-in `library/` holds findings from vehicle projects, with checks for truck BROs
-and compiled models. Read-only inspection is the default. Recipe execution and
-package transactions require an explicit `--apply` flag. Python 3.12 or newer
-is required; the core has no runtime dependencies outside the standard library.
+Create new RoadCraft mods and modify existing ones using shared project setup,
+source and package inspection, authoring checks, pinned builds, installation,
+rollback and evidence review. Findings from D11, the buggy, Warthog and other
+projects are retained in the [modding library](library/README.md). Choose the
+rules relevant to the current mod and their evidence grade.
 
-Install in a dedicated environment with `pip install -e .`, then use
-`roadcraft doctor`, `roadcraft status`, `roadcraft inspect`, and
-`roadcraft verify`. For direct source execution, set `PYTHONPATH` to this
-folder's `src` directory and run `python -m roadcraft`.
+The toolchain is shared software; each mod owns its registry, source, machine
+configuration, recipes, jobs and receipts. D11 is an explicitly selected
+[case study](docs/case-studies/d11.md). Its historical files and pins remain
+available, and are never the implicit baseline for another project.
 
-## Configuration
+Python 3.12+ is required. Install with `python -m pip install -e .` in a dedicated
+environment, or set `PYTHONPATH` to this checkout's `src` and run
+`python -B -m roadcraft`. Core workflows use the standard library.
 
-The versioned D11 `project.json` defaults to this folder. Override it with
-`--registry` or `ROADCRAFT_REGISTRY`. The local `local/machine.json` defaults
-to the selected registry's folder; override it with `--config` or
-`ROADCRAFT_CONFIG`. Relative paths resolve beside the JSON document that
-contains them. Do not infer an
-accepted package from folder dates or the current installed package.
-
-For a new mod, preview a blank registry with `roadcraft onboard --project
-"My Mod"`; add `--output path/to/project.json` to create it. For an existing
-mod, use `roadcraft onboard --project "Other Mod" --package path/to/mod.pak
---candidate-name imported` and optionally `--output`. The package is hashed
-and recorded only as an unreviewed candidate. No source files are invented,
-no accepted package is declared, and no game file is installed or changed.
-An existing output file is never overwritten. Point `status` and `verify` at
-the new `--registry`; their default machine config is now that registry's
-sibling `local/machine.json`, so D11's installed package and receipts do not
-appear in another mod's status. A package-free new registry has no verified
-pins yet; add a real source/package pin before treating `verify --project` as
-an identity check. The install transaction currently requires an accepted
-baseline and a separately configured installed package; onboarding alone
-does not establish either.
-
-Example registry:
-
-```json
-{
-  "schemaVersion": 1,
-  "project": "D11",
-  "accepted": {
-    "package": {"path": "../artifacts/accepted.pak", "sha256": "<64 hex digits>"},
-    "sourceManifest": {"path": "../assets/source-manifest.json", "sha256": "<64 hex digits>"},
-    "authoringInventory": {"path": "../assets/authoring-inventory.json", "sha256": "<64 hex digits>"},
-    "sourceRoot": "../assets"
-  },
-  "candidates": {
-    "interior-trial": {"package": {"path": "../artifacts/interior-trial.pak", "sha256": "<64 hex digits>"}}
-  },
-  "variants": ["maroon", "nearnew", "worn"],
-  "recipes": {}
-}
-```
-
-Example local configuration:
-
-```json
-{
-  "schemaVersion": 1,
-  "sdkRoot": "C:/Path/To/Roadcraft Development Package",
-  "installedPackage": "C:/Path/To/RoadCraft/root/mods/cat_d11t.pak",
-  "tools": {
-    "furnace": "C:/Path/To/Roadcraft Development Package/tools/bin/ResourceTools/furnace/furnace.exe"
-  },
-  "transactionReceipts": ["C:/Path/To/Capture/candidate_capture.json"],
-  "transactionLocks": ["C:/Path/To/Capture/candidate_capture.lock.json"]
-}
-```
-
-`status` hashes the accepted, candidate, and installed files independently.
-An installed package matching no pinned identity is reported as `unrecognized`.
-It never changes the registry's accepted identity. `verify --project` checks
-all pinned files and the contents of pinned source and authoring manifests; a missing
-SHA-256 is an unverified pin and fails that check. The optional
-`accepted.sourceRoot` is the base for relative manifest rows.
-
-Configured transaction receipts and locks appear in `status`. A failed
-capture remains failed evidence even when rollback succeeded. The
-`recoveryRequired` flag clears only when the receipt records baseline
-restoration and the observed installed hash matches either that baseline
-or a later registry accepted build, with no configured lock present. The
-separate package transaction commands create their own receipts and restore
-only packages they installed.
-
-## Read-only commands
+## Create a new mod
 
 ```text
-roadcraft doctor --config local/machine.json --json
-roadcraft status --registry project.json --config local/machine.json --json
-roadcraft inspect candidate.pak --member models/mods/cat_d11t.tpl.asset/tpl/cat_d11t.tpl --occurrence 2 --hash-members --json
-roadcraft verify --file candidate.pak --sha256 <64-hex-digits> --json
-roadcraft verify --manifest source-manifest.json --base path/to/source --json
-roadcraft verify --baseline accepted.pak --candidate candidate.pak --allowed-path 'models/mods/*.tpl.asset/*' --json
+roadcraft mod-init --directory path/to/trail_mod --name trail_mod --kind vehicle
+roadcraft mod-init --directory path/to/material_mod --name material_mod --kind material
 ```
 
-ZIP entries are compared by normalized path and one-based occurrence. The
-comparison hashes decompressed member content and reports added, removed, and
-changed occurrences. `--allowed-path` globs restrict all three kinds of
-change. A manifest is an object with `files` rows containing `path` (or
-`relativePath`), `sha256`, and optional `bytes`.
+Kinds are `general`, `vehicle`, `material` and `tuning`. Vehicle starters include
+BRO and compiled-model checks; other kinds use an adaptable prepare/package
+workflow without truck requirements. The starter creates the project contract,
+agent instructions and a project launcher. Supply the actual art/settings and
+reviewed build scripts; it does not create a playable vehicle or invent SDK
+commands. `vehicle-init` / `vehicle-recipe` remain compatible with `vehicle.json`.
 
-## Vehicle-authoring library
+## Modify an existing mod
 
-Agents must integrate reusable findings during the same task, following
-[the learning policy](library/learning.md). This covers discoveries, failed
-approaches, fixes, feedback and workflow improvements across RoadCraft work.
-Supported repeatable lessons should become shared checks or helpers where
-practical, so later projects benefit without repeating the investigation.
-
-`library/README.md` indexes the articles (symptoms, frames, suspension and
-wheels, visual IK rigs, truck settings, cockpit and lamps, textures and
-materials, retail data, build pipeline, case studies, sources). Every rule
-carries an evidence grade: seen in the game, read from retail data, from the
-SDK, observed in a build, inferred, or open. The commands below read files
-only; `retail` reads the game installation named by `--game` or the machine
-configuration's `sdkRoot`.
+For sources without toolchain configuration:
 
 ```text
-roadcraft library [topic] [--search REGEX]
+roadcraft mod-adopt --directory path/to/existing_sources --name trail_mod --kind vehicle
+```
+
+Adoption preserves source files, Git history and README content. It appends the
+shared instructions and ignore rules, and refuses existing workflow or machine
+configuration files before writing. If a project already uses the toolchain,
+select its registry and use its adapters; do not reinitialize it.
+
+For a package to inspect or modify in a separate workspace:
+
+```text
+roadcraft mod-init --directory path/to/mod_edit --name mod_edit --kind general --package path/to/original.pak
+roadcraft inspect path/to/original.pak --hash-members --json
+```
+
+The original is pinned as the unreviewed `imported` candidate and left intact.
+Obtain usable source or a reviewed adapter for the specific change. A compiled
+package is not a recovered Blender/source project. Preserve archive member
+occurrences and compare the output against the original:
+
+```text
+roadcraft verify --baseline path/to/original.pak --candidate path/to/edited.pak --allowed-path "material_instances/*" --json
+```
+
+`onboard` remains available for drafting only a registry, including imported
+package pins. [The workflow guide](library/mod-workflow.md) covers source edits,
+package-only inputs, acceptance and how to reuse findings.
+
+## Select the mod
+
+Project selection is `--registry PATH`, then `ROADCRAFT_REGISTRY`, then the
+nearest `project.json` in the current folder or its parents. Searching stops at
+the shared toolchain checkout. A project command with no selected mod reports
+how to select one. The toolchain root's historical `project.json` is explicit-only.
+
+Machine configuration is `--config PATH`, then `ROADCRAFT_CONFIG`, then the
+selected mod's `local/machine.json`. Relative document paths resolve beside
+the JSON file declaring them. Use generated `tools/roadcraft.py` from any working
+folder to select that launcher’s own mod; `ROADCRAFT_TOOLCHAIN` selects the
+shared checkout, otherwise its `local/toolchain.json` does.
+
+```text
+roadcraft status --registry path/to/mod/project.json --json
+roadcraft doctor --registry path/to/mod/project.json --json
+roadcraft verify --project --registry path/to/mod/project.json --json
+```
+
+File inspection, archive comparison and the library work without selecting a
+project. `verify --project` checks declared pins; an empty project has no identity
+to verify and cannot pass that check. No discovered hash becomes accepted merely
+to make verification pass.
+
+## Author, build and test
+
+1. Search the library and inspect existing source/retail examples before writing
+   a helper. Declare the actual source route and retain original inputs.
+2. List inputs in `mod.json` `sourceFiles`, globally or per step in
+   `recipe-template.json`. Include scripts, art, configuration and SDK dependencies.
+3. Supply reviewed commands, expected output files, complete output trees where
+   needed, and test/inspection steps appropriate to the changed resources.
+4. Pin a new recipe and preflight it before authorized execution:
+
+```text
+roadcraft mod-recipe --project path/to/mod --output path/to/mod/recipes/build-001.json
+roadcraft build --recipe path/to/mod/recipes/build-001.json --incremental --json
+roadcraft build --recipe path/to/mod/recipes/build-001.json --incremental --apply --json
+roadcraft test --recipe path/to/mod/recipes/test-001.json --json
+roadcraft jobs-summary --registry path/to/mod/project.json --json
+```
+
+Recipe job folders default to the recipe's project root, including when invoked
+from another mod. `--jobs-root` overrides this explicitly. `jobs-status` and
+`jobs-summary` use the selected mod. Recipes are immutable snapshots; changed
+source/shared runtime requires a new recipe. New recipes pin the shared runtime
+and project configuration and run subprocesses in that mod's context.
+
+`--incremental` reuses only explicitly cacheable isolated steps whose input,
+command, environment, dependency, successful receipt and output hashes match.
+Native-gated and capture steps cannot be cached; vehicle checks always run.
+Omitted dependencies conservatively include all preceding steps. Declare finer
+input scopes only when justified. `jobs-summary` reports observed times and reuse,
+not an inferred percentage speedup.
+
+`build`, `test`, `inspect-job` and `capture` default to read-only preflight.
+`--apply` executes the selected phase. A phase name alone does not prove that its
+recipe builds, tests or captures anything. Read its commands and outputs.
+
+## Install and iterate
+
+Pin the built package as a named candidate in the mod registry and configure its
+`installedPackage` in that mod's `local/machine.json`. Keep source packages
+separate from the live mod slot. Installation checks processes, input pins,
+current slot identity and durable transaction state.
+
+```text
+roadcraft install --registry path/to/mod/project.json --candidate test-001 --expect-absent --json
+roadcraft install --registry path/to/mod/project.json --candidate test-001 --expect-absent --apply --json
+roadcraft install --registry path/to/mod/project.json --candidate test-002 --expect-installed-sha256 REVIEWED_CURRENT_SHA256 --json
+roadcraft rollback --receipt path/to/mod/local/transactions/TRANSACTION_ID/receipt.json --json
+roadcraft recover --receipt path/to/mod/local/transactions/TRANSACTION_ID/receipt.json --json
+```
+
+Use `--expect-absent` for a first installation into an empty `.pak` slot. It never
+replaces a file that appears during the transaction. An update requires the
+reviewed current hash, defaulting to an accepted package pin only if one exists.
+A mod without accepted history can still be installed or updated without inventing
+acceptance. Receipts retain previous bytes, or record previous absence for a new
+slot. Rollback restores that exact previous state and refuses unknown live bytes.
+Transactions default to the selected mod's `local/transactions`.
+
+Keep the game and editor closed for installation. These commands default to
+preflight; applying installation, rollback or recovery requires `--apply` and
+existing task authorization. Installation, successful checks and rollback never
+promote a candidate to accepted. Record the tested build and user observations.
+
+## Shared findings and evidence
+
+Agents must follow [learning.md](library/learning.md): integrate reusable findings,
+failed approaches, fixes and feedback during the same task, with evidence and
+scope. Add shared checks/helpers where justified and wire them into the workflow.
+Chat or private agent memory alone is insufficient.
+
+```text
+roadcraft library
+roadcraft library symptoms
+roadcraft library --search axleController
 roadcraft lint-bro truck.bro --class auto_truck.cls --tpl body.tpl --json
-roadcraft suspension --sag 0.16 --share 0.205 --lift 0.06 --bump 0.16 --droop 0.20
-roadcraft suspension --calibrate '[{"axle": {...}, "rest": 0.12, "wheels": 2}, ...]'
 roadcraft tpl-nodes body.tpl --pattern "Wheel|IK" --json
-roadcraft retail find "*armiger*"
-roadcraft retail bro armiger_thunder_scout_new
-roadcraft retail survey
+roadcraft retail find "*scout*" --game path/to/RoadCraft
 ```
 
-`lint-bro` exits 1 when it finds an error-level pitfall. The library reads the
-checkout's `library/` folder, so use a source checkout or an editable install.
-The Python modules are `roadcraft.ps_format`, `tpl_reader`, `vehicle`,
-`bro_lint`, `retail` and `library`. The skill is
-`skills/roadcraft-vehicle-authoring/SKILL.md`.
+The library records Game, Retail, SDK, Build, Inferred and Open evidence grades.
+General source/identity rules apply across mods; vehicle mechanics apply only to
+relevant vehicle work. Preserve contradictory and failed evidence with corrections.
 
-## Pinned workflow commands
+Source inventories retain explicit, ordered authoring declarations. Repaired USF
+inputs stay authoritative until their asset-specific native-Blender parity gate
+passes. That repair gate does not automatically apply to a fresh native source
+project. `source-check` checks declared inventory pins and source changes.
 
-### Reusing the vehicle workflow
+Captured, numerical, visual and campaign acceptance remain separate. Use
+`python -m roadcraft.review` for local reports from pinned evidence and
+`python -m roadcraft.regression` for an explicitly configured evidence policy.
+[Components and boundaries](docs/components.md) describes diagnostics, recovery,
+source migration and storage tools. Historical probes retain their original scope.
 
-Use one maintained checkout for vehicle work. Existing project adapters may
-select it with `local/toolchain.json` (`{"path": "..."}`), overridden by
-`ROADCRAFT_TOOLCHAIN`. Keep that file machine-local. A retained checkout with
-its own selector is a reference; continue toolchain work in the selected path.
+## Integrations and development
+
+The optional `roadcraft.mcp_server` exposes read-only inspection and evidence
+operations for the selected mod. Pass `--registry` or configure
+`ROADCRAFT_REGISTRY`; it has no default D11 context. The separate Blender scratch
+adapter also selects its mod explicitly and retains its bounded source/parity
+checks. Install `requirements-mcp.txt` only for these optional adapters.
+
+The local plugin under `plugin/` contains both skills. Its presence does not prove
+an integration is installed or healthy. Configure machine paths locally using
+`.codex/config.toml.example`. Keep distributable skill copies identical.
 
 ```text
-roadcraft vehicle-init --directory path/to/new_vehicle --name new_vehicle
-roadcraft vehicle-recipe --project path/to/new_vehicle --output path/to/new_vehicle/recipes/build-001.json
-roadcraft build --recipe path/to/recipe.json --jobs-root path/to/jobs --incremental
-roadcraft build --recipe path/to/recipe.json --jobs-root path/to/jobs --incremental --apply
-roadcraft jobs-summary --jobs-root path/to/jobs --json
+python -B -m unittest discover -s tests -p "test_*.py"
 ```
 
-`vehicle-init` creates the project layout, empty registry, local toolchain
-selector and a declarative recipe template based on the working vehicle
-adapters. Supply source art, vehicle-specific authoring scripts and reviewed
-SDK commands; the starter does not create a rig or a playable vehicle. List
-sources explicitly, including scripts and SDK dependencies. `vehicle-recipe`
-captures current input pins and writes a **new** recipe; it neither executes
-commands nor changes accepted identities. Existing recipes are not overwritten.
-
-Adapters can call `roadcraft.vehicle_workflow.enhance_recipe` to add source
-checks after `prepare`, compiled checks after `generate`, and a final check
-at the start of `test`. The shared runtime and adapter are pinned as inputs.
-`lint-bro --report PATH` writes a report and exits nonzero for errors. Vehicle
-checks always execute; passing them does not grant driving or campaign acceptance.
-
-### Verified reuse of build steps
-
-`--incremental` only reuses steps explicitly marked `cacheable: true` in a
-reviewed recipe. Native-gated and capture steps cannot be cached. Each step
-must declare every input and output; `dependsOn` names earlier steps whose
-outputs it consumes. `outputTrees` declares complete generated directories
-below the step's working directory, including compiler sidecars. Missing,
-changed or added files in a declared output tree invalidate reuse.
-
-The key covers the declared inputs, command, executable bytes, working
-directory, environment, runner and dependency outputs. A hit also verifies
-the saved successful receipt hash and the current output bytes. A failed job
-never seeds the cache. Input pins, disk checks and job locks still apply.
-Receipts distinguish `cached` from `passed`, link the original receipt and
-report executed/reused step counts. Omit `--incremental` for a full run.
-
-Legacy vehicle adapters retain their broad input declarations, so a change to
-their shared configuration conservatively invalidates all affected stages.
-Finer reuse requires splitting adapter inputs into reviewed stage-specific
-scopes. New recipe templates may put an ordered `sourceFiles` list on each
-step and explicitly set `dependsOn`; `vehicle-recipe` pins those files only
-for that step. Omitted dependencies conservatively include every earlier
-step. The cache does not infer that an undeclared input is irrelevant.
-The first successful incremental build seeds reuse; earlier receipts without
-cache keys cannot be retroactively treated as cached builds.
-
-`jobs-summary` reports recorded wall-clock durations and reuse counts. It
-does not infer a percentage speedup or vehicle acceptance from those records.
-
-`project.json` records the accepted package, source manifest and authoring
-inventory. `local/machine.json` records this machine's editor paths and
-installed package. `source-check` rehashes the ordered files declared for the
-three D11 variants and compares them to the pinned inventory.
-
-```text
-roadcraft source-check --json
-python operations/configure_local_recipe.py
-roadcraft inspect-job --recipe local/recipes/d11_toolchain_checks.json --jobs-root jobs --json
-roadcraft test --recipe local/recipes/d11_toolchain_checks.json --jobs-root jobs --json
-roadcraft build --recipe path/to/reviewed-build-recipe.json --jobs-root jobs --json
-roadcraft capture --recipe path/to/reviewed-capture-recipe.json --jobs-root jobs --json
-roadcraft jobs-status --jobs-root jobs --json
-roadcraft jobs-recover --jobs-root jobs --run-id <run-id> --expected-lock-sha256 <sha256> --expected-receipt-sha256 <sha256> --expected-installed-sha256 <sha256> --expected-registry-sha256 <sha256> --expected-config-sha256 <sha256> --json
-roadcraft install --candidate aaa-20260928 --json
-roadcraft rollback --receipt local/transactions/<id>/receipt.json --json
-roadcraft recover --receipt local/transactions/<id>/receipt.json --json
-```
-
-Without `--apply`, recipe and package commands only preflight. A recipe is
-`schemaVersion: 1` with a name, a `phases` object containing ordered `build`,
-`inspect`, `test`, or `capture` steps, and each step's absolute executable
-argv, cwd, pinned inputs, expected outputs, timeout and minimum free space.
-`roadcraft.jobs` runs commands without a shell and records durable receipts,
-logs and locks. Native steps refuse active RoadCraft or authoring processes.
-Interrupted native work retains a lock for inspection. Recipe dry runs do not
-create a jobs directory.
-
-`jobs-recover` is also a dry run unless given `--apply`. Use it only for a
-terminal failed or interrupted native job after reviewing its receipt and the
-external package/editor state. In PowerShell, from the toolchain root, prepare
-the five reviewed pins and run the preview first:
-
-```powershell
-$run = 'reviewed-run-id'
-$lockSha = (Get-FileHash 'jobs/.roadcraft-jobs.lock' -Algorithm SHA256).Hash.ToLowerInvariant()
-$receiptSha = (Get-FileHash "jobs/$run/receipt.json" -Algorithm SHA256).Hash.ToLowerInvariant()
-$installedSha = (Get-Content 'project.json' -Raw | ConvertFrom-Json).accepted.package.sha256
-$registrySha = (Get-FileHash 'project.json' -Algorithm SHA256).Hash.ToLowerInvariant()
-$configSha = (Get-FileHash 'local/machine.json' -Algorithm SHA256).Hash.ToLowerInvariant()
-roadcraft jobs-recover --jobs-root jobs --run-id $run --expected-lock-sha256 $lockSha --expected-receipt-sha256 $receiptSha --expected-installed-sha256 $installedSha --expected-registry-sha256 $registrySha --expected-config-sha256 $configSha --registry project.json --config local/machine.json --json
-roadcraft jobs-recover --jobs-root jobs --run-id $run --expected-lock-sha256 $lockSha --expected-receipt-sha256 $receiptSha --expected-installed-sha256 $installedSha --expected-registry-sha256 $registrySha --expected-config-sha256 $configSha --registry project.json --config local/machine.json --apply --json
-```
-
-Run the second command only if the preview returns `ready` and its state is
-still the reviewed state. Recovery checks the owner's process, active authoring
-processes, the installed accepted package, and every configured transaction
-receipt and lock. An applied recovery writes `job_recovery_<id>.json` in the
-run directory before removing only the shared job lock. Its `released` status
-and returned SHA-256 document the release; `jobs-status` should then show
-`lockPresent: false`. The original failed job receipt and installed package
-remain unchanged. A `verified_release_pending` recovery receipt after a crash
-is ambiguous: inspect the lock's current presence before any further action.
-
-`install` names a candidate from the registry and verifies the expected live
-hash, source archives and process state before writing. Applied installs
-retain exact prior package bytes for `rollback`; `recover` only acts on known
-hashes. None of these commands changes a candidate into the accepted
-baseline. The AAA candidate currently has a failed native capture even though
-its rollback restored the accepted installed package.
-
-The authoring inventory declares repaired `export.usf` as the three variants'
-build source. `roadcraft.source.require_export_allowed` blocks native `.blend`
-export until an asset-specific approved parity receipt covers the required
-geometry, material, animation, compile and native-view checks. The Blender
-bridge tests no-edit USF serialization in temporary scratch and records a
-receipt without replacing any source file.
-
-`python -m roadcraft.review` makes a local HTML/JSON evidence report from
-pinned receipt inputs. Comparisons require matching variant, scene, camera,
-lighting, resolution and protocol; absent context produces a contact sheet
-only. Numerical, visual and campaign acceptance stay distinct.
-
-`python -m roadcraft.regression POLICY` evaluates a pinned source, package,
-capture and metric evidence chain against explicit required views and numeric
-thresholds. Technical results do not grant visual or campaign acceptance;
-those stages require detached approvals from externally trusted reviewer keys.
-Install the `review` extra (`python -m pip install -e ".[review]"`) to enable
-Ed25519 verification. The CLI exit code covers the technical gate; inspect
-`releaseReady` before any release decision. The current AAA interior policy
-and replayable result are in `operations/`; the genuine reviewer handoff is
-documented in `operations/REVIEWER_CLAIM_HANDOFF.md`.
-
-## Asset and native preflight gates
-
-The migration command verifies the pinned source and destination without
-writing:
-
-```text
-python -m roadcraft.migrate --manifest PATH --manifest-sha256 SHA256 --source-root PATH --destination PATH --receipt PATH
-```
-
-`--run` starts a resumable copy only
-when free space covers the remaining bytes **plus** the default 30 GiB
-reserve. The current D11 dry run verified 2,817 files but failed that space
-gate; the accepted source remains at the path in `project.json`.
-
-`operations/d11_aaa_native_preflight_recipe.json` is deliberately limited to
-the old AAA builder's `--check`, its existing-package audit, and the native
-capture script **without** `--execute`. It can be passed to `roadcraft build`,
-`roadcraft inspect-job`, or `roadcraft capture` for a declarative dry run.
-Those phase names do not mean that this recipe builds a PAK or captures a
-view. `operations/D11_NATIVE_RECIPE_REVIEW.md` lists the output-path,
-rollback, process-ownership and disk-space work needed before admitting a
-native execution recipe.
-
-`python -m roadcraft.expansion_cleanup` checks the separately reviewed
-retail-export candidates against an exact manifest SHA-256, live file
-identities, retained PAK members, Git state and active processes. It defaults
-to dry-run; `--sample-candidates N` is a labeled partial check that can never
-apply. The eight-file sample checked eight files and removed none. A full
-28 September dry run verified all 23,604 candidates and removed none. Its
-sandboxed receipt remains blocked because CIM command-line inspection was
-denied; a separate elevated, read-only full receipt passed the process gate
-at its check time. `operations/STORAGE_EXPANSION_REVIEW_20260928.md` records
-both receipts. Neither receipt authorizes deletion.
-
-## MCP and local plugin
-
-Install `requirements-mcp.txt` in a dedicated environment, then run
-`python -m roadcraft.mcp_server`. Its 11 tools are read-only. The recovered
-Substance Painter MCP source is under `integrations/SubstancePainterMCP` with
-its archive provenance; its 79 tools require Painter to be running with
-`--enable-remote-scripting`. The standalone skill and repo-local plugin
-scaffold are under `skills/` and `plugin/`. The plugin supplies instructions;
-MCP servers are configured separately in `.codex/config.toml` using the
-provided example. Check actual MCP connection health before relying on them.
-
-The separate `roadcraft.blender_mcp_server` has only `blender_status` and
-`usf_roundtrip`. Configure its fixed Blender executable, its SHA-256 pin and
-the SDK script root in `.codex/config.toml.example`; it uses the same optional
-official MCP SDK in `requirements-mcp.txt`. `blender_status` checks the pinned
-binary and reads its `--version` without opening a project. `usf_roundtrip`
-requires an absolute authoring-inventory path, that inventory's SHA-256 pin,
-and an asset name. The path and SHA-256 must match this checkout's
-`project.json` `accepted.authoringInventory`; it rehashes the declared
-authoring source under `accepted.sourceRoot` before either a dry run or native
-roundtrip. It defaults to a no-write dry run. Set `run=true` for the
-background, factory-startup USF parser/serializer check, with a maximum
-900-second timeout. The serialized USF and helper result are disposed of in
-`local/blender-mcp-scratch`; without `receipt_path`, the bridge receipt is
-ephemeral too. A durable receipt is written only when the caller supplies a
-new absolute `.json` path under `local/jobs`. The bridge never opens, saves,
-or exports a `.blend` file, and its diagnostic does not approve native export.
-
-For the separate scratch-only historical `.blend` export comparison, use
-`python -m roadcraft.blender_authoring` with pinned inventory, Blender and SDK
-paths. It records complete node/material/rig differences in a digest-linked
-archive while keeping the generated USF under ignored `local/` scratch. See
-`operations/D11_BLENDER_AUTHORING_PARITY_20260928.md` for the reproducible
-command and current blocked results. This diagnostic never changes the
-`native-blend` export approval gate.
+Run with this checkout's `src` on `PYTHONPATH`. Optional SDK and local native
+fixture tests report skips when unavailable. Preserve D11 pins, evidence and
+historical code when extending shared capabilities; the [D11 case study](docs/case-studies/d11.md)
+records where those materials live.

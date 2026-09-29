@@ -1,94 +1,97 @@
 # RoadCraft Toolchain
 
-If this checkout has `local/toolchain.json`, read its `path` first. When it
-selects another checkout, use that checkout for toolchain code and library
-work; retain this checkout's history and uncommitted work. Project adapters
-use the same machine-local selector, with `ROADCRAFT_TOOLCHAIN` as an override.
+This is shared tooling for creating and modifying RoadCraft mods. Select the
+actual mod before identity, authoring, build, installation or evidence work.
+D11, the buggy and Warthog are projects and case studies, not universal defaults.
+
+## Shared checkout and project context
+
+Use ROADCRAFT_TOOLCHAIN when set, otherwise a local/toolchain.json selector, to
+locate the maintained toolchain. Preserve other checkouts' history and work.
+The shared code/library checkout and the mod source directory are separate roles.
+
+Read [the workflow skill](skills/roadcraft-workflow/SKILL.md) and
+[the mod workflow](library/mod-workflow.md). Project selection uses --registry,
+ROADCRAFT_REGISTRY or the nearest project.json above the working folder.
+The shared checkout's historical root project.json is explicit-only. Machine
+config is --config, ROADCRAFT_CONFIG or the selected mod's local/machine.json.
+Inspect that mod's recipes, current jobs, transaction receipts and locks before
+native work. Dated folders and historical README claims are not live evidence.
+
+Use mod-init for a new workspace, mod-adopt for existing unconfigured sources,
+and mod-recipe for pinned recipes. Existing configured projects keep their
+adapters, registries and source declarations. Preserve original imported packages;
+package bytes do not imply recoverable authoring source or acceptance. See
+[components](docs/components.md) for shared versus specialist capabilities.
+
+For vehicle rigs, suspension, wheel behavior, truck settings, lamps or model
+checks, also read [the vehicle-authoring skill](skills/roadcraft-vehicle-authoring/SKILL.md)
+and relevant subject articles. General/material/tuning mods need validation for
+the changed resources, not mandatory truck or suspension settings.
 
 ## Integrate what you learn
 
 Every agent must integrate new reusable RoadCraft knowledge into the maintained
-toolchain during the same task, before reporting it complete. This includes
-discoveries, failed approaches, fixes, user feedback, corrected assumptions and
-workflow or performance improvements, not just drive reports. Follow
-[the learning policy](library/learning.md): search existing knowledge first,
-update the relevant library article with evidence and scope, and turn reliable
-repeatable lessons into shared checks, helpers or recipes when practical.
-Wire new checks into the workflow that needs them. Chat or private agent memory
-alone does not satisfy this requirement. Briefly report what was integrated
-and where; if integration is blocked, preserve a handoff and state the reason.
-Do not invent a finding when nothing reusable was learned, treat an inference
-as proven, or expand the user's execution/installation authorization.
+toolchain during the same task before reporting completion. Follow
+[learning.md](library/learning.md): search prior knowledge, update the relevant
+article with scope, evidence grade and references, and turn supported recurring
+faults or manual work into shared checks/helpers where practical. Wire them into
+the applicable workflow and validate changed behavior. Include discoveries,
+failed approaches, fixes, user feedback and corrected assumptions.
 
-## Workflow
+Chat or private memory alone does not satisfy this rule. Report what was
+integrated and where; if blocked, preserve a handoff and state the reason.
+Preserve corrected evidence and uncertainty. Do not manufacture findings or
+expand execution, installation, publishing or acceptance authority.
 
-For RoadCraft identity, source, package, evidence or storage work, read
-[the workflow skill](skills/roadcraft-workflow/SKILL.md). Its working copy is
-`skills/roadcraft-workflow/SKILL.md`; the identical file under
-`plugin/roadcraft-workflow/skills/roadcraft-workflow/` is the distributable copy.
-Keep those two files identical when changing the workflow.
+## Build, identity and acceptance
 
-For vehicle authoring (rigs, wheels, suspension, IK linkages, truck settings,
-lamps, textures, mod builds), read [the vehicle-authoring
-skill](skills/roadcraft-vehicle-authoring/SKILL.md) and the library in
-`library/` (`python -m roadcraft library`). The skill's distributable copy under
-`plugin/roadcraft-workflow/skills/roadcraft-vehicle-authoring/` must stay
-identical to it. Every library rule carries an evidence grade
-(`library/README.md`); when a drive contradicts a rule, change the rule and its
-grade and record the drive in `library/case-studies.md` instead of deleting the
-old evidence. Run `roadcraft lint-bro` on a truck BRO with its compiled class
-before handing over a candidate.
+build, test, capture and inspect-job preflight pinned recipes by default;
+--apply executes a phase. install, rollback and recover also default to
+preflight. Never describe preflight as a completed build, capture or install.
+Use existing authorization, verified inputs, process checks and durable receipts.
 
-New vehicle projects can use `vehicle-init` and `vehicle-recipe`; supply the
-vehicle-specific authoring adapters and explicit input/output declarations.
-Use `vehicle_workflow.enhance_recipe` in existing adapters for source,
-compiled and final checks. `--incremental` only reuses opted-in isolated
-steps after receipt, input, dependency and output verification. Shared vehicle
-checks always run. Global config pins conservatively invalidate all stages;
-never narrow input scopes merely to make a cache hit. Use `jobs-summary` for
-observed timings; a synthetic cache test is not a native speedup measurement.
+Use per-mod jobs and transactions. Incremental reuse requires opted-in isolated
+steps, complete declared inputs/outputs/dependencies, and verified successful
+receipts and current bytes. Native-gated/capture steps cannot be cached; shared
+vehicle checks always run. Use jobs-summary for measured timing, not inferred
+speedup claims. Regenerate recipes after source or shared-runtime changes.
 
-Read `project.json` for accepted and candidate pins and `local/machine.json`
-for machine paths. Environment overrides are `ROADCRAFT_REGISTRY` and
-`ROADCRAFT_CONFIG`. Do not write a discovered installed hash into the accepted
-entry merely to make verification pass. Read current transaction receipts and
-locks; dated directory names and historical README claims are not current
-installation evidence.
+Keep accepted, candidate and installed identities separate. A first installation
+requires explicit expected absence; updates require the reviewed installed hash
+or an existing accepted pin. Neither installation nor rollback grants acceptance.
+Do not write observed hashes into accepted entries just to make checks pass.
+Preserve captured, numerical, visual and campaign acceptance as separate fields.
 
-CLI `build`, `test`, `capture` and `inspect-job` preflight a pinned recipe by
-default; `--apply` executes that phase. CLI `install`, `rollback` and `recover`
-also default to dry-run and require `--apply` for package transactions. Use
-existing authorization, verified inputs, process checks and durable receipts;
-never describe a preflight as a completed build, capture or installation.
-Inspect `jobs-status` and transaction state before continuing native work.
-The optional MCP adapter remains read-only and exposes no execution or package
-mutation tools. The review CLI creates reports in an explicit output directory;
-MCP reports stay in memory. Storage review emits exact-file evidence and never
-deletes. Preserve these boundaries and the separate captured, numerical, visual
-and campaign acceptance fields. The AAA candidate's failed capture remains
-unaccepted even where rollback restored the accepted package.
+verify --project checks declared package, receipt, source manifest and authoring
+inventory pins and declared source files. source-check compares source to its
+pinned inventory. Neither command grants visual or campaign acceptance.
 
-`verify --project` covers the authoring-inventory pin and its declared source
-files as well as package, receipt and source-manifest pins. `source-check`
-compares current source to that pinned authoring inventory. Neither command
-grants visual or campaign acceptance.
+Keep source declarations explicit and ordered, preserve duplicate ZIP member
+occurrences and pinned bytes, and retain originals, source/receipt files and Git
+history. For repaired-USF inputs, historical .blend files cannot silently replace
+export.usf until the asset-specific native-Blender parity gate passes. Apply that
+condition to the declared source route, not every new native authoring project.
 
-Keep source declarations explicit and ordered. Repaired `export.usf` files
-remain build inputs until the native-Blender parity gate passes; a historical
-`.blend` cannot silently replace them. Preserve duplicate ZIP member
-occurrences, pinned byte identity, and existing source/receipt files. The
-earlier repository at `C:\RC\D11_Development` has history and uncommitted work;
-do not replace it with a new empty repository or infer that ignored assets are
-disposable.
+## Preserved cases and integrations
 
-Use a verified Python 3.12+ interpreter. For source execution set `PYTHONPATH`
-to this directory's `src`, and run focused tests with `python -B -m unittest
-discover -s tests -p "test_*.py"` when package behavior changes. The core is
-stdlib-only; the optional stdio adapter has `requirements-mcp.txt`. Test real
-SDK schemas when that dependency is available, and disclose skipped tests.
-Do not add tests that only assert documentation wording.
+For D11 continuation or its specialized repair/capture probes, read
+[the D11 case study](docs/case-studies/d11.md). Preserve its registry/evidence
+pins, previous failed capture status and older repository work. Generalization
+must not rewrite historical evidence or turn case-specific assumptions into rules.
 
-The repo-local plugin is a skills-only scaffold. Neither its presence nor an
-MCP configuration file proves that any integration is installed, connected or
-healthy. Check actual tool availability before using it. Keep machine-specific
-credentials and installation state out of versioned skill/plugin files.
+The optional evidence MCP is read-only, has no package/native execution tools,
+and keeps reports in memory. CLI reports use explicit output directories.
+Storage review reports exact-file candidates and never deletes. Preserve these
+boundaries. The separate bounded Blender scratch adapter retains its own gates.
+
+Use verified Python 3.12+. For source execution set PYTHONPATH to this checkout's
+src, and run focused tests with python -B -m unittest discover -s tests -p
+"test_*.py" when behavior changes. Core is stdlib-only; optional MCP dependencies
+are in requirements-mcp.txt. Test real SDK schemas when available and disclose
+skips. Do not add tests that only assert documentation wording.
+
+The skills-only plugin does not prove installation or connection health. Keep
+machine credentials and installation state local. Both working skill files under
+skills/ must remain byte-identical to their distributable copies under
+plugin/roadcraft-workflow/skills/ when changed.
