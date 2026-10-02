@@ -117,6 +117,15 @@ The comprehensive audit found 35 kg wheels, an unchanged donor radiusOffset of 0
 Armiger. These are verified differences, not an isolated cause of jitter. A balanced
 candidate and native visual stabilization are a trial (**Inferred**, runtime **Open**).
 
+**Candidate cause from the measured stop geometry (2026-10-02, Inferred):** with the stops at
+`height + min` and `height + max` (suspension-and-wheels.md "Stop geometry"), the soft-flex axles
+(min -0.18, max 0.40, height 0.36, strength 0.0126 front / 0.0182 rear) put the top stop 0.18 m
+below the modelled place. With even wheel shares the front springs would rest above that stop at
+every beta from 34.8 to 105, the rear at beta 58 and below, so the wheels ride on their top stops:
+a rigid contact that fits both "stiff" and wheels chattering under a level body. Before another
+tune, read the wheels' spring travel (0 means on the top stop; `series_probe.ps1` or
+`roadcraft bench`), or redesign with `roadcraft suspension --geometry measured`.
+
 
 ## Deformable wheel startup failure / no suspension reserve (Lada, 2026-09-30)
 
