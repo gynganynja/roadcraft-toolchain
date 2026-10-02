@@ -241,9 +241,25 @@ def _atomic_json(path: Path, data: dict[str, Any]) -> None:
             stream.write("\n")
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, path)
+        # Windows readers/virus scanners can briefly deny rename/delete sharing.
+        # Retry only the observed Windows lock/permission errors, with a finite bound.
+        for attempt in range(8):
+            try:
+                os.replace(temporary, path)
+                break
+            except OSError as exc:
+                if getattr(exc, "winerror", None) not in (5, 32, 33) or attempt == 7:
+                    raise
+                time.sleep(min(0.05 * 2 ** attempt, 0.5))
     finally:
-        temporary.unlink(missing_ok=True)
+        for attempt in range(8):
+            try:
+                temporary.unlink(missing_ok=True)
+                break
+            except OSError as exc:
+                if getattr(exc, "winerror", None) not in (5, 32, 33) or attempt == 7:
+                    raise
+                time.sleep(min(0.05 * 2 ** attempt, 0.5))
 
 
 def _lock(jobs_root: Path, run_id: str) -> Path:

@@ -14,7 +14,8 @@ from . import core
 
 
 RUNTIME_FILES = ("__init__.py", "__main__.py", "cli.py", "core.py", "jobs.py", "incremental.py",
-                 "vehicle_workflow.py", "bro_lint.py", "ps_format.py", "vehicle.py", "tpl_reader.py",
+                 "vehicle_workflow.py", "bro_lint.py", "lamps.py", "load_volume.py", "ps_format.py", "vehicle.py",
+                 "native_suspension.py", "tpl_reader.py", "tracks.py", "physics_bench.py",
                  "library.py", "retail.py", "source.py", "transaction.py", "onboard.py",
                  "mod_workflow.py", "project_context.py")
 
@@ -85,9 +86,12 @@ explicitly reviewed. No stage is made cacheable implicitly.
                          check("vehicle-check-compiled", True))
         elif phase == "test":
             final_check = check("vehicle-check-final", True)
+            # lint-bro also reads the body markup beside the model (lamp visibility, RC037 / RC038).
+            from . import lamps
+            markup = lamps.markup_beside(model)
             final_check["inputs"] = [
                 {"path": str(path.resolve()), "sha256": core.sha256_file(path)}
-                for path in (truck_bro, compiled_class, model)
+                for path in (truck_bro, compiled_class, model, *([markup] if markup else []))
                 if str(path.resolve()).casefold() not in known]
             steps.insert(0, final_check)
         # Legacy adapters conservatively depend on every earlier output. A new

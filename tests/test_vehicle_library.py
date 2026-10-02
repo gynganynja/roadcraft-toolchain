@@ -119,7 +119,8 @@ def _truck(**settings) -> dict:
         "wheelPool": {"Front": {"scale": 0.4}},
         "truckSettings": {"maxSteerSpeed": 0.03, "backSteerSpeed": 0.06, "pedalsResponsiveness": 0.35,
                           "useSuspensionCollection": True,
-                          "suspensionCollection": {"Front": {"min": -0.1, "max": 0.26, "height": 0.22,
+                          # native_suspension.design_axle(0.16, 0.25, lift=0.06): stops at height + min/max
+                          "suspensionCollection": {"Front": {"min": -0.32, "max": 0.04, "height": 0.22,
                                                              "strength": 0.0269}},
                           "wheelSlots": [{"geomName": f"W{i}", "editableWheel": "Front",
                                           "suspensionCollectionItem": "Front"} for i in range(4)]},
@@ -146,10 +147,35 @@ class BroLintTests(unittest.TestCase):
         del doc["truckSettings"]["maxSteerSpeed"]
         self.assertIn("RC002", _codes(bro_lint.lint_truck(doc), "warning"))
 
+    def test_earlier_design_formula_rests_on_its_top_stop(self) -> None:
+        # vehicle.design_axle limits (min = lift - bump) put the top stop at height + min = 0.12, above the
+        # designed rest of 0.06 (measured stop geometry, KGS25 bench / Lada trials, 2026-10-02)
+        doc = _truck(suspensionCollection={"Front": {"min": -0.1, "max": 0.26, "height": 0.22, "strength": 0.0269}})
+        self.assertIn("RC005", _codes(bro_lint.lint_truck(doc), "warning"))
+
     def test_height_zero_and_bump_stop(self) -> None:
         doc = _truck(suspensionCollection={"Front": {"min": -0.15, "max": 0.18, "height": 0, "strength": 0.014}})
         codes = _codes(bro_lint.lint_truck(doc), "warning")
         self.assertTrue({"RC004", "RC005"} <= codes)
+
+    def test_constraint_count_review_catches_missing_and_extra_entries(self) -> None:
+        for count in (0, 1, 2, 4):
+            with self.subTest(constraints=count):
+                doc = _truck()
+                doc["ikSettings"]["chains"] = {"drag": {
+                    "ikChainBodies": ["Base", "Pitman", "Rod", "Joint"],
+                    "ikConstraints": [{"type": "HINGE2"}] * count}}
+                findings = bro_lint.lint_truck(doc)
+                self.assertIn("RC014", _codes(findings, "warning"))
+                self.assertNotIn("RC014", _codes(findings, "error"))
+
+    def test_complete_constraint_count_and_empty_chains_are_clean(self) -> None:
+        doc = _truck()
+        doc["ikSettings"]["chains"] = {"drag": {
+            "ikChainBodies": ["Base", "Pitman", "Rod", "Joint"],
+            "ikConstraints": [{"type": "HINGE2"}] * 3},
+            "empty": {"ikChainBodies": ["Base"], "ikConstraints": []}}
+        self.assertNotIn("RC014", _codes(bro_lint.lint_truck(doc)))
 
     def test_chain_on_a_wheel_slot_needs_the_axle_controller(self) -> None:
         doc = _truck()

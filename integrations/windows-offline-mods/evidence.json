@@ -1,0 +1,48 @@
+{
+  "recorded_utc": "2026-10-01T00:01:15.170879+00:00",
+  "status": "Offline tool built and tested; retail activation not tested",
+  "snapshots_not_accepted_pins": {
+    "retail_executable_sha256": "f816a8b057e901fcf3dccdc34aa200f6e714a524e58c39ba1d1f7a4ed78cddf0",
+    "tool_executable_sha256": "ec7ed4bf20ca13ba76556eab84524ec600d56540f0ed6d52bee17e6c24b480d7",
+    "source_sha256": "245ebdd5757920ae273ad32513ca533ce2f7e079c45bbf61ab68f0f78f1cc4e4",
+    "ssl_members_sha256": {
+      "ssl/game/mods/downloaded_mods_manager_release.sslbin": "59b3994702a01bff5d4c83394dece7677ec79ee900584a2a5b1c6a10930a931d",
+      "ssl/main/game_config_consts_release.sslbin": "732364c451b5e2155da37a865fa988f1314108aacd0abdba436127bc20fd7226",
+      "ssl/packages/package_user_manager/user_settings_release.sslbin": "9672ff6db41c8cd294c0189e0d94b0b4114e73f6fe25905e9d8975eaacfab715"
+    }
+  },
+  "native_evidence_rvas": {
+    "codec2_vtable": "0x3b68198",
+    "transform": "0x23311c0",
+    "seed_assignment": "0x18e5e6",
+    "seed": "0xecaa649d"
+  },
+  "validation": {
+    "current_settings_copy_self_test_checks": 17,
+    "python_integration_tests": 5,
+    "ui_preview": "Inspected; correct game/profile/mod detected; controls readable",
+    "independent_current_copy_outputs": [
+      {
+        "type": ".cfg",
+        "sha256": "6e39fb5d5483ba1e2c2d73e9c63f3b9d194646c4f25e3c190bc90298422782ab",
+        "independent_zlib_and_json": true
+      },
+      {
+        "type": ".bak",
+        "sha256": "6e39fb5d5483ba1e2c2d73e9c63f3b9d194646c4f25e3c190bc90298422782ab",
+        "independent_zlib_and_json": true
+      },
+      {
+        "type": ".bak",
+        "sha256": "93ddb165576d3ac47c36a9b0d9890e476be94ddbb0b272c550454b0785bab1c3",
+        "independent_zlib_and_json": true
+      }
+    ]
+  },
+  "limits": [
+    "No live user settings edited by this task",
+    "Actual retail startup activation not tested",
+    "First-time PROS linking, save-driven selection and multiplayer behavior not tested",
+    "Future codec or seed changes unsupported"
+  ]
+}

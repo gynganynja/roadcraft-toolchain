@@ -374,6 +374,14 @@ def _is_console_launcher(pid: int, expected: Path) -> bool:
         return False
 
 
+def _is_authoring_process(name: str, tokens: tuple[str, ...]) -> bool:
+    """Connector console servers do not own a DCC document or native build."""
+    folded = name.casefold()
+    if folded in ("blender-mcp.exe", "mcp-for-blender.exe"):
+        return False
+    return any(token in folded for token in tokens)
+
+
 def _editor_processes(*, tokens: tuple[str, ...] | None = None) -> tuple[list[dict[str, Any]], str | None]:
     """Enumerate selected process names without querying protected process memory."""
     if os.name != "nt":
@@ -421,7 +429,7 @@ def _editor_processes(*, tokens: tuple[str, ...] | None = None) -> tuple[list[di
                 names[entry.th32ProcessID] = name
                 # A direct Python invocation must not count itself.
                 if (entry.th32ProcessID != own_pid and
-                        any(token in name.casefold() for token in tokens)):
+                        _is_authoring_process(name, tokens)):
                     found.append({"pid": entry.th32ProcessID, "name": name})
                 entry.dwSize = ctypes.sizeof(ProcessEntry)
                 if not next_entry(handle, ctypes.byref(entry)):

@@ -36,3 +36,59 @@ Unnamed nodes exist (LOD copies): `nodes` can exceed the name count.
   (see suspension-and-wheels.md).
 - Effector kinds over all retail IK chains (ik-visual-rigs.md).
 - Which retail trucks have `axleControllerSettings` (84) and in which form.
+- `roadcraft retail tracks [truck]`: every crawler's tracks, each wheel's role, axle kind, the body
+  it hangs on and whether it reaches the ground, with RC046-RC048 flags (33 vehicles,
+  tracked-vehicles.md).
+- Does `strength` scale with the vehicle's mass? 16 wheeled retail vehicles of 1.5-40 t, assuming
+  each rests as modelled (sag = height): read as relative to the mass (sag = share / (strength x
+  beta)) beta has median 69 and log-sd 0.63; read as absolute, log-sd 1.09; the slope of log beta on
+  log mass is -0.20 (0 would be relative, -1 absolute). Relative fits better, with wide scatter
+  (**Inferred**; a one-off script in the KGS-25 drive-fix workspace, `tools/strength_scaling.py`,
+  result in `reports/strength_scaling.json`). It cannot show how frame-hung wheels scale: every wheel
+  there hangs on the main body.
+
+## Local mod activation settings (2026-10-01)
+
+**Retail:** the current Windows retail game stores `UserSettings.enabledMods`
+in `%LOCALAPPDATA%/Saber/RoadCraftGame/storage/<platform>/user/<id>/Main/config/
+user_settings.cfg`. Observed local entries are `local:<PAK filename without .pak>`;
+retain PROS entries and unrelated settings. This is a packed JSON file, not an
+editable launcher INI. `GameConfigConsts.ENABLED_MODS_CONFIG` is `enabledMods` in
+`default_ssl.pak`, and `DownloadedModsManager` exposes the enable/disable calls and
+`local:`/`pros:` prefixes. The prior conclusion that no editable activation state
+exists was too definite; absence of a text INI does not establish that.
+
+**Retail, codec 2:** the `SSF1` container has 53 header bytes: magic (4), packed
+length (little-endian uint64), raw length (uint64), lowercase ASCII MD5 of the
+stored payload (32), and codec byte (1). The payload is a zlib stream transformed
+with key bytes `9d 64 aa ec`. State starts with key index, count and marker zero.
+When count equals marker, copy the next byte unchanged, set marker to that byte
+and count to zero. Otherwise XOR with the next cyclic key byte and increment
+count. Do not restart the key index at markers. The transformation is symmetric.
+Validate the outer lengths/MD5 and inner zlib Adler-32 before parsing UTF-8 JSON.
+
+Evidence: the inspected retail executable's codec-2 vtable at RVA `0x3b68198`,
+transform at `0x23311c0`, and seed assignment `0xecaa649d` at `0x18e5e6`;
+current executable SHA-256 is recorded in the helper's `evidence.json` as a new
+snapshot, not an accepted pin. Nine observed config files decoded with valid
+lengths, MD5 and zlib checksums. The exact 50-byte platform config payload is
+retained as a non-personal fixture in `tests/test_offline_mod_activator.py`.
+
+**Build:** [Windows Offline Mods](../integrations/windows-offline-mods/README.txt)
+is a portable .NET Framework GUI that changes only the selected local list entry,
+retains other JSON text, refuses running RoadCraft/editor processes, atomically
+replaces settings and retains exact previous bytes as backups. Its five Python
+integration tests invoke the C# application and independently check zlib output,
+JSON preservation, corruption refusal, transactions and backup restoration;
+the application also runs 17 checks on a supplied settings copy. Run the focused
+tests with `python -B -m unittest discover -s tests -p
+"test_offline_mod_activator.py"`; Windows and its .NET Framework compiler are
+required. `ROADCRAFT_TEST_TMP` can choose a permitted scratch directory.
+
+**Inferred/Open:** editing this state should bypass the browser's local activation
+step. Actual activation after retail startup, first-time PROS linking requirements,
+save-driven mod selection and multiplayer effects have not been tested. This
+does not download PROS mods or grant game acceptance. Config codec 2 is distinct
+from legacy CompleteSave chunked compression: ordinary zlib at offset 53 and
+fixed-byte XOR attempts failed. Preserve those distinctions. Future codecs or
+seed changes must fail safely, not be guessed or written over.

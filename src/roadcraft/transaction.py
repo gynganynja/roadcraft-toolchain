@@ -17,6 +17,7 @@ from pathlib import Path
 import re
 import shutil
 import stat
+import time
 from typing import Any, Callable, Iterator, Mapping, Sequence
 from uuid import uuid4
 
@@ -153,10 +154,25 @@ def _write_json(path: Path, data: Mapping[str, Any]) -> None:
             stream.write("\n")
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, path)
+        # Match the job journal's bounded Windows reader/scanner lock policy.
+        # Persistent permissions and every other error still fail.
+        for attempt in range(8):
+            try:
+                os.replace(temporary, path)
+                break
+            except OSError as exc:
+                if getattr(exc, "winerror", None) not in (5, 32, 33) or attempt == 7:
+                    raise
+                time.sleep(min(0.05 * 2 ** attempt, 0.5))
     finally:
-        if temporary.exists():
-            temporary.unlink()
+        for attempt in range(8):
+            try:
+                temporary.unlink(missing_ok=True)
+                break
+            except OSError as exc:
+                if getattr(exc, "winerror", None) not in (5, 32, 33) or attempt == 7:
+                    raise
+                time.sleep(min(0.05 * 2 ** attempt, 0.5))
 
 
 def _advance(receipt_path: Path, receipt: dict[str, Any], state: str,

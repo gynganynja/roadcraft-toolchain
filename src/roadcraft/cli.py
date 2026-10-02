@@ -10,7 +10,7 @@ from typing import Any
 
 from . import core
 from . import jobs, onboard, source, transaction
-from . import bro_lint, library, ps_format, retail, tpl_reader, vehicle
+from . import bro_lint, library, physics_bench, ps_format, retail, tpl_reader, vehicle
 from . import vehicle_workflow, mod_workflow, project_context
 
 
@@ -152,9 +152,17 @@ def make_parser() -> argparse.ArgumentParser:
     lint.add_argument("bro", type=Path)
     lint.add_argument("--class", dest="compiled_class", type=Path, help="Generated auto_<mod>.cls")
     lint.add_argument("--tpl", type=Path, help="Compiled body model .tpl")
+    lint.add_argument("--markup", type=Path, help="Body model .tpl_markup (default: the one beside --tpl's asset)")
     lint.add_argument("--beta", type=float, default=vehicle.SUSPENSION_BETA)
     lint.add_argument("--report", type=Path, help="Write the check result to this explicit report path")
     _add_json(lint)
+
+    lamp = commands.add_parser("lamps", help="Build an exterior-light graph, beams and flashers (roadcraft.lamps)")
+    lamp.add_argument("spec", help='JSON text or file: {"anchors": {anchor: role}, "lenses": {...}, '
+                                   '"flashers": [{"prefix", "lit", "roles", "pattern": "single"|"double"|[[true, s], ...]}]}')
+    lamp.add_argument("--blueprint", default="ExteriorLights", help="Blueprint name in the truck BRO")
+    lamp.add_argument("--output", type=Path, help="Also write the BRO fragment in the game's text format here")
+    _add_json(lamp)
 
     nodes = commands.add_parser("tpl-nodes", help="List node names, world transforms and parents of a compiled .tpl")
     nodes.add_argument("tpl", type=Path)
@@ -174,16 +182,41 @@ def make_parser() -> argparse.ArgumentParser:
     susp.add_argument("--calibrate", help='Rests seen in the game, JSON list of {"axle": {...}, "rest": m, '
                                           '"wheels": n} covering every axle: solve beta')
     susp.add_argument("--beta", type=float, default=vehicle.SUSPENSION_BETA)
+    susp.add_argument("--geometry", choices=["legacy", "measured"], default="legacy",
+                      help="measured: stops at height+min / height+max (native_suspension, "
+                           "suspension-and-wheels.md 'Stop geometry'); legacy: stops at min / max")
     _add_json(susp)
 
     ret = commands.add_parser("retail", help="Read the retail game's own vehicle data (read-only)")
-    ret.add_argument("action", choices=["find", "show", "bro", "survey"])
-    ret.add_argument("name", nargs="?", help="find: glob; show: pak member; bro: retail truck name")
+    ret.add_argument("action", choices=["find", "show", "bro", "survey", "tracks"])
+    ret.add_argument("name", nargs="?", help="find: glob; show: pak member; bro/tracks: retail truck name")
     ret.add_argument("--game", type=Path, help="Game root (default: sdkRoot of the machine configuration)")
     ret.add_argument("--out", type=Path, help="show: write the member here instead of printing it")
     _add_config(ret)
     _add_registry(ret)
     _add_json(ret)
+
+    bench = commands.add_parser("bench", help="Measure handling in the Mod Editor before installing (library/physics-bench.md)")
+    bench.add_argument("action", choices=["init", "apply", "run", "batch", "analyse", "compare"])
+    bench.add_argument("items", nargs="*", type=Path,
+                       help="run/batch/apply: variant JSON files; analyse/compare: run folders")
+    bench.add_argument("--bench", type=Path, help="Bench folder (holds bench.json)")
+    bench.add_argument("--schedule", choices=sorted(physics_bench.SCHEDULES), default="normal")
+    bench.add_argument("--project", type=Path, help="init: the mod's editor project (holds mods_source)")
+    bench.add_argument("--data-dir", type=Path, help="init: editor data folder to copy")
+    bench.add_argument("--profiles-dir", type=Path, help="init: editor profiles folder to copy")
+    bench.add_argument("--editor", type=Path, help="init: IntegrationStudio.exe")
+    bench.add_argument("--scene", help="init: test scene, relative to mods_source")
+    bench.add_argument("--vehicle", help="init: the vehicle object's name in the scene")
+    bench.add_argument("--class", dest="compiled_class", help="init: compiled truck class, relative to mods_source")
+    bench.add_argument("--markup", help="init: model .tpl_markup, relative to mods_source")
+    bench.add_argument("--wheel", action="append", default=[], metavar="KIND=PATH",
+                       help="init: a compiled wheel class to patch, relative to mods_source (repeatable)")
+    bench.add_argument("--sdk-editor-dir", type=Path,
+                       help="init: SDK tools/bin/ModEditor (default: sdkRoot of the machine configuration)")
+    _add_config(bench)
+    _add_registry(bench)
+    _add_json(bench)
 
     install = commands.add_parser("install", help="Dry-run or install one named pinned candidate")
     _add_registry(install)
@@ -349,15 +382,35 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
     if args.command == "vehicle-recipe":
         return vehicle_workflow.make_recipe(args.project, args.output), True
     if args.command == "lint-bro":
-        result = bro_lint.lint_files(args.bro, args.compiled_class, args.tpl, args.beta)
+        result = bro_lint.lint_files(args.bro, args.compiled_class, args.tpl, args.beta, args.markup)
         if args.report:
             report = core._require_local_path(args.report).resolve()
-            sources = [p.resolve() for p in (args.bro, args.compiled_class, args.tpl) if p]
+            sources = [p.resolve() for p in (args.bro, args.compiled_class, args.tpl, args.markup) if p]
             if report in sources:
                 raise core.RoadcraftError("Check report must not overwrite an input")
             report.parent.mkdir(parents=True, exist_ok=True)
             jobs._atomic_json(report, result)
         return result, result["errors"] == 0
+    if args.command == "lamps":
+        from . import lamps
+        text = Path(args.spec).read_text(encoding="utf-8") if Path(args.spec).suffix == ".json" else args.spec
+        spec = json.loads(text)
+        named = {"single": lamps.SINGLE_FLASH, "double": lamps.DOUBLE_FLASH}
+        flashers = [dict(f, pattern=named.get(f.get("pattern"), f.get("pattern") or lamps.SINGLE_FLASH)) for f in spec.get("flashers") or []]
+        built = lamps.exterior_lights(spec.get("anchors") or {}, lenses=spec.get("lenses"), flashers=flashers)
+        fragment = {"blueprint": {"blueprints": {args.blueprint: built["blueprint"]}},
+                    "effects": {"propSfx": {"list": built["effects"]}}}
+        result = {"fragment": fragment, "litObjects": built["litObjects"], "markupHidden": built["markupHidden"],
+                  "findings": [dict(zip(("code", "severity", "message", "where"), f))
+                               for f in lamps.lamp_findings(fragment["blueprint"], set())]}
+        if args.output:
+            target = core._require_local_path(args.output).resolve()
+            if target.exists():
+                raise core.RoadcraftError("lamps --output must name a new file")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            ps_format.dump(fragment, target)
+            result["output"] = str(target)
+        return result, not result["findings"]
     if args.command == "tpl-nodes":
         found = tpl_reader.read_tpl(args.tpl, anchor=args.anchor, parents=not args.no_parents)
         rows = []
@@ -370,18 +423,22 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
         return {"tpl": str(args.tpl), "nodes": len(found.matrices), "names": len(found.names),
                 "parentsOffset": found.parents_offset, "notes": found.notes, "rows": rows}, True
     if args.command == "suspension":
+        from . import native_suspension
+        model = native_suspension if args.geometry == "measured" else vehicle
         if args.calibrate:
-            return vehicle.calibrate_beta(json.loads(args.calibrate)), True
+            return model.calibrate_beta(json.loads(args.calibrate)), True
         if args.share is None:
             raise core.RoadcraftError("suspension needs --share to design or check an axle")
         if args.axle:
             axle = json.loads(args.axle)
         elif args.sag is not None:
-            axle = vehicle.design_axle(args.sag, args.share, lift=args.lift, bump=args.bump, droop=args.droop,
-                                       damping=args.damping, beta=args.beta)
+            axle = model.design_axle(args.sag, args.share, lift=args.lift, bump=args.bump, droop=args.droop,
+                                     damping=args.damping, beta=args.beta)
         else:
             raise core.RoadcraftError("suspension needs --sag to design or --axle to check")
-        return {"axle": axle, "report": vehicle.axle_report(axle, args.share, args.beta)}, True
+        report = (native_suspension.rest_report(axle, args.share, args.beta) if args.geometry == "measured"
+                  else vehicle.axle_report(axle, args.share, args.beta))
+        return {"axle": axle, "geometry": args.geometry, "report": report}, True
     if args.command == "retail":
         game = args.game
         if game is None:
@@ -391,6 +448,9 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
             raise core.RoadcraftError("retail needs --game or sdkRoot in the machine configuration")
         if args.action == "survey":
             return retail.suspension_survey(game), True
+        if args.action == "tracks":
+            from . import tracks
+            return tracks.retail_track_survey(game, [args.name] if args.name else None), True
         if not args.name:
             raise core.RoadcraftError(f"retail {args.action} needs a name")
         if args.action == "find":
@@ -402,6 +462,8 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
             args.out.write_bytes(data)
             return {"member": args.name, "written": str(args.out), "bytes": len(data)}, True
         return {"member": args.name, "text": data.decode("utf-8", "replace")}, True
+    if args.command == "bench":
+        return _bench(args)
     if args.command == "install":
         registry = core.read_registry(args.registry)
         config = core.read_config(args.config)
@@ -428,8 +490,58 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
     raise core.RoadcraftError(f"Unsupported command: {args.command}")
 
 
+def _bench(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
+    if args.action == "compare":
+        return {"table": physics_bench.compare(args.items)}, True
+    if args.action == "analyse":
+        return {"runs": {str(folder): physics_bench.analyse(folder) for folder in args.items}}, True
+    if args.bench is None:
+        raise core.RoadcraftError(f"bench {args.action} needs --bench")
+    if args.action == "init":
+        needed = {"--project": args.project, "--data-dir": args.data_dir, "--profiles-dir": args.profiles_dir,
+                  "--editor": args.editor, "--scene": args.scene, "--vehicle": args.vehicle,
+                  "--class": args.compiled_class, "--markup": args.markup}
+        missing = [flag for flag, value in needed.items() if not value]
+        if missing:
+            raise core.RoadcraftError("bench init needs " + ", ".join(missing))
+        sdk = args.sdk_editor_dir
+        if sdk is None:
+            config = core.read_config(args.config) if args.config and args.config.is_file() else {}
+            sdk = Path(config["sdkRoot"]) / "tools" / "bin" / "ModEditor" if config.get("sdkRoot") else None
+        if sdk is None or not (sdk / "Saber.ConsoleTre.dll").is_file():
+            raise core.RoadcraftError("bench init needs --sdk-editor-dir (or sdkRoot in the machine configuration) "
+                                      "holding Saber.ConsoleTre.dll")
+        wheels = dict(item.split("=", 1) for item in args.wheel)
+        files = {"class": args.compiled_class, "markup": args.markup, "wheelClasses": wheels}
+        return physics_bench.init_bench(args.project, args.data_dir, args.profiles_dir, args.bench, scene=args.scene,
+                                        vehicle=args.vehicle, editor=args.editor, files=files,
+                                        sdk_editor_directory=sdk), True
+    config = physics_bench.load_config(args.bench / "bench.json")
+    variants = [physics_bench.load_variant(path) for path in args.items]
+    if args.action == "apply":
+        if len(variants) > 1:
+            raise core.RoadcraftError("bench apply takes one variant (none restores the pristine project)")
+        variant = variants[0]["variant"] if variants else {}
+        return {"written": physics_bench.apply_variant(config, variant)}, True
+    if not variants:
+        raise core.RoadcraftError(f"bench {args.action} needs variant files")
+    active, error = core._editor_processes(tokens=("roadcraft", "integrationstudio"))
+    if error or active:
+        raise core.RoadcraftError("close the game and the editor first" if active else f"Cannot inspect processes: {error}")
+    if args.action == "run":
+        if len(variants) != 1:
+            raise core.RoadcraftError("bench run takes one variant; use batch for several")
+        return physics_bench.run(config, variants[0]["name"], variants[0]["variant"], args.schedule), True
+    results = physics_bench.batch(config, variants, args.schedule)
+    return {"results": results}, all("summary" in r for r in results)
+
+
 def _transaction_process_check() -> list[dict[str, Any]]:
-    active, error = core._editor_processes()
+    # Installing a pinned PAK does not consume open DCC authoring documents.
+    # Keep native readers/builders closed; the full authoring gate remains
+    # available to build and capture workflows.
+    active, error = core._editor_processes(tokens=(
+        "roadcraft", "modeditor", "integrationstudio", "furnace", "mod_pak_builder"))
     if error:
         raise transaction.PackageTransactionError(f"Cannot inspect authoring processes: {error}")
     return active

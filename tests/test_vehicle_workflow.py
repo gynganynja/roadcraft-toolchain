@@ -69,6 +69,22 @@ class VehicleWorkflowTests(unittest.TestCase):
             jobs.run_recipe(recipe, "build", self.root / "jobs", dry_run=True)
         self.assertFalse((self.root / "jobs").exists())
 
+    def test_every_module_the_cli_can_import_is_pinned(self):
+        # load_volume, native_suspension, tracks and physics_bench were once imported but unpinned
+        import ast
+        package = Path(workflow.__file__).parent
+        seen, todo = set(), ["__main__.py", "cli.py"]
+        while todo:
+            name = todo.pop()
+            if name in seen:
+                continue
+            seen.add(name)
+            for node in ast.walk(ast.parse((package / name).read_text(encoding="utf-8"))):
+                if isinstance(node, ast.ImportFrom) and node.level == 1:
+                    names = [node.module.split(".")[0]] if node.module else [a.name for a in node.names]
+                    todo.extend(f"{n}.py" for n in names if (package / f"{n}.py").exists())
+        self.assertEqual(sorted(seen - set(workflow.RUNTIME_FILES)), [])
+
     def test_source_error_stops_before_model_command(self):
         result = self.enhanced()
         bro = self.root / "truck.bro"

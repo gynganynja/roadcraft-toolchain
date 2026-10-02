@@ -123,3 +123,38 @@ def calibrate_beta(observations: list[dict[str, Any]]) -> dict[str, Any]:
     return {"beta": round(beta, 2),
             "shares": [round(beta * strength * sag, 4) for sag, strength in sags],
             "sags": [round(sag, 4) for sag, _ in sags]}
+
+
+def wheel_contact_metrics(wheel: dict[str, Any], *, body_mass: float | None = None) -> dict[str, Any]:
+    """Inspect compiled wheel values without mistaking them for normalized BRO dimensions.
+
+    Radius and width are scaled by EditableWheel; mass/radiusOffset remain explicit
+    native values (Apoc and stock Armiger compiled comparison, 2026-09-30).
+    SDK PropTruckWheel describes speed-based VISUAL stabilization, not a physics fix.
+    Ratios are diagnostics, not universal handling pass/fail thresholds.
+    """
+    def number(key: str, default: Any = None) -> float:
+        value = wheel.get(key, default)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            raise ValueError(f"wheel {key} must be a finite number")
+        return float(value)
+
+    radius, mass = number("radius"), number("mass")
+    offset = number("radiusOffset", 0)
+    if radius <= 0 or mass <= 0:
+        raise ValueError("compiled wheel radius and mass must be positive")
+    enabled = wheel.get("isWheelStabilizationEnabled", False)
+    if not isinstance(enabled, bool):
+        raise ValueError("isWheelStabilizationEnabled must be boolean")
+    physical, stabilized = number("maxSpeedFullPhysWheel", 15), number("maxSpeedFullFakeWheel", 30)
+    if enabled and not 0 <= physical < stabilized:
+        raise ValueError("visual stabilization needs 0 <= physical speed < stabilized speed")
+    result = {"radius": radius, "mass": mass, "radiusOffset": offset,
+              "radiusOffsetFraction": offset / radius,
+              "visualStabilization": {"enabled": enabled, "physicalThroughKmh": physical,
+                                      "stabilizedFromKmh": stabilized}}
+    if body_mass is not None:
+        if isinstance(body_mass, bool) or not isinstance(body_mass, (int, float)) or not math.isfinite(body_mass) or body_mass <= 0:
+            raise ValueError("body_mass must be finite and positive")
+        result["wheelBodyMassRatio"] = mass / body_mass
+    return result

@@ -163,7 +163,13 @@ roadcraft library --search axleController
 roadcraft lint-bro truck.bro --class auto_truck.cls --tpl body.tpl --json
 roadcraft tpl-nodes body.tpl --pattern "Wheel|IK" --json
 roadcraft retail find "*scout*" --game path/to/RoadCraft
+roadcraft retail tracks --game path/to/RoadCraft
+roadcraft suspension --geometry measured --sag 0.16 --share 0.25 --lift 0.06
+roadcraft bench compare bench/runs/c03_normal_161400 bench/runs/fix2_normal_163000
 ```
+
+`roadcraft bench run` starts the Mod Editor on a copy of the mod to measure a handling
+change before it is installed: ask the owner first ([physics bench](library/physics-bench.md)).
 
 The library records Game, Retail, SDK, Build, Inferred and Open evidence grades.
 General source/identity rules apply across mods; vehicle mechanics apply only to
