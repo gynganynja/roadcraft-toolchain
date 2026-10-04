@@ -92,6 +92,7 @@ issues, and pin its source in the recipe. The Lada's adapters demonstrate wiring
 | [native_trails](../src/roadcraft/native_trails.py): `custom_trail_report` | Compiled wheel trail descriptor, texture sizes and intended dimensions; no soil-depth or appearance verdict | `tools/audit_exterior.py` |
 | [native_utilities](../src/roadcraft/native_utilities.py): `utility_action_report` | Resolved gameplay CLS properties and explicitly requested utilities; checks controls as well as components | `tools/audit_utilities.py` |
 | [native_cockpit](../src/roadcraft/native_cockpit.py): `cockpit_animation_report` | Compiled properties, node names and clip names for a cockpit with paired wipers; checks references, not motion | `tools/audit_interior.py` |
+| [normal_maps](../src/roadcraft/normal_maps.py): `measure`, `to_directx`; `python -m roadcraft.normal_maps MAP...` | A supplied tangent-space normal map's green convention, decided from its own pixels (needs Pillow + numpy); labels are not evidence | WALL-E `tools/build_textures.py` (flips all four supplied maps) |
 
 Geometry fitting and exact vehicle tuning remain project-specific. The cockpit
 helper currently requires both dashboard and wiper controllers: do not apply it

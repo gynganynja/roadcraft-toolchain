@@ -30,6 +30,16 @@ Armiger Thunder and the SDK's Lynx sample:
 
 Unnamed nodes exist (LOD copies): `nodes` can exceed the name count.
 
+Per-object extents: the compiled `.tpl` also stores float32 bounding boxes as six consecutive values
+(min x, y, z then max x, y, z, native axes). Scanning for six finite floats with max > min on each axis
+found every shoe box of the KGS-25 section at its known Blender bounds, and gave the retail TC305 and
+TUZ 303 track shoes (the track-section frame rule in tracked-vehicles.md). Geometry itself is quantized
+(16-byte vertices) in `.tpl_data`; `.geom_dbg` holds names only. (Build, 2026-10-04, WALL-E)
+
+BRO blocks the generator drops: a track's `trackOverlay` (`OverlayPainter`, caterpillar textures) in the
+KGS-25 BRO reaches neither its compiled class nor any retail crawler class; judge such blocks by the
+compiled class (Build/Retail, 2026-10-04).
+
 ## Surveys worth repeating
 
 - `roadcraft retail survey`: implied suspension beta of light 4-wheel retail vehicles

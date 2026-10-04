@@ -1378,3 +1378,23 @@ layouts, the recipe, RC046-RC048 in `roadcraft.tracks`), [physics-bench.md](phys
 `roadcraft.pak_patch`. The bench's wheel positions also settled the suspension stop geometry
 (stops at `height + min` / `height + max`), which corrected the design formula, RC005 and the
 Lada sign reading (suspension-and-wheels.md "Stop geometry").
+
+## WALL-E: store OBJ to a to-scale tracked scout without the editor (Claude, 2026-10-04)
+
+**Request:** "Make Wall-e into a RoadCraft polished tracked vehicle to scale", and use it as a toolchain
+study. Source: a store archive (OBJ, 39.5k triangles, 138 parts, four 2K PBR sets).
+
+- **Scale:** Pixar's publicist gave 3 ft 4 in (1.016 m) ground to eye-top, 270 lb, 7.8 hp, 20 mph average,
+  35 mph top; the model measured 1.037 units there, so S = 0.98. 122.5 kg in all.
+- **Model fixes:** the head was posed 26 degrees to the side; it was turned back about its neck bolt so
+  the eyes (the headlamps and the first-person camera) face the driving direction. The static tread mesh
+  was dropped: one of its 34 links (45.5 mm pitch) became the five-bone section model.
+- **Findings integrated:** track-section frame and height (tracked-vehicles.md); gear top speed =
+  angularVelocity x gearRatio x rolling radius and the engine fields (truck-settings.md); the Blender 3
+  vertex-group cause of zero-weight vertices and the editor-free new-vehicle route (build-pipeline.md);
+  `.tpl` bounding boxes and the dropped `trackOverlay` (retail-data.md); measured normal-map conventions
+  with the new `roadcraft.normal_maps` helper and the UI-icon `mipmap_level` rule (textures-and-materials.md).
+- **Result:** candidate `walle-r1`, `walle.pak` sha256 `1f3745b3...`, 56.3 MB, package audit passed,
+  `lint-bro` 0 errors / 0 warnings, installed 2026-10-04 to an empty slot with a toolchain receipt. Not yet
+  driven: stability of a 122 kg, 5 cm-wheel crawler, engine sound pitch with the scaled gear table,
+  track-shoe orientation in the engine and the shop pictures all await the owner's drive.

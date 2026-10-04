@@ -17,6 +17,9 @@ is in [physics-bench.md](physics-bench.md).
 | `hkCenterOfMassOffset` is in the body's engine axes (Y up). Retail cranes keep the centre of mass low with it (Vostok ETV89: arm `[0, -2.5, 0]`, hull `[0, -1, 0]`) | Retail |
 | Compiled retail classes leave `parentFrame` empty. A wheel follows the nearest body bone above its wheel bone (Baikal 65206 hauler, Arling 750R and DS-55 rollers), so removing `parentFrame` does not move a wheel nested under a track-frame bone onto the hull: that needs the bones re-parented in the model | Retail; mechanism Inferred |
 
+| Track section model (`section.tpl`): five shoes, one bone each, spaced `segmentLength` apart. Every bone sits on its shoe's **inner** face (the face that runs on the wheels) and the ground side points along the bone's native -Y (Blender -Z with the KGS bone roll). Retail TC305: shoe from -0.100 (ground side) to +0.052 about its bone, section height 0.2; TUZ 303: -0.022 to +0.115 (thin plate, tall guide horns), height 0.1; KGS-25 and D11 sections follow the same rule | Retail (bone frames and per-object bounding boxes read from the compiled `.tpl`, retail-data.md), Build |
+| `section.height` is the distance from a wheel's surface to the tread's ground face: physics rolls on `radius + height` (the D11 / HT500 speed checks), so build the shoe with its ground face `height` below the bone | Retail, Inferred |
+
 ## What carries the weight: the retail layouts
 
 `roadcraft retail tracks [truck] --game <sdkRoot>` lists every track's wheels with their role, axle
@@ -87,6 +90,18 @@ Game, one vehicle (KGS-25 fix 2); every step was needed, none alone was enough:
    keeping the total; lower the hull's centre of mass (`[0, -1, 0]`).
 5. Run `roadcraft lint-bro` with the class, model and markup (below), then measure on the bench
    before installing: roll in pivot turns, hull height, frame twist and the yaw achieved.
+
+## A small crawler on the hull: WALL-E (2026-10-04, not yet driven)
+
+A 1 m, 122 kg tracked robot built without track frames: every wheel hangs on `BoneChassis_cdt` (retail
+EPEC TC305 and dragline pattern, no RC047 risk) on one rigid axle (min = max = 0, strength 1, damping 0.85).
+Per track: five hidden ground wheels (r 0.049, bottoms on the tread's inner-face line), the end two real;
+and rigid hidden "ramp" fakes that copy the visible front, upper and rear wheels plus two incline wheels
+inside the tread outline (the KGS-25 r1 idea taken to the whole outline), so a step meets a wheel at the
+tread's outer face. Visual wheels are separate `visualWheelSlots` with unit-rim models; the belt is the
+engine's section model. Collision for the running gear is the tread outline shrunk 8 mm and lifted 25 mm.
+`lint-bro` reports no RC046-RC048. Build only: whether a 122 kg vehicle with 5 cm wheels stays stable on
+retail terrain, and how it climbs, is **Open** until the owner's drive.
 
 ## Checks
 

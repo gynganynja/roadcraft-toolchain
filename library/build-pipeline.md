@@ -476,6 +476,12 @@ Require positive weights on existing bones, at most four influences, and a
 normalized sum before export. Do not infer from this result that every evaluated
 Blender mesh loses its weights.
 
+**Second cause (WALL-E, 2026-10-04, Build):** since Blender 3.0 vertex-group names live on the mesh, so a
+mesh copied after skinning (an LOD made from LOD0, a lit lamp copy) arrives with the group; skinning it
+again adds `BoneChassis_cdt.001`, which takes the weights while the armature knows only the bone, and
+tplexp reports zero-weight vertices. Clear `vertex_groups` (and old armature modifiers) before skinning,
+delete loose vertices, and audit before saving: one group naming an existing bone, every vertex at weight 1.
+
 Evidence: L275 `reports/import_zero_skin_failed.log`, `source_skin_audit.json`,
 `build_import.json` and `tools/create_models.py`. Generic shared enforcement is
 deferred because the BRO linter does not consume Blender deform layers; this
@@ -806,3 +812,19 @@ Patch the editor sources the same way in the same change: a project generator th
 the old values reverts the fix at its next build (KGS-25: Codex's `tools/prepare_mod.py` writes the
 suspension collection, wheel slots and hull mass). Install through the transaction workflow with
 the expected prior hash; keep the patched package's source hash in its report.
+
+## A new vehicle without the editor (WALL-E, 2026-10-04)
+
+**Build:** a complete new tracked mod was produced with no Mod Editor run: Blender 5.0 builds the five
+`.blend` sources from a store OBJ (`tools/blender_build.py`); the SDK exporter, `tplexp` and
+`create_tpl_resource` compile them (generateCollisionData false, so no CDT step); textures go through
+TextureConverter / `pct_resource_gen`; and `mod_pak_builder` packs a project whose `mods_source/ssl` holds
+the flattened classes. The classes are **not native regeneration**: the generated classes of a working
+crawler (KGS-25) are parsed with `roadcraft.ps_format` (byte-exact round trip of its 141 KB class),
+re-targeted from a rig report and extended with a retail scout's modules (winch, towing, scanners, action
+mapper, track particles) and the lamp kit's graph. `.cls.resource` link lists are the template's plus the
+donor modules' links. An editor-side BRO is written from the same data so `lint-bro` runs (0 errors).
+The package audit compares every class, descriptor, markup, model and material member with the project
+byte for byte (352 members). Whether the game loads it, and how it drives, are open until the owner's
+drive. Evidence: WALL-E project `tools/build_text.py`, `tools/build_bro.py`, `tools/package.py`,
+`reports/package.json`, `reports/lint.json`.

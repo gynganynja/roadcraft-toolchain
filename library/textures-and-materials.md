@@ -5,7 +5,7 @@
 | Rule | Grade |
 |---|---|
 | Sources are uncompressed TGA (Pillow's default type 2), power of two, named `mod_<prefix>_<set>`, `_nm`, `_spec` | Build (SDK samples, every mod) |
-| `_nm` is a Y- (DirectX) normal map; Substance Painter's OpenGL output needs its green inverted. Measure unknown maps (correlation of the curl of R/G decides Y+ vs Y-) | Build (grader, Warthog, buggy maps measured) |
+| `_nm` is a Y- (DirectX) normal map; Substance Painter's OpenGL output needs its green inverted. Measure unknown maps with `python -m roadcraft.normal_maps MAP...` (sign of the mixed-derivative correlation; needs Pillow + numpy). File and MTL labels are not evidence: WALL-E's `*_Normal_DirectX` maps measured OpenGL | Build (grader, Warthog, buggy, WALL-E maps measured) |
 | `_spec` packs R metalness, G roughness, B ambient occlusion | Build (in-game look) |
 | Art without metal/roughness maps: a per-set metalness and roughness following the colour map's brightness is a workable spec | Build (buggy) |
 | The TextureConverter takes its mip count from the `.td` template it is given: start from the SDK sample descriptors rather than a fallback one (3 levels), then verify the actual chain at the target resolution (see Lada v9 below) | Build (994 loader) |
@@ -13,7 +13,7 @@
 | Glass colour maps carry opacity in alpha (`MD+MT` usage) | Build |
 | Budgets in the SDK samples: Lynx body 4096, glass 4096 x 2048, rim 1024, tyre 2048 x 1024; Crayfish sets 4096, rim 2048 | SDK |
 | One wheel model is shared by all wheels of a class, so only one wheel needs texture space | Build |
-| Store card 368 x 308 (opaque), vehicle list icon 960 x 640 (transparent): one-level BC7 with alpha, `disableStreaming: true` | Build, Game |
+| Store card 368 x 308 (opaque), vehicle list icon 960 x 640 (transparent): one-level BC7 with alpha, `disableStreaming: true`. The `.td` needs `mipmap_level = 0`: any other value makes the converter cut a non-power-of-two width (KGS-25's icon shipped as 512 x 640 with 4 levels) | Build, Game |
 | The exporter links textures by Blender image **name**: name each image exactly as its resource (`mod_x_body`), or packaging fails on `res://td/<name>.tga.td.resource` | Build (16M3 grader) |
 | A trail height map (`MH`, texture type `hdetm`) compiles to half a byte per pixel (format 37); use the shipped trail descriptor | Build (Roamer 105: sizes then matched the TUZ's) |
 | Spec values used after "looks like it's made of plastic" (source maps had paint at roughness 0), metalness / roughness: paint 0.25 / 0.35, chrome 1.0 / 0.12, painted steel 0.55 / 0.5, rubber 0 / 0.88, fabric 0 / 0.85, plastics 0 / 0.65 | Build (Roamer 105; not re-judged by the owner) |
@@ -274,3 +274,16 @@ build-015/test-015, `art/interior_ai_v9/` rejected drafts and on-model compariso
 `--textures-only` adapter and validation. Exact pixel and package-delta contracts
 remain project-specific; a new universal 4K/eleven-mip gate is not justified.
 No v9 native editor/retail run or memory/performance measurement is claimed.
+
+## Supplied PBR art from a model store (WALL-E, 2026-10-04)
+
+**Build:** a store download (OBJ + 2048 px albedo / metallic / roughness / AO / normal per set, plus an
+emissive and an opacity map) converts without baking: colour as `MD`; `_spec` = R metallic, G roughness,
+B AO straight from the three grey maps; `_nm` after measuring the convention (all four "DirectX" maps
+were OpenGL, correlation -0.12 to -0.29 at 0 and 1.5 px blur; `roadcraft.normal_maps`); `_em` (usage `MEM`,
+as the Lynx sample) from the emissive map; glass colour with the opacity map in alpha (`MD+MT`,
+1024 px). Decoding the compiled `.pct` back (`TextureConverter.exe X.pct X.tga`) matched the sources to
+under one level on average, same orientation. A lit overlay (`vehicle_lights`) can reuse the body atlas
+as `texDiff` with the emissive map as `emissiveTex` when the emissive map is dark everywhere else
+(WALL-E's solar-charge display: 0.1 % of the atlas). Game look not yet reported. Evidence: WALL-E project
+`tools/build_textures.py`, `reports/textures.json`.
