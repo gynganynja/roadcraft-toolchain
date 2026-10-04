@@ -50,6 +50,14 @@ if ps == null
 end
 var result = StringFormat("F %i %.4f %.3f", GetFrameNmb(), truck.GetForwardLinearVelocity(), truck.input.pedals)
 result += StringFormat(" %.3f\n", truck.input.steer)
+result += StringFormat("G %i %.1f", truck.GetGear(), truck.GetCurrentEngineRpm())
+result += " " + BoolToString(truck.input.isHandbrake, "1", "0")
+var viewController = truck.owner.TryGet<PropTruckViewController>()
+if viewController != null
+ result += " " + BoolToString(viewController.GetSslEngine().IsEngineRunning(), "1", "0")
+ result += " " + BoolToString(viewController.GetSslEngine().IsBrakePull(), "1", "0")
+end
+result += "\n"
 for (var i = 0; i < ps.GetBodyCount() and i < 64; i += 1)
  var body = ps.GetBodyByIdx(i)
  var t = body.transform
@@ -60,6 +68,10 @@ for (var i = 0; i < ps.GetBodyCount() and i < 64; i += 1)
  result += StringFormat(" %.5f %.5f %.5f", v.x, v.y, v.z)
  v = t.GetForward()
  result += StringFormat(" %.5f %.5f %.5f\n", v.x, v.y, v.z)
+ var cl = body.GetCenterOfMassLocal()
+ var cw = body.GetCenterOfMass()
+ result += "C " + body.GetName() + StringFormat(" %.3f %.5f %.5f %.5f", body.GetMass(), cl.x, cl.y, cl.z)
+ result += StringFormat(" %.5f %.5f %.5f\n", cw.x, cw.y, cw.z)
 end
 var wheels = truck.GetWheels()
 for var wheel in wheels
@@ -69,6 +81,8 @@ for var wheel in wheels
   var wp = info.transform.GetPosition()
   result += StringFormat(" %.4f %.4f %.4f", wp.x, wp.y, wp.z)
   result += " " + BoolToString(info.isOnGround, "1", "0")
+  result += StringFormat(" %.3f %.4f %.4f", info.angularVelocity, info.forwardLinearVelocity, wheel.GetPhysicalRadius())
+  result += StringFormat(" %.4f", info.mudDepth) + " " + BoolToString(info.isOnTerrain, "1", "0")
  end
  result += "\n"
 end

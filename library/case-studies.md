@@ -1395,6 +1395,20 @@ study. Source: a store archive (OBJ, 39.5k triangles, 138 parts, four 2K PBR set
   `.tpl` bounding boxes and the dropped `trackOverlay` (retail-data.md); measured normal-map conventions
   with the new `roadcraft.normal_maps` helper and the UI-icon `mipmap_level` rule (textures-and-materials.md).
 - **Result:** candidate `walle-r1`, `walle.pak` sha256 `1f3745b3...`, 56.3 MB, package audit passed,
-  `lint-bro` 0 errors / 0 warnings, installed 2026-10-04 to an empty slot with a toolchain receipt. Not yet
-  driven: stability of a 122 kg, 5 cm-wheel crawler, engine sound pitch with the scaled gear table,
-  track-shoe orientation in the engine and the shop pictures all await the owner's drive.
+  `lint-bro` 0 errors / 0 warnings, installed 2026-10-04 to an empty slot with a toolchain receipt.
+- **Owner's drive of r1 (Game):** "looks a bit fucked up, bounces around and rolls over without even doing
+  anything" (screenshots: long cylinders sticking out of the tracks, WALL-E on his back).
+- **Editor bench, about 30 runs:** the editor-form project (`tools/bench_project.py`: packaged classes renamed
+  to the generator's form, a pad scene from the SDK template) let `roadcraft bench` measure a mod built with
+  no editor. The probe gained engine state, centre of mass and wheel spin (physics-bench.md). Found, in order:
+  the centre-of-mass markup forms (frames.md); hidden wheels near visible ones shaking the belt and a rigid
+  middle wheel jittering; the up-scaled gear table starving the drive (truck-settings.md); a to-scale mass
+  too light for the engine; soft contact tilting a two-size wheel layout; the low sideways friction starting
+  too late for a small pivot (tracked-vehicles.md, symptoms.md). Two theories were disproved by retail data
+  before they shipped: "wheels whose radius + section overlap mesh like gears" (Karelian road wheels overlap
+  that way and drive).
+- **Mistake recorded:** a screen capture of the editor's window rectangle caught another application in front
+  of it. Captures were deleted and disabled; never copy screen areas without the owner's consent.
+- **r2:** visible wheels are the real ones, 1400 kg, unscaled gears, hard contact. `walle.pak` sha256
+  `dc3936a7...`, installed over r1 with a receipt. Bench: level and still at rest, under 0.6 deg roll in the
+  harsh schedule, pivots 51-67 deg. **Open:** the owner's drive; steps (no hidden obstacle wheels).

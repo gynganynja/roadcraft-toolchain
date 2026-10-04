@@ -434,7 +434,10 @@ def batch(config: dict[str, Any], variants: list[dict[str, Any]], schedule: str 
 # ------------------------------------------------------------------ analysis
 def parse_series(path: str | Path) -> list[dict[str, Any]]:
     """Samples of series.jsonl: t, frame, speed, pedal, steer, bodies {name: pos/up/fwd} and wheels
-    [{travel, pos, ground}] (series_probe.ps1 reply lines F, B and W)."""
+    [{travel, pos, ground}] (series_probe.ps1 reply lines F, B and W).  Replies of the 2026-10-04 probe add
+    ``engine`` {gear, rpm, handbrake, running, brakePull} (line G), each body's ``mass``, ``comLocal`` and
+    ``comWorld`` (line C: the engine's own centre of mass, body frame Y up) and per wheel ``spin`` (rad/s),
+    ``wheelSpeed`` (m/s), ``physicalRadius``, ``mudDepth`` and ``onTerrain``; older recordings parse as before."""
     samples = []
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if not line.strip():
@@ -450,11 +453,22 @@ def parse_series(path: str | Path) -> list[dict[str, Any]]:
                 continue
             if p[0] == "F":
                 s["frame"], s["speed"], s["pedal"], s["steer"] = int(p[1]), float(p[2]), float(p[3]), float(p[4])
+            elif p[0] == "G" and len(p) >= 4:
+                s["engine"] = {"gear": int(p[1]), "rpm": float(p[2]), "handbrake": p[3] == "1"}
+                if len(p) >= 6:
+                    s["engine"].update(running=p[4] == "1", brakePull=p[5] == "1")
             elif p[0] == "B":
                 v = list(map(float, p[2:11]))
-                s["bodies"][p[1]] = {"pos": v[0:3], "up": v[3:6], "fwd": v[6:9]}
+                s["bodies"].setdefault(p[1], {}).update(pos=v[0:3], up=v[3:6], fwd=v[6:9])
+            elif p[0] == "C" and len(p) >= 9:
+                v = list(map(float, p[2:9]))
+                s["bodies"].setdefault(p[1], {}).update(mass=v[0], comLocal=v[1:4], comWorld=v[4:7])
             elif p[0] == "W" and len(p) >= 6:
-                s["wheels"].append({"travel": float(p[1]), "pos": list(map(float, p[2:5])), "ground": p[5] == "1"})
+                w = {"travel": float(p[1]), "pos": list(map(float, p[2:5])), "ground": p[5] == "1"}
+                if len(p) >= 11:
+                    w.update(spin=float(p[6]), wheelSpeed=float(p[7]), physicalRadius=float(p[8]),
+                             mudDepth=float(p[9]), onTerrain=p[10] == "1")
+                s["wheels"].append(w)
         samples.append(s)
     return samples
 

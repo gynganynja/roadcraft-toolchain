@@ -177,6 +177,24 @@ def sample(t, roll_deg=0.0, y=60.0, yaw_deg=0.0, x=0.0, z=0.0, speed=0.0, ground
     return json.dumps({"t": t, "r": "\n".join(lines)})
 
 
+class SeriesParseTests(unittest.TestCase):
+    def test_engine_centre_of_mass_and_wheel_spin_lines(self):
+        reply = "\n".join(["F 512 0.3268 0.350 0.000", "G 1 872.4 0 1 0",
+                           "B BoneChassis_cdt 5.9 42.5 3.0 0 1 0 0 0 1",
+                           "C BoneChassis_cdt 1200.000 0.00000 0.15000 0.00000 5.90 42.65 3.00",
+                           "W 0.0000 6.2547 42.5508 3.1846 1 -0.010 -0.0010 0.0735 0.0000 1",
+                           "W 0.0000 6.2547 42.6374 2.8640 0"])
+        path = Path(tempfile.mkdtemp()) / "series.jsonl"
+        path.write_text(json.dumps({"t": 1.5, "r": reply}) + "\n")
+        s = pb.parse_series(path)[0]
+        self.assertEqual(s["engine"], {"gear": 1, "rpm": 872.4, "handbrake": False, "running": True, "brakePull": False})
+        body = s["bodies"]["BoneChassis_cdt"]
+        self.assertEqual((body["mass"], body["comLocal"], body["pos"]), (1200.0, [0.0, 0.15, 0.0], [5.9, 42.5, 3.0]))
+        self.assertEqual((s["wheels"][0]["spin"], s["wheels"][0]["physicalRadius"], s["wheels"][0]["onTerrain"]),
+                         (-0.01, 0.0735, True))
+        self.assertNotIn("spin", s["wheels"][1])          # a reply from the older probe
+
+
 class AnalysisTests(unittest.TestCase):
     def series(self, folder):
         rows = [sample(t / 10) for t in range(0, 100)]                                   # rest, level

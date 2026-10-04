@@ -31,7 +31,9 @@ grader, whose joints turned about the intended axes.)
 
 | Rule | Grade |
 |---|---|
-| The engine starts from the volume centroid of a body's collision shapes; `hkCenterOfMassOffset` (native axes) is **added** to it | Build (D11T engine readout: centroid 2.261 - 1.15 = comLocal 1.111) |
+| The engine starts from the volume centroid of a body's collision shapes; `hkCenterOfMassOffset` (native axes) is **added** to it | Build (D11T engine readout: centroid 2.261 - 1.15 = comLocal 1.111); Game (WALL-E editor bench: centroid 0.5448 + [0, -0.245, 0] = comLocal 0.2998) |
+| `havokMassCenter = False` with `boneCenterOfMassOffset = [x, y, z]` sets the centre of mass **absolutely**, at that point of the body's native frame (from its bone); the form the SDK previewer script (`previewer_tpl.ssc`) switches on | Game (WALL-E bench: `[0, 0.30, 0]` read back as exactly 0, 0.30, 0) |
+| `overrideCenterOfMass = True` changes nothing: `hkCenterOfMassOffset` is still added to the centroid (WALL-E: `[0, 0.30, 0]` gave 0.845 m and the robot fell over backwards). Read the result instead of trusting a form: the body's `GetCenterOfMassLocal()` and `GetMass()` through ExecSsl (physics-bench.md) | Game (WALL-E bench) |
 | Wheels are not rigid bodies of the model; their mass is in the wheel BRO | Build |
 | Keep masses falling along a linkage: each body carrying at most about 3.3 times its own mass (the Crayfish sample's joint block is 3000 kg in a 0.5 m cube, its bogies 2000 kg plates) | Build (16M3 grader, from the SDK sample) |
 | Official defaults: angular damping 1.5, linear damping 0.01, restitution 0.01, mass set by hand | SDK (documentation) |

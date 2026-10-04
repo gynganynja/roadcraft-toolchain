@@ -78,6 +78,13 @@ travel, position and ground flag, about 10 Hz), `inputs.json` and `summary.json`
 | `normal`, 64 s | 0 rest (handbrake) - 10 forward 0.35 - 14 stop - 22 pivot + (pedal 0.3, steer 0.8) - 26 settle - 36 pivot - - 40 settle - 50 reverse 0.35 - 54 final |
 | `harsh`, 56 s | 0 rest - 6 fast (pedal 1) - 14 brake - 20 full lock + (pedal 0.6) - 25 settle - 31 full lock - - 36 settle - 42 fast reverse - 48 final |
 
+The probe also records, per sample, the gear, engine rpm, handbrake, engine-running and brake flags
+(`engine`), each body's engine-side mass and centre of mass (`mass`, `comLocal` in the body frame, Y up)
+and per wheel its spin (rad/s), its own forward speed, physical radius, mud depth and terrain flag
+(`parse_series`). These found WALL-E's faults: a stalled drive shows rpm at idle + pedal x 250 with every
+wheel at 0 rad/s; a markup centre-of-mass form is checked by reading `comLocal` back; body speed / wheel
+spin gives the real rolling radius (WALL-E 2026-10-04).
+
 Per phase the summary gives the hull's largest roll and pitch and their ranges (deg), its height
 range and its median height against rest (mm), the largest frame-to-hull twist (deg), the largest and
 mean spring travel, and the most wheels off the ground. `motion` gives each driven phase's yaw,

@@ -14,7 +14,7 @@ is in [physics-bench.md](physics-bench.md).
 | Every slot, real or fake, picks a suspension axle (`suspensionCollectionItem` in the BRO, `suspensionCollectionAxleIndex` in the class) | Retail, Build |
 | A wheel's radius is its `EditableWheel` scale, so a wheel's lowest point is the slot centre minus that scale | Retail |
 | Body masses, centres of mass and constraints live in the model's `.tpl_markup`, which the game reads at load; the compiled `.tpl` holds none of them | Build, Game (KGS-25 fix 2 changed only markup and class text) |
-| `hkCenterOfMassOffset` is in the body's engine axes (Y up). Retail cranes keep the centre of mass low with it (Vostok ETV89: arm `[0, -2.5, 0]`, hull `[0, -1, 0]`) | Retail |
+| `hkCenterOfMassOffset` is in the body's engine axes (Y up) and is added to the collision centroid; `havokMassCenter = False` + `boneCenterOfMassOffset` sets it absolutely (frames.md). Retail cranes keep the centre of mass low with it (Vostok ETV89: arm `[0, -2.5, 0]`, hull `[0, -1, 0]`) | Retail; Game (WALL-E bench) |
 | Compiled retail classes leave `parentFrame` empty. A wheel follows the nearest body bone above its wheel bone (Baikal 65206 hauler, Arling 750R and DS-55 rollers), so removing `parentFrame` does not move a wheel nested under a track-frame bone onto the hull: that needs the bones re-parented in the model | Retail; mechanism Inferred |
 
 | Track section model (`section.tpl`): five shoes, one bone each, spaced `segmentLength` apart. Every bone sits on its shoe's **inner** face (the face that runs on the wheels) and the ground side points along the bone's native -Y (Blender -Z with the KGS bone roll). Retail TC305: shoe from -0.100 (ground side) to +0.052 about its bone, section height 0.2; TUZ 303: -0.022 to +0.115 (thin plate, tall guide horns), height 0.1; KGS-25 and D11 sections follow the same rule | Retail (bone frames and per-object bounding boxes read from the compiled `.tpl`, retail-data.md), Build |
@@ -91,17 +91,32 @@ Game, one vehicle (KGS-25 fix 2); every step was needed, none alone was enough:
 5. Run `roadcraft lint-bro` with the class, model and markup (below), then measure on the bench
    before installing: roll in pivot turns, hull height, frame twist and the yaw achieved.
 
-## A small crawler on the hull: WALL-E (2026-10-04, not yet driven)
+## A small crawler on the hull: WALL-E (2026-10-04)
 
-A 1 m, 122 kg tracked robot built without track frames: every wheel hangs on `BoneChassis_cdt` (retail
-EPEC TC305 and dragline pattern, no RC047 risk) on one rigid axle (min = max = 0, strength 1, damping 0.85).
-Per track: five hidden ground wheels (r 0.049, bottoms on the tread's inner-face line), the end two real;
-and rigid hidden "ramp" fakes that copy the visible front, upper and rear wheels plus two incline wheels
-inside the tread outline (the KGS-25 r1 idea taken to the whole outline), so a step meets a wheel at the
-tread's outer face. Visual wheels are separate `visualWheelSlots` with unit-rim models; the belt is the
-engine's section model. Collision for the running gear is the tread outline shrunk 8 mm and lifted 25 mm.
-`lint-bro` reports no RC046-RC048. Build only: whether a 122 kg vehicle with 5 cm wheels stays stable on
-retail terrain, and how it climbs, is **Open** until the owner's drive.
+A 1 m tracked robot, every wheel on `BoneChassis_cdt` on one rigid axle (min = max = 0, strength 1, damping
+0.85). r1 (hidden physics wheels everywhere, 122 kg) "bounces around and rolls over without doing anything"
+(owner, Game). On the editor bench (Game, flat pad; runs in the WALL-E project's `bench_runs/`):
+
+| Layout or setting | Measured |
+|---|---|
+| Centre of mass at the collision centroid (0.545 m up, 0.32 m footprint) | tipped onto his face at spawn; 0.30 m still crept over; 0.15 m (track level) held. Set with `boneCenterOfMassOffset` (frames.md) |
+| Hidden real wheels 1 cm inside the visible front / big wheels (near-coincident circles, 8 mm and 1 mm proud) | the belt, drawn round physics and visual circles together, shook (owner watching the bench) |
+| A third rigid ground wheel between the ends, real or fake | wheels jittered 0.5-1 rad/s at rest and the hull crept; three rigid wheels in a line cannot all touch uneven ground |
+| Only the two end wheels real, nothing between | stood still to 0.0 rad/s |
+| Karelian gear table x 4.9 (to keep its speeds) | no wheel turned at any torque (truck-settings.md) |
+| 122 kg on 1.5 kg wheels | wheels spun to 110-190 rad/s, dug in, rolled 84 deg; 1200 kg on 45 kg wheels: under 3.3 deg |
+| r5: the visible front and big wheels ARE the real wheels (KGS-25 idler class with `geom`), nose and top rollers visual, no hidden wheels | rests and drives with the belt clear of near-coincident circles |
+| r5 driving only the big wheel (a sprocket) | its wheels spun, he barely moved and did not pivot; all four driven: 3.2 m forward, pivots 51 / 67 deg |
+| r5 with soft contact (`isSoftContactEnabled`, the default) | the small front wheel sank about 5 cm more than the big one: rested 9 deg nose-down; 4x `softForceScale` launched him; soft contact off: level |
+| Hard contact with `sidewaysFrictionMaxVelocity` 1 (default) | ploughed ahead in pivots (10-28 deg); 0.1 m/s: 51-67 deg; 0.02: lopsided (70 / 5 deg) |
+
+Model rule for a real wheel that carries its own model: unit radius, real proportions (X = width / radius,
+KGS-25 idler 1.513 units for 0.454 / 0.3), scaled by the class radius (`geomRadius` 1). A visual-only wheel's
+model is unit width instead (the visual wheel's X is scaled by `width`). Rolling radius of the small hidden
+wheels was radius + section (body speed / wheel spin 0.092-0.098 for 0.074 + 0.022).
+
+Climbing: r5 has no hidden obstacle wheels; a step meets the front wheel (radius + section 0.098 m) and the
+belt between the wheels has no collision. **Open:** the owner's drive of r5, steps, slopes and mud.
 
 ## Checks
 
