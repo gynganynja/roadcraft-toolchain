@@ -4,8 +4,19 @@
 //                                 [--discovery 127.0.0.1|none] [--name <client name>]
 //
 // stdout/stdin carry JSON lines.  Events: {"event":"ready"|"client_connected"|"client_disconnected"|
-// "listener"|"speaker"|"error"|"closed", ...}.  Requests: {"id":n,"op":"ping"|"clients"|"attach"|"exec"|
-// "detach"|"close", ...}; every request gets one {"id":n,"ok":true|false,...} line.
+// "listener"|"speaker"|"editor_message"|"error"|"closed", ...}.  Requests: {"id":n,"op":"ping"|"clients"|
+// "attach"|"exec"|"editor_attach"|"editor_send"|"detach"|"close", ...}; every request gets one
+// {"id":n,"ok":true|false,...} line.
+//
+// editor_attach / editor_send are IntegrationStudio's engine-connector layer (EngineConnectorPlugin
+// ConnectorConnection.Create / TreEngineMessage, see C:\RC_RE\research\scene_play.md): for a connector
+// name such as "Game editor" the helper mirrors the engine's {Module=IntegrationStudio, Type=<name>}
+// listener into a speaker and the engine's {Module=IntegrationStudioProxy, Type=<name>} speaker into a
+// listener (plus the engine's Type=Manager speaker), on the same ConsoleClient as ExecSsl.  A message body
+// is string(name) + fields (NativeWriter: string = int32 length + UTF-8, bool = 1 byte, int/float = 4 LE).
+// Every message from the engine on those listeners becomes an "editor_message" event; the known
+// engine->editor messages (FrameShared, LoadingsState, Command, Scene Changed, Game Info, Callbacks List,
+// Add/Remove Callback) are decoded into "fields".
 //
 // What is the SDK's own code (Saber.ConsoleTre.dll, loaded from --sdk at run time):
 //  * the hub: new ConsoleServer(addr, port) - what IntegrationStudio runs for AutoStartConsoleTre=Host
@@ -120,6 +131,10 @@ namespace RoadCraft.ConsoleTreHub
         private Guid _requestId;
         private readonly ConcurrentQueue<byte[]> _replies = new ConcurrentQueue<byte[]>();
         private JsonObject _target;
+        // IntegrationStudio-style connectors (name -> speaker, listeners) on the same client.
+        private readonly Dictionary<string, Saber.ConsoleTre.ConsoleSpeaker> _editorSpeakers =
+            new Dictionary<string, Saber.ConsoleTre.ConsoleSpeaker>();
+        private readonly List<Saber.ConsoleTre.ConsoleListener> _editorListeners = new List<Saber.ConsoleTre.ConsoleListener>();
 
         public Session(Dictionary<string, string> options)
         {
@@ -220,6 +235,10 @@ namespace RoadCraft.ConsoleTreHub
                     return Attach(request);
                 case "exec":
                     return Exec(request);
+                case "editor_attach":
+                    return EditorAttach(request);
+                case "editor_send":
+                    return EditorSend(request);
                 case "detach":
                     Detach();
                     return Ok();
@@ -265,7 +284,12 @@ namespace RoadCraft.ConsoleTreHub
                     listeners.Add(new JsonObject { ["id"] = l.Id, ["passport"] = ListenerPassportJson(l.Passport) });
                 var speakers = new JsonArray();
                 foreach (var s in c.Speakers)
-                    speakers.Add(new JsonObject { ["id"] = s.Id });
+                {
+                    var sp = new JsonArray();
+                    foreach (var cond in s.Passport)
+                        sp.Add(new JsonObject { ["name"] = cond.Name, ["value"] = cond.Value, ["absent"] = false });
+                    speakers.Add(new JsonObject { ["id"] = s.Id, ["passport"] = sp });
+                }
                 clients.Add(new JsonObject
                 {
                     ["clientId"] = c.Id, ["name"] = c.ApplicationName, ["pid"] = (long)c.ProcessId,
@@ -406,10 +430,194 @@ namespace RoadCraft.ConsoleTreHub
             return Ok(new JsonObject { ["reply"] = text, ["ms"] = ms, ["bytes"] = raw.Length });
         }
 
+        // ---------------------------------------------------------------- IntegrationStudio connectors
+        private static bool IsConnector(JsonArray passport, string module, string type) =>
+            Has(passport, "Module", module) && Has(passport, "Type", type);
+
+        private JsonObject EditorAttach(JsonObject request)
+        {
+            if (_client == null || _target == null)
+                return Fail("not attached (attach to ExecSsl first)");
+            string connector = (string)request["connector"] ?? "Game editor";
+            double timeout = (double?)request["timeout"] ?? 12.0;
+            if (_editorSpeakers.ContainsKey(connector))
+                return Fail("connector already attached: " + connector);
+            var clients = Snapshot();
+            var engine = clients.FirstOrDefault(c => c["clientId"]?.ToJsonString() == _target["clientId"]?.ToJsonString());
+            if (engine == null)
+                return Fail("engine client is gone", new JsonObject { ["clients"] = clients });
+            // ConnectionParameters(type): editor speaker Module=IntegrationStudio, editor listener
+            // Module=IntegrationStudioProxy; the engine registers the mirror images.
+            var inbound = engine["listeners"].AsArray()
+                .Where(l => IsConnector(l["passport"].AsArray(), "IntegrationStudio", connector)).ToList();
+            if (inbound.Count != 1)
+                return Fail("engine has " + inbound.Count + " {Module=IntegrationStudio, Type=" + connector + "} listeners",
+                    new JsonObject { ["clients"] = clients });
+            var listenerPassport = inbound[0]["passport"].AsArray();
+            var speakerPassport = new Saber.ConsoleTre.SpeakerPassport(false);
+            foreach (var c in listenerPassport)
+                if (!(bool)c["absent"])
+                    speakerPassport.Add((string)c["name"], (string)c["value"]);
+            var engineSpeaker = engine["speakers"].AsArray()
+                .FirstOrDefault(s => IsConnector(s["passport"].AsArray(), "IntegrationStudioProxy", connector));
+            var replyPassport = MirrorSpeaker(engineSpeaker, listenerPassport, "IntegrationStudioProxy", connector);
+            var speaker = _client.CreateSpeaker(speakerPassport);
+            _editorSpeakers[connector] = speaker;
+            var listener = _client.CreateListener(replyPassport);
+            listener.ReceiveMessage += (l, message) => EmitEditorMessage(connector, message);
+            _editorListeners.Add(listener);
+            // The Manager channel (ConsoleConnectionManager.Connect): Game Info, Callbacks List, Scene Changed.
+            var managerSpeaker = engine["speakers"].AsArray()
+                .FirstOrDefault(s => IsConnector(s["passport"].AsArray(), "IntegrationStudioProxy", "Manager"));
+            bool manager = false;
+            if (managerSpeaker != null && !_editorListeners.Any(l => l.Passport.Any(c => c.Name == "Type" && c.Value == "Manager")))
+            {
+                var ml = _client.CreateListener(MirrorSpeaker(managerSpeaker, listenerPassport, "IntegrationStudioProxy", "Manager"));
+                ml.ReceiveMessage += (l, message) => EmitEditorMessage("Manager", message);
+                _editorListeners.Add(ml);
+                manager = true;
+            }
+            var deadline = DateTime.UtcNow.AddSeconds(timeout);
+            while ((!speaker.HasConnectedListeners || !listener.IsRegistered) && DateTime.UtcNow < deadline)
+                Thread.Sleep(10);
+            return Ok(new JsonObject
+            {
+                ["connector"] = connector, ["connected"] = speaker.HasConnectedListeners,
+                ["replyConnected"] = listener.HasConnectedSpeakers, ["engineListener"] = listenerPassport.DeepClone(),
+                ["engineSpeaker"] = engineSpeaker?["passport"]?.DeepClone(), ["manager"] = manager,
+            });
+        }
+
+        // A listener that matches the engine's speaker exactly; without one (not seen in the snapshot) the
+        // editor's own ConnectionParameters.ToListenerPassport shape with the engine listener's Channel,
+        // Workspace and GameID.
+        private static Saber.ConsoleTre.ListenerPassport MirrorSpeaker(JsonNode engineSpeaker, JsonArray engineListener,
+                                                                        string module, string type)
+        {
+            var lp = new Saber.ConsoleTre.ListenerPassport(false);
+            if (engineSpeaker != null)
+            {
+                foreach (var c in engineSpeaker["passport"].AsArray())
+                    lp.Add((string)c["name"], (string)c["value"]);
+                return lp;
+            }
+            lp.Add("Module", module);
+            lp.Add("Type", type);
+            foreach (var name in new[] { "Channel", "Workspace", "GameID" })
+            {
+                var c = engineListener.FirstOrDefault(x => (string)x["name"] == name && !(bool)x["absent"]);
+                if (c != null)
+                    lp.Add(name, (string)c["value"]);
+            }
+            lp.AddAbsent("Usage");
+            return lp;
+        }
+
+        private JsonObject EditorSend(JsonObject request)
+        {
+            string connector = (string)request["connector"] ?? "Game editor";
+            if (!_editorSpeakers.TryGetValue(connector, out var speaker))
+                return Fail("connector not attached: " + connector);
+            if (!speaker.HasConnectedListeners)
+                return Fail("engine " + connector + " listener disconnected");
+            string name = (string)request["name"];
+            if (string.IsNullOrEmpty(name))
+                return Fail("message name required");
+            var message = new Saber.ConsoleTre.UserMessage();
+            var writer = message.Write();
+            writer.Write(name, false);  // TreEngineMessage: string name first
+            foreach (var f in request["fields"]?.AsArray() ?? new JsonArray())
+            {
+                string t = (string)f["t"];
+                switch (t)
+                {
+                    case "str": writer.Write((string)f["v"] ?? "", false); break;
+                    case "int": writer.Write((int)f["v"]); break;
+                    case "bool": writer.Write((bool)f["v"]); break;
+                    case "float": writer.Write((float)(double)f["v"]); break;
+                    default: return Fail("unknown field type " + t);
+                }
+            }
+            long bytes = writer.BaseStream.Length;
+            if (!speaker.Send(message))
+                return Fail("transport rejected " + name);
+            return Ok(new JsonObject { ["connector"] = connector, ["name"] = name, ["bytes"] = bytes });
+        }
+
+        private static void EmitEditorMessage(string connector, Saber.ConsoleTre.UserMessage message)
+        {
+            var row = new JsonObject { ["event"] = "editor_message", ["connector"] = connector };
+            try
+            {
+                var stream = message.GetReadStream();
+                row["bytes"] = stream.Length;
+                var r = new Saber.ConsoleTre.NativeReader(stream, true);
+                string name = r.ReadString();
+                row["name"] = name;
+                bool More() => stream.Position < stream.Length;
+                var fields = new JsonArray();
+                switch (name)
+                {
+                    case "FrameShared":  // XgineViewportsController.SendFrameShared: handle, viewport, bgra
+                        fields.Add(r.ReadString());
+                        if (More()) fields.Add(r.ReadInt32());
+                        if (More()) fields.Add(r.ReadBoolean());
+                        break;
+                    case "LoadingsState":  // xgine_scene_loading_steps_notifier: state, 0 count current | 1 subState
+                        fields.Add(r.ReadString());
+                        int kind = r.ReadInt32();
+                        fields.Add(kind);
+                        if (kind == 0) { fields.Add(r.ReadInt32()); fields.Add(r.ReadInt32()); }
+                        else fields.Add(r.ReadString());
+                        break;
+                    case "Command":
+                    case "Scene Changed":
+                        fields.Add(r.ReadString());
+                        if (More()) fields.Add(r.ReadString());
+                        break;
+                    case "Game Info":  // gameId, machine, pid, sandbox[, usage]
+                        fields.Add(r.ReadString()); fields.Add(r.ReadString()); fields.Add(r.ReadInt32()); fields.Add(r.ReadString());
+                        if (More()) fields.Add(r.ReadString());
+                        break;
+                    case "Callbacks List":  // gameId, n x (connector, protocol)
+                        fields.Add(r.ReadString());
+                        int n = r.ReadInt32();
+                        for (int i = 0; i < n && More(); i++) { fields.Add(r.ReadString()); fields.Add(r.ReadInt32()); }
+                        break;
+                    case "Add Callback":
+                    case "Remove Callback":
+                        fields.Add(r.ReadString()); fields.Add(r.ReadString()); fields.Add(r.ReadInt32());
+                        break;
+                    default:
+                        var rest = r.ReadBytes((int)Math.Min(96, stream.Length - stream.Position));
+                        row["hex"] = Convert.ToHexString(rest);
+                        break;
+                }
+                row["fields"] = fields;
+            }
+            catch (Exception exc)
+            {
+                row["decodeError"] = exc.Message;
+            }
+            Out.Emit(row);
+        }
+
         private void Detach()
         {
             if (_client == null)
                 return;
+            try
+            {
+                foreach (var s in _editorSpeakers.Values)
+                    _client.DestroySpeaker(s);
+                foreach (var l in _editorListeners)
+                    _client.DestroyListener(l);
+            }
+            catch (Exception)
+            {
+            }
+            _editorSpeakers.Clear();
+            _editorListeners.Clear();
             try
             {
                 if (_speaker != null)

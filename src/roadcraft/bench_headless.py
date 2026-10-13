@@ -11,6 +11,8 @@ reads them) and writes one CSV per probe plus summary.json.
         --out <new folder> --owner-approved "<who/when/why>" [--dry-run]
     python -m roadcraft.bench_headless capture <scenario.json> --pak <pak> --out <folder> --owner-approved "..."
     python -m roadcraft.bench_headless smoke --out <folder> [--pak <pak>] --owner-approved "..."
+    python -m roadcraft.bench_headless scene --out <folder> [--scene <scn>] [--mode play|edit] --owner-approved "..."
+        (C:\\RC_RE\\research\\scene_play.md: Game editor connector, StartFrameSharing, LoadScenePlay, truck, PNG)
     python -m roadcraft.bench_headless analyse <run folder> --scenario <scenario.json>
 
 Without ``--owner-approved`` every command is a dry run: it prints the exact command lines, folders,
@@ -160,13 +162,13 @@ def load_scenario(source: str | Path | dict[str, Any]) -> dict[str, Any]:
     out["wallClockSeconds"] = _number(data.get("wallClockSeconds", 900), "wallClockSeconds", 30, 7200)
     out["startupTimeoutSeconds"] = _number(data.get("startupTimeoutSeconds", 300), "startupTimeoutSeconds", 10, 3600)
     scene = data.get("scene") or {}
-    if not isinstance(scene, dict) or set(scene) - {"level", "loadSsl", "settleSeconds", "readyTimeoutSeconds"}:
-        raise ScenarioError("scene must be {level, loadSsl, settleSeconds, readyTimeoutSeconds}")
-    for key in ("level", "loadSsl"):
+    if not isinstance(scene, dict) or set(scene) - {"level", "loadSsl", "file", "settleSeconds", "readyTimeoutSeconds"}:
+        raise ScenarioError("scene must be {level, loadSsl, file, settleSeconds, readyTimeoutSeconds}")
+    for key in ("level", "loadSsl", "file"):
         if scene.get(key) is not None and (not isinstance(scene[key], str) or not scene[key].isprintable()
                                            or '"' in scene[key] or "\\" in scene[key]):
             raise ScenarioError(f"scene.{key} must be a plain string")
-    out["scene"] = {"level": scene.get("level"), "loadSsl": scene.get("loadSsl"),
+    out["scene"] = {"level": scene.get("level"), "loadSsl": scene.get("loadSsl"), "file": scene.get("file"),
                     "settleSeconds": _number(scene.get("settleSeconds", 5), "scene.settleSeconds", 0, 600),
                     "readyTimeoutSeconds": _number(scene.get("readyTimeoutSeconds", 120),
                                                    "scene.readyTimeoutSeconds", 1, 3600)}
@@ -419,7 +421,170 @@ def ready_script() -> str:
 
 
 def load_scene_script(res_tag: str) -> str:
-    return f"LoadSceneRes({eng.ssl_string(res_tag)})"  # Inferred: SSL name in the exe strings, not run
+    """Scenario ``scene.loadSsl`` (a scene res tag): the SSL edit-mode load.  ``LoadSceneRes`` is a
+    GameEditor method with five arguments (ssl editor/game_editor.ssl), not a global; the editor's own
+    route is XgineEditMode.StartSceneLoading (scene_play.md, Inferred: not run)."""
+    name = res_tag.rstrip("/").rsplit("/", 1)[-1].replace(".resource", "")
+    return ssl_scene_script(name, res_tag, play=False)
+
+
+# ------------------------------------------------------------------ scene / play (scene_play.md)
+def _ssl_scene_params(name: str, res_tag: str) -> list[str]:
+    return ["var p = new XgineSceneLoadParams()", f"p.name = {eng.ssl_string(name)}", 'p.psOverrides = ""',
+            f"p.resTag = {eng.ssl_string(res_tag)}", 'p.resOverrides = ""', "p.unloadedBlocks = new array<string>()"]
+
+
+def ssl_scene_script(name: str, res_tag: str, *, play: bool) -> str:
+    """The SSL-only fallback (``--via ssl``, Inferred).  Edit: what XgineEditMode.ProcessLoadScene does
+    with the message fields (all public).  Play: what XginePlayMode.StartSceneLoading/StartPlayMode do,
+    through public members only (its private isPlaying/playModeSettings stay unset, scene-specific
+    EditorSceneSettings.playModeSettings are not looked up: the extension's default ``settings`` plays)."""
+    lines = ["var c = GetGameEditorController()"] + _ssl_scene_params(name, res_tag)
+    if not play:
+        return "\n".join(lines + ["DbgSetActorNoInitTerm(true)", "c.extensions.Get<XgineEditMode>().StartSceneLoading(p)",
+                                  'return "SSL_LOAD_REQUESTED"'])
+    return "\n".join(lines + [
+        "c.extensions.Get<XgineEditMode>().Deactivate()",
+        "c.gameEditor.SetSceneResource(p.resTag, \"\")",
+        "c.gameEditor.SetPlayMode(true)",
+        "c.extensions.Get<GameEditorFpsController>().SetMode(GameEditorFpsControllerMode.PLAY)",
+        "c.sceneLoader.LoadScene(p)",
+        "c.extensions.Get<XginePlayMode>().settings.Play(c)",
+        'return "SSL_PLAY_REQUESTED"'])
+
+
+def ssl_frame_sharing_script(width: int, height: int) -> str:
+    """What XgineViewportsController.ProcessStartFrameSharing does for viewport 0 (public members; Inferred)."""
+    w, h = max(64, int(width)), max(64, int(height))
+    return "\n".join(["var c = GetGameEditorController()",
+                      "var vp = GetGameEditorState().GetOrCreateViewport(c.viewports, 0)",
+                      "vp.StartSharing()", f"vp.SetResolution({w}, {h})", f"vp.SetClientRect(0, 0, {w}, {h})",
+                      "vp.SetVisible(true)", "EnableSimulationInputDevice(true)", 'return "SSL_FRAME_SHARING"'])
+
+
+def adapter_script() -> str:
+    """Which GPU the engine renders on: VideoConfig.api/adapter and the adapter names in AdapterId order
+    ($sslEngineCtrl natives, ssl/lib/systems/engine_control.ssl; bug_reporter.ssc uses the same calls)."""
+    return "\n".join(['var r = "RC_ADAPTER\\n"', "var cfg = $sslEngineCtrl.GetCurrentConfig()",
+                      'r += StringFormat("api %i adapter %i\\n", cfg.api, cfg.adapter)',
+                      'r += "current " + $sslEngineCtrl.GetVideoAdapterName(cfg.api, cfg.adapter) + "\\n"',
+                      "var n = $sslEngineCtrl.GetVideoAdapterCount(cfg.api)",
+                      "for (var i = 0; i < n; i += 1)",
+                      '   r += StringFormat("adapter %i ", i) + $sslEngineCtrl.GetVideoAdapterName(cfg.api, i) + "\\n"',
+                      "end", "return r"])
+
+
+def editor_state_script() -> str:
+    """Is the editor's SSL side up (FindObject("editor"), editor_main_base.ssl), which scene, viewports, trucks."""
+    return "\n".join(['var r = "RC_EDITOR\\n"',
+                      'r += "editorMain " + BoolToString(FindObject("editor") != null, "1", "0") + "\\n"',
+                      'r += "level " + $sslEngineCtrl.GetLevelName() + "\\n"',
+                      'r += "scene " + GetGameEditorState().GetCurrentScene() + "\\n"',
+                      'r += StringFormat("viewports %i\\n", GetGameEditorState().GetViewports().Count())',
+                      "var tm = $globalStorage.TryGet<TruckManagerRb>()",
+                      "if tm != null",
+                      '   r += StringFormat("trucks %i\\n", tm.GetTrucks().Count())',
+                      "end",
+                      'r += "truck " + BoolToString(tm?.TryGetCurrent() != null, "1", "0") + "\\n"',
+                      "return r"])
+
+
+def force_current_truck_script() -> str:
+    """Opt-in fallback: TruckManagerRb.SetCurrent(start truck or first truck) - what
+    StartAtExistingTruck does without the ownership checks (Inferred)."""
+    return "\n".join(['var tag = "RC_FORCE_CURRENT"', "var tm = $globalStorage.TryGet<TruckManagerRb>()",
+                      "if tm == null", '   return "NO_TRUCK_MANAGER"', "end",
+                      "if tm.TryGetCurrent() != null", '   return "ALREADY_CURRENT"', "end",
+                      "var trucks = tm.GetTrucks()", "if trucks.IsEmpty()", '   return "NO_TRUCKS"', "end",
+                      "var t = tm.GetStartTruckOnLevel()", "if t == null", "   t = trucks[0]", "end",
+                      "tm.SetCurrent(t, true)", 'return "SET_CURRENT " + t.owner.ToString()'])
+
+
+def _ready_fields(reply: str) -> dict[str, str]:
+    out = {}
+    for line in reply.splitlines()[1:]:
+        key, _, value = line.partition(" ")
+        out[key] = value
+    return out
+
+
+def wait_scene(session: Any, *, timeout: float, need_truck: bool, clock: "Clock") -> dict[str, Any]:
+    """Poll ready_script until a level is loaded (and, for play, a current truck exists)."""
+    deadline = clock.monotonic() + timeout
+    started, last = clock.monotonic(), ""
+    level_at = None
+    while True:
+        try:
+            last = session.exec_ssl(ready_script(), timeout=10)
+        except eng.EngineTimeout:
+            last = "timeout"
+        fields = _ready_fields(last)
+        if fields.get("level") and level_at is None:
+            level_at = round(clock.monotonic() - started, 1)
+        if fields.get("level") and (not need_truck or fields.get("truck") == "1"):
+            return {"ok": True, "reply": last, "levelAfter": level_at,
+                    "truckAfter": round(clock.monotonic() - started, 1) if need_truck else None}
+        if clock.monotonic() >= deadline:
+            return {"ok": False, "reply": last, "levelAfter": level_at}
+        clock.sleep(1.0)
+
+
+def _try_ssl(session: Any, script: str, timeout: float = 12.0) -> str:
+    try:
+        return session.exec_ssl(script, timeout=timeout)
+    except eng.EngineError as exc:
+        return f"ERROR {type(exc).__name__}: {exc}"
+
+
+def scene_run(session: Any, folder: Path, data: "eng.SceneLoadData", *, mode: str = "play", via: str = "editor",
+              size: tuple[int, int] = (1280, 720), ready_timeout: float = 300.0, settle: float = 5.0,
+              force_current: bool = False, clock: "Clock" = None) -> dict[str, Any]:
+    """scene_play.md recipe: wait for the first reply (preloading), open the editor connector, share
+    viewport 0, LoadScenePlay (or LoadScene), wait for Scene Loaded, a level and (play) a current truck,
+    take one screenshot.  Each step's outcome is recorded; a failed wait does not skip the screenshot."""
+    clock = clock or Clock()
+    out: dict[str, Any] = {"scene": data.as_json(), "mode": mode, "via": via, "steps": []}
+
+    def step(name: str, **info) -> None:
+        out["steps"].append({"step": name, "t": round(clock.monotonic() - t0, 1), **info})
+
+    t0 = clock.monotonic()
+    first, attempts = first_reply(session, ready_script(), clock=clock)
+    step("first-reply", attempts=attempts, reply=first)
+    out["adapter"] = _try_ssl(session, adapter_script())
+    out["editorBefore"] = _try_ssl(session, editor_state_script())
+    if hasattr(session, "snapshot_clients"):
+        session.snapshot_clients("clientsBeforeEditor")
+    if via == "editor":
+        attached = session.attach_editor(eng.GAME_EDITOR)
+        step("editor-attached", engineListener=attached.get("engineListener"), manager=attached.get("manager"))
+        mark = session.editor_mark()
+        session.send_editor(eng.minimize_on_deactivate_message(False))
+        session.send_editor(eng.start_frame_sharing_message(0, *size))
+        shared = session.wait_editor(eng.is_frame_shared, 60.0, since=mark)
+        step("frame-shared", ok=shared is not None, fields=(shared or {}).get("fields"))
+        sent = session.send_editor(eng.load_scene_message(data, play=mode == "play"))
+        step("load-sent", message="LoadScenePlay" if mode == "play" else "LoadScene", bytes=sent.get("bytes"))
+        loaded = session.wait_editor(eng.is_scene_loaded, ready_timeout, since=mark)
+        step("scene-loaded", ok=loaded is not None)
+    else:
+        step("ssl-frame-sharing", reply=_try_ssl(session, ssl_frame_sharing_script(*size)))
+        step("ssl-load", reply=_try_ssl(session, ssl_scene_script(data.name, data.res_tag, play=mode == "play"), 30))
+    ready = wait_scene(session, timeout=ready_timeout, need_truck=mode == "play", clock=clock)
+    step("ready", **ready)
+    if mode == "play" and not ready["ok"] and force_current:
+        step("force-current", reply=_try_ssl(session, force_current_truck_script()))
+        ready = wait_scene(session, timeout=15, need_truck=True, clock=clock)
+        step("ready-after-force", **ready)
+    out["ready"] = ready["ok"]
+    clock.sleep(settle)
+    try:
+        out["screenshot"] = session.screenshot((folder / "scene.png").resolve(), timeout=30)
+    except eng.EngineError as exc:
+        out["screenshot"] = {"error": str(exc)}
+    step("screenshot", ok="error" not in out["screenshot"])
+    out["editorAfter"] = _try_ssl(session, editor_state_script())
+    return out
 
 
 # ------------------------------------------------------------------ analysis
@@ -825,18 +990,37 @@ def _session(layout: eng.RunLayout, scenario: dict[str, Any], args: argparse.Nam
              factory: Callable[..., Any]) -> Any:
     return factory(layout, game_root=args.game_root, sdk_editor_dir=args.sdk_editor_dir, adapter_id=args.adapter_id,
                    timestep=scenario["timestep"], level=scenario["scene"]["level"],
-                   wall_clock=scenario["wallClockSeconds"], startup_timeout=scenario["startupTimeoutSeconds"])
+                   wall_clock=scenario["wallClockSeconds"], startup_timeout=scenario["startupTimeoutSeconds"],
+                   extra_sets=list(getattr(args, "extra_sets", None) or []))
+
+
+def _scene_file_data(scenario: dict[str, Any], args: argparse.Namespace) -> "eng.SceneLoadData | None":
+    """``scene.file`` (relative to mods_source): load it with the editor's LoadScenePlay recipe
+    (scene_play.md; scene_001 2026-10-13 loaded gd11_bench and made the truck current headless)."""
+    rel = scenario["scene"].get("file")
+    if not rel:
+        return None
+    if args.strategy == "project-copy":
+        if not args.project:
+            raise ScenarioError("scene.file with --strategy project-copy needs --project <folder with mods_source>")
+        source = Path(args.project) / "mods_source"
+    else:
+        source = eng.project_context.game_root(args.game_root) / "root" / "mods_source"
+    return eng.scene_load_data(rel, source, ps="file")
 
 
 def run_one(label: str, pak: str | None, scenario: dict[str, Any], args: argparse.Namespace, *,
             factory: Callable[..., Any] = eng.EngineSession, clock: Clock = Clock(), mode: str = "run") -> dict[str, Any]:
     out = Path(args.out).resolve() / label
+    scene_file = _scene_file_data(scenario, args) if mode in ("run", "capture") else None
+    if scene_file is not None and eng.START_AT_TRUCK_ON_SCENE not in (getattr(args, "extra_sets", None) or []):
+        args.extra_sets = [*(getattr(args, "extra_sets", None) or []), eng.START_AT_TRUCK_ON_SCENE]
     layout = eng.plan_layout(out / "root", strategy=args.strategy, pak=pak, game_root=args.game_root)
     session = _session(layout, scenario, args, factory)
     if args.dry_run:
         return {"label": label, "folder": str(out), "pak": pak, "session": session.plan()}
     out.mkdir(parents=True, exist_ok=False)
-    eng.prepare_layout(layout, pak=pak, project=args.project)
+    eng.prepare_layout(layout, pak=pak, project=args.project, game_root=args.game_root)
     if scenario["spawn"]["method"] == "scene":
         if layout.strategy != "project-copy":
             raise ScenarioError("spawn.method scene needs --strategy project-copy (it edits the private scene copy)")
@@ -854,7 +1038,16 @@ def run_one(label: str, pak: str | None, scenario: dict[str, Any], args: argpars
                 result["loadScene"] = session.exec_ssl(load_scene_script(scenario["scene"]["loadSsl"]), timeout=30)
             if mode == "smoke":
                 result.update(smoke(session, out, clock))
+            elif mode == "scene":
+                result.update(scene_run(session, out, args.scene_data, mode=args.mode, via=args.via,
+                                        ready_timeout=args.ready_timeout, settle=args.settle,
+                                        force_current=args.force_current_truck, clock=clock))
+                (out / "scene.json").write_text(json.dumps(result, indent=1, default=str), encoding="utf-8")
             else:
+                if scene_file is not None:
+                    result["scene"] = scene_run(session, out, scene_file, mode="play", via="editor",
+                                                ready_timeout=scenario["scene"]["readyTimeoutSeconds"],
+                                                settle=scenario["scene"]["settleSeconds"], clock=clock)
                 result["ready"] = wait_ready(session, scenario, clock)
                 if mode == "capture":
                     result["capture"] = capture(session, scenario, out, clock)
@@ -904,10 +1097,24 @@ def smoke(session: Any, folder: Path, clock: Clock = Clock()) -> dict[str, Any]:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="roadcraft.bench_headless", description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("run", "capture", "smoke"):
+    for name in ("run", "capture", "smoke", "scene"):
         p = sub.add_parser(name)
-        if name != "smoke":
+        if name in ("run", "capture"):
             p.add_argument("scenario")
+        if name == "scene":
+            p.add_argument("--scene", default=DEFAULT_SCENE,
+                           help="scene .scn relative to mods_source (the --project copy, else <game>/root/mods_source)")
+            p.add_argument("--mode", choices=("play", "edit"), default="play")
+            p.add_argument("--via", choices=("editor", "ssl"), default="editor",
+                           help="editor: IntegrationStudio's Game editor messages (default); ssl: ExecSsl-only fallback")
+            p.add_argument("--scene-ps", dest="scene_ps", choices=("file", "empty"), default="file")
+            p.add_argument("--ready-timeout", dest="ready_timeout", type=float, default=300.0)
+            p.add_argument("--settle", type=float, default=5.0)
+            p.add_argument("--force-current-truck", dest="force_current_truck", action="store_true",
+                           help="if no current truck appears, SetCurrent the start (or first) truck (Inferred)")
+            p.add_argument("--no-start-at-truck", dest="start_at_truck", action="store_false",
+                           help="omit the DbgVar Game/Startup/Start at truck on scene")
+            p.add_argument("--wall-clock", dest="wall_clock", type=float, default=900.0)
         p.add_argument("--pak", help="candidate .pak (copied into the run's private mods folder)")
         if name == "run":
             p.add_argument("--baseline", help="baseline .pak, run the same way after the candidate")
@@ -928,6 +1135,38 @@ def _parser() -> argparse.ArgumentParser:
 
 SMOKE_SCENARIO = {"name": "smoke", "durationSeconds": 30, "wallClockSeconds": 300, "startupTimeoutSeconds": 240,
                   "inputs": {"schedule": [{"at": 0, "phase": "idle"}]}}
+DEFAULT_SCENE = "xscenes/mods/example/example.scn"   # root/.project xgine-default-scene-path
+
+
+def _scene_setup(args: argparse.Namespace) -> dict[str, Any]:
+    """Scene command: the scenario shell, the scene's load data (read from the source mods_source; the
+    private copy holds the same files) and the play-mode DbgVar."""
+    if args.strategy == "project-copy":
+        if not args.project:
+            raise ScenarioError("--strategy project-copy needs --project <folder with mods_source>")
+        source = Path(args.project) / "mods_source"
+    else:
+        source = eng.project_context.game_root(args.game_root) / "root" / "mods_source"
+    args.scene_data = eng.scene_load_data(args.scene, source, ps=args.scene_ps)
+    args.extra_sets = [eng.START_AT_TRUCK_ON_SCENE] if args.mode == "play" and args.start_at_truck else []
+    scenario = load_scenario({**SMOKE_SCENARIO, "name": "scene", "wallClockSeconds": args.wall_clock})
+    w, h = 1280, 720
+    messages = [eng.minimize_on_deactivate_message(False), eng.start_frame_sharing_message(0, w, h),
+                eng.load_scene_message(args.scene_data, play=args.mode == "play")]
+    plan = {"scene": args.scene_data.as_json(), "modsSource": str(source), "mode": args.mode, "via": args.via,
+            "connector": eng.GAME_EDITOR,
+            "messages": [{"name": m[0], "fields": [(k, v if not isinstance(v, str) or len(v) <= 120 else
+                                                   f"<{len(v.encode('utf-8'))} bytes>") for k, v in m[1]]}
+                         for m in messages] if args.via == "editor" else [],
+            "scripts": {"ready": ready_script(), "adapter": adapter_script(), "editorState": editor_state_script(),
+                        "screenshot": eng.screenshot_script(Path(args.out).resolve() / "candidate" / "scene.png")}}
+    if args.via == "ssl":
+        plan["scripts"]["frameSharing"] = ssl_frame_sharing_script(w, h)
+        plan["scripts"]["load"] = ssl_scene_script(args.scene_data.name, args.scene_data.res_tag,
+                                                   play=args.mode == "play")
+    if args.force_current_truck:
+        plan["scripts"]["forceCurrent"] = force_current_truck_script()
+    return {"scenario": scenario, "plan": plan}
 
 
 def main(argv: Sequence[str] | None = None, *, factory: Callable[..., Any] = eng.EngineSession,
@@ -938,7 +1177,12 @@ def main(argv: Sequence[str] | None = None, *, factory: Callable[..., Any] = eng
         if args.command == "analyse":
             print(json.dumps(analyse(args.folder, load_scenario(args.scenario)), indent=1), file=stdout)
             return 0
-        scenario = load_scenario(SMOKE_SCENARIO if args.command == "smoke" else args.scenario)
+        scene_plan = None
+        if args.command == "scene":
+            setup = _scene_setup(args)
+            scenario, scene_plan = setup["scenario"], setup["plan"]
+        else:
+            scenario = load_scenario(SMOKE_SCENARIO if args.command == "smoke" else args.scenario)
         if args.command in ("run", "capture") and not args.pak and args.strategy == "moddirs":
             raise ScenarioError("--pak is required (or --strategy project-copy --project <folder>)")
         if args.command == "capture" and not scenario["capture"]:
@@ -956,13 +1200,16 @@ def main(argv: Sequence[str] | None = None, *, factory: Callable[..., Any] = eng
             plan = {"dryRun": True, "reason": reason, "command": mode, "scenario": scenario,
                     "runs": [run_one(label, pak, scenario, args, factory=factory, clock=clock, mode=mode)
                              for label, pak in labels],
-                    "scripts": scripts_for(scenario) if mode != "smoke" else {"ready": ready_script(),
-                                                                              "screenshot": eng.screenshot_script(
-                                                                                  Path(args.out).resolve()
-                                                                                  / "candidate" / "smoke.png")},
+                    "scripts": (scene_plan["scripts"] if mode == "scene" else scripts_for(scenario) if mode != "smoke"
+                                else {"ready": ready_script(),
+                                      "screenshot": eng.screenshot_script(Path(args.out).resolve()
+                                                                          / "candidate" / "smoke.png")}),
                     "outputs": ["run.json", "session.json", "series.jsonl", "inputs.json", "<probe>.csv",
                                 "summary.json"] if mode == "run" else
-                    (["capture.json", "<state>__<camera>.png"] if mode == "capture" else ["smoke.png", "session.json"])}
+                    (["capture.json", "<state>__<camera>.png"] if mode == "capture" else
+                     ["scene.png", "scene.json", "session.json", "run.json"] if mode == "scene" else ["smoke.png", "session.json"])}
+            if scene_plan:
+                plan["scenePlan"] = {k: v for k, v in scene_plan.items() if k != "scripts"}
             print(json.dumps(plan, indent=1, default=str), file=stdout)
             return 0
         results = [run_one(label, pak, scenario, args, factory=factory, clock=clock, mode=mode) for label, pak in labels]

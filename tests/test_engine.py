@@ -113,13 +113,29 @@ class CommandLineTests(unittest.TestCase):
         self.assertTrue((layout.mods_source / "classes" / "a.cls").is_file())
         self.assertEqual(list(layout.mods.iterdir()), [])
 
+    def test_project_copy_runs_on_a_private_cfg_like_the_rc3_bench_project(self):
+        game = self.tmp / "game"
+        project = self.tmp / "proj"
+        (project / "mods_source").mkdir(parents=True)
+        layout = eng.plan_layout(self.tmp / "run3", strategy="project-copy", game_root=game)
+        argv, _ = eng.build_command("C:/x/e.exe", channel=1, layout=layout, extra_sets=[eng.START_AT_TRUCK_ON_SCENE])
+        self.assertEqual(argv[argv.index("--cfg") + 1], str(layout.cfg))
+        self.assertEqual(argv[argv.index("/DbgVars/Game/Startup/Start at truck on scene") + 1], "true")
+        eng.prepare_layout(layout, project=project, game_root=game)
+        text = layout.cfg.read_text(encoding="utf-8")
+        self.assertIn(f"- user_documents: {(game / 'root' / 'config' / 'editor' / 'editor.cfg').as_posix()}\n", text)
+        self.assertIn(f"  ModsSourceLocal: {layout.mods_source.as_posix()}\n", text)
+        moddirs = eng.plan_layout(self.tmp / "run4", game_root=game)  # default strategy keeps the game's cfg
+        self.assertIsNone(moddirs.cfg)
+
     def test_native_guid_text_matches_the_scripts(self):
         raw = uuid.UUID("12abcdef-abcd-4abc-8abc-abcdef123456").bytes_le  # .NET Guid.ToByteArray()
         self.assertEqual(eng.native_guid_text(raw), "{12ABCDEF-ABCD-4abc-8ABC-ABCDEF123456}")
 
     def test_screenshot_script(self):
         script = eng.screenshot_script(self.tmp / "a.png")
-        self.assertEqual(script, f'SaveScreenshot(ScreenshotSaveTarget.FILE,"{(self.tmp / "a.png").as_posix()}",'
+        # the engine appends ".png" itself, so the name goes without it
+        self.assertEqual(script, f'SaveScreenshot(ScreenshotSaveTarget.FILE,"{(self.tmp / "a").as_posix()}",'
                                  f'false,ScreenshotFormat.PNG)')
         with self.assertRaises(eng.EngineError):
             eng.screenshot_script("a.png")
@@ -205,9 +221,9 @@ class FakeEngineHubTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.tmp, True)
         self.log = self.tmp / "fake.jsonl"
 
-    def session(self, *, mode: str = "", wall_clock: float = 120, startup_timeout: float = 60):
+    def session(self, *, mode: str = "", wall_clock: float = 120, startup_timeout: float = 60, **extra_env):
         port = free_port()
-        env = dict(os.environ, RC_FAKE_HUB_PORT=str(port), RC_FAKE_LOG=str(self.log), RC_FAKE_MODE=mode)
+        env = dict(os.environ, RC_FAKE_HUB_PORT=str(port), RC_FAKE_LOG=str(self.log), RC_FAKE_MODE=mode, **extra_env)
         layout = eng.plan_layout(self.tmp / "run", game_root=self.tmp / "game")
         eng.prepare_layout(layout)
         return eng.EngineSession(layout, game_root=self.tmp / "game", sdk_editor_dir=SDK, hub_port=port,
@@ -302,6 +318,81 @@ class FakeEngineHubTests(unittest.TestCase):
         smoke = report["runs"][0]
         self.assertTrue(smoke["framesAdvance"])
         self.assertTrue(eng.png_complete(smoke["screenshot"]["path"]))
+
+    def test_game_editor_connector_scene_play_and_screenshot(self):
+        """scene_play.md over the real SDK hub: mirrored passports, StartFrameSharing -> FrameShared,
+        LoadScenePlay -> LoadingsState Scene Loaded + Manager Scene Changed, then a current truck and a PNG."""
+        sys.path.insert(0, str(HERE))
+        self.addCleanup(sys.path.remove, str(HERE))
+        from test_bench_headless import make_scene
+        make_scene(self.tmp / "ms", "xscenes/mods/bench/bench.scn")
+        data = eng.scene_load_data("xscenes/mods/bench/bench.scn", self.tmp / "ms")
+        with self.session(RC_FAKE_SCENE_GATED="1") as session:
+            session.start(owner_approved="unit test")
+            attached = session.attach_editor(wait=20)
+            self.assertTrue(attached["connected"])
+            self.assertTrue(attached["manager"])
+            self.assertIn({"name": "GameID", "value": "fake-game-1", "absent": False}, attached["engineListener"])
+            engine = [c for c in session.snapshot_clients() if c["pid"] == session.target["pid"]][0]
+            types = {p["value"] for s in engine["speakers"] for p in s["passport"] if p["name"] == "Type"}
+            self.assertTrue({"Game editor", "Manager"} <= types)
+            self.assertIn("RC_READY\nframe", session.exec_ssl("RC_READY"))  # ExecSsl still works alongside
+            with self.assertRaises(eng.EngineTimeout):  # smoke_003: no viewport, no level -> no PNG
+                session.screenshot(self.tmp / "early.png", timeout=1.5)
+            mark = session.editor_mark()
+            session.send_editor(eng.minimize_on_deactivate_message(False))
+            session.send_editor(eng.start_frame_sharing_message(0, 640, 360))
+            shared = session.wait_editor(eng.is_frame_shared, 10, since=mark)
+            self.assertEqual(shared["fields"], ["2147484226", 0, False])
+            sent = session.send_editor(eng.load_scene_message(data, play=True))
+            self.assertGreater(sent["bytes"], len(data.ps))
+            self.assertIsNotNone(session.wait_editor(eng.is_scene_loaded, 10, since=mark))
+            changed = session.wait_editor(lambda e: e.get("name") == "Scene Changed", 10, since=mark)
+            self.assertEqual((changed["connector"], changed["fields"]), ("Manager", ["bench", "fake-game-1"]))
+            deadline = time.monotonic() + 10
+            while "truck 1" not in session.exec_ssl("RC_READY") and time.monotonic() < deadline:
+                time.sleep(0.2)
+            shot = session.screenshot(self.tmp / "scene.png", timeout=10)
+            self.assertEqual(len(shot["sha256"]), 64)
+        rows = [r for r in self.fake_rows() if r.get("event") == "editor"]
+        self.assertEqual([r["name"] for r in rows], ["MinimizeEditorOnDeactivate", "StartFrameSharing", "LoadScenePlay"])
+        self.assertEqual((rows[1]["size"], rows[1]["rect"], rows[1]["visible"]), ([640, 360], [0, 0, 640, 360], True))
+        load = rows[2]
+        self.assertEqual((load["scene"], load["resTag"], load["psBytes"], load["prefab"], load["server"], load["gameMode"]),
+                         ("bench.scn", data.res_tag, len(data.ps.encode()), False, "localhost", ""))
+        self.assertTrue(any(m.get("name") == "LoadingsState" for m in session.record["editorMessages"]))
+
+    def test_scene_command_through_the_real_hub(self):
+        from roadcraft import bench_headless as bh
+        import io
+        sys.path.insert(0, str(HERE))
+        self.addCleanup(sys.path.remove, str(HERE))
+        from test_bench_headless import make_scene
+        game = self.tmp / "game"
+        make_scene(game / "root" / "mods_source", "xscenes/mods/example/example.scn")
+        port = free_port()
+        env = dict(os.environ, RC_FAKE_HUB_PORT=str(port), RC_FAKE_LOG=str(self.log), RC_FAKE_SCENE_GATED="1")
+
+        def factory(layout, **kwargs):
+            kwargs.update(sdk_editor_dir=SDK, hub_port=port, discovery=False, process_check=IDLE, env=env,
+                          engine_argv=[sys.executable, str(FAKE)],
+                          hub_argv=eng.hub_command(self.hub_exe, SDK, port=port, discovery=False))
+            return eng.EngineSession(layout, **kwargs)
+
+        out = io.StringIO()
+        code = bh.main(["scene", "--out", str(self.tmp / "scene"), "--owner-approved", "unit test", "--settle", "0",
+                        "--game-root", str(game), "--adapter-id", "1"], factory=factory, stdout=out)
+        report = json.loads(out.getvalue())
+        self.assertEqual(code, 0, report)
+        run = report["runs"][0]
+        self.assertTrue(run["ready"], run["steps"])
+        self.assertTrue(eng.png_complete(run["screenshot"]["path"]))
+        self.assertIn("adapter 1 NVIDIA", run["adapter"])
+        argv = self.fake_rows()[0]["argv"]
+        self.assertEqual(argv[argv.index("/DbgVars/Game/Startup/Start at truck on scene") + 1], "true")
+        record = json.loads((self.tmp / "scene" / "candidate" / "session.json").read_text(encoding="utf-8"))
+        self.assertIn("clientsBeforeEditor", record)
+        self.assertIn("editor-attached", [e["event"] for e in record["events"]])
 
     def test_startup_timeout_when_no_listener_registers(self):
         session = self.session(mode="silent", wall_clock=120, startup_timeout=2)

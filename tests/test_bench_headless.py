@@ -7,6 +7,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import os
 import math
 import random
 import re
@@ -15,6 +16,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from roadcraft import bench_headless as bh
 from roadcraft import engine as eng
@@ -49,7 +51,9 @@ class FakeSession:
         FakeSession.instances.append(self)
 
     def plan(self):
-        argv, sets = eng.build_command("Roadcraft ModEditor.exe", channel=1, layout=self.layout)
+        argv, sets = eng.build_command("Roadcraft ModEditor.exe", channel=1, layout=self.layout,
+                                       adapter_id=self.kwargs.get("adapter_id", 0),
+                                       extra_sets=self.kwargs.get("extra_sets", ()))
         return {"engine": {"argv": argv}, "fake": True}
 
     def start(self, owner_approved=None):
@@ -61,12 +65,48 @@ class FakeSession:
         self.clock.sleep(0.03)  # a reply takes time
         if "GetBodyCount" in script:
             return fake_engine.probe_reply(self.clock.t)
+        for marker, play in (("SSL_LOAD_REQUESTED", False), ("SSL_PLAY_REQUESTED", True)):
+            if marker in script:  # synchronously: the clock is virtual
+                fake_engine.load_scene(re.search(r'p\.name = "([^"]*)"', script).group(1), play, delay=0)
+                return marker
         return fake_engine.answer(script)
 
     def screenshot(self, path, *, hud=False, timeout=20.0):
         self.scripts.append(eng.screenshot_script(path, hud))
+        if not (fake_engine.STATE.sharing and fake_engine.STATE.level):  # as the gated fake engine
+            raise eng.EngineTimeout(f"no complete PNG at {path}")
         Path(path).write_bytes(fake_engine.png_bytes())
         return eng.wait_png(path, 2, 0.01)
+
+    # the "Game editor" connector, answered like tests/fake_engine.py FakeEngine.editor_message
+    events: list
+    sent: list
+
+    def attach_editor(self, connector=eng.GAME_EDITOR, *, wait=120.0):
+        self.events, self.sent = getattr(self, "events", []), getattr(self, "sent", [])
+        return {"ok": True, "connected": True, "manager": True,
+                "engineListener": [{"name": "Type", "value": connector, "absent": False}]}
+
+    def editor_mark(self):
+        return len(self.events)
+
+    def send_editor(self, message, connector=eng.GAME_EDITOR):
+        body = eng.check_message(message)
+        self.sent.append(body)
+        name, fields = message
+        if name == "StartFrameSharing":
+            fake_engine.STATE.sharing = True
+            self.events.append({"event": "editor_message", "name": "FrameShared", "fields": ["1", fields[0][1], False]})
+        elif name in ("LoadScene", "LoadScenePlay"):
+            fake_engine.load_scene(fields[0][1], name == "LoadScenePlay", delay=0)
+            self.events.append({"event": "editor_message", "name": "LoadingsState", "fields": ["Scene", 1, "Loaded"]})
+        return {"ok": True, "bytes": sum(len(str(v)) for _, v in fields)}
+
+    def wait_editor(self, predicate, timeout, since=0):
+        return next((e for e in self.events[since:] if predicate(e)), None)
+
+    def snapshot_clients(self, key="clients"):
+        return []
 
     def __enter__(self):
         return self
@@ -293,6 +333,125 @@ class CliTests(unittest.TestCase):
         for shot in shots:
             self.assertTrue(eng.png_complete(shot["path"]))
         self.assertIn("Inferred", shots[1]["grades"]["dayTime"])
+
+
+def make_scene(mods_source: Path, rel: str = "xscenes/mods/Example/Example.scn") -> Path:
+    scene = mods_source / rel
+    scene.parent.mkdir(parents=True, exist_ok=True)
+    scene.write_text("elements = {\n   truck = {\n   }\n}\n__type = \"scene_object\"\n", encoding="utf-8")
+    scene.with_name(scene.name + ".resource").write_text("__type: res_xscn_desc\nbrandName: example\n",
+                                                         encoding="utf-8")
+    return scene
+
+
+class SceneTests(unittest.TestCase):
+    """bench_headless scene: scene_play.md's recipe against the in-process fake (gated like smoke_003)."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.game = self.tmp / "game"
+        make_scene(self.game / "root" / "mods_source", "xscenes/mods/example/example.scn")
+        FakeSession.instances = []
+        FakeSession.clock = VirtualClock()
+        saved = fake_engine.STATE
+        self.addCleanup(setattr, fake_engine, "STATE", saved)
+        fake_engine.STATE = fake_engine.State()
+        fake_engine.STATE.sharing, fake_engine.STATE.level, fake_engine.STATE.truck = False, "", False
+        fake_engine.STATE.trucks = 0
+
+    def main(self, *argv):
+        out = io.StringIO()
+        code = bh.main([*map(str, argv)], factory=FakeSession, clock=FakeSession.clock, stdout=out)
+        return code, json.loads(out.getvalue())
+
+    def test_scene_load_data_and_messages_follow_the_editor(self):
+        scene = make_scene(self.tmp / "ms")
+        data = eng.scene_load_data("xscenes/mods/Example/Example.scn", self.tmp / "ms")
+        self.assertEqual(data.name, "Example.scn")                        # ClassDocumentSource.Name
+        self.assertEqual(data.res_tag, "res://xscenes/mods/example/example.scn.resource")  # lower case
+        self.assertEqual(data.ps, scene.read_text(encoding="utf-8"))
+        self.assertEqual(eng.scene_load_data(scene, self.tmp / "ms", ps="empty").ps, "")
+        name, fields = eng.load_scene_message(data, play=True)
+        self.assertEqual(name, "LoadScenePlay")
+        self.assertEqual([k for k, _ in fields], ["str", "str", "str", "str", "bool", "str", "str"])
+        self.assertEqual([v for _, v in fields][-3:], [False, "localhost", ""])
+        name, fields = eng.load_scene_message(data, play=False, unloaded_blocks=["b1"])
+        self.assertEqual((name, fields[5:]), ("LoadScene", [("int", 1), ("str", "b1")]))
+        self.assertEqual(eng.play_message(data)[1][0], ("str", data.ps))   # Play carries no name
+        self.assertEqual(eng.stop_message(data)[1][-1], ("int", 0))
+        self.assertEqual(eng.start_frame_sharing_message(0, 10, 2000)[1],
+                         [("int", 0), ("int", 64), ("int", 2000), ("int", 0), ("int", 0), ("int", 64), ("int", 2000),
+                          ("bool", True)])
+        with self.assertRaises(eng.EngineError):
+            eng.check_message(("X", [("int", True)]))
+        with self.assertRaises(eng.EngineError):
+            eng.scene_load_data(self.tmp / "elsewhere.scn", self.tmp / "ms")
+        (self.tmp / "ms" / "xscenes" / "mods" / "Example" / "Example.scn.resource").unlink()
+        with self.assertRaises(eng.EngineError):
+            eng.scene_load_data(scene, self.tmp / "ms")
+
+    def test_dry_run_plans_messages_dbgvar_and_writes_nothing(self):
+        out = self.tmp / "out"
+        code, plan = self.main("scene", "--out", out, "--game-root", self.game, "--adapter-id", "1")
+        self.assertEqual(code, 0, plan)
+        self.assertTrue(plan["dryRun"])
+        self.assertFalse(out.exists())
+        argv = plan["runs"][0]["session"]["engine"]["argv"]
+        self.assertEqual(argv[argv.index("/DbgVars/Game/Startup/Start at truck on scene") + 1], "true")
+        self.assertEqual(argv[argv.index("/Config/Video/AdapterId") + 1], "1")
+        self.assertEqual([m["name"] for m in plan["scenePlan"]["messages"]],
+                         ["MinimizeEditorOnDeactivate", "StartFrameSharing", "LoadScenePlay"])
+        self.assertEqual(plan["scenePlan"]["scene"]["resTag"], "res://xscenes/mods/example/example.scn.resource")
+        self.assertIn("RC_ADAPTER", plan["scripts"]["adapter"])
+        code, plan = self.main("scene", "--out", out, "--game-root", self.game, "--mode", "edit", "--via", "ssl")
+        argv = plan["runs"][0]["session"]["engine"]["argv"]
+        self.assertNotIn("/DbgVars/Game/Startup/Start at truck on scene", argv)
+        self.assertIn("StartSceneLoading(p)", plan["scripts"]["load"])
+        self.assertIn("GetOrCreateViewport(c.viewports, 0)", plan["scripts"]["frameSharing"])
+
+    def test_play_via_editor_waits_for_truck_then_screenshots(self):
+        out = self.tmp / "play"
+        code, report = self.main("scene", "--out", out, "--game-root", self.game, "--owner-approved", "test")
+        self.assertEqual(code, 0, report)
+        run = report["runs"][0]
+        steps = {s["step"]: s for s in run["steps"]}
+        self.assertTrue(steps["frame-shared"]["ok"])
+        self.assertTrue(steps["scene-loaded"]["ok"])
+        self.assertTrue(run["ready"])
+        self.assertIn("truck 1", steps["ready"]["reply"])
+        self.assertTrue(eng.png_complete(run["screenshot"]["path"]))
+        self.assertTrue((out / "candidate" / "scene.json").is_file())
+        session = FakeSession.instances[0]
+        self.assertEqual([m["name"] for m in session.sent],
+                         ["MinimizeEditorOnDeactivate", "StartFrameSharing", "LoadScenePlay"])
+        self.assertEqual(session.kwargs["extra_sets"], [eng.START_AT_TRUCK_ON_SCENE])
+        order = [s for s in session.scripts if "SaveScreenshot" in s or "RC_READY" in s]
+        self.assertIn("SaveScreenshot", order[-1])  # the shot comes after the ready polls
+
+    def test_edit_via_ssl_loads_and_screenshots_without_truck(self):
+        code, report = self.main("scene", "--out", self.tmp / "e", "--game-root", self.game, "--mode", "edit",
+                                 "--via", "ssl", "--owner-approved", "test")
+        self.assertEqual(code, 0, report)
+        run = report["runs"][0]
+        self.assertTrue(run["ready"])
+        self.assertTrue(eng.png_complete(run["screenshot"]["path"]))
+        scripts = FakeSession.instances[0].scripts
+        self.assertTrue(any("SSL_FRAME_SHARING" in s for s in scripts))
+        self.assertTrue(any("SSL_LOAD_REQUESTED" in s for s in scripts))
+
+    def test_no_truck_is_reported_and_force_current_tried(self):
+        patcher = mock.patch.dict(os.environ, {"RC_FAKE_TRUCKS": "0"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        code, report = self.main("scene", "--out", self.tmp / "n", "--game-root", self.game, "--owner-approved", "t",
+                                 "--ready-timeout", "5", "--force-current-truck")
+        self.assertEqual(code, 0, report)
+        run = report["runs"][0]
+        self.assertFalse(run["ready"])
+        steps = {s["step"]: s for s in run["steps"]}
+        self.assertEqual(steps["force-current"]["reply"], "NO_TRUCKS")
+        self.assertTrue(eng.png_complete(run["screenshot"]["path"]))  # a loaded level still renders
 
 
 if __name__ == "__main__":

@@ -72,14 +72,24 @@ class EngineTimeout(EngineError):
 # ------------------------------------------------------------------ command line
 @dataclass(frozen=True)
 class EngineSet:
-    """One ``--set /Config/<path> <value>`` with its evidence grade and reason."""
+    """One ``--set /<root>/<path> <value>`` (root Config or DbgVars) with its evidence grade and reason."""
     path: str
     value: str
     grade: str
     why: str
+    root: str = "Config"
 
     def argv(self) -> list[str]:
-        return ["--set", f"/Config/{self.path}", self.value]
+        return ["--set", f"/{self.root}/{self.path}", self.value]
+
+
+# The user's RC3 bench project ran play mode with this DbgVar in its xgine-arguments (.project:
+# --set "/DbgVars/Game/Startup/Start at truck on scene" true); the game's start state then calls
+# StartAtExistingTruck -> TruckManagerRb.SetCurrent(start truck) instead of the spawn/garage/eagle flow
+# (ssl main/game_session/game_context_fsm_state_start.ssc Enter).  scene_play.md step 0.
+START_AT_TRUCK_ON_SCENE = EngineSet("Game/Startup/Start at truck on scene", "true", "SDK",
+                                    "play mode starts at the scene's (setAsStartTruck) truck: RC3 bench .project "
+                                    "xgine-arguments; game_context_fsm_state_start.ssc", root="DbgVars")
 
 
 def standard_sets(*, channel: int, adapter_id: int, width: int, height: int) -> list[EngineSet]:
@@ -156,7 +166,7 @@ def build_command(exe: str | Path, *, channel: int, layout: "RunLayout", adapter
     argv = [str(exe), "--startup"]
     for s in head[:3]:
         argv += s.argv()
-    argv += head[3].argv() + ["--editor", "--cfg", EDITOR_CFG]
+    argv += head[3].argv() + ["--editor", "--cfg", str(layout.cfg) if layout.cfg else EDITOR_CFG]
     for s in tail:
         argv += s.argv()
     argv += ["--dont_send_crashdump", "--crashdump_directory", str(layout.crash)]
@@ -176,12 +186,13 @@ class RunLayout:
     shots: Path
     pak: Path | None = None
     copied: list[str] = field(default_factory=list)
+    cfg: Path | None = None   # private editor.cfg (project-copy): references the game's, overrides `external`
 
     def as_json(self) -> dict[str, Any]:
         return {"root": str(self.root), "strategy": self.strategy, "mods": str(self.mods),
                 "modsPros": str(self.mods_pros), "modsSource": str(self.mods_source), "crash": str(self.crash),
                 "logs": str(self.logs), "shots": str(self.shots), "pak": str(self.pak) if self.pak else None,
-                "copied": self.copied}
+                "copied": self.copied, "cfg": str(self.cfg) if self.cfg else None}
 
 
 STRATEGIES = ("moddirs", "project-copy")
@@ -224,10 +235,27 @@ def plan_layout(root: str | Path, *, strategy: str = "moddirs", pak: str | Path 
     pak = Path(pak) if pak else None
     return RunLayout(root=root, strategy=strategy, mods=root / "mods", mods_pros=root / "mods_pros",
                      mods_source=root / "mods_source", crash=root / "crash", logs=root / "logs", shots=root / "shots",
-                     pak=(root / "mods" / pak.name) if pak else None)
+                     pak=(root / "mods" / pak.name) if pak else None,
+                     cfg=(root / "config" / "editor.cfg") if strategy == "project-copy" else None)
 
 
-def prepare_layout(layout: RunLayout, *, pak: str | Path | None = None, project: str | Path | None = None) -> RunLayout:
+def private_cfg_text(layout: "RunLayout", game_root: str | Path | None = None) -> str:
+    """The run's editor.cfg for the project-copy strategy, in the form of the RC3 bench project's
+    config/editor.cfg (``references: - user_documents: <game editor.cfg>`` + ``external``).  That file is
+    what made IntegrationStudio's engine mount the bench mods_source (its engine log lists the project's
+    mods_source as a FileSystem layer root); ``--set /Config/external/ModsSourceLocal`` did not change
+    the layer in smoke_003 (engine.log still shows the game's ../../mods_source).  scene_play.md step 0."""
+    game = Path(game_root) if game_root else project_context.game_root()
+    base = (game / "root" / "config" / "editor" / "editor.cfg").as_posix()
+    return ("references:\n"
+            f"- user_documents: {base}\n"
+            "external:\n"
+            f"  ModsSourceLocal: {layout.mods_source.as_posix()}\n"
+            f"  ProjectPath: {(game / 'root' / '.project').as_posix()}\n")
+
+
+def prepare_layout(layout: RunLayout, *, pak: str | Path | None = None, project: str | Path | None = None,
+                   game_root: str | Path | None = None) -> RunLayout:
     """Create the private folders.  ``moddirs``: the candidate pak alone in ``mods``; ``project-copy``:
     a copy of the project's ``mods_source`` (as physics_bench.init_bench) with no pak.  The source pak
     and project are only read."""
@@ -253,6 +281,9 @@ def prepare_layout(layout: RunLayout, *, pak: str | Path | None = None, project:
             raise EngineError(f"no mods_source in {project}")
         shutil.copytree(source, layout.mods_source)
         layout.copied.append(str(source))
+        if layout.cfg:
+            layout.cfg.parent.mkdir(parents=True, exist_ok=True)
+            layout.cfg.write_text(private_cfg_text(layout, game_root), encoding="utf-8")
     return layout
 
 
@@ -320,11 +351,15 @@ def ssl_string(text: str) -> str:
 
 
 def screenshot_script(path: str | Path, hud: bool = False) -> str:
-    """SaveScreenshot to an absolute path (prior_notes.md: absolute paths work; bare names land in bin/pc)."""
+    """SaveScreenshot to an absolute path (prior_notes.md: absolute paths work; bare names land in bin/pc).
+
+    The engine appends the format's extension itself (scene_001 2026-10-13: ``scene.png`` was written as
+    ``scene.png.png``), so the name is passed without its ``.png``."""
     path = Path(path)
     if not path.is_absolute():
         raise EngineError("screenshots need an absolute path (a bare name lands in the game's bin/pc)")
-    return (f"SaveScreenshot(ScreenshotSaveTarget.FILE,{ssl_string(path.as_posix())},"
+    stem = path.with_suffix("") if path.suffix.lower() == ".png" else path
+    return (f"SaveScreenshot(ScreenshotSaveTarget.FILE,{ssl_string(stem.as_posix())},"
             f"{'true' if hud else 'false'},ScreenshotFormat.PNG)")
 
 
@@ -432,9 +467,11 @@ class HubClient:
             self.events.append({"event": "eof"})
             self._event_cv.notify_all()
 
-    def wait_event(self, predicate: Callable[[dict[str, Any]], bool], timeout: float) -> dict[str, Any] | None:
+    def wait_event(self, predicate: Callable[[dict[str, Any]], bool], timeout: float,
+                   start: int = 0) -> dict[str, Any] | None:
+        """First event from index ``start`` on that satisfies ``predicate`` (None on timeout or EOF)."""
         deadline = time.monotonic() + timeout
-        seen = 0
+        seen = start
         with self._event_cv:
             while True:
                 for row in self.events[seen:]:
@@ -490,6 +527,125 @@ class HubClient:
         self.process.close()
         if self._log_file:
             self._log_file.close()
+
+
+# ------------------------------------------------------------------ IntegrationStudio "Game editor" messages
+# C:\RC_RE\research\scene_play.md has the recipe and the grades.  A message is (name, fields); each field
+# is (type, value) with type str|int|bool|float, serialised by the hub helper as TreEngineMessage does
+# (NativeWriter: string = int32 byte length + UTF-8 without NUL, bool = 1 byte, int/float = 4 bytes LE).
+GAME_EDITOR = "Game editor"     # GameEditor.CreateConnector (XginePlugin GameEditor.cs:260), protocol 1
+DEFAULT_SERVER_ADDRESS = "localhost"   # GameEditor.LoadState default "server-addr"
+FIELD_TYPES = ("str", "int", "bool", "float")
+Field = tuple[str, Any]
+Message = tuple[str, list[Field]]
+
+
+@dataclass(frozen=True)
+class SceneLoadData:
+    """XgineViewportSceneLoadData for a scene file: SceneName = file name (ClassDocumentSource.Name),
+    SceneData = the scene PS, ResTag = res:// + path of ``<scene>.resource`` relative to its mods_source
+    layer, lower case (ResourceTag.MakeFrom), Resource = the ``.resource`` text (ResourceInstance.SaveToString
+    of the unmodified file's database entry)."""
+    name: str
+    ps: str
+    res_tag: str
+    resource: str
+    path: str
+
+    def as_json(self) -> dict[str, Any]:
+        return {"name": self.name, "resTag": self.res_tag, "path": self.path,
+                "psBytes": len(self.ps.encode("utf-8")), "resourceBytes": len(self.resource.encode("utf-8")),
+                "psSha256": hashlib.sha256(self.ps.encode("utf-8")).hexdigest()}
+
+
+def scene_load_data(scene: str | Path, mods_source: str | Path, *, ps: str = "file") -> SceneLoadData:
+    """``scene`` is a .scn path relative to ``mods_source`` (as in a .mod file: xscenes/mods/<x>/<x>.scn) or
+    absolute inside it.  ``ps``: "file" sends the scene text as the editor does (it sends the whole
+    document as psOverrides), "empty" sends "" (XgineSceneLoader then passes no override)."""
+    if ps not in ("file", "empty"):
+        raise EngineError("scene ps must be 'file' or 'empty'")
+    root = Path(mods_source).resolve()
+    path = Path(scene)
+    path = (path if path.is_absolute() else root / path).resolve()
+    if not _inside(path, root):
+        raise EngineError(f"scene {path} is not inside {root}")
+    if path.suffix.lower() != ".scn" or not path.is_file():
+        raise EngineError(f"not a scene file: {path}")
+    resource = path.with_name(path.name + ".resource")
+    if not resource.is_file():
+        raise EngineError(f"scene resource missing: {resource}")
+    rel = resource.relative_to(root).as_posix().lower()
+    return SceneLoadData(name=path.name, ps=path.read_text(encoding="utf-8") if ps == "file" else "",
+                         res_tag="res://" + rel, resource=resource.read_text(encoding="utf-8"), path=str(path))
+
+
+def _scene_fields(data: SceneLoadData, *, with_name: bool) -> list[Field]:
+    head: list[Field] = [("str", data.name)] if with_name else []
+    return head + [("str", data.ps), ("str", data.res_tag), ("str", data.resource), ("bool", False)]  # no prefab
+
+
+def load_scene_message(data: SceneLoadData, *, play: bool, server: str = DEFAULT_SERVER_ADDRESS,
+                       game_mode: str = "", unloaded_blocks: Sequence[str] = ()) -> Message:
+    """GameEditor.LoadScene: LoadScenePlay (sent on connect after PlayAfterConnect, i.e. the editor's Play
+    button) = name, ps, tag, resource, isPrefab, serverAddress, gameMode; LoadScene = ..., isPrefab,
+    int n, n x unloaded block names.  Engine: XginePlayMode.ProcessLoadScenePlay / XgineEditMode.ProcessLoadScene."""
+    fields = _scene_fields(data, with_name=True)
+    if play:
+        fields += [("str", server), ("str", game_mode)]
+    else:
+        fields += [("int", len(unloaded_blocks))] + [("str", b) for b in unloaded_blocks]
+    return ("LoadScenePlay" if play else "LoadScene"), fields
+
+
+def play_message(data: SceneLoadData, *, server: str = DEFAULT_SERVER_ADDRESS, game_mode: str = "") -> Message:
+    """GameEditor.Play (in-place; the shipped editor restarts the engine instead, IsSceneLoadNeedRestart):
+    ps, tag, resource, isPrefab, serverAddress, gameMode; the engine uses its current scene name."""
+    return "Play", _scene_fields(data, with_name=False) + [("str", server), ("str", game_mode)]
+
+
+def stop_message(data: SceneLoadData) -> Message:
+    return "Stop", _scene_fields(data, with_name=False) + [("int", 0)]
+
+
+def start_frame_sharing_message(viewport: int = 0, width: int = 1280, height: int = 720) -> Message:
+    """BaseViewportInputController.StartFrameSharing: id, max(64,w), max(64,h), rect x, y, w, h, visible.
+    Engine: XgineViewportsController.ProcessStartFrameSharing creates the viewport (camera, shared frame),
+    applies the resolution and answers FrameShared(handle, id, bgra)."""
+    w, h = max(64, int(width)), max(64, int(height))
+    return "StartFrameSharing", [("int", int(viewport)), ("int", w), ("int", h), ("int", 0), ("int", 0),
+                                 ("int", w), ("int", h), ("bool", True)]
+
+
+def minimize_on_deactivate_message(value: bool = False) -> Message:
+    """Sent first on connect (GameEditor.OnConnected); false -> SetEditorWindowBackground(false)."""
+    return "MinimizeEditorOnDeactivate", [("bool", bool(value))]
+
+
+def check_message(message: Message) -> dict[str, Any]:
+    name, fields = message
+    if not isinstance(name, str) or not name:
+        raise EngineError("message name required")
+    rows = []
+    for kind, value in fields:
+        if kind not in FIELD_TYPES:
+            raise EngineError(f"unknown field type {kind}")
+        ok = {"str": isinstance(value, str), "bool": isinstance(value, bool),
+              "int": isinstance(value, int) and not isinstance(value, bool) and -2**31 <= value < 2**31,
+              "float": isinstance(value, (int, float)) and not isinstance(value, bool)}[kind]
+        if not ok:
+            raise EngineError(f"{name}: {value!r} is not a {kind}")
+        rows.append({"t": kind, "v": value})
+    return {"name": name, "fields": rows}
+
+
+def is_scene_loaded(event: dict[str, Any]) -> bool:
+    """LoadingsState("Scene", 1, "Loaded") from XgineSceneLoadingStepsNotifier.OnLeveLoaded."""
+    return (event.get("event") == "editor_message" and event.get("name") == "LoadingsState"
+            and (event.get("fields") or [None])[0] == "Scene" and (event.get("fields") or [None])[-1] == "Loaded")
+
+
+def is_frame_shared(event: dict[str, Any]) -> bool:
+    return event.get("event") == "editor_message" and event.get("name") == "FrameShared"
 
 
 # ------------------------------------------------------------------ session
@@ -603,6 +759,17 @@ class EngineSession:
             self.stop()
             raise
 
+    def snapshot_clients(self, key: str = "clients") -> list[dict[str, Any]]:
+        """Record every hub client with its listener and speaker passports (what the engine registered)."""
+        if self.hub is None:
+            return []
+        try:
+            clients = self.hub.request("clients", wait=10).get("clients") or []
+        except EngineError:
+            return []
+        self.record[key] = clients
+        return clients
+
     def _announce(self) -> None:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
             udp.sendto(f"CONSOLE_IPDISCOVERY{self.hub_port}".encode("ascii"), ("127.0.0.1", DISCOVERY_PORT))
@@ -671,6 +838,65 @@ class EngineSession:
         result["reply"] = reply
         return result
 
+    # -- IntegrationStudio connector ("Game editor"), scene_play.md
+    def attach_editor(self, connector: str = GAME_EDITOR, *, wait: float = 120.0) -> dict[str, Any]:
+        """Open the editor's connector next to ExecSsl: a speaker mirroring the engine's
+        {Module=IntegrationStudio, Type=<connector>} listener and listeners for the engine's
+        {Module=IntegrationStudioProxy} <connector> and Manager speakers.  The engine registers that listener
+        when its SSL GameEditorController initialises, so this retries until ``wait``.  Keep it attached:
+        the engine exits 3 s after its last editor connection goes (GameEditorController.OnEditorDisconnected)."""
+        if self.hub is None or self.target is None:
+            raise EngineError("session not started")
+        deadline = time.monotonic() + wait
+        last: dict[str, Any] = {}
+        while True:
+            self._check_alive()
+            last = self.hub.request("editor_attach", wait=30, connector=connector, timeout=12.0)
+            if last.get("ok") and last.get("connected"):
+                self._event("editor-attached", connector=connector, engineListener=last.get("engineListener"),
+                            engineSpeaker=last.get("engineSpeaker"), manager=last.get("manager"))
+                return last
+            if last.get("ok"):  # attached but the engine listener did not connect: start over
+                self.hub.request("detach", wait=10)
+                self.target = None
+                self.target = self._wait_listener()
+            elif "engine has 0 " not in str(last.get("error")):  # only a missing listener is worth waiting for
+                self.record["editorAttachFailure"] = {k: v for k, v in last.items() if k != "id"}
+                raise EngineError(f"'{connector}' connector: {last.get('error')}")
+            if time.monotonic() > deadline:
+                self.record["editorAttachFailure"] = {k: v for k, v in last.items() if k != "id"}
+                raise EngineTimeout(f"no engine '{connector}' connector within {wait:.0f} s: {last.get('error')}")
+            time.sleep(1.0)
+
+    def send_editor(self, message: Message, connector: str = GAME_EDITOR) -> dict[str, Any]:
+        if self.hub is None:
+            raise EngineError("session not started")
+        self._check_alive()
+        body = check_message(message)
+        answer = self.hub.request("editor_send", wait=30, connector=connector, **body)
+        if not answer.get("ok"):
+            raise EngineError(f"{message[0]} not sent: {answer.get('error')}")
+        self._event("editor-sent", message=message[0], bytes=answer.get("bytes"))
+        return answer
+
+    def editor_mark(self) -> int:
+        """Index for ``wait_editor(since=...)``: only events after this point count."""
+        return len(self.hub.events) if self.hub else 0
+
+    def wait_editor(self, predicate: Callable[[dict[str, Any]], bool], timeout: float,
+                    since: int = 0) -> dict[str, Any] | None:
+        if self.hub is None:
+            raise EngineError("session not started")
+        if self._deadline is not None:
+            timeout = max(0.0, min(timeout, self._deadline - time.monotonic()))
+        row = self.hub.wait_event(lambda e: e.get("event") == "editor_message" and predicate(e), timeout, start=since)
+        self._check_alive()
+        return row
+
+    def editor_messages(self) -> list[dict[str, Any]]:
+        return [{k: v for k, v in e.items() if k != "event"} for e in (self.hub.events if self.hub else [])
+                if e.get("event") == "editor_message"]
+
     def stop(self) -> dict[str, Any]:
         """Detach, close the hub, kill the engine tree.  Safe to call twice."""
         if self._stopped.is_set():
@@ -678,6 +904,9 @@ class EngineSession:
         self._stopped.set()
         result: dict[str, Any] = {"wallClockHit": self.wall_clock_hit}
         if self.hub is not None:
+            messages = self.editor_messages()
+            if messages:
+                self.record["editorMessages"] = messages[:500]
             try:
                 self.hub.request("detach", wait=5)
             except EngineError:

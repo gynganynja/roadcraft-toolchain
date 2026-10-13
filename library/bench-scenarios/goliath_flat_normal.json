@@ -1,0 +1,7 @@
+{"schemaVersion": 1, "name": "goliath-flat-normal", "note": "Goliath D11 RC3 bench pad, editor bench 'normal' schedule, first headless bench run",
+ "seed": 1, "timestep": 0.0166667, "durationSeconds": 64, "wallClockSeconds": 1200, "startupTimeoutSeconds": 300,
+ "scene": {"file": "xscenes/mods/gd11_bench/gd11_bench.scn", "settleSeconds": 5, "readyTimeoutSeconds": 400},
+ "vehicle": {"tpl": "*", "hull": "BoneChassis_cdt"},
+ "spawn": {"method": "none"},
+ "inputs": {"method": "Debug", "schedule": "normal"},
+ "probes": {"rateHz": 10, "items": ["engine", "bodies", "com", "wheels", "joints", "tracks"]}}

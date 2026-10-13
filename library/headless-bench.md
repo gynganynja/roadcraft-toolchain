@@ -21,6 +21,7 @@ SDK (read in the decompile or the shipped config) or Inferred.
 python -m roadcraft.bench_headless smoke   --out <new folder> [--pak <pak>] --owner-approved "<who/when/why>"
 python -m roadcraft.bench_headless run     <scenario.json> --pak <candidate.pak> [--baseline <pak>] --out <new folder> --owner-approved "..."
 python -m roadcraft.bench_headless capture <scenario.json> --pak <pak> --out <new folder> --owner-approved "..."
+python -m roadcraft.bench_headless scene   --out <new folder> [--scene <scn under mods_source>] [--mode play|edit] --owner-approved "..."
 python -m roadcraft.bench_headless analyse <run folder> --scenario <scenario.json>
     common: [--dry-run] [--strategy moddirs|project-copy] [--project <folder with mods_source>]
             [--game-root <RoadCraft folder>] [--sdk-editor-dir <...\tools\bin\ModEditor>] [--adapter-id N]
@@ -78,9 +79,11 @@ s.screenshot(abs_path)`; `engine.plan_layout` / `prepare_layout` make the privat
   verbatim (test-checked); `joints` (J: angular constraints, angle and motor target) and `tracks` (T:
   sliding velocity) are the D11 RC3 bench's. Wheel load, slip and constraint forces have no known SSL
   getter yet (**Open**).
-- `scene.level` sets `Level/File` on the command line; `scene.loadSsl` runs `LoadSceneRes("<tag>")`
-  (**Inferred**, never run). Entering play mode without the editor's `Play` message is **Open**: the
-  probes answer `NO_TRUCK` until a current truck exists, and `run` waits `readyTimeoutSeconds` for one.
+- `scene.level` sets `Level/File` on the command line. In `--editor` mode nothing reads it
+  (scene_play.md), so it has no effect. `scene.loadSsl` (a res tag) runs the SSL edit-mode load
+  `XgineEditMode.StartSceneLoading` (**Inferred**). The old `LoadSceneRes("<tag>")` was not a global
+  function. Play mode with a current truck is the `scene` command below; `run` and `capture` still
+  wait `readyTimeoutSeconds` for a current truck.
 - Capture: `headlights` uses `state.isHeadlightsOn.Set` (**Build**, D11 lamp scripts), `dayTime` uses
   `$preset_sys.SetDayTime` (**Inferred**); cameras use the D11 capture scripts' fly camera.
 
@@ -134,11 +137,48 @@ set PYTHONPATH=src
 | smoke_002 | the windowless engine started on the private desktop, registered with the hub in ~8 s and attached the Automation/ExecSsl listener; the first script, sent during `Init hardware`, got no reply in 12 s and the run stopped | Game (engine, no level) |
 | smoke_003 | registered in ~3 s; first script answered after ~100 s of resource preloading (10 attempts); frames advanced 1 -> 127 between two calls; no level loaded (`level` empty, no truck); `SaveScreenshot` wrote no PNG within 30 s, presumably because nothing renders without a level; stopped and the tree was killed at 138 s | Game (engine, no level) |
 
+| scene_001 | `bench_headless scene` on the Goliath RC3 bench project (`gd11_bench.scn`, project copy, adapter 1 = the RTX 4060): the "Game editor" connector attached, `StartFrameSharing` + `LoadScenePlay` sent, scene loaded in ~94 s, level `gd11_bench`, truck current, 1 viewport; the screenshot WAS written but as `scene.png.png`: the engine appends the extension itself (now passed without it) | Game (engine, headless play) |
+| run_001 | first headless bench drive: same project/scene, `normal` schedule, 10 Hz probes; all 10 inputs applied; forward 5.5 m, pivots -32 / +35 deg, reverse 4.3 m; 563 series samples, six CSVs and summary.json; 224 s wall clock | Game (engine, headless play) |
+
 All three: no window and no dialog on the user's desktop (`leakedWindows` empty); the engine's own
 windows (`RoadBuilder`, five child console windows) stayed invisible on the private desktop.
 Confirmed: the engine runs without IntegrationStudio, without a window, on a private desktop, and
-answers ExecSsl through the helper hub. Still open: loading a scene headlessly, screenshots, the
-`ModDirs` override actually mounting a pak, and play mode.
+answers ExecSsl through the helper hub. Since scene_001/run_001 also confirmed: loading a scene, entering play with a current truck,
+screenshots, and a full scripted drive with probes, all headless. Still open: the `ModDirs` override
+mounting a candidate .pak, and determinism across two identical runs.
+
+## Scene, play mode, truck, screenshot (`scene` command; Build with the fake, not yet run live)
+
+Recipe and evidence: `C:\RC_RE\research\scene_play.md`.
+- **Messages.** Scene loading, play and viewports are SSL handlers on the IntegrationStudio callback
+  `Game editor`. The hub now opens that connector next to ExecSsl (`editor_attach`: it mirrors the
+  engine's own passports, plus the Manager listener) and sends what IntegrationStudio sends on connect
+  after its Play button restarts the engine:
+  - `MinimizeEditorOnDeactivate(false)`;
+  - `StartFrameSharing(0, w, h, 0, 0, w, h, true)`: creates viewport 0; without it nothing renders, the
+    likely reason smoke_003 got no PNG;
+  - `LoadScenePlay(name, scene PS, res tag, .resource text, false, "localhost", "")`.
+- **Completion signals:** `FrameShared`, `LoadingsState("Scene",1,"Loaded")`, Manager `Scene Changed`,
+  then ExecSsl level name and `TruckManagerRb.TryGetCurrent()`.
+- **The truck** comes from `--set "/DbgVars/Game/Startup/Start at truck on scene" true` (the RC3 bench
+  project's xgine-arguments) and a scene that contains a `setAsStartTruck` truck.
+- **Project scenes** need a private `editor.cfg` that references the game's and sets `external.ModsSourceLocal`
+  (the RC3 project's form). `--set /Config/external/ModsSourceLocal` did not change the layer in smoke_003.
+  `--strategy project-copy` now writes that cfg and passes it with `--cfg`.
+- **GPU:** `--adapter-id 1` was the RTX 4060 in the RC3 runs; 0 is the Intel UHD. The command prints
+  the engine's adapter list (`adapter` in scene.json).
+- **Keep the connector open.** The engine exits 3 s after its last `Game editor` connection closes.
+
+```text
+python -m roadcraft.bench_headless scene --out <new folder> --owner-approved "..." [--scene xscenes/mods/<x>/<x>.scn]
+    [--mode play|edit] [--via editor|ssl] [--scene-ps file|empty] [--ready-timeout 300] [--settle 5]
+    [--force-current-truck] [--no-start-at-truck] [--wall-clock 900]  + the common options
+```
+
+Output: `candidate/scene.json` holds the steps (first reply, editor attach, frame shared, load sent,
+scene loaded, ready with level/truck times, screenshot), the adapter list and the editor state before and
+after. `session.json` holds the client snapshot (`clientsBeforeEditor`) and every engine->editor message
+(`editorMessages`). `scene.png` is the screenshot.
 
 ## Pitfalls
 

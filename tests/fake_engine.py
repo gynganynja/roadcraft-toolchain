@@ -17,6 +17,16 @@ RC_FAKE_ROLL_HZ, default 1 Hz), an input script gets ROAMER_INPUT_APPLIED, SaveS
 in two steps (partial, then complete), a script containing RC_FAKE_HANG gets no reply.
 RC_FAKE_MODE=silent never connects (for wall-clock tests).  RC_FAKE_LOG receives JSON lines of the
 argv and every script.
+
+IntegrationStudio's "Game editor" connector (C:/RC_RE/research/scene_play.md): the fake also registers
+the engine side the SSL GameEditorController would (listener {Module=IntegrationStudio, Type=Game editor,
+Workspace, GameID, Usage absent}; speakers {Module=IntegrationStudioProxy, Type=Game editor|Manager}),
+answers StartFrameSharing with FrameShared, and LoadScene/LoadScenePlay with LoadingsState Scene
+Loading/Loaded and Manager "Scene Changed"; after LoadScenePlay a current truck appears.  With
+RC_FAKE_SCENE_GATED=1 the engine starts like smoke_003 (no level, no truck, SaveScreenshot writes nothing)
+until a viewport is shared and a scene loaded; the SSL fallback scripts (SSL_FRAME_SHARING,
+SSL_LOAD_REQUESTED, SSL_PLAY_REQUESTED) change the same state.  RC_FAKE_EDITOR=0 registers no editor
+connector; RC_FAKE_TRUCKS=0 loads scenes without a truck.
 """
 
 from __future__ import annotations
@@ -68,10 +78,12 @@ def sys_message(name: str, *params: tuple[str, object]) -> bytes:
     return b"sys" + s_str(name) + struct.pack("<i", len(params)) + body
 
 
-def listener_passport(conditions: dict[str, str]) -> bytes:
+def listener_passport(conditions: dict[str, str | None]) -> bytes:
+    """None = an absent condition (RegisterListener: name, bool shouldAbsent, value)."""
     out = struct.pack("<i", len(conditions))
     for name in sorted(conditions):  # ordinal sort, as ListenerPassport.Sort
-        out += s_str(name, True) + b"\0" + s_str(conditions[name], True)
+        value = conditions[name]
+        out += s_str(name, True) + (b"\1" if value is None else b"\0") + s_str(value or "", True)
     return out
 
 
@@ -118,16 +130,65 @@ def probe_reply(t: float) -> str:
     return "\n".join(lines) + "\n"
 
 
+class State:
+    """Scene/viewport/truck state; ungated (default) it starts loaded, as the old canned replies did."""
+
+    def __init__(self):
+        gated = os.environ.get("RC_FAKE_SCENE_GATED") == "1"
+        self.sharing = not gated
+        self.level = "" if gated else "fake_level"
+        self.truck = not gated
+        self.trucks = 0 if gated else 1
+        self.scene = ""
+
+
+STATE = State()
+GAME_ID = "fake-game-1"
+
+
+def load_scene(name: str, play: bool, delay: float = 0.3) -> None:
+    STATE.scene = name
+    time.sleep(delay)
+    STATE.level = name.replace(".scn", "")
+    if play and os.environ.get("RC_FAKE_TRUCKS", "1") != "0":
+        STATE.trucks = 1
+        time.sleep(delay)
+        STATE.truck = True
+
+
 def answer(script: str) -> str | None:
     if "RC_FAKE_HANG" in script:
         return None
     if "SaveScreenshot(" in script:
         match = re.search(r'SaveScreenshot\(ScreenshotSaveTarget\.FILE,"([^"]+)"', script)
-        if match:
-            threading.Thread(target=write_png_slowly, args=(match.group(1),), daemon=True).start()
+        if match and STATE.sharing and STATE.level:  # smoke_003: nothing written without a viewport and a level; the real engine appends ".png" (scene_001)
+            threading.Thread(target=write_png_slowly, args=(match.group(1) + ".png",), daemon=True).start()
         return ""
     if "RC_READY" in script:
-        return f"RC_READY\nframe {int((time.monotonic() - START) * 60)}\nlevel fake_level\ntruck 1\n"
+        return (f"RC_READY\nframe {int((time.monotonic() - START) * 60)}\nlevel {STATE.level}\n"
+                f"truck {1 if STATE.truck else 0}\n")
+    if "RC_ADAPTER" in script:
+        return ("RC_ADAPTER\napi 2 adapter 1\ncurrent NVIDIA GeForce RTX 4060 Laptop GPU\n"
+                "adapter 0 Intel(R) UHD Graphics\nadapter 1 NVIDIA GeForce RTX 4060 Laptop GPU\n")
+    if "RC_EDITOR" in script:
+        return (f"RC_EDITOR\neditorMain 1\nlevel {STATE.level}\nscene {STATE.scene}\n"
+                f"viewports {1 if STATE.sharing else 0}\ntrucks {STATE.trucks}\ntruck {1 if STATE.truck else 0}\n")
+    if "SSL_FRAME_SHARING" in script:
+        STATE.sharing = True
+        return "SSL_FRAME_SHARING"
+    for marker, play in (("SSL_LOAD_REQUESTED", False), ("SSL_PLAY_REQUESTED", True)):
+        if marker in script:
+            match = re.search(r'p\.name = "([^"]*)"', script)
+            threading.Thread(target=load_scene, args=(match.group(1) if match else "x.scn", play),
+                             daemon=True).start()
+            return marker
+    if "RC_FORCE_CURRENT" in script:
+        if STATE.truck:
+            return "ALREADY_CURRENT"
+        if not STATE.trucks:
+            return "NO_TRUCKS"
+        STATE.truck = True
+        return "SET_CURRENT fake_truck"
     if "GetBodyCount" in script:
         return probe_reply(time.monotonic() - START)
     if "ROAMER_INPUT_APPLIED" in script:
@@ -147,6 +208,27 @@ def write_png_slowly(path: str) -> None:
         fh.write(data)
 
 
+class Reader:
+    def __init__(self, data: bytes):
+        self.data, self.pos = data, 0
+
+    def int(self) -> int:
+        value = struct.unpack_from("<i", self.data, self.pos)[0]
+        self.pos += 4
+        return value
+
+    def bool(self) -> bool:
+        value = self.data[self.pos] != 0
+        self.pos += 1
+        return value
+
+    def str(self) -> str:
+        n = self.int()
+        value = self.data[self.pos: self.pos + n].decode("utf-8")
+        self.pos += n
+        return value
+
+
 # ---------------------------------------------------------------- client
 class FakeEngine:
     def __init__(self, port: int, channel: str, name: str = "Roadcraft ModEditor"):
@@ -155,6 +237,7 @@ class FakeEngine:
         self.send_lock = threading.Lock()
         self.reply_speakers: dict[str, int] = {}
         self.next_speaker = 100
+        self.editor_speaker, self.manager_speaker = 10, 11
 
     def packet(self, pid: int, payload: bytes) -> None:
         with self.send_lock:
@@ -178,6 +261,16 @@ class FakeEngine:
             {"Channel": self.channel, "Module": "Automation", "Type": "ExecSsl", "Workspace": "RoadBuilder"}))))
         self.packet(1, sys_message("RegisterListener", ("int", 2), ("buf", listener_passport(
             {"Channel": self.channel, "Module": "DbgVars", "Type": "Commands"}))))
+        if os.environ.get("RC_FAKE_EDITOR", "1") != "0":  # the SSL GameEditorController's callback
+            self.packet(1, sys_message("RegisterListener", ("int", 3), ("buf", listener_passport(
+                {"Channel": self.channel, "Module": "IntegrationStudio", "Type": "Game editor",
+                 "Workspace": "RoadBuilder", "GameID": GAME_ID, "Usage": None}))))
+            self.packet(1, sys_message("RegisterSpeaker", ("int", self.editor_speaker), ("buf", speaker_passport(
+                {"Channel": self.channel, "Module": "IntegrationStudioProxy", "Type": "Game editor",
+                 "Workspace": "RoadBuilder", "GameID": GAME_ID}))))
+            self.packet(1, sys_message("RegisterSpeaker", ("int", self.manager_speaker), ("buf", speaker_passport(
+                {"Channel": self.channel, "Module": "IntegrationStudioProxy", "Type": "Manager",
+                 "Workspace": "RoadBuilder"}))))
         log({"event": "registered", "channel": self.channel, "pid": os.getpid()})
         threading.Thread(target=self.pinger, daemon=True).start()
 
@@ -211,6 +304,49 @@ class FakeEngine:
             body = payload[header + 4: header + 4 + body_len]
             if 1 in listeners:
                 threading.Thread(target=self.exec_ssl, args=(body,), daemon=True).start()
+            if 3 in listeners:
+                threading.Thread(target=self.editor_message, args=(body,), daemon=True).start()
+
+    def send_editor(self, speaker: int, name: str, *fields: tuple[str, object]) -> None:
+        body = s_str(name)
+        for kind, value in fields:
+            if kind == "str":
+                body += s_str(value)
+            elif kind == "int":
+                body += struct.pack("<i", value)
+            else:
+                body += b"\1" if value else b"\0"
+        self.packet(1, user_message(speaker, body))
+
+    def editor_message(self, body: bytes) -> None:
+        reader = Reader(body)
+        name = reader.str()
+        row = {"event": "editor", "name": name, "bytes": len(body)}
+        if name == "StartFrameSharing":
+            vp, w, h, x, y, cw, ch = (reader.int() for _ in range(7))
+            row.update(viewport=vp, size=[w, h], rect=[x, y, cw, ch], visible=reader.bool())
+            STATE.sharing = True
+            log(row)
+            self.send_editor(self.editor_speaker, "FrameShared", ("str", "2147484226"), ("int", vp), ("bool", False))
+            return
+        if name in ("LoadScene", "LoadScenePlay"):
+            scene, ps, tag, res, prefab = reader.str(), reader.str(), reader.str(), reader.str(), reader.bool()
+            row.update(scene=scene, psBytes=len(ps.encode()), resTag=tag, resourceBytes=len(res.encode()),
+                       prefab=prefab)
+            if name == "LoadScenePlay":
+                row.update(server=reader.str(), gameMode=reader.str())
+            else:
+                row.update(unloaded=[reader.str() for _ in range(reader.int())])
+            log(row)
+            self.send_editor(self.editor_speaker, "LoadingsState", ("str", "Scene"), ("int", 1), ("str", "Loading"))
+            load_scene(scene, name == "LoadScenePlay")
+            self.send_editor(self.editor_speaker, "LoadingsState", ("str", "Scene"), ("int", 1), ("str", "Loaded"))
+            self.send_editor(self.manager_speaker, "Scene Changed", ("str", scene.replace(".scn", "")),
+                             ("str", GAME_ID))
+            return
+        if name == "MinimizeEditorOnDeactivate":
+            row["value"] = reader.bool()
+        log(row)
 
     def exec_ssl(self, body: bytes) -> None:
         guid = native_guid(body[:16])
