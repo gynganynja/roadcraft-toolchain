@@ -72,7 +72,17 @@ and verified input/dependency/receipt/output bytes. Shared vehicle checks always
 run. Native-gated/capture steps cannot be cached. Pin a new recipe after source or
 shared-runtime changes. Use jobs-summary for observed timing; do not invent speedups.
 
+Build packages with `roadcraft pak build` (quiet, deterministic, fails on missing
+blobs; its build.json is the package receipt), not the editor's Build Mod. Run SDK
+tools only through roadcraft.quiet. See library/headless-build.md.
+
 ## Installation and evidence
+
+Before every install, `roadcraft validate <candidate.pak> --baseline <installed pak>`
+must show no NEW errors, and `roadcraft pak manifest` must show no unintended
+overrides or mod conflicts. Before and after a handling change, record
+`roadcraft physics report` and `roadcraft compare <mod> --donor <retail truck>`.
+The windowless engine bench needs the owner's explicit go-ahead for each run.
 
 install uses a named candidate and the selected mod's configured installedPackage.
 For a new slot use --expect-absent; for an existing slot use the reviewed current

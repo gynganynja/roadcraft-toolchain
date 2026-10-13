@@ -44,6 +44,32 @@ integrated and where; if blocked, preserve a handoff and state the reason.
 Preserve corrected evidence and uncertainty. Do not manufacture findings or
 expand execution, installation, publishing or acceptance authority.
 
+## Headless editor commands (the default route)
+
+These replace the Mod Editor for building, checking and comparing mods. Each is
+non-interactive, shows no window or dialog, takes --json, and exits 0 clean,
+1 findings at or above --fail-on (default error), 2 tool error. The game install
+is found by --game-root, ROADCRAFT_GAME_ROOT, ROADCRAFT_ROOT, the mod's
+machine.json sdkRoot, then the default Steam path.
+
+- Build packages with `roadcraft pak build --project P --mod-file M --output NEW.pak
+  [--roots-file F] --candidate NAME --apply`, not the editor's Build Mod. It fails on
+  blobs the packer only logs, gives byte-identical output for identical input, and
+  writes <output>.build/build.json, whose candidate/packageSha256/accepted:false keys
+  are the package receipt for install and jobs-recover (library/headless-build.md).
+- Before every install run `roadcraft validate NEW.pak --baseline <installed pak> --json`
+  and do not install on a NEW error. Fix or explain new warnings (library/validator.md).
+- Before and after any handling or physics change run `roadcraft physics report` and
+  `roadcraft compare <mod> --donor <retail truck>`, and report what moved
+  (library/physics-report.md). Use `roadcraft schema show|search` for field meanings,
+  and `roadcraft pak manifest` to check a candidate against the installed mods.
+- The windowless engine bench (`python -m roadcraft.bench_headless`) never launches
+  without the owner's explicit go-ahead for that run in the current conversation;
+  pass that go-ahead as --owner-approved. Without it, it only dry-runs
+  (library/headless-bench.md).
+- All native tools run through roadcraft.quiet (private desktop, no dialogs, the
+  whole process tree killed on timeout). Do not launch SDK tools any other way.
+
 ## Build, identity and acceptance
 
 build, test, capture and inspect-job preflight pinned recipes by default;

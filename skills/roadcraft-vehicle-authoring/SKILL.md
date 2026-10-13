@@ -82,7 +82,16 @@ present; use its checkout for shared code and accumulated library knowledge.
 python -m roadcraft lint-bro <truck.bro> --class <auto_mod.cls> --tpl <body.tpl>
 python -m roadcraft suspension --geometry measured --axle '<SuspensionAxle JSON>' --share <one wheel's weight share>
 python -m roadcraft tpl-nodes <body.tpl> --pattern <bone regex>
+python -m roadcraft pak build --project <p> --mod-file <mod> --output <new.pak> --candidate <name> --apply
+python -m roadcraft validate <new.pak> --baseline <installed.pak> --json
+python -m roadcraft physics report <new.pak> --json
+python -m roadcraft compare <new.pak> --donor <retail truck> --json
 ```
+
+Do not hand over a candidate with a NEW validate error against the installed package. For any
+handling change, compare against the closest retail donor before and after, and name the fields
+that moved (softForceScale, wheel friction tables, wheel/body masses, track frame joints, steering
+curves). Engine defaults and fields the engine ignores are in library/validator.md (RC072-RC074).
 
 Add the mod project's own rig audit and static validation. None of these proves how the vehicle
 drives: the owner's drive is the acceptance, and a candidate stays unaccepted until then.
@@ -92,7 +101,7 @@ drives: the owner's drive is the acceptance, and a candidate stays unaccepted un
 - The owner installs or approves each candidate, drives it in the retail game and reports. Never
   write an installed hash into `accepted`.
 - Do not launch the editor (hidden class generation included) or the game while the owner is using
-  the PC; say what is queued.
+  the PC; say what is queued. The windowless engine bench also needs the owner's go-ahead per run.
 - Install only with the game and editor closed, keep the previous package and a receipt, and
   announce every install. Ask first unless the owner's request covers installing ("install it",
   "just fix it").
