@@ -71,3 +71,21 @@ a locator named `ctrl_switch_handbrake`: add one to the model.
 | Rule | Grade |
 |---|---|
 | A dump body's load is a hidden mesh volume: its shape is the heap (CAT 793D: a heaped pile, crown 1.5 m, 138 m3), with `pourMultiplier` and `sfxMovableDumpPositionBone` naming it | Build (CAT 793D RC21) |
+
+## Body terrain effects are separate from collision (Apoc, 2026-09-30)
+
+`propVFX.vfxSkeleton.vfxBones` compiles to the truck class's `vfx` property. The installed SDK
+`vfx_skel_bone.systems` flags specify shadow=1, water=2, slime=4, grass=8, mud=16. In particular,
+26 enables water, grass and mud (**SDK**); changing CDT does not rewrite these authored boxes.
+
+The Apoc copied the donor's environment volumes into a different rig without fitting their
+positions. Its compiled chassis is identity in native X-left/Y-up/Z-forward coordinates;
+the two mud boxes reached Y=-2.354 and -2.0925 m and extended behind the buggy (**Build**).
+The owner saw a wide patch of unexplained rear mud deformation after the CDT repair (**Game**).
+The observed symptom is consistent with these volumes, independent of spring bottoming.
+
+Candidate `apb-mud-proxy-20260930` replaces the donor environment boxes with four native-axis
+boxes inset within the measured compact collision bounds. Audit active mud shapes' bone
+transforms, extents and compression/pitch clearance in the packaged class. Keep tyre effects
+and wheel definitions intact, and compare archive members occurrence by occurrence. Passing
+these checks is **Build** evidence; the next retail mud drive is still required (**Open**).

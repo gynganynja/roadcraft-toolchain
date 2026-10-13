@@ -135,3 +135,50 @@ front wheel carries (1 - c / L) / 2 and each rear wheel (c / L) / 2.
    [ik-visual-rigs.md](ik-visual-rigs.md).
 5. Tie rods from the rack bone to the steering joint.
 6. `lint-bro --class --tpl` before installing.
+
+## Apoc buggy follow-up (2026-09-30)
+
+The owner reported partial motion and detached parts after driving `apb-axles-20260929`.
+The axle-controller presence checks passed, so presence alone does not validate attachment
+or per-wheel response (**Game** symptom, **Build** checks). The follow-up candidate explicitly
+sets `singleWheelID` to each slot's index, and removes the undocumented `isIndependent` field.
+The mapping is supported by the SDK schema; improvement in this vehicle's runtime movement
+remains **Open**. See the IK article for the independently verified reach/skin faults.
+
+The repeated rear scraping report was not enough to establish spring bottoming as the sole
+cause. A ray sample of the original rear hull showed collision in open space below the frame
+and engine. The candidate decomposes the lower rear and retains two upper hulls, keeping the
+existing suspension tune. Offline clearance checks include full bump and opposite-axle pitch,
+with a 40 mm contact allowance. Terrain behavior still requires a drive.
+
+## Apoc soft-flex revision (2026-09-30)
+
+The owner reports stiff handling with the preceding linkage/collision candidate (**Game**).
+The old 0.16 m design-sag tune is therefore not accepted as soft. Candidate
+`apb-soft-flex-20260930` uses front/rear strengths 0.0126/0.0182, damping 0.085, stops
+-0.18/+0.40 m and neutral height 0.36 m. Body angular damping decreases to 0.35.
+These are authored **Build** settings, not measured runtime behavior.
+
+The 0.28 m design sag plus 0.08 m lift keeps predicted rests off both stops at beta 34.8,
+58, 81.2 and 105 (**Inferred**). There is no measured buggy rest height in this drive report,
+so beta cannot be recalibrated honestly. The compact collision core excludes low rails and
+side skirts to provide compression clearance. Full droop requires longer visual sliders
+and coil overlap; recheck both endpoints after export. Softness, flex and terrain clearance
+remain **Open** until the next drive.
+
+## Apoc wheel-chatter damping trial (2026-09-30)
+
+The owner drove `apb-mud-proxy-20260930` and reported rapid wheel chatter while the body
+stayed fairly level (**Game**). The 0.085 damping inherited from the soft-flex tune is
+therefore not accepted as controlled dynamic behavior. Reducing spring strength to obtain
+compliance does not establish that damping should also be reduced; evaluate its transient
+response separately (**Inferred**, supported by this report and retail comparison).
+
+Candidate `apb-damping-20260930` changes only suspension damping: 0.085 to 0.16 front and
+0.18 rear. Don 71 uses 0.15, Armiger scout 0.16 and Minuteman scout 0.20 (**Retail**, current
+shipped BROs). The buggy retains strengths 0.0126/0.0182, stops -0.18/+0.40 m, height 0.36 m,
+wheel-contact settings, compact CDT and corrected body mud volumes. More damping is intended
+to settle wheel hop without removing slow articulation (**Inferred**). A static beta sweep
+can verify rest margin but cannot validate chatter frequency, damping ratio or grip.
+No measured buggy rest or dynamic trace was supplied, so beta is not recalibrated. Dynamic
+improvement and handling acceptance remain **Open** until the next drive.

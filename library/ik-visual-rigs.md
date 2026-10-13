@@ -59,9 +59,12 @@ is the wishbone's IK bone (it moves in proportion to the wheel), not the slot.
 **Rocker / Z-bar linkage** (stock loader): two-bar chain, first constraint without type, second
 `HINGE`, effector `offsetIk` to the far end of the link.
 
-**Split springs**: a coil stretched between two moving parts is split into an upper and a lower half
-on the two ends' bones, overlapping enough to stay closed at full extension (the telescoping halves
-show as a spring compressing).
+**Historical split-spring workaround (rejected visually)**: the Apoc previously used overlapping
+upper/lower coil halves on the endpoint bones. The overlap stayed closed in offline travel checks
+(**Build**), but the owner reported two visibly sliding meshes on 2026-09-30 (**Game**). The earlier
+claim that this looked like spring compression was unverified and contradicted by that drive.
+Use a continuous skinned winding instead; see the continuous-coil section below (**Build**,
+native appearance still **Open**).
 
 ## Things that did not work
 
@@ -69,3 +72,47 @@ show as a spring compressing).
   it: nothing moved, because the slot never moved (Game, buggy v2).
 - Knuckles as children of wheel slots and offset pins to slots without an axle controller (Game,
   buggy v1: one side's knuckles ended outside the wheels).
+
+## Apoc buggy: reach and actual mesh attachment (2026-09-30)
+
+The owner drove `apb-axles-20260929` and reported that some suspension pieces moved but were
+not attached correctly, while others stayed still (**Game**). Adding an axle controller did
+not establish that the complete rig worked. The earlier ZiKZ recipe remains **Retail** for
+that vehicle; its direct transfer to the buggy was not validated.
+
+The buggy's fixed upper arms cannot reach vertically displaced wheel targets: a geometric
+sweep finds up to 157 mm of missing reach at its configured 260 mm droop (**Build**, analytical).
+Its lower chain ended at the upper ball joint, while the visible upright stayed on the wheel
+frame instead of the chain's middle bone. That does not guarantee that the lower arm meets the
+visible lower joint. Link meshes entirely weighted to the hinge also ignore terminal sliding.
+
+Candidate `apb-link-clearance-20260930` gives both arms their own ball-joint target, a hinge and
+a prismatic endpoint. Link meshes use both bones; inner and outer fittings stay rigid while
+central sections deform. The front damper follows the lower arm's outer fitting. Two-axis
+damper pivots and sufficient coil overlap cover the sweep; tie rods need more than the old
+120 mm extension at simultaneous full droop and steering lock. This is a visual adaptation
+to native vertical wheel travel, not a rigid mechanical double-wishbone simulation.
+
+Check reach throughout compression, droop and steering, skin weights after USF export,
+and coil overlap. Analytical closure and a compiled rig pass are **Build**, not runtime proof;
+this candidate still needs the owner's drive (**Open**).
+
+## Continuous coil-over springs (Apoc, 2026-09-30)
+
+Use one connected tube around a helix, with two-bone weights changing along the active
+winding. Assign the same weight to every vertex of each wire cross-section: interpolating
+by each surface vertex's height squashes the wire as well as the spring. Keep end turns
+rigid on their respective seat bones, and blend only the active winding (**Build**, tested
+in the Apoc offline rig and exported USF; native runtime acceptance **Open**).
+
+Apoc uses eight turns (six active), 12 mm wire diameter, and three explicit LOD meshes.
+The original coil bounds and fitted radius locate its seats and axis. The barrel and
+end fittings retain their original rigid skins. The exposed piston has its own mesh;
+its length spans the barrel mouth through travel while its radius stays constant. It is
+not duplicated with the winding. Body and wheel controllable bone names remain unchanged.
+
+Evaluate actual deformed vertices at compression, droop and diagonal articulation. Check
+that the winding is a single closed component, its seat centres follow the correct bones,
+its wire thickness remains constant and adjacent turns do not cross. Compare exported
+geometry and skin weights with source at every LOD. These checks and an analytical IK
+closure sweep do not execute the game's IK solver (**Build**, runtime remains **Open**).

@@ -84,3 +84,91 @@ build -> the owner drives -> report, with sign-off evidence gathered only at mil
 The D11T is where the toolchain's identities, captures and source parity began, and where the
 `hkCenterOfMassOffset` rule was read from the engine. The EX5600 (never driven) first wrote down the
 hinge-axis rule, the generic `Truck` joint controls, and the exporter's LOD and UV traps.
+
+## Apoc buggy partial suspension motion and rear scraping, 2026-09-30
+
+Baseline `apb-axles-20260929` (package `7ef2f935717c0b7d...`) was the installed candidate.
+Owner report: “some of them move with the wheel but dont appear attached correctly. others
+dont move at all”, plus apparent rear ground scraping without visible contact.
+
+The controller-only fix did not resolve the reported problem. Offline geometry found up to
+157 mm of unreachable upper-arm travel, lower-arm/upright attachment mismatch, link meshes
+weighted only to hinge bones, insufficient tie-rod extension at droop plus lock, and a rear
+convex hull bridging open space. These findings supersede the earlier unverified diagnosis
+that increased ride height and the controller alone would resolve the symptoms.
+
+Repair candidate `apb-link-clearance-20260930`: independent arm endpoint chains with two-bone
+skinning; corrected damper attachment/pivots and spring overlap; explicit per-wheel controller
+indices; tie-rod extension; 20 rear collider pieces replacing one broad hull. Physics tuning
+and controllable joint names are retained. The existing generated classes were updated only
+in IK and axle-controller properties without launching an editor.
+
+Evidence: authoring geometry, exported collider/skin checks, analytical motion sweep, schema
+and package checks (**Build**). The analytical steering sweep assumes a centred rack. Native
+solver response, actual scraping, handling and campaign acceptance remain **Open** until a
+drive of this candidate.
+
+## Apoc buggy softer suspension and compact collision, 2026-09-30
+
+After `apb-link-clearance-20260930`, the owner said the buggy feels stiff, requested softer
+suspension, smaller body CDT to avoid bellying out, and more flex (**Game** report).
+That report does not establish whether every previous linkage symptom was resolved.
+
+Candidate `apb-soft-flex-20260930` reduces spring strengths by about 43% and damping by
+39%, increases wheel travel from 0.36 to 0.58 m, enlarges linkage slider ranges and coil
+overlap, and replaces 22 body collision pieces with four narrower, shorter, raised core
+hulls. Chassis angular damping changes from 1.5 to 0.35; mass and COM target are preserved.
+The existing main and preview native classes receive the same suspension collection.
+The source and previous package are retained for rollback.
+
+Analytical sweep, exported skin/collision audit, schema, native class and package checks
+are **Build** evidence. Beta-based rest estimates are **Inferred**. No new retail drive
+or measured rest height has been recorded; handling and campaign acceptance remain **Open**.
+
+## Apoc phantom mud patch after the soft-flex repair, 2026-09-30
+
+The owner drove `apb-soft-flex-20260930` and reported mud deformation from nothing visible,
+clarifying that it was a wide patch underneath the back of the buggy (**Game**). This does
+not establish acceptance of suspension feel or all earlier linkage fixes.
+
+Diagnosis found two copied body VFX boxes, `BoxCapsule` and `BoxCapsule3`, enabling mud with
+systems=26. With the buggy's identity native chassis transform, their lower bounds were
+Y=-2.354 and -2.0925 m; the second was entirely below the modelled ground. Previous collision
+audits did not cover this independent effect geometry (**Build**, SDK flag definition).
+
+Candidate `apb-mud-proxy-20260930` replaces donor body environment boxes with four inset core
+boxes. All wheel classes, physical collision, suspension and linkage settings are preserved.
+Only the main truck class's VFX property may differ in the final archive; the model assets
+are pinned and reused. Compiled-volume audit, schema and package checks remain **Build**;
+elimination of the observed rear patch awaits the next retail drive (**Open**).
+
+## Apoc rapid wheel chatter after the mud-volume fix, 2026-09-30
+
+Owner report on `apb-mud-proxy-20260930`: the wheels bounce rapidly over some terrain and
+the vehicle feels like a shopping trolley; mostly the wheels chatter and the body remains
+fairly level (**Game**). This report does not explicitly confirm the previous mud fix.
+
+Candidate `apb-damping-20260930` is a bounded damping trial: front 0.16 and rear 0.18,
+both previously 0.085. Comparable retail scouts use 0.15-0.20. Spring strength, ride height,
+58 cm travel, wheel definitions, physical model and corrected terrain-effect volumes are
+preserved. Only damping in the main/preview suspension arrays may change in the archive.
+Underdamped wheel hop is a working diagnosis, not a measured runtime result (**Inferred**).
+Compiled/schema/package checks are **Build**; settling over the reported terrain still
+requires the owner's drive (**Open**).
+
+## Apoc continuous spring animation, 2026-09-30
+
+While `apb-damping-20260930` was installed, the owner reported that the springs look like
+two sliding meshes and requested actual spring animation (**Game**). This does not confirm
+whether the earlier wheel-chatter or rear mud-deformation fixes are accepted.
+
+`apb-coil-animation-20260930` replaces overlapping coil halves with connected, round-wire
+helices on all four corners, with continuous two-end skinning and three matching LODs.
+One close-wound turn at each seat stays attached while six active turns change pitch.
+The mixed-weight piston parts are separately classified and follow the moving barrel mouth.
+The existing IK bones drive the deformation; no controllable joints are renamed or added.
+Package comparison permits only the four compiled body-model resources to change from
+the damping candidate. Classes, suspension settings, wheel models, physical markup and
+terrain-effect settings remain byte-identical (**Build**). Offline rendered poses, actual
+mesh deformation checks and export validation support authorship, not retail acceptance.
+The owner's next drive must confirm native animation (**Open**).

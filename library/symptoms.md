@@ -39,3 +39,61 @@ grader's dead controls were traced there (Game).
 | Packaging fails on a shipped material or resource | `mod_pak_builder` resolves references only inside the mod project | Copy the shipped resource into the mod under a mod name | Build (Roamer 105) | build-pipeline.md |
 | The SDK exporter never finishes | A mesh without a UV map | Give every mesh a UV map; the builds refuse to export without one | Build (EX5600) | build-pipeline.md |
 | Blender: "Cannot change old file (file saved with @)" | A stale `<file>.blend@` blocked the rename after saving (OneDrive sync is a suspect) | Delete the stale file and save again, with retries | Build (Roamer 105) | build-pipeline.md |
+
+## Follow-up: Apoc buggy, 2026-09-30
+
+For partial motion (some suspension pieces move but detach; others stay still), an axle
+controller presence check is insufficient. Check whether fixed-length arms can reach all
+wheel positions, whether visible uprights follow the same joints the arm chains solve, and
+whether meshes have weights on the terminal slider as well as the hinge. The Apoc follow-up
+found faults in these checks after its controller had already been added (**Game** report,
+**Build** diagnosis). Candidate motion remains to be verified in the game.
+
+The belly-scraping row above records an earlier hypothesis, not an isolated cause. In the
+Apoc follow-up, the rear convex hull demonstrably filled open space beneath the engine and
+frame. Inspect the actual exported collision and its underside before increasing ride height
+again. The repair decomposes the rear while retaining the suspension tune; contact behavior
+still awaits a drive. See `ik-visual-rigs.md` and `case-studies.md`.
+
+## Apoc buggy still feels stiff after the linkage repair (2026-09-30)
+
+The owner reported that the suspension still felt stiff after `apb-link-clearance-20260930`
+and requested softer springs, more flex and smaller body CDT (**Game** report). That build
+retained the old spring settings; an attachment repair is not evidence of soft handling.
+The next candidate reduces spring strength/damping, increases usable travel and shrinks the
+collision core. Check both compiled main/preview suspension arrays, link reach at the new
+stops and exported collision clearance. Drive acceptance remains **Open**.
+
+## A wide mud patch under the Apoc buggy's rear (2026-09-30)
+
+After the soft-flex/CDT repair the owner still saw a wide mud-deformation patch underneath
+the rear, without a matching visible part (**Game**). Physical CDT inspection alone missed
+separate body VFX volumes. Two copied donor boxes enabled mud (systems bit 16) and reached
+2.354 m and 2.0925 m below the buggy's identity chassis frame (**SDK**, **Build**).
+Inspect `propVFX.vfxSkeleton.vfxBones` in the BRO and `vfx` in the packaged class as well as
+collision. These misplaced volumes match the reported location; runtime resolution remains
+**Open**. The next candidate fits environment boxes to the compact body and retains wheel mud.
+
+## Rapid wheel chatter with a fairly level body (Apoc, 2026-09-30)
+
+The owner described shopping-trolley-like rapid wheel bouncing over some terrain and
+clarified that mostly the wheels chatter while the body stays fairly level (**Game**).
+The installed mud-proxy candidate retained 0.085 suspension damping from the soft-flex
+tune. That is below comparable retail scouts: Don 71 0.15, Armiger scout 0.16, Minuteman
+scout 0.20 (**Retail**). Insufficient wheel damping is a working diagnosis (**Inferred**),
+not established by the earlier static rest/rig checks. Trial 0.16 front / 0.18 rear while
+keeping the soft springs, ride height and travel, then repeat the same terrain drive.
+
+## Springs look like two sliding meshes (Apoc, 2026-09-30)
+
+The owner reported that the coil-over springs appear as two meshes moving up and down,
+rather than a spring compressing (**Game**). The previous overlapping, rigid spring halves
+only prevented a gap; they did not deform the winding pitch. The mixed-source-weight
+classifier also mistakenly treated the exposed piston as a spring (**Build**).
+
+The replacement separates the narrow piston from the outer winding, creates one connected
+round-wire helix per corner and LOD, and blends each complete wire section between the
+existing spring endpoint bones. End turns remain with their seats; the active turns change
+pitch continuously. Validate exported weights and mesh connectivity, seat attachment,
+wire thickness and turn clearance through travel (**Build**). Native runtime appearance
+still requires a drive (**Open**). This report does not accept the preceding damping tune.
