@@ -56,7 +56,7 @@ or the body will catch on terrain where the visible underside would not (Game, b
 |---|---|
 | Locators (`_cockpit_camera`, `_third_person_camera`, `_equipment_camera`) and collision objects keep identity world orientation in the SDK Lynx `.blend` | SDK |
 | Collision is convex `cdt_` objects only; the root `BoneChassis_cdt` at the origin; objects at scale 1 and rotation 0 | SDK (documentation) |
-| Levels of detail are authored `<stem>_LOD0 .. _LODn`; the exporter drops `_LOD0` (that node is `<stem>_vis`). Hide distances: 800 m vehicle, 350 m wheel; the LWI transition off for trucks | Build (EX5600), SDK |
+| Levels of detail are authored `<stem>_LOD0 .. _LODn`; the exporter drops `_LOD0`. Compiled naming can retain `<stem>` as the geometry group (Y61) rather than an explicitly named `<stem>_vis`; inspect the actual table and geometry report. Hide distances: 800 m vehicle, 350 m wheel; the LWI transition off for trucks | Build (EX5600), SDK |
 | The water cut-off volume is found by name (`cutoff_volume`) | Build |
 | Asset names lowercase | SDK (documentation) |
 
@@ -268,3 +268,99 @@ place the kick where the cab's rear lip is not (measure it; L275's hangs to z 0.
 spring-under-axle with notched rails when the tray leaves no room above the tube. Record these as adaptations, not
 as the real vehicle's layout. Clash-check every design pose (bump, droop, cross-axle, lock, lock + bump) against the
 installed body and wheels, not only the new parts (L275 `uc_check.py`).
+
+## Recovered SnowRunner CombineXMesh bind poses (Jimny, 2026-10-05)
+
+
+
+**Build:** the Zukterra Jimny's compiled CombineXMesh skinned positions cannot be treated as model-space positions. That put the steering wheel and running gear away from the body. Using the recovered submesh link palette, reconstruct each vertex as `sum(weight * boneWorld * linkMatrix * rawPosition) / sum(weight)` before applying the axis/ground conversion. The stored link matrix is mesh-to-bone here; inverting it was an unsuccessful trial. This is the observed Jimny layout, not a claim about every SnowRunner version.
+
+
+
+The source coordinates are X longitudinal, Y vertical, Z lateral. Jimny's RoadCraft Blender conversion is `(Z, -X, Y - groundShift)`; its determinant is negative, so reverse triangle winding. The ground shift is 0.36421945 m for the selected BFG wheel (radius 0.43919055 m). Recompute surface normals after the geometry conversion. When several decoded weight slots refer to the same bone, sum those slots per vertex before calling Blender vertex-group `REPLACE`; repeated replacements discarded part of the chassis weights. After that repair, all 477 saved-source checks passed, and compiled wheel/camera positions matched the intended native coordinates.
+
+
+
+Evidence: [C:/Program Files (x86)/Steam/steamapps/common/RoadCraft/Roadcraft Development Package/Jimny_RoadCraft_20261005/tools/create_models.py](C:/Program Files (x86)/Steam/steamapps/common/RoadCraft/Roadcraft Development Package/Jimny_RoadCraft_20261005/tools/create_models.py), `reports/debug_skin.txt`, `reports/source_manifest.json`, `reports/source_inspection.json` and `reports/validation.json` in the same Jimny workspace. The decoder reference is Brooen/Snowrunner-Model-Importer (MIT), preserved in Zukterra_Extracted_20261005. Runtime skin deformation remains **Open** until an in-game drive. A universal CombineXMesh validator is deferred because the stored bind-space convention has only been checked for this recovered model; the project's saved-source and compiled-frame checks are wired into its pinned test recipe.
+
+
+
+
+
+## Verify exported axes before rotating a recovered chassis (Jimny, 2026-10-05)
+
+
+
+**User request / Build:** the owner requested a check for a 90-degree chassis rotation. Jimny's compiled BoneChassis_cdt and both axle frames already had native X=(1,0,0), Y=(0,1,0), Z=(0,0,1). The recovered visual chassis meshes also had their longest extent along Blender Y; underside renders confirmed their longitudinal orientation. No global 90-degree rotation was needed. Inspect both the compiled basis and actual running-gear geometry: a zero position alone does not establish orientation, while unfamiliar Blender bone axes alone do not establish a fault.
+
+
+
+The project's saved-source checks now assert chassis mesh extents; final validation asserts all nine chassis/axle basis vectors. It also samples 38,880 points in conservative wheel cylinders across +/-35-degree front steering and -0.30/0/+0.13 m travel against measured saved collision boxes, with no intersections. These are static checks, not loaded stance or terrain-contact proof. Evidence: Jimny_RoadCraft_20261005 reports/{polish_underside.png,source_inspection.json,validation.json}, polished-v3 package SHA-256 a1f4618358bc0fc71ba79260ae0449e8abf63c2dd4913c0f0c1af15f962ddef3. An identity-basis requirement stays project-specific because supported nonidentity vehicles exist.
+
+
+
+
+
+## Roamer 105 ute compiled source and rigid frames (2026-10-05)
+
+
+
+**Build, asset-specific:** recovering the owner's `roamer105ute_pc-jmvs.zip` with the MIT SnowRunner importer required a +90-degree X correction for the stored skinned mesh vertices before the ute's XY basis swap and 0.258 m vertical offset. The imported bone-world pivots already used the source skeleton basis and did not take that extra mesh correction. Applying one transform indiscriminately to both misplaced the suspension. This is a finding about this compiled ute/importer path, not a universal CombineXMesh rule; retain the Jimny bind-pose route above.
+
+
+
+The visible chassis was already longitudinal (5.069 m along Blender Y versus 1.465 m across), while its inherited rigid-body basis was quarter-turned. Normalising only `BoneChassis_cdt` and `BoneBody_cdt`, restoring bone-parented world transforms and correcting body-local settings preserved existing visual vertices within 0.00000024 m. Native `tpl-nodes` then showed identity axes for both bodies. Evidence: project `Roamer105Ute_20261005`, `chassis_geometry_inspection.json`, `systems_polished.json`, `mechanical_polished.json` and `native_validation/compiled_frames.json`. Collision/handling acceptance remains Open.
+
+
+
+
+
+### Recovered Y61 underbody and steering rest poses (2026-10-06)
+
+
+
+**User report / Build:** the recovered Watcher Y61 chassis appeared rotated 90 degrees. Eight skinned nodes (chassis, suspension, knuckles, shocks and steering wheel) needed the same mesh-to-bone link reconstruction described above for Jimny: sum `weight * boneWorld * linkMatrix * rawPosition`, normalize, then convert axes. The first importer treated all skinned positions as model space. Y61's sampled chassis bounds were asymmetric and extended below ground; reconstruction makes it centred laterally. Corrections reached 1.25 m on chassis and 1.50 m on steering geometry. Restore original weight sums when repeated slots refer to one native bone. Preserve each asset's suspension-owned rest offset separately.
+
+
+
+The Y61 conversion uses `(Z,-X,Y+groundShift)`; its steering pivot and axis derive from the recovered bone world matrix, with cockpit camera on the right-hand-drive side. Keep chassis root at ground zero when rebasing geometry for smaller tyres. Do not identify a copied hinge childRotation as the proven cause of a visible quarter-turn: it defines a constraint frame, while recovered mesh bindings can independently be wrong. Identity hinge markup is still subject to native verification.
+
+
+
+Evidence: WatcherY61_35in_4in `reports/recovered_bind_audit.json`, `bind_repair.json`, tools/repair_bind_geometry.py and successful author-bind-repair job; original recovered CombineXMesh and before-state package retained. This establishes stored rest-pose reconstruction for these Y61 nodes. Native dynamics and the owner's revised drive remain Open.
+
+
+
+
+
+**Build, Y61 2026-10-06:** final static validation initially falsely required `head_lights_vis`, but the native compiled table and obj_list.json contain literal `head_lights`, `head_lights_on` and the other lamp stems with geom=true and nonzero face counts. The controller graph uses those same stems. Correct the asset-specific check against actual native group names; do not weaken it to checking only a string in source markup. Successful build 20261005T174605Z-a21086bba2b5 and static test 20261005T175129Z-d69d4750944d pin package d2d0e01248ac951437ad97019a21e67e6317029e304a019671d12de16a27dc0b. This proves compiled presence, not live light switching.
+
+
+
+
+
+### Y61 native body hinge limits (2026-10-06)
+
+
+
+**SDK/Game, isolated Y61 editor:** a limited body hinge interval of one degree was rejected: the native phys_markup log reported `curr interval 1.000000, min interval 5.000000`. The final revision uses -3/+3 degrees with its existing spring/damping. Normal and harsh native driving loaded successfully; measured body twist stayed below 0.6 degrees on the flat pad. Do not use an invalid tiny hinge range to hide a recovered bind fault. Evidence: WatcherY61_35in_4in `native_tests/current/runs/current_normal_retry_normal_040508/engine_failure.log`; WatcherY61_Final `native_tests/final_canonical_result.json`, `hard_driving_result.json`. This is this SDK hinge validation and this rig's editor dynamics; owner campaign acceptance remains separate.
+
+
+
+
+
+**Game, editor play mode Y61 final follow-up:** after the recovered bind correction and valid -3/+3-degree hinge, normal/harsh steering and reversing preserved chassis/body alignment. Native underside captures show longitudinal frame rails and attached running gear. Flat-pad body twist stayed below 0.6 degrees in those runs; terrain transition peaked at 1.18 degrees. Evidence: WatcherY61_Final `reports/native_captures/y61_final_polish_v2_underside.png`, `reports/native_physics_review.json` and final recovery captures. This provides the later editor dynamics evidence for the earlier Y61 bind entry; it does not establish the owner's retail drive.
+
+### Axle-controller rest frames and fitted castings (Jimny, 2026-10-06)
+
+**Game on preserved v6 / Build on v7 source; revised runtime Open:**
+Jimny v6 authored axle bone centres near 0.300 m, while its native axle
+controller placed those frames near the 0.3937 m wheel-centre height. A source
+render cannot establish that a casting is aligned in native play. Simply
+raising casting vertices while retaining the low axle bind would double the
+correction at runtime. V7 authors axle rest bones at wheel-centre height and
+fits recovered castings there; native captures must verify the result.
+
+Evidence: preserved Jimny v6 final_all_092833/steer_left_visual_frames.json,
+Jimny reports/suspension_source_inventory.json and tools/create_models.py.
+This is a source/frame diagnostic, not a universal fixed offset for axles.

@@ -247,3 +247,59 @@ whole class chain list (v5 drag-link patch) needs a normaliser, not deletion.
 
 Native motion of these chains is **Open** until the owner's drive; the offline poses (`uc_pose.py`: bump, droop,
 cross-axle, lock, lock + bump) are Blender target-following only.
+
+### Passive pitman terminal constraint (Roamer ute, 2026-10-06)
+
+
+
+**SDK/Game:** a four-body chassis/pitman/drag-base/drag-tip chain copied with only HINGE,HINGE2 had an 88.5 mm native endpoint gap. Adding the source-proven third HINGE (axis [1,0,0], +/-0.1 degrees) removed the omitted terminal constraint. Straight and both full steering-lock snapshots measured drag-link gaps below 0.03 mm; the rigid tie rod retained about 3.62 mm closure residual at full lock. Source geometry and physical bodies were unchanged. All other 12 link/damper chains closed below 0.14 mm. RC014 already detects this mismatch; retain its advisory scope because some retail cable chains use implicit constraints. Evidence: Roamer105Ute_20261005/native_validation/draglink_before_terminal_hinge, mechanics_final.json (failed old chain), R105Final_20261006/runs/final_draglink_services_normal_065022/*_mechanics.json (repair).
+
+### Reference-based Jimny chassis detail (2026-10-06)
+
+**Build / reference documents; native v7 Open:** the recovered Jimny used
+split overlapping spring halves. A single closed helix, uniform weights per
+wire cross-section and rigid end turns passes eight independently posed
+scenarios. New assembly source checks cover slider reach, signed piston
+clearance, normalized skins, UV area and explicit 75k/25k/8k LOD budgets.
+Hundreds of fittings are batched into two atlas objects per LOD; an integer
+point attribute preserves individual part IDs for source checks. Triangulate
+cylinder cap ngons before SDK export: untriangulated atlas LOD0 meshes caused
+the exporter to skip tangent calculation. Successful export alone did not
+establish tangent readiness.
+
+The stock-class physical wheel path is vertical. Visual radius/panhard/tie
+links need length accommodation; do not call this a rigid-link suspension
+simulation. Source reach checks are separate from the native solver. Preserved
+v6 native poses show wheel-slot frames translating without steering; dedicated
+knuckle driver frames and a passive pitman chain were authored for v7, but
+their native closure is still pending. All pitman bodies receive explicit
+constraints; the engine field called steeringRackSettings need not correspond
+to a visible rack-and-pinion model.
+
+Evidence: Jimny_RoadCraft_20261005 tools/{suspension_model,audit_suspension,
+audit_suspension_native}.py, reports/{suspension_source_checks,
+suspension_source_checks_before_shock_towers}.json. The short initial damper
+failed signed piston clearance; reinforced raised towers are an explicit
+custom adaptation to the preserved travel, not factory/bolt-on-kit hardware.
+
+
+### Native closure must use composed world frames (Jimny v7, 2026-10-06)
+
+**SDK / Game:** On the Jimny's animated IK children, `GetObjModelTransform`
+returned the current parent-local transform (e.g. a spring end position was
+approximately [0.434, 0, 0]), whereas `GetTransformObjById` returned its world
+frame. Treating the former as model-global produced fictitious 1–2 m closure
+errors and negative piston exposure. World-frame closure is
+`currentReferenceWorld * inverse(compiledReferenceRest) * compiledEndpointRest`.
+Compare that position to the endpoint's current world position; measure piston
+length from the two current world endpoints. Preserve full matrices/axes.
+
+Evidence: Jimny tools/native_physics_probe.ps1 and
+tools/audit_suspension_native.py; bench_suspension_v7/runs/v7_normal_174628;
+reports/suspension_native_checks_model_local_assumption.json (rejected frame
+assumption) and reports/suspension_native_checks.json (corrected audit).
+The corrected audit passed 437/439 checks. Two real drag-link endpoint gaps
+remain at steering lock: 6.5 mm left and 63.2 mm right. These are Open visual
+findings, not threshold exceptions or a mechanically exact rigid-link solver.
+The project audit now uses world frames; generalizing this to every geometry
+API is deferred until an independent asset reproduces the semantics.
