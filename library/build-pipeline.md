@@ -1012,3 +1012,21 @@ Blender wrote the `@` file in full. The retried run happened to save normally, s
 - Shop card and icon store `bodyTriangles`; a geometry change needs `tools/render_preview.py` again or validation fails.
 - Raise the project's own body LOD0 guard deliberately and say so in the config comment (L275: 400k -> 480k for a
   ~122k undercarriage replacing a 45k chassis).
+
+## One ship script per project at a time (L275 v42, Claude, 2026-10-14)
+
+- **Finding and action:** two copies of the same `ship.sh` (both waiting on "game closed", both released at 08:05:05)
+  ran `build.py models` together. Both saved the 649 MB zstd `l275_minespec.blend` in `mods_source` (08:07:18, 08:09:26).
+  The first copy's `render_preview.py` opened the blend while the second was mid-save and failed with
+  `File format is not supported`. Its `preview.log` was empty because `run_blender_art.py` writes Blender output to
+  `reports/art_<label>.log`. Before starting a ship, check that no other `ship.sh`, `build.py` or
+  `run_blender_art.py` is running for the project (`Get-CimInstance Win32_Process` command lines). Read
+  `reports/art_<label>.log` for preview failures.
+- **Scope and grade:** any project whose stages share `mods_source`; observed once, cause confirmed from process
+  start times and the blend mtimes.
+- **Evidence:** L275 `reports/dash_v42/ship.log` (models ok twice, 08:07:41 and 08:09:41; PREVIEW FAILED, then
+  preview ok 08:11:29), `reports/art_ui-preview-v42.log`. The surviving copy went on to build-143, test-144
+  (564 checks) and the validate gate (0 errors).
+- **Integration:** this note only. The deferred automation is a project lock file (`temp/ship.lock`, holding the
+  PID) taken at the start of the ship and released on exit.
+- **Limits:** a peer session's read-only Blender opening the same blend did not fail. Only a concurrent save did.

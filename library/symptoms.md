@@ -40,6 +40,7 @@ grader's dead controls were traced there (Game).
 | Interior "super blurry", low quality in the cockpit | Texel density far below the view distance (L275: 0.24 px/mm, UVs on 25% of a 2048) and a collapse-decimated interior (smeared shading) | Re-pack visibility-weighted UVs on a 4096, bake normals/AO from the full source, clean colour per part (not by colour clusters) | Game (owner report), fix Build (L275 v20) | textures-and-materials.md "Cockpit interiors" |
 | Stair-stepped / "pinching, aliasing" lines along curved edges of a re-textured part | Texels outside the UV islands were left black (albedo) or flat (normal) by a numpy compose step, discarding the bake margin: bilinear filtering and mips pull them into every diagonal seam | Pad every map outward from the islands (dilate, then push-pull fill) after composing; give islands a 6+ px margin at 4096; mask-normalise blurs used near seams | Game (L275 v20 owner screenshot); fix Build (v21) | textures-and-materials.md "Cockpit interiors" |
 | A seam flickers like two meshes intersecting (L275 toolbox rear edge) | Exact duplicate faces (identical vertices, same facing) in the source mesh; invisible while both copies shared material and UVs, flicker once a material / texture split puts them on different texels | Scan each mesh for same-facing exact-duplicate face groups and keep one (prefer the outer material); leave opposite-facing pairs (two-sided sheets). Also lift up-facing faces lying exactly in another mesh's plane (deck) by ~1.5 mm | Game (owner, L275 v41), Build diagnosis | - |
+| A panel edge still flickers after exact duplicates are removed (L275 tray side edge under the toolboxes) | Different-topology faces lying in the same plane and facing the same way: a plate's side edge flush with the side panel, small end panels on it, LOD near-twins | Group faces by plane and test overlap on the polygons (point in polygon; bounding boxes flag the two triangles of one quad). Keep one of each twin pair, delete contained faces, push partial overlaps ~1.5 mm behind; repeat because faces pushed by the same amount can end up coincident; carry custom normals | Game (owner, L275 v42), Build diagnosis | - |
 | Mud / dust covers the cab interior while driving | In-cab materials on `vehicle_body` receive the vehicle mud `covering` | Put in-cab instances on the retail `vehicle_cabin` preset (covering forceDisable); cabin twins for textures shared with exterior parts | Game (owner report L275 v30), fix Build v31 | textures-and-materials.md "Cab presets and the mud covering" |
 | Mud on the instrument cluster / door-top paint after the cab fix | Lit cluster copy on `vehicle_lights` (covering on); in-cab painted body faces still on `vehicle_body` | `params.covering.forceDisable` on in-cab lit instances; in-cab body faces split to a `vehicle_cabin` twin object | Game (owner report L275 v31), fix Build v32 | textures-and-materials.md "Cab presets and the mud covering" |
 | A new lamp lens draws as an opaque black disc | Its glass albedo was compiled without alpha (usage MD instead of MD+MT); the film's alpha is the opacity | Compile every glass / lens albedo with `MD+MT` (check `reports/textures.json` usage) | Game (owner screenshot, L275 v33), fix Build v33b | textures-and-materials.md |
@@ -680,6 +681,18 @@ steering limit or remodel the cylinder. See [articulated-steering.md](articulate
 **Build (Kanga 25):** the boom section behind the foot pin swings down as the boom rises. Sweep luff x articulation
 for mesh overlap at the model stage (kanga25_mod `tools/audit_rig.py`), limit the luff, and keep boom and chassis
 in one collision group so the physics cannot jam. See [cranes.md](cranes.md).
+
+## A hidden part leaves stray vertices behind, or never comes back (KGS-25 hook, 2026-10-14)
+
+**Owner drive (Game):** "when connecting a load, hook disappears but some vertices remain. Hook also never comes
+back." **Cause (Build, offline):** a `BlueprintNodeShowHideGeomObjects` switches geometry by object name, and the
+list named the hook block and its four rope falls but not two detail meshes skinned 100 % to the same bone
+(`det_hook_steel_vis`, `det_hook_dark_vis`, added in a later detail pass). The show side listened only to the
+outriggers starting to stow, so releasing the load never re-showed it. **Fix (Build, drive Open):** list every
+mesh weighted to the bone, found by vertex groups rather than names (kgs25 final `tools/hook_parts.py`), and pair
+the triggers: `BlueprintNodeOnCraneWinchChanged` OnAttached -> hide, OnDetached -> show
+(`tools/hook_visibility.py`). Re-check the list whenever a detail pass adds geometry to a switched part.
+See [cranes.md](cranes.md).
 
 ## Crane mod: script crash dump on deploy in BlueprintNodeOnAnchorsStateChanged
 

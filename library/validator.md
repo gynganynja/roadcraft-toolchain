@@ -199,6 +199,9 @@ come from exporter name prefixes (`cdt_`, `hidden_` add `visibility_hidden`; `na
   treats as hidden helpers (no exporter rule found for them).
 - The rule needs the `gated` table; without it the report's `notes` say it was skipped. The in-game check of
   the gate (a plain mesh with `visibleDefault = False`, without and with `exportedVersion`) is still pending.
+- **Game observation (KGS-25, owner drive 2026-10-14):** an 0.8 x 0.62 m dark-material quad named
+  `sfx_radiator_haze`, markup `visibleDefault = False` with no `exportedVersion`, was not visible on the rear grille.
+  Consistent with the `sfx_` helper prefix hiding it; it does not test the gate, because both would hide it.
 
 ## How the rules were tuned against retail (2026-10-13)
 
