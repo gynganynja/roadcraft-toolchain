@@ -251,6 +251,7 @@ map had a teal film (0.40-0.49) and a tan dust film (alpha 0.35-0.73) on the win
 | With the inner sheet on the stock inner preset (near-clear, reflectance 0.15) the windows vanish from the cockpit: the outer sheet faces out and is culled from behind (owner: "cant see the glass from inside the cab"). Overriding the inner instance with the outer tint and reflectance (L275 v23c: reflectance 0.45, the outer filter at density 1) did NOT work: still invisible in game (owner screenshot, 2026-10-13); the inner preset seems to ignore those params. v28 (peer session) moved the inner sheets onto the outer preset with backface culling; watch the outside view for a double tint (inferred in v8, never seen in game: v1-v7 compiled the windows as the opaque lamp material) | Game (owner reports); v28 result open |
 | The glass shader source itself is not shipped (only registers and `mtl_blend.fx`); `density` semantics are unknown, so keep `density` 1 and set the tint with `filter` | Retail |
 | A ported mod's constant glass maps read under these semantics make the windows near-opaque: the Roamer 105 port kept the Expeditions masters' black colour map at alpha 0.92 (= 92 % opaque film) and a (128, 0, 128) spec (metalness 0.5, occlusion 0.5) on BOTH window sheets, the outer `vehicle_glass_outer` instance and the cab-facing `vehicle_glass_inner` twin (the sheet the driver looks through); a player reported the windscreen "too dark, makes driving impossible". Check every glass instance's film before shipping: RGB about 0.2 at alpha 0.5 or below, a glass spec (Lynx means (8, 41, 216)), filter [127, 155, 151] at density 1 on the outer instance; the inner instance keeps its preset params (reflectance 0.15, no glass block) and only swaps the maps | Game (player report, Roamer 105, 2026-10-01); cause Build (frozen source of package ed0cf96f); fix (32 x 32 constants (51, 51, 51, 115) / (8, 41, 216)) installed 2026-10-13 as package be7cb530 (rollback receipt in the campaign NOTES.md), result Open until the owner drives |
+| Hidden helper meshes that sit over the glass (the Roamer's cut-off volume proxies: `r105_mod_105_windshield`, a materialless copy of the window mesh, and `r105_mod_105_cockpit`) are hidden only by markup `objSettings`, which the engine ignores without `objSettings.exportedVersion` (validator RC074, code analysis). Hide them from the class blueprint instead: a `BlueprintNodeShowHideGeomObjects` (show False) on the `BlueprintCommonLibraryOninit` exit, the mechanism the lamp graphs use. `roadcraft validate` still reports RC074 for such nodes (it does not model blueprint hides) | Build (Roamer 105 `campaign/proxies_20261013_02`, installed 1224b0f8 2026-10-13); whether the proxies rendered is Open until the owner drives |
 | Verify which instance a mesh uses from the compiled model before editing it: `<model>.tpl.asset/tpl/obj_list.json` `material_info[].maya_name` gives each object's material slot and the `.tpl_markup` material table maps the slot to the `.mi`. Instance names derived from source material names mislead: the Roamer's `roamer105_glass2_glass_mod` ("glass2" + source material "glass") is the lamp covers (`r105_mod_105_lightglass`), not the windscreen; the window mesh `r105_mod_105_glass` uses `roamer105_glass_glass_2_mod`. Hidden proxies export with an empty material (the cut-off volume sources) and are not rendered | Build (Roamer 105 glass campaign attempt 001, 2026-10-13: the lamp-cover instance was changed first) |
 
 Evidence: L275 `art/glass_v8` (manifest with before/after window statistics, generator), the decode script in
@@ -507,3 +508,27 @@ UVs covering a quarter of a 2048 atlas, and the 382k source collapse-decimated t
 
 Workspace C:/RC/l275_interior (r10_interior.py, r12_partmap.py, r20_compose.py, r21_clean_albedo.py, r61_compare.py
 side-by-side solid renders); mod `tools/interior_v20.py`, `art/interior_v20`. Not yet seen in game.
+
+## Swapping in wheels from another vehicle's parts blend (L275 v35, 2026-10-13; Build, not yet seen in game)
+
+Owner: "use the bfg tyre from this blend and the white steelie rim" (Watcher61 parts library). What held:
+
+* Read the source through a copy (another session was using it). Library wheels sit at one common scale with the axle
+  along Y; map them into the mod's wheel frame (tyre radius 1, axle X, outer hub face -X) with a proper rotation
+  (x,y,z) -> (y,-x,z), and centre the rim in the tyre (the rig origins anchor tyre and rim differently).
+* Keep the physical wheel (radius, width and rim ratios, wheel BRO, collision cylinder) when only the look changes, so
+  the drivetrain tune and handling hold; give only the clearance audit the new visual width.
+* Shipped maps from game-style libraries can be empty (one flat colour, blank normals): the detail is geometry, so bake
+  normals / AO / cavity from the full source onto the reduced mesh and author the finish.
+* Tread blocks and spokes are stacked on shared UV texels in the source; identical geometry bakes identically, so keep
+  the source UVs (smart project gave 3,400 tyre islands and <= 35% coverage). A rim made of several source materials,
+  each using the full 0-1 square, is packed into atlas cells for the mod's single wheel material.
+* **Keep a game-ready source mesh's own normals and splits (v36/v37).** The Watcher61 tyre came with authored custom
+  normals and its geometry already split at the tread edges. A `remove_doubles` in the reduction merged those splits
+  (owner: "blobby"), and an angle-based edge split faceted the sidewall (owner: "neither version is acceptable, It needs
+  to be a smooth out side of the tyre and clean distinct treads"). Use such a mesh as it comes when its count fits;
+  check `has_custom_normals` and verts > tris before reducing. Blender's `Mesh.transform` rotates custom normals itself.
+* Blender 5: `Mesh.materials.clear()` drops the face material-index attribute; swap slots in place
+  (`mesh.materials[i] = m`) when re-assigning bake materials.
+
+Project: `l275_minespec_mod/art/wheels_v35` (generator `w10_build.py`, `w20_compose.py`, `w30_review.py`).

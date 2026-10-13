@@ -75,6 +75,8 @@ A project for the tools is a relocatable SDK project folder (`.project` referenc
 | `jobs-recover` after a failed native step refuses with "Last successful install does not identify the live candidate bytes" when `local/machine.json` `transactionReceipts` lacks the newest install: `roadcraft install` does not append its receipt there. Add the new `local/transactions/<id>/receipt.json` after each install | Build (Dump Twuck v8/v9) |
 | `jobs-recover` with an installed review candidate (empty `accepted`) needs the registry candidate's `receipt` pin to be a package receipt naming the candidate (`{"candidate": <name>, "packageSha256": <sha>, "accepted": false}`, as `package/candidates/<name>/package_receipt.json` in the grader and buggy projects); a package *transaction* receipt pinned there fails with "Pinned candidate receipt does not identify the installed candidate". Every `<transactions root>/*/receipt.json` must also be listed in `transactionReceipts` ("An unlisted transaction receipt blocks candidate recovery"), and the chain of previous/candidate hashes must end at the live package. The Roamer registry was converted on 2026-10-13 (transaction receipts moved to `installReceipt`) | Build (Roamer 105 glass campaign; recovery receipt `jobs/20261012T231634Z-c93e35c53b46/job_recovery_*.json`) |
 | `mod_pak_builder` packs only resources reachable through `.resource` links from the roots: when a material instance stops linking a texture that no other instance links, that texture's `pct/<n>.pct.resource`, `pct/<n>_<i>.pct_mip`, `td/<n>.td` and `td/<n>.td.resource` members disappear from the pak. A member-level package audit must expect exactly those removals and check that every `res://pct/<n>.pct.resource` link in the packed `.mi.resource` files resolves to a packed mod texture; links to shipped game textures (`flat_nm`, `wipers_flow_01`, `wipers_noise_01` from the wiper/rain instances) are never packed and must be excluded | Build (Roamer 105 glass campaign attempts 001 and 002) |
+| A pinned recipe pins the shared toolchain's runtime files, so another session editing `src/roadcraft` invalidates it mid-run ("Stale or missing input ... cli.py", "changed pinned input ... pak_build.py"). For a campaign built while others change the toolchain, copy the runtime into the campaign (`toolchain-runtime/`, with `runtime_snapshot.json`) and pin with `ROADCRAFT_TOOLCHAIN` pointing at it | Build (Roamer 105 winch 2026-10-01 and proxy campaign 2026-10-13) |
+| `mod_pak_builder` writes `.cls` members with CRLF line endings while Python `read_text` normalises the source to LF: compare class text with line endings normalised (byte equality with the source file still holds) | Build (Roamer 105 proxy campaign) |
 | Native steps and `jobs-recover` are blocked by any session's `mod_pak_builder.exe` / `furnace.exe` on the machine, not only this project's: with several mod sessions packaging concurrently, run them through a patient gate that re-enumerates until the consumers exit rather than retrying by hand | Build (Roamer 105, 2026-10-13: three furnace and two packager processes from other sessions) |
 
 | The editor's Documents folder may be OneDrive-redirected: its working copy and built mods live there, and sync is a suspect in file-lock failures | Build |
@@ -1010,3 +1012,21 @@ Blender wrote the `@` file in full. The retried run happened to save normally, s
 - Shop card and icon store `bodyTriangles`; a geometry change needs `tools/render_preview.py` again or validation fails.
 - Raise the project's own body LOD0 guard deliberately and say so in the config comment (L275: 400k -> 480k for a
   ~122k undercarriage replacing a 45k chassis).
+
+## One ship script per project at a time (L275 v42, Claude, 2026-10-14)
+
+- **Finding and action:** two copies of the same `ship.sh` (both waiting on "game closed", both released at 08:05:05)
+  ran `build.py models` together. Both saved the 649 MB zstd `l275_minespec.blend` in `mods_source` (08:07:18, 08:09:26).
+  The first copy's `render_preview.py` opened the blend while the second was mid-save and failed with
+  `File format is not supported`. Its `preview.log` was empty because `run_blender_art.py` writes Blender output to
+  `reports/art_<label>.log`. Before starting a ship, check that no other `ship.sh`, `build.py` or
+  `run_blender_art.py` is running for the project (`Get-CimInstance Win32_Process` command lines). Read
+  `reports/art_<label>.log` for preview failures.
+- **Scope and grade:** any project whose stages share `mods_source`; observed once, cause confirmed from process
+  start times and the blend mtimes.
+- **Evidence:** L275 `reports/dash_v42/ship.log` (models ok twice, 08:07:41 and 08:09:41; PREVIEW FAILED, then
+  preview ok 08:11:29), `reports/art_ui-preview-v42.log`. The surviving copy went on to build-143, test-144
+  (564 checks) and the validate gate (0 errors).
+- **Integration:** this note only. The deferred automation is a project lock file (`temp/ship.lock`, holding the
+  PID) taken at the start of the ship and released on exit.
+- **Limits:** a peer session's read-only Blender opening the same blend did not fail. Only a concurrent save did.

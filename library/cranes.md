@@ -206,3 +206,17 @@ stops at `maxTargetPositionError` and the boom moves stop-start. Grades: retail 
 (no Mod Editor runs, owner rule). Evidence: kanga25_mod `kanga_config.py` (CRANE_IK_CAPS, NO_COLLISION_BODIES, hook
 JOINTS entry), `prepare_mod.py` ragdoll branch.
 
+## Reaching the operator-cab camera; hook show/hide (KGS-25 v8, 2026-10-14)
+
+**Owner (Game):** "Cant find operator cab view?" **How the game reaches it (Retail, code:
+`ssl/camera/game_camera_vehicle_switcher.ssc`, `ssl/game/truck/player_input_truck_controller.ssc`):** the vehicle
+camera has two independent states, first/third person and VEHICLE/EQUIPMENT. `game_camera_equipment_cockpit` is
+first person + EQUIPMENT, found by `prop_game_camera_user.additionalActivationLogics[*].info.cameraUid`. Two ways in:
+the named action `TOGGLE_EQUIPMENT_CAMERA` (HUD "UID_HUD_EQUIPMENT_MODE", `fourthAction` on the Baikal 5916 and the
+KGS) pressed while in the cockpit view, or entering crane controls (legacy mode) from the cockpit view. The HUD hint
+shows only when `CanSwitchEquipmentCamera` holds (first person needs both the cockpit and the equipment-cockpit
+logic). Tell owners: cockpit camera first, then Equipment mode / crane mode.
+
+**Hook block (Build, drive Open):** the modelled hook hides on OnAttached and shows on OnDetached, all seven meshes
+skinned to the hook bone listed; the pass-1 outrigger triggers are gone (owner: hook "never comes back"). See
+symptoms.md, "A hidden part leaves stray vertices behind".
