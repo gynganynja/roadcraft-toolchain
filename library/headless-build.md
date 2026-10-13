@@ -94,6 +94,16 @@ Found on the way: the KGS-25 `interior_2026-10-05\p\.project` has `documents-dir
 `repair_2026-10-03\p`, so any packer run on it read another project's `mods_source`. The staging report
 flags that as `documentsDirWasElsewhere` and corrects it in the copy.
 
+## Rebuilding over package patches: `--baseline`
+
+`--baseline <installed.pak>` lists every member the rebuild changes, adds or drops, compared by
+decompressed content; `--allow-change GLOB` (repeatable) makes any change outside the globs fail the
+build (the package is still written, the receipt says why). A rebuild from source silently reverts
+whatever was patched straight into the installed package: KGS-25 `final\p` restaged 36 classes of
+which 9 differed from the installed pak (torque 470k vs 560k, gear count, trail textures, cockpit
+links from the features/feedback passes' package patches; Build, 2026-10-13 desktop). Run it on
+every rebuild of an installed mod.
+
 ## Traps the command handles
 
 | Trap | Evidence | Grade |

@@ -93,6 +93,22 @@ class PakBuildTest(unittest.TestCase):
                              (f"out{n}", receipt["output"]["sha256"], False))
         self.assertEqual(hashes[0], hashes[1])
 
+    def test_baseline_check_lists_changes_and_enforces_allowed_globs(self):
+        p = pak_build.plan(self.project, _mod(self.root), self.root / "out.pak", game_root=self.game)
+        with mock.patch.object(quiet, "run", _fake_packer("")):
+            receipt = pak_build.build(p)
+        installed = self.root / "installed.pak"
+        with zipfile.ZipFile(installed, "w") as z:
+            z.writestr("ssl/a.sso", b"patched in the package")
+            z.writestr("demo.mod", b"title: Demo\n")
+            z.writestr("pct/only_installed.pct", b"x")
+        check = pak_build.baseline_check(receipt, p.work, installed)
+        self.assertEqual(check["counts"], {"changed": 1, "removed": 1})
+        self.assertTrue(receipt["ok"])
+        pak_build.baseline_check(receipt, p.work, installed, ["ssl/*"])
+        self.assertFalse(receipt["ok"])
+        self.assertIn("outside --allow-change", receipt["failures"][-1])
+
     def test_nonzero_exit_and_no_output_fail(self):
         p = pak_build.plan(self.project, _mod(self.root), self.root / "out.pak", game_root=self.game)
         with mock.patch.object(quiet, "run", _fake_packer("", write=False, code=3)):

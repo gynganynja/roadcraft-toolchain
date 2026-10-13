@@ -316,6 +316,32 @@ def build(p: BuildPlan) -> dict[str, Any]:
     return receipt
 
 
+def baseline_check(receipt: dict[str, Any], work: Path, baseline: str | Path,
+                   allowed: Sequence[str] | None = None) -> dict[str, Any]:
+    """Compare the built package with the installed one, member by member (decompressed content).
+
+    A rebuild from source silently drops what was patched straight into the installed package
+    (KGS-25 2026-10-13: 9 of 36 staged classes reverted the features/feedback passes' package
+    patches). Every changed or removed member is listed; with ``allowed`` globs, any change outside
+    them sets ``ok`` False. The output package is kept either way."""
+    from . import core
+    result = core.compare_archives(baseline, receipt["output"]["path"],
+                                   list(allowed) if allowed else None)
+    states: dict[str, int] = {}
+    for row in result["changes"]:
+        states[row["state"]] = states.get(row["state"], 0) + 1
+    check = {"baseline": result["baseline"], "counts": states, "changes": result["changes"],
+             "allowedPaths": list(allowed) if allowed else None,
+             "unexpectedChanges": result.get("unexpectedChanges")}
+    receipt["baselineCheck"] = check
+    if allowed and result.get("unexpectedChanges"):
+        receipt["failures"].append(f"{len(result['unexpectedChanges'])} member(s) changed against the baseline "
+                                   "outside --allow-change")
+        receipt["ok"] = False
+    (work / "build.json").write_text(json.dumps(receipt, indent=1, sort_keys=True), encoding="utf-8")
+    return check
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="roadcraft pak build", description=__doc__.split("\n\n")[0])
     parser.add_argument("--project", required=True, help="staged SDK project folder (contains .project)")
@@ -333,6 +359,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help="stage the generated classes (autogen*/ -> ssl/<stem>_<suffix>) into <work>/staged first")
     parser.add_argument("--suffix", help="the mod's short class suffix for --stage-classes (also stages an unstaged "
                         "project on its own), e.g. kgs25")
+    parser.add_argument("--baseline", help="installed package: list every member the rebuild changes or drops "
+                        "(catches package-only patches a rebuild from source would revert)")
+    parser.add_argument("--allow-change", action="append", default=[], metavar="GLOB",
+                        help="with --baseline: member paths expected to change; any other change fails the build")
     parser.add_argument("--apply", action="store_true", help="run the packer (default: preflight only)")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
@@ -357,6 +387,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     except PakBuildError as error:
         print(f"refused: {error}", file=sys.stderr)
         return 2
+    if args.baseline and receipt.get("output"):
+        check = baseline_check(receipt, p.work, args.baseline, args.allow_change)
+        if not args.json and check["counts"]:
+            print("against the baseline: " + ", ".join(f"{n} {k}" for k, n in sorted(check["counts"].items())))
+            for row in check["changes"][:20]:
+                print(f"  {row['state']:8} {row['path']}")
     if args.json:
         print(json.dumps(receipt, indent=1, sort_keys=True))
     else:

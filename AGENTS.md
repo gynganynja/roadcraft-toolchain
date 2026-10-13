@@ -64,6 +64,9 @@ machine.json sdkRoot, then the default Steam path.
   short suffix (kgs25, jimny, gd11...): reuse the installed pak's suffix for an update.
   Without it an unstaged project is refused. `roadcraft pak stage ... [--apply]` shows the
   plan alone. The source project is never written.
+- When rebuilding an installed mod, add `--baseline <installed pak>` to pak build and
+  explain every changed or dropped member: a rebuild from source reverts package-only
+  patches (KGS-25).
 - Before every install run `roadcraft validate NEW.pak --baseline <installed pak> --json`
   and do not install on a NEW error. Fix or explain new warnings (library/validator.md).
 - Before and after any handling or physics change run `roadcraft physics report` and
