@@ -59,3 +59,20 @@ flag panel hinges 0.2 / 0.15 kg, 0.3 / 0.05 and 0.15 / 0.03, angular damping 2. 
   tag the faces to split (face attribute) before the join and split them off after the patch (Build, L275 v15).
 * Spring units are not established. If the pole falls to its limit or the flaps never settle, measure
   before changing every value (physics-bench.md).
+
+## A hanging hook must cover the boom's luff range (Kanga 25 c10, 2026-10-13)
+
+**Owner report (Kanga c9, Game):** "the hook ... dont stay hanging down when the boom lifts up, there isnt enough
+movement in the joint". **Cause (Build):** c9 hung the hook block on a retail-lamp-style ragdoll with symmetric 25 deg
+limits on an identity bone; the twist axis (frame X = native X) is the luff axis, so the hook could lag the boom by
+25 deg at most while the boom luffs 0..60, and the lamp's spring 100 pulled it towards the boom angle. **Fix (Build,
+drive Open):** twist +-85 (full luff + swing, symmetric because the sign is not established), cone and plane +-30
+for side swing, motor spring 0 / damping 10, `massFactor 0`, `collisionLayer no_collision` (kanga25_mod
+`kanga_config.JOINTS['BoneHook_cdt']`). Rule: a pendulum on a luffing or tilting arm needs its limit about the
+pivot axis >= the arm's travel plus the swing you want; retail lamp limits and springs are for parts that should
+follow their parent. The KGS-25 hook (cone/plane/twist 25, twist axis up) has the same report.
+**KGS-25 fix (Build, 2026-10-13, drive Open):** the other route: an unlimited `tpl_markup_constraint_ball_and_socket`
+(the r4 joint, loaded in game before; schema takes `massFactor`) with `massFactor 0`, `no_collision` and body
+`angularDamping` 4 in place of the motor damping, installed sha 3f09a6e6 (kgs25 final `tools/hook_swing.py`). No
+limit to size, no spring; it gives up the side-swing cone the Kanga's ragdoll keeps.
+

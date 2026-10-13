@@ -180,6 +180,11 @@ twist 25, spring 100 / damping 10, twist axis native up via childRotation [0,0,9
 `no_collision`); IK caps raised to the Baikal's 0.9 m/s / 50 deg/s and `maxTargetPositionError` 0.5 (r4 had 0.65 / 15
 and 0.35) after the Kanga 25 c9 audit below (kgs25 final `tools/feedback_fixes.py`, `features_class.tune`). Markup
 joints are read at load: the compiled .tpl holds no constraint data, so a markup-only change needs no recompile.
+**Owner drive (Game, 2026-10-13): the 25 deg ragdoll hook stopped hanging plumb once the boom luffed** (luff 0..75 deg;
+the cone limits the hook relative to the tip, and the spring motor drags it along). A boom-head hook needs a joint
+range covering the whole luff plus tilt: back to the unlimited ball-and-socket (schema takes `massFactor`), kept
+massFactor 0 + no_collision, angular damping 4 (kgs25 final `tools/hook_swing.py`). Retail dangling-part ragdoll
+limits suit parts fixed to one body, not a hook on a luffing boom. The Kanga 25 c9 hook has the same limit.
 
 ## Animation audit vs retail (Kanga 25 c9, 2026-10-13; player report "criticises its animations", nonspecific)
 

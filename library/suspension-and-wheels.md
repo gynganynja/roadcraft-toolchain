@@ -353,10 +353,18 @@ the sample inherit the gap:
 - retail Lynx res: `default` 5 / 0 / 0.5 (frictionValue / terrainDeformationFactor / substanceFriction), asphalt 1.2 / 0 / 0.5
 - Thunder, K350, Type A: `default` 1.75 / 0 / 0.5, asphalt 0.85 / 0 / 2
 
-Without them the wheel falls back to engine defaults on roads, rock and any unlisted surface. Lada v11 (sha 308a32d1)
+Without them (engine facts, library 4fe7b99): a missing `default` gives frictionValue 2.0, and a surface with no entry
+(asphalt here) keeps the previous surface's friction, so road grip depended on where the car came from. Lada v11 (sha 308a32d1)
 adds `default` 1.75 / 0 / 0.5 and `asphalt` 1.0 / 0 / 2, after a player report that the wheels "interact poorly with
 the ground" (Venk88, 6 Oct). Evidence grade: **Retail data** for the gap; the effect on the report is **Unverified**
 (no editor runs; owner drive pending). Check new wheel BROs for both entries.
+
+`roadcraft compare` against the retail Lynx (91 wheeled trucks) on v11 also flags: `ground.substanceFriction` 0 (schema
+default; retail 0.75-4.5, median 1.6) and wheel mass 60 (retail minimum 70). Both come from the v4 rut fix, which
+rewrote `ground` and `mud` as `{terrainDeformationFactor}` only, so they also run at frictionValue 2.0 (schema default)
+against 0.8-1.0 on the Lada's other surfaces. When a project scales excavation, edit `terrainDeformationFactor` in the
+existing entries instead of replacing them. Not changed in v11: the owner accepted the v4-v7 handling with these
+values, so a correction waits for the owner's call.
 
 ## Stop geometry (measured, 2026-10-02)
 
