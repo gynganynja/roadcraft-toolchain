@@ -9,6 +9,10 @@ gear ratios and feature ranges are examples, not defaults for the next vehicle.
 
 ## Establish the source and build contract
 
+For a SnowRunner mod's recovered meshes and XML, start with [snowrunner-ports](snowrunner-ports.md): the
+importer mirrors the truck left/right, the parts browser turns the add-on rigs, and the shading maps,
+hardpoints and skin weights carry over.
+
 Preserve the supplied archive and record its contents before conversion. Measure
 scale, facing direction, wheel centres and pivots against the actual source.
 Fresh FBX/Blender authoring and repaired compiled assets are different routes;

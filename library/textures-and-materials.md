@@ -508,3 +508,27 @@ UVs covering a quarter of a 2048 atlas, and the 382k source collapse-decimated t
 
 Workspace C:/RC/l275_interior (r10_interior.py, r12_partmap.py, r20_compose.py, r21_clean_albedo.py, r61_compare.py
 side-by-side solid renders); mod `tools/interior_v20.py`, `art/interior_v20`. Not yet seen in game.
+
+## Swapping in wheels from another vehicle's parts blend (L275 v35, 2026-10-13; Build, not yet seen in game)
+
+Owner: "use the bfg tyre from this blend and the white steelie rim" (Watcher61 parts library). What held:
+
+* Read the source through a copy (another session was using it). Library wheels sit at one common scale with the axle
+  along Y; map them into the mod's wheel frame (tyre radius 1, axle X, outer hub face -X) with a proper rotation
+  (x,y,z) -> (y,-x,z), and centre the rim in the tyre (the rig origins anchor tyre and rim differently).
+* Keep the physical wheel (radius, width and rim ratios, wheel BRO, collision cylinder) when only the look changes, so
+  the drivetrain tune and handling hold; give only the clearance audit the new visual width.
+* Shipped maps from game-style libraries can be empty (one flat colour, blank normals): the detail is geometry, so bake
+  normals / AO / cavity from the full source onto the reduced mesh and author the finish.
+* Tread blocks and spokes are stacked on shared UV texels in the source; identical geometry bakes identically, so keep
+  the source UVs (smart project gave 3,400 tyre islands and <= 35% coverage). A rim made of several source materials,
+  each using the full 0-1 square, is packed into atlas cells for the mod's single wheel material.
+* **Keep a game-ready source mesh's own normals and splits (v36/v37).** The Watcher61 tyre came with authored custom
+  normals and its geometry already split at the tread edges. A `remove_doubles` in the reduction merged those splits
+  (owner: "blobby"), and an angle-based edge split faceted the sidewall (owner: "neither version is acceptable, It needs
+  to be a smooth out side of the tyre and clean distinct treads"). Use such a mesh as it comes when its count fits;
+  check `has_custom_normals` and verts > tris before reducing. Blender's `Mesh.transform` rotates custom normals itself.
+* Blender 5: `Mesh.materials.clear()` drops the face material-index attribute; swap slots in place
+  (`mesh.materials[i] = m`) when re-assigning bake materials.
+
+Project: `l275_minespec_mod/art/wheels_v35` (generator `w10_build.py`, `w20_compose.py`, `w30_review.py`).

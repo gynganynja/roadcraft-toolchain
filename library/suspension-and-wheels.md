@@ -131,6 +131,15 @@ front wheel carries (1 - c / L) / 2 and each rear wheel (c / L) / 2.
   (`apb-axles-20260929`) and the Warthog (`wh12-axles-20260929`) were designed at 58; at 105 the buggy
   would rest about 0.13 m above its modelled stance instead of 0.06 and the Warthog about 0.07 m
   instead of 0, both stiffer than designed. Their next drives settle it (calibrate as above).
+- Watcher 61 drive 1 (2026-10-13, all five configurations designed at beta 58, sag 0.18, lifts 0-0.10): owner
+  "The suspension on all of them is way to high". Another vehicle on the beta ~105 side (at 105 the design rests
+  ~0.15 m higher, plus bigger tyres). Expedition pass 2 is designed at beta 105, rest as modelled, same strength
+  (height 0.0994, `C:/RC/watcher61/tools/w61_config.py` `suspension()`). If it now rests level with the model,
+  calibrate with `roadcraft suspension --calibrate` and consider making 105 the design default.
+  Result (owner drives 2-3): the beta-105 rest was close. The owner asked only for "a little bit more" lower (0.04 m, applied as a
+  -0.04 lift) after softening the springs x0.7 (strength 0.0179 / 0.0156 on 2.3-2.6 t) and damping to 0.12 / 0.13.
+  That shipped to all five configurations (v6). This is a second vehicle supporting beta ~105 over 58. **Game** (owner
+  feel, no measured rest).
 - The units of `strength` and `damping`, and whether `strength` really scales with the mass. Partly answered 2026-10-13 (code analysis, static: `C:\RC_RE\research\physics_semantics.md`, T4/F3): they are the Havok wheel constraint's dimensionless per-step soft tau and damping, with no Saber mass scaling; the static sag law that follows from them is still **Unknown**.
 - Whether the steering rack also turns joints hung under an identity-oriented slot correctly on the
   right side (the buggy's v3 rig; awaiting a drive).
