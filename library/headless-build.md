@@ -30,6 +30,17 @@ Roots default to the `.mod` file's `scenes` + `assets` with `res://` prepended, 
 editor passes. A blank line in a roots file is refused: the packer reads the file with
 `splitlines()` and turns it into an empty tag.
 
+## Class staging (not done yet)
+
+Every installed mod (all 17 on the desktop) ships its generated truck classes only under
+`ssl/` as `ssl/auto_<truck>_<suffix>.cls`, `ssl/auto_wheel_<x>_<suffix>.cls`,
+`ssl/auto_preview_...`, never under `autogen_dw/` (Build, 2026-10-13 desktop survey). The
+editor's Build Mod / Mod Manager export moves and renames them and retags their links before
+packing. `pak build` does not do that yet: on an ordinary editor project (KGS-25 `final\p`) it
+packed the classes under `autogen_dw/`, a pak the game most likely cannot load the truck from
+(Inferred). Preflight now refuses such a project. The released Goliath route stages `ssl/` with its
+own scripts first, which is why its rebuild matched.
+
 ## Traps the command handles
 
 | Trap | Evidence | Grade |

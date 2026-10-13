@@ -101,6 +101,25 @@ class PakBuildTest(unittest.TestCase):
         self.assertTrue(any("exit code 3" in f for f in receipt["failures"]))
         self.assertTrue(any("no package" in f for f in receipt["failures"]))
 
+    def test_mod_file_wrapped_description(self):
+        mod = self.root / "wrapped.mod"
+        mod.write_text("title: K\ndescription: KGS-25 crane. Original model,\n  native tracks.\nscenes: []\n"
+                       "assets:\n- ssl/a.sso.resource\n", encoding="utf-8")
+        data = pak_build.read_mod_file(mod)
+        self.assertEqual(data["description"], "KGS-25 crane. Original model, native tracks.")
+        self.assertEqual(data["assets"], ["ssl/a.sso.resource"])
+
+    def test_unstaged_autogen_classes_are_refused(self):
+        (self.project / "mods_source" / "autogen_dw" / "trucks" / "auto_k").mkdir(parents=True)
+        (self.project / "mods_source" / "autogen_dw" / "trucks" / "auto_k" / "auto_k.cls").write_text("x")
+        mod = self.root / "autogen.mod"
+        mod.write_text("title: K\nscenes: []\nassets:\n- autogen_dw/trucks/auto_k/auto_k.sso.resource\n",
+                       encoding="utf-8")
+        p = pak_build.plan(self.project, mod, self.root / "out.pak", game_root=self.game)
+        self.assertTrue(any("not staged" in problem for problem in p.problems))
+        staged = pak_build.plan(self.project, _mod(self.root), self.root / "out2.pak", game_root=self.game)
+        self.assertEqual(staged.problems, [])
+
     def test_mod_file_flow_lists(self):
         mod = self.root / "flow.mod"
         mod.write_text("title: T\nscenes: []\nassets: [ssl/a.sso.resource, 'ssl/b.sso.resource']\n", encoding="utf-8")

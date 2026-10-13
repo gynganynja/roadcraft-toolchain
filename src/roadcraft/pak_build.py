@@ -88,6 +88,9 @@ def read_mod_file(path: Path) -> dict[str, Any]:
         line = raw.rstrip()
         if not line.strip() or line.lstrip().startswith("#"):
             continue
+        if line[0] in " \t" and not line.lstrip().startswith("- ") and isinstance(data.get(current), str):
+            data[current] = f"{data[current]} {line.strip()}"      # a wrapped scalar (KGS-25 description)
+            continue
         if line.startswith("- ") or line.startswith("  - "):
             if current is None or not isinstance(data.get(current), list):
                 raise PakBuildError(f"{path}: list item outside a list: {raw!r}")
@@ -160,6 +163,14 @@ def plan(project: str | Path, mod_file: str | Path, output: str | Path, *, roots
             problems.append(f"root {number} is blank (the packer would turn it into an empty tag)")
         elif not tag.startswith("res://"):
             problems.append(f"root {number} {tag!r} is not a res:// tag")
+    unstaged = [t for t in tags if t.strip().lower().startswith("res://autogen")]
+    if unstaged or (not any(t.strip().lower().startswith("res://ssl/") for t in tags)
+                    and any((project / "mods_source").glob("autogen*/**/*.cls"))):
+        problems.append(
+            "the generated classes are not staged: roots point into autogen_dw/ (or no root is under ssl/ while "
+            "mods_source has autogen classes). The editor's Build Mod / Mod Manager export moves them to "
+            "ssl/<class>_<suffix> before packing, and every installed mod ships them only there; pack a project "
+            "staged that way (library/headless-build.md 'Class staging')")
     packer = game / PACKER
     if not packer.is_file():
         problems.append(f"packer not found: {packer}")
