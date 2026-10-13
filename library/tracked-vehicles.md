@@ -100,34 +100,50 @@ and the steering feel off, not tipping or grip):
 ### Headless bench of the five builds (2026-10-13, laptop)
 
 Grade **Game (engine, headless play)**: the windowless editor engine, each build's pak overlaid on the 2026-10-02 bench
-project (`roadcraft.pak_overlay`), checked in the engine by readback (softForceScale, frame-hinge motor values).
-**One run per cell, so run-to-run noise is unknown.** 7 of the 18 planned runs completed: flat `normal` for all six
-variants, and the step course for the baseline only. The remaining runs stopped on laptop memory/disk, see
-headless-bench.md. Scenarios: `library/bench-scenarios/kgs25_*.json`. Results:
+project (`roadcraft.pak_overlay`), checked in the engine by readback (softForceScale, frame-hinge motor spring and
+damping). All 18 runs completed (six variants x flat `normal`, `harsh` and a single-track step), in 21 launches.
+**One run per cell, so run-to-run noise is unknown.** Scenarios: `library/bench-scenarios/kgs25_*.json`. Results:
 `C:\RC_RE\bench-headless\kgs25\results.md`, copied to `\\192.168.0.129\Downloads\roadcraft_laptop_research\kgs25_bench\`.
+esults.md`, copied to `\192.168.0.129\Downloads
+oadcraft_laptop_research\kgs25_bench\`.
 
-| Build | Pivot roll peak (deg) | Hull jitter in pivots, roll RMS + / - (deg) | Yaw in 4 s pivot + / - (deg) | Frame swing vs hull (deg) | Settle after pivots (s) |
+**Step (left track onto a 0.3 m slab, low gear): the hinged frames conform; the welded ones do not.**
+
+| Build | Left frame pitch vs hull (deg) | Front sprocket / rear idler travel (mm) | Mid road-wheel spring (mm) | Hull roll / pitch peak (deg) | Hull jitter roll / pitch RMS (deg) | Residual pitch peak-to-peak (deg) | Settle after stop (s) |
+|---|---|---|---|---|---|---|---|
+| 5c4dd65d baseline (welded) | 0.11 | +13 / -11 | 170 | 6.4 / 4.35 | 0.47 / 0.33 | 2.67 | 1.09 |
+| cf9dca20 curve -0.6 (welded) | 0.08 | +15 / -14 | 173 | 6.9 / 4.26 | 0.45 / 0.32 | 2.51 | 0.55 |
+| 93c5e889 wheel feel (welded) | 0.09 | +11 / -8 | 203 | 6.3 / 5.28 | 0.48 / 0.32 | 2.44 | 0.98 |
+| f841eb34 hinge +-5, 1e7 | 1.42 | +73 / -74 | 164 | 7.1 / 4.31 | 0.43 / 0.22 | 1.47 | 0.44 |
+| 3cb0efda hinge +-8, 3e6 | 2.15 | +114 / -112 | 154 | 6.9 / 3.55 | 0.39 / 0.26 | 1.56 | 0.55 |
+| 3cb0efda + frame damping 0.05 / 0 (retail) | 2.28 | +118 / -115 | 151 | 6.5 / 3.55 | 0.34 / 0.22 | 1.65 | 0.22 |
+
+- On the sprung hinge the frame pivots over the step: the sprocket rises and the idler drops by the same amount.
+  Less of the step reaches the hull: pitch peak and residual pitch swing drop, roll jitter drops, and it settles
+  faster. The roll peak (6.5-7 deg) is the geometry of one track 0.3 m up on a 2.77 m gauge; the hinge pitches, it
+  does not roll. The softer 3e6 hinge conforms about 50 % more than 1e7. Retail frame damping is the steadiest
+  build on the step.
+- Every build yawed about 15 deg toward the slab while climbing (drift 2.1 m): a single-track climb steers the crane.
+
+**Flat pad:**
+
+| Build | Normal pivot (steer 0.8): roll peak / jitter RMS + - (deg) | Normal pivot yaw in 4 s (deg) | Harsh lock+ (steer 1): roll peak / jitter / yaw | Frame swing (deg) | Settle after pivots (s) |
 |---|---|---|---|---|---|
-| 5c4dd65d baseline | 2.2 | 0.18 / 0.16 | 45 / 46 (nearly in place, 2.6 m) | 0.04 (welded) | 0.4 / 1.2 |
-| cf9dca20 curve -0.6 | 5.5 | 0.28 / 0.19 | 19 / 14 (sweeps 7-9 m) | 0.04 | 1.6 / 1.2 |
-| 93c5e889 wheel feel | 4.0 | 0.19 / 0.14 | 14 / 9 | 0.03 | 0.7 / 1.3 |
-| f841eb34 hinge 1e7 | 3.1 | 0.11 / 0.16 | 11 / 21 | 0.5 | 1.4 / 1.6 |
-| 3cb0efda hinge 3e6 | 3.2 | 0.13 / 0.21 | 13 / 18 | 0.85 / 0.69 | 1.7 / 2.7 |
-| 3cb0efda + frame damping 0.05 / 0 (retail) | 3.2 | 0.11 / 0.11 | 14 / 17 | 0.77 / 0.73 | 1.4 / 1.5 |
+| 5c4dd65d | 2.2 / 0.18 0.16 | 45 / 46 (nearly in place) | 2.3 / 0.18 / 63 | 0.04 | 0.4 / 1.2 |
+| cf9dca20 | 5.5 / 0.28 0.19 | 19 / 14 (sweeps 7-9 m) | 2.3 / 0.16 / 75 | 0.04 | 1.6 / 1.2 |
+| 93c5e889 | 4.0 / 0.19 0.14 | 14 / 9 | 2.3 / 0.18 / 54 | 0.03 | 0.7 / 1.3 |
+| f841eb34 | 3.1 / 0.11 0.16 | 11 / 21 | 2.3 / 0.17 / 66 | 0.5-0.6 | 1.4 / 1.6 |
+| 3cb0efda | 3.2 / 0.13 0.21 | 13 / 18 | 3.5 / 0.13 / 56 | 0.6-0.85 | 1.7 / 2.7 |
+| 3cb0efda + retail frame damping | 3.2 / 0.11 0.11 | 14 / 17 | 3.2 / 0.17 / 56 | 0.6-0.8 | 1.4 / 1.5 |
 
-- Straight driving is calm in every build (roll/pitch residual 0.02-0.05 deg RMS). The KGS jank is in pivots and on
-  obstacles, not in straight-line driving on a flat pad.
-- **The inner-track curve at -0.6 (cf9dca20) cost most of the pivot.** Yaw in a 4 s pivot at steer 0.8 fell from 45
-  to 9-21 deg, the crane sweeps forward instead of turning in place, and roll rose. Every later build keeps the
-  curve. Compare with the owner's "steering feels off" before reverting or keeping it.
-- The sprung hinge made the frames articulate on the flat (0.5 to 0.85 deg) and lowered pivot roll against the
-  welded wheel-feel build. The softer 3e6 hinge slowed one settle to 2.7 s. **Retail frame damping (0.05 / 0)
-  was the calmest build measured.** The 1.5 / 0.03 body damping does not steady the hull: a lead for the next
-  build, within single-run noise.
-- Step course, welded baseline only. Left track onto a 0.3 m slab in low gear: hull roll peak 6.4 deg, pitch
-  4.35 deg, residual swings 3.9 / 2.7 deg peak-to-peak. The mid road wheel took 170 mm of spring travel, while the
-  rigid sprocket and idler moved +-15 mm with the frame at 0.11 deg. This is the welded "janky when one wheel is
-  climbing" case. Whether the hinged builds let the idler conform is **open**: their step runs did not run.
+- Straight driving is calm in every build (residual 0.02-0.05 deg RMS). No full-lock stick-slip judder showed in any
+  build at the bench's about 9 Hz sampling (lock jitter 0.06-0.18 deg RMS).
+- **The inner-track curve at -0.6 (cf9dca20) cost the part-steer pivot:** at steer 0.8 the crane sweeps forward
+  instead of turning in place. At full lock it turns more. Every later build keeps the curve.
+- **Retail frame body damping (0.05 / 0) is the best measured build** on the step and in pivots. The 1.5 / 0.03 body
+  damping does not steady the hull. Recommended for the next build, with the owner's drive as the acceptance.
+- Harsh course: four builds left the pad from the x = -22 lane (two fell). Only their earlier phases are used, and the
+  baseline has no lock- figure.
 
 ## Springs on a light body
 
@@ -240,6 +256,5 @@ next build ([build-pipeline.md](build-pipeline.md)).
 - Deformable terrain: spawning the crane on the acceptance scene's terrain crashed the editor
   engine for every variant, so terrain behaviour rests on the owner's drives.
 - The owner's drive of fix 2.
-- KGS-25 headless campaign, the remaining 11 runs (2026-10-13): the harsh course for all six variants and the step
-  course for f841eb34 / 3cb0efda / retail damping. They answer whether the sprung frames let the idler conform, and
-  repeat runs would give the run-to-run noise.
+- KGS-25 headless bench: repeat runs for run-to-run noise; the harsh course on a centred lane for the baseline,
+  cf9dca20, f841eb34 and retail damping (they left the pad); a wider step slab.

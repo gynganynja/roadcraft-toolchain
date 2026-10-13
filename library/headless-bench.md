@@ -199,7 +199,14 @@ Bench changes made for this (all tested with the fake engine):
 | 3-7 | v1 flat normal, v1 step, v2-v4 flat normal | complete: 10/10 (4/4) inputs, readback, about 9 Hz probes, 4-5 min each | Game (engine, headless play) |
 | 8 | v5 flat normal | the hub helper crashed in Saber `DriverTcpServer.NewClientsThreadProc`: WinSock 10055 (no buffer space), engine fine | Build (environment) |
 | 9-10 | v5, v6 flat normal | complete | Game (engine, headless play) |
-| - | harsh x6, step v2-v6 | not launched: each run grew the system-managed pagefile by about 2.7 GB (34.5 -> 39.8 GB) while the owner's Substance Painter (15.8 GB committed) and Blender (10 GB) were open on the 15.7 GB laptop; free disk fell to 3.1 GB | - |
+| - | (stop) | first session stopped: each run grew the system-managed pagefile by about 2.7 GB (34.5 -> 39.8 GB) while the owner's Substance Painter (15.8 GB committed) and Blender (10 GB) were open on the 15.7 GB laptop; free disk fell to 3.1 GB | - |
+| 11-21 | step v2-v6, harsh v1-v6 (resumed after the owner freed disk) | all complete, about 3 min each; 11.2 GB free at the end | Game (engine, headless play) |
+
+21 launches for 18 runs. **Course pitfalls found:** the harsh course's full-lock pivots and fast reverse carried
+four of six builds over the pad edge from a lane 8 m from it (two fell 15 m), so use a centred lane or a bigger pad
+for `harsh`. On a single-track step every build yawed about 15 deg toward the slab and drifted 2.1 m, so the slab
+must be wider than the drift (5 m or more). `GetCurrentAngle` of a hinge is in radians (it matched the body-derived
+frame angle to 0.1 deg).
 
 **Pitfall: memory and disk.** An engine run commits several GB; with other large applications open, Windows grows the
 pagefile into free disk and keeps it until reboot, and the hub can fail with WinSock 10055. Check free virtual memory
