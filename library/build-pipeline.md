@@ -828,3 +828,13 @@ The package audit compares every class, descriptor, markup, model and material m
 byte for byte (352 members). Whether the game loads it, and how it drives, are open until the owner's
 drive. Evidence: WALL-E project `tools/build_text.py`, `tools/build_bro.py`, `tools/package.py`,
 `reports/package.json`, `reports/lint.json`.
+
+## Reproducible packages and the install manifest (2026-10-13)
+
+Two SDK builds of the same inputs differ only in per-member DOS timestamps (and, for read-only or
+non-Windows sources, `external_attr`); `pct_mip` slices are stamped at build time, so fixing input
+mtimes is not enough. `python -m roadcraft.pak_determinism normalize <built> <out>` rewrites only those
+header fields and verifies content; pin the normalized hash. Before installing, run
+`python -m roadcraft.overrides manifest <candidate> --installed <game>/root/mods --game <game>` to list
+retail shadowing and cross-mod conflicts with their probable engine effect. Details and grades:
+[deterministic-paks.md](deterministic-paks.md), [install-manifest.md](install-manifest.md).

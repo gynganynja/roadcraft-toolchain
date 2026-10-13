@@ -26,6 +26,11 @@ before installing it. Read the subject articles when authoring:
 | [textures-and-materials.md](textures-and-materials.md) | Texture sets, channel packing, material instances, interface images |
 | [retail-data.md](retail-data.md) | Where the shipped vehicles' data lives and how to read it, including compiled models |
 | [build-pipeline.md](build-pipeline.md) | SDK tools, class generation, packaging, installation, process rules |
+| [headless-build.md](headless-build.md) | Packing a mod without the Mod Editor, quietly and repeatably (`roadcraft pak build`) |
+| [quiet-launch.md](quiet-launch.md) | Running SDK tools and the engine without windows, focus theft or crash dialogs (`roadcraft.quiet`) |
+| [deterministic-paks.md](deterministic-paks.md) | Why rebuilds differ and how `roadcraft pak normalize`/`check` makes them byte-identical |
+| [install-manifest.md](install-manifest.md) | Which retail file or other mod each package member overrides (`roadcraft pak manifest`) |
+| [validator.md](validator.md) | Runtime-failure checks for sources and packages, codes RC049-RC072 (`roadcraft validate`, `roadcraft schema`) |
 | [case-studies.md](case-studies.md) | Each mod built so far: what went wrong and what it taught |
 | [sources.md](sources.md) | Official documentation, the community guide, the unofficial route, support channels |
 

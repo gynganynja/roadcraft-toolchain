@@ -547,8 +547,50 @@ def _transaction_process_check() -> list[dict[str, Any]]:
     return active
 
 
+PASSTHROUGH_HELP = """headless editor commands (each has its own --help):
+  pak build ...         pack a mod without the Mod Editor (library/headless-build.md)
+  pak normalize|check   deterministic package bytes (library/deterministic-paks.md)
+  pak manifest ...      which retail file or other mod each member overrides (library/install-manifest.md)
+  validate <target>     runtime-failure checks for a source tree or .pak (library/validator.md)
+  schema dump|show|search  the engine's type schema (library/validator.md)"""
+
+
+def _passthrough(argv: list[str]) -> int | None:
+    """Commands owned by their modules' own parsers; ``None`` when ``argv`` is not one of them."""
+    if not argv:
+        return None
+    head, rest = argv[0], argv[1:]
+    if head == "pak" and rest:
+        if rest[0] == "build":
+            from . import pak_build
+            return pak_build.main(rest[1:])
+        if rest[0] in ("normalize", "check"):
+            from . import pak_determinism
+            return pak_determinism.main(rest)
+        if rest[0] == "manifest":
+            from . import overrides
+            return overrides.main(rest[1:])
+    if head == "validate":
+        from . import validate
+        return validate.main(rest)
+    if head == "schema":
+        from . import schema
+        return schema.main(rest)
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
-    args = make_parser().parse_args(argv)
+    argv = list(sys.argv[1:] if argv is None else argv)
+    delegated = _passthrough(argv)
+    if delegated is not None:
+        return delegated
+    if argv[:1] == ["pak"]:
+        print(PASSTHROUGH_HELP, file=sys.stderr)
+        return 2
+    parser = make_parser()
+    parser.epilog = PASSTHROUGH_HELP
+    parser.formatter_class = argparse.RawDescriptionHelpFormatter
+    args = parser.parse_args(argv)
     try:
         result, passed = execute(args)
     except (core.RoadcraftError, source.SourceError, transaction.PackageTransactionError,

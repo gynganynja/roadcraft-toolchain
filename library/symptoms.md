@@ -571,3 +571,13 @@ frames and the hull centre of mass lowered held roll to 0.2 deg in the same turn
 values: [tracked-vehicles.md](tracked-vehicles.md); `lint-bro` flags the layout (RC046) and light
 welded frames (RC047), and [physics-bench.md](physics-bench.md) measures a change before it is
 installed.
+
+## Static validator findings on shipped mods (2026-10-13)
+
+**Build (static check, `roadcraft.validate`):** run `python -m roadcraft.validate <pak or source>` before a drive.
+It found idler wheel markups in Goliath D11 RC5 that name `mod_goli_d11_idler_front_restored` /
+`_rear_restored` material instances, which neither the pak nor retail contains (RC070). The engine substitutes
+a missing material, so the idlers are expected to render with a placeholder; this has not been confirmed in
+game. In the SDK TUZ sample, the marker lamp's slot defines `lights_emmissive` while the lamp switches
+`lights_emissive` (RC066), and the BRO omits `useSuspensionCollection` (RC001). Rules, retail tuning and
+per-mod results: [validator.md](validator.md).

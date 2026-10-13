@@ -1,0 +1,866 @@
+{
+ "about": "Keys the SDK meta descs lack but retail content ships (truck classes, vehicle markups, the retail BRO pak), collected 2026-10-13 by running validate RC053 over retail. validate does not report them. Regenerate after a game update.",
+ "keys": {
+  "!global::partEMITTER_OPTIMIZATION_PARAMS": [
+   "degOverdraw"
+  ],
+  "!global::physIK_EFFECTOR": [
+   "offset"
+  ],
+  "!global::tplLOD_INFO": [
+   "enableLwiLodTransition"
+  ],
+  ".bro::AiRouteFollowingSettings": [
+   "enableJobMarker"
+  ],
+  ".bro::AnchorsSettings": [
+   "massSclaers"
+  ],
+  ".bro::AsphalterSettings": [
+   "maxPowerPerSecond",
+   "sandRemovingSpeed",
+   "weightsChangingSpeed"
+  ],
+  ".bro::BridgelayerSettings": [
+   "isAnchorsEnabled"
+  ],
+  ".bro::Building": [
+   "aiTruckStorage",
+   "buildingCdtPrefab",
+   "propSfx",
+   "resourcePackerSettings"
+  ],
+  ".bro::BuildingElectricitySettings": [
+   "electricityConsumption",
+   "electricityNeedToFinishBuilding",
+   "electricityNeedToWork",
+   "generatedElectricity"
+  ],
+  ".bro::BuildingResourceForBuild": [
+   "amount"
+  ],
+  ".bro::CardanShaftSettings": [
+   "shaftDataBasedOnAllWheels",
+   "shaftDataBasedOnCertainWheels",
+   "usingAllWheels"
+  ],
+  ".bro::CargoConstraint": [
+   "beltsOffset",
+   "constraintAreaOffset",
+   "constraintLinearLimit"
+  ],
+  ".bro::ChassisAlcesC400": [
+   "constraintWithControllablePower"
+  ],
+  ".bro::ChassisAramatsuCrayfish": [
+   "propSfx"
+  ],
+  ".bro::ChassisAramatsuKite3": [
+   "propSfx"
+  ],
+  ".bro::ChassisArlingRoadworks120Special": [
+   "propSfx",
+   "towingIsCaterpillars",
+   "towingPedalScale",
+   "towingSteeringTreshold",
+   "towingWinchLenghtToPull"
+  ],
+  ".bro::ChassisArmigerThunder": [
+   "propSfx"
+  ],
+  ".bro::ChassisArmigerThunderCivilian": [
+   "propSfx"
+  ],
+  ".bro::ChassisArmigerThunderExp": [
+   "propSfx"
+  ],
+  ".bro::ChassisAzov4317dl": [
+   "propSfx",
+   "rentSettings"
+  ],
+  ".bro::ChassisBaikal5916": [
+   "propSfx"
+  ],
+  ".bro::ChassisBaikal65206": [
+   "propSfx"
+  ],
+  ".bro::ChassisDerryLonghorn4520": [
+   "propSfx"
+  ],
+  ".bro::ChassisDon72malamute": [
+   "towingPedalScale",
+   "towingPedalTreshold",
+   "towingSteeringTreshold",
+   "towingWinchLenghtToPull"
+  ],
+  ".bro::ChassisDs135bunker": [
+   "propSfx",
+   "towingIsCaterpillars",
+   "towingPedalScale",
+   "towingSteeringTreshold",
+   "towingWinchLenghtToPull"
+  ],
+  ".bro::ChassisDs55katok": [
+   "propSfx",
+   "towingPedalTreshold",
+   "towingWinchLenghtToPull"
+  ],
+  ".bro::ChassisEpecHwc945": [
+   "propSfx"
+  ],
+  ".bro::ChassisEpecLt200": [
+   "cameraPreset",
+   "propSfx",
+   "wheelSoundType"
+  ],
+  ".bro::ChassisGreenway740cross": [
+   "propSfx"
+  ],
+  ".bro::ChassisGreenwayHt500": [
+   "propSfx"
+  ],
+  ".bro::ChassisInvictusTypeA": [
+   "propSfx"
+  ],
+  ".bro::ChassisKhanLoStrannik": [
+   "propSfx"
+  ],
+  ".bro::ChassisKronenwerkL34": [
+   "cameraPreset",
+   "propSfx"
+  ],
+  ".bro::ChassisKronenwerkL34Fork": [
+   "propSfx"
+  ],
+  ".bro::ChassisMinutemanK350": [
+   "propSfx"
+  ],
+  ".bro::ChassisMinutemanK350Civilian": [
+   "propSfx"
+  ],
+  ".bro::ChassisMtk100m": [
+   "propSfx"
+  ],
+  ".bro::ChassisMtk2006": [
+   "propSfx"
+  ],
+  ".bro::ChassisMtkMd76": [
+   "propSfx"
+  ],
+  ".bro::ChassisMuleT1": [
+   "propSfx"
+  ],
+  ".bro::ChassisStepPike": [
+   "propSfx"
+  ],
+  ".bro::ChassisTayga6455b": [
+   "constraintWithControllablePower",
+   "propSfx",
+   "towingPedalScale",
+   "towingSteeringTreshold",
+   "towingWinchLenghtToPull"
+  ],
+  ".bro::ChassisTuz119lynx": [
+   "constraintWithControllablePower",
+   "propSfx",
+   "rentSettings",
+   "towingPedalScale",
+   "towingPedalTreshold",
+   "towingSteeringTreshold",
+   "towingWinchLenghtToPull"
+  ],
+  ".bro::ChassisTuz303karelian": [
+   "propSfx",
+   "towingIsCaterpillars",
+   "towingPedalScale",
+   "towingSteeringTreshold",
+   "towingWinchLenghtToPull"
+  ],
+  ".bro::ChassisVoron3327": [
+   "aiSettings",
+   "constraintWithControllablePower",
+   "rentSettings",
+   "towingSteeringTreshold",
+   "towingWinchLenghtToPull"
+  ],
+  ".bro::ChassisVostokAtm53pioneer": [
+   "propSfx",
+   "towingIsCaterpillars",
+   "towingPedalScale",
+   "towingSteeringTreshold"
+  ],
+  ".bro::ChassisVostokEtv89": [
+   "propSfx"
+  ],
+  ".bro::ChassisVostokMu97ant": [
+   "propSfx",
+   "rentSettings"
+  ],
+  ".bro::ChassisVostokTk53krot": [
+   "propSfx",
+   "towingIsCaterpillars",
+   "towingPedalScale",
+   "towingSteeringTreshold",
+   "towingWinchLenghtToPull"
+  ],
+  ".bro::ChassisWardenKochevnik": [
+   "propSfx"
+  ],
+  ".bro::ChassisWayfarerOft96": [
+   "propSfx"
+  ],
+  ".bro::ChassisWayfarerSt7050": [
+   "constraintWithControllablePower"
+  ],
+  ".bro::ChassisZikz605e": [
+   "propSfx"
+  ],
+  ".bro::ChassisZikz605eAlt": [
+   "propSfx"
+  ],
+  ".bro::ChassisZikz612c": [
+   "propSfx"
+  ],
+  ".bro::CockpitDashboardSetting": [
+   "elementsCockpit"
+  ],
+  ".bro::ConstraintsControllerSettings": [
+   "isNewController"
+  ],
+  ".bro::ControllableConstraint": [
+   "Type",
+   "Values"
+  ],
+  ".bro::Converter": [
+   "converters"
+  ],
+  ".bro::CraneSettings": [
+   "amountOfWinches",
+   "isAnchorsEnabled",
+   "isMultiWinch"
+  ],
+  ".bro::CraneWinchSettings": [
+   "maxAngularMomentum"
+  ],
+  ".bro::Damagable": [
+   "demolitionSound"
+  ],
+  ".bro::DependentAxleSettings": [
+   "isIndependent"
+  ],
+  ".bro::ExtrusionScannerSettings": [
+   "dotsSpline",
+   "frequency",
+   "ringSpline"
+  ],
+  ".bro::FuelSettings": [
+   "isEnabled"
+  ],
+  ".bro::GenaTemplate": [
+   "actorFade",
+   "addonsSettings",
+   "aiRouteFollowingSettings",
+   "aiTruckStorage",
+   "airwayPrices",
+   "alternativeActions",
+   "alternativeActionsInCraneControlMode",
+   "alternativeActionsInDefaultMode",
+   "amountOfWinchPoints",
+   "anchorsSettings",
+   "asphaltRollerSettings",
+   "asphalterSettings",
+   "axleControllerSettings",
+   "baseClientClass",
+   "baseFuelConsumptionPercent",
+   "baseTruck",
+   "behavior",
+   "behaviour",
+   "blueprint",
+   "boneLocatorSettings",
+   "bridgeResourcesSettings",
+   "bridgelayerSettings",
+   "bucketBones",
+   "buildingFobSettings",
+   "buildingOutline",
+   "camera",
+   "cameraAngle",
+   "cameraType",
+   "canBeDissolved",
+   "cardanShaft",
+   "cargoConstraint",
+   "cargoPriceLevels",
+   "cargoSettings",
+   "chassisInfo",
+   "checkLWICollisionInBBox",
+   "clearAreaTaskObjectsScanner",
+   "closeDistance",
+   "cockpitCameraSettings",
+   "collisionQuality",
+   "communications",
+   "concreteFormwork",
+   "concretePaverSettings",
+   "constraintControllerSettings",
+   "constraintParams",
+   "constraintSolvingMethodSettings",
+   "contactParticle",
+   "converter",
+   "convoyDelayPercent",
+   "convoyRewardPercent",
+   "craneLaserSettings",
+   "craneSettings",
+   "cursorInteraction",
+   "damagable",
+   "damagableObjectSettings",
+   "damager",
+   "data",
+   "dataDashboard",
+   "deactivatable",
+   "debugIkSettings",
+   "debugInfo",
+   "defaultBridgeAngleState",
+   "defaultCameraEquipmentState",
+   "defaultColor",
+   "defaultMarkerColor",
+   "defaultPresetName",
+   "defaults",
+   "delay",
+   "demolished",
+   "detailsInfo",
+   "discoverable",
+   "dissolveThreshold",
+   "distanceSettings",
+   "disturbers",
+   "driverBoneOffset",
+   "dumpConstraintSettings",
+   "eagleModeView",
+   "effects",
+   "eighthAction",
+   "electricitySettings",
+   "enablePropUsable",
+   "equipmentCameraSettings",
+   "equipmentCockpitCameraSettings",
+   "exchangeIntermapResources",
+   "explorerSettings",
+   "extrusionScanner",
+   "fadeSettings",
+   "fakeSpeedMultipler",
+   "fifthAction",
+   "firstAction",
+   "firstControlSectionUiName",
+   "floating",
+   "forceFeedback",
+   "foundation",
+   "fourthAction",
+   "fov",
+   "friction",
+   "frictionMaterials",
+   "frictionWhileAttachedToWinch",
+   "fuel",
+   "fuelCostSettings",
+   "fuelMarker",
+   "fuelMarkerInHud",
+   "fuelSettings",
+   "fuelStation",
+   "gamepadSpeedMultiplier",
+   "gamepadSpeedMultiplierOnRoute",
+   "garageCameraSettings",
+   "gearboxSettings",
+   "generatePhantom",
+   "geomVisibleSavable",
+   "ghostBuilding",
+   "graderSettings",
+   "hardModeSettings",
+   "harvesterSettings",
+   "havePiers",
+   "havePlatform",
+   "highlightEmissiveInEagleMode",
+   "hintLifeTime",
+   "holdSpeedStages",
+   "honkAngle",
+   "honkDistance",
+   "ikSettings",
+   "inputController",
+   "isBridgeAngleChangeEnabled",
+   "isCaterpillar",
+   "isFade",
+   "isNeedPhysShapeChecker",
+   "isScanOnlyObbCenter",
+   "isToy",
+   "keyboardSpeedMultiplier",
+   "lampAnimation",
+   "legacyActionsInCraneControlMode",
+   "legacyActionsInDefaultMode",
+   "levelCompleteUi",
+   "levels",
+   "loadVolumeSettings",
+   "localizedName",
+   "lodSettings",
+   "logCraneSettings",
+   "lwiActorPoiSettings",
+   "lwiInteractionParams",
+   "magneticCraneSettings",
+   "mainMenuScenes",
+   "malfunctionSettings",
+   "marker",
+   "materialDesc",
+   "materials",
+   "materialsLibrary",
+   "materialsSettings",
+   "maxDistanceFromObservable",
+   "maxDistanceScale",
+   "maxHorizonAngle",
+   "maxScaleY",
+   "maximumSize",
+   "minDistanceFromObservable",
+   "minScaleY",
+   "minimumSize",
+   "mobileRecoverTargetSettings",
+   "mobileResourceStorageSettings",
+   "mobileTruckStorageSettings",
+   "moneyRecyclingSettings",
+   "movingParams",
+   "newShopResourcesSettings",
+   "ninthAction",
+   "objectiveObjectHighlight",
+   "objectiveScanner",
+   "offsetBetweenLanes",
+   "orientationSettings",
+   "palette",
+   "pierSfx",
+   "pile",
+   "pileDriver",
+   "pileFoundation",
+   "planPrefab",
+   "platform",
+   "playTime",
+   "preset",
+   "presets",
+   "previewBadColor",
+   "previewBlueprint",
+   "previewColor",
+   "previewHeightDelta",
+   "propCinematicCameraSettings",
+   "propCockpitUnderWaterSettings",
+   "propContactParticles",
+   "propCovering",
+   "propDistributionGpuSfx",
+   "propEnableDisable",
+   "propPhysPlacing",
+   "propPhysSubstance",
+   "propSfx",
+   "propUnderwaterSettings",
+   "propVFX",
+   "propWaterInteraction",
+   "propWaterTarget",
+   "propWheelMassChangerSettings",
+   "propWheelParticles",
+   "propWheelTrail",
+   "quarrySettings",
+   "radioTimeout",
+   "railwayPrices",
+   "randomMaterials",
+   "ranks",
+   "recipes",
+   "recoverSettings",
+   "recoveryLocator",
+   "recoverySettings",
+   "reserveFuelSettings",
+   "resetModuleSettings",
+   "resourceRecieverShapeOffset",
+   "resourceRecieverShapeSize",
+   "resourceRecyclingSettings",
+   "resources",
+   "resourcesShopResources",
+   "rigidBodyScanner",
+   "rigidBodyStabilizer",
+   "roadWidth",
+   "rotateSensitivity",
+   "rotationSnapAngle",
+   "sandRemoverSettings",
+   "sandStorage",
+   "sandTruckMobileSandScreenSettings",
+   "saveAreaSize",
+   "scaleInEagleMode",
+   "sceneUid",
+   "screenEdgeScroller",
+   "scrollPoints",
+   "searchingHighlightDuration",
+   "secondAction",
+   "secondControlSectionUiName",
+   "segment",
+   "selfMaintenance",
+   "seventhAction",
+   "sfx",
+   "sfxSettings",
+   "shake",
+   "shouldRemoveGrass",
+   "shouldSavePhysSystem",
+   "showPlanRadius",
+   "showZonesRadius",
+   "sixthAction",
+   "size",
+   "soundEmitter",
+   "soundMaterial",
+   "speedScale",
+   "speedScaleFactorByZoom",
+   "startingDistanceFromObservable",
+   "startingScrollIndex",
+   "storageSettings",
+   "stumpGrinderSettings",
+   "substanceSlicer",
+   "symmetryType",
+   "tagged",
+   "teleporter",
+   "terraformingSys",
+   "terrainImpactSettings",
+   "thirdAction",
+   "toyTruckSettings",
+   "tplAnimation",
+   "trackSwingSettings",
+   "trailRemoverSettings",
+   "trailSettings",
+   "transporterSettings",
+   "treeCrusherSettings",
+   "trenchDiggerSettings",
+   "truckConstraint",
+   "truckFadeSettings",
+   "truckGraffiti",
+   "truckMirrorSettings",
+   "truckPhantomScannerSettings",
+   "truckPhysPlacing",
+   "truckRainSettings",
+   "truckSettings",
+   "truckTeleporterSettings",
+   "truckType",
+   "truckUids",
+   "truckVisibilityInFogOfWar",
+   "truckWheel",
+   "turnableBridgeSettings",
+   "type",
+   "typesSorted",
+   "uiHidden",
+   "uiInfo",
+   "uiMarker",
+   "uiSettings",
+   "updateZonesRadius",
+   "useToggleForFirstMode",
+   "useToggleForSecondMode",
+   "vehicleCameraSettings",
+   "vehicleCostSettings",
+   "vehicleLightMaterials",
+   "vehiclesHeadlights",
+   "velocityReducerSettings",
+   "viscosityForce",
+   "waterwayPrices",
+   "wheelsType",
+   "winchSettings",
+   "winchable",
+   "zoneNewSize",
+   "zoneSize",
+   "zoomSensitivity"
+  ],
+  ".bro::GraderSettings": [
+   "propGraderTrail"
+  ],
+  ".bro::HarvesterSawSettings": [
+   "rollersRotateSpeed"
+  ],
+  ".bro::HarvesterSettings": [
+   "clawConstraints",
+   "useEcsController"
+  ],
+  ".bro::IkSlaveBranchSettings": [
+   "ignoreUp"
+  ],
+  ".bro::IndependentAxleSettings": [
+   "isIndependent"
+  ],
+  ".bro::LevelHardModeSettings": [
+   "objectiveRewardCoeff"
+  ],
+  ".bro::LoadVolumeSettings": [
+   "canBeUplifted",
+   "density",
+   "horizontAngleScalar",
+   "sandQuantity",
+   "upliftConstraintAllowedState",
+   "volumeScale"
+  ],
+  ".bro::LoadVolumeWarningSettings": [
+   "locatorOffset"
+  ],
+  ".bro::LogCraneSettings": [
+   "isAnchorsEnabled"
+  ],
+  ".bro::MagneticCraneSettings": [
+   "magnetAreaSize",
+   "magnetLocator"
+  ],
+  ".bro::Module": [
+   "objects"
+  ],
+  ".bro::ObjectiveObjectHighlightSettings": [
+   "isEnable"
+  ],
+  ".bro::PhysPuzzle": [
+   "addPhysPuzzleUnit",
+   "staticParts"
+  ],
+  ".bro::Resource": [
+   "collectableType"
+  ],
+  ".bro::ResourceRecyclingSettings": [
+   "canPackBeforeBuildingFinished",
+   "resourceTeleportZoneSettings"
+  ],
+  ".bro::ResourceSubType": [
+   "uniqueContactParticle",
+   "uniqueContactParticles",
+   "usageType",
+   "useUniqueContactParticle",
+   "useUniqueSfx"
+  ],
+  ".bro::ShaftDataSettings": [
+   "shaftDesc"
+  ],
+  ".bro::TaggedSettings": [
+   "isEnabled"
+  ],
+  ".bro::Track": [
+   "trackOverlay"
+  ],
+  ".bro::TrailSettings": [
+   "albedoLevelsIn",
+   "maxTrailLength",
+   "normalLevelsIn",
+   "segmentLifetime",
+   "visualTexture",
+   "voluemeHeight",
+   "volumeYOffset",
+   "width"
+  ],
+  ".bro::TrenchDiggerSettings": [
+   "diggerAngularVelocity",
+   "spoolAngularVelocityCoef",
+   "spoolRotatorBone",
+   "timeToUpliftMs"
+  ],
+  ".bro::Truck": [
+   "cameraPreset",
+   "propSfx",
+   "rentSettings"
+  ],
+  ".bro::TruckRainSettings": [
+   "raindropsSettings"
+  ],
+  ".bro::TruckWheel": [
+   "trackOverlay"
+  ],
+  ".bro::UiInfo": [
+   "parkingSlotSize",
+   "price",
+   "uiMediumIcon",
+   "uiSmallIcon"
+  ],
+  ".bro::UniversalAction": [
+   "constraintName",
+   "namedConstraintActionType",
+   "stateName",
+   "stateNameIfPressedAgain",
+   "type"
+  ],
+  ".bro::UniversalAxisAction": [
+   "inertiaInput"
+  ],
+  ".bro::Wheel": [
+   "isCaterpillarWheel",
+   "shouldCreateTrail"
+  ],
+  ".bro::WheelSlotWithDesc": [
+   "bodyName",
+   "directDesc",
+   "oldWheel",
+   "sslModule",
+   "wheelDesc"
+  ],
+  ".bro::WinchSettings": [
+   "modifyDamping"
+  ],
+  ".bro::ZoneViewStageInfo": [
+   "max",
+   "sfx"
+  ],
+  ".bro::object": [
+   "amount"
+  ],
+  ".obj_settings::TplObjSettingsGeom": [
+   "collision",
+   "render"
+  ],
+  ".obj_settings::TplObjSettingsSkinned": [
+   "collision"
+  ],
+  ".prop::prop_constraint_motor_changer": [
+   "data"
+  ],
+  ".prop::prop_lod_contact_particles_ssl": [
+   "dragThreshold",
+   "materialEmitters",
+   "rollThreshold"
+  ],
+  ".prop::prop_rigid_body_scanner": [
+   "halfSize",
+   "locatorOffset"
+  ],
+  ".prop::prop_route_following": [
+   "behaviourChain"
+  ],
+  ".prop::prop_wheel_trail_rb": [
+   "isCaterpillarWheel"
+  ],
+  ".ssl::BlueprintActiveByProjectCondition": [
+   "Body",
+   "Engine",
+   "SFX"
+  ],
+  ".ssl::BlueprintNodeOnTruckCollision": [
+   "applyInvertedFilterForExceptionalBodies"
+  ],
+  ".ssl::FunctionPresetsDiagonal": [
+   "maxValue",
+   "minValue",
+   "noiseFrequency",
+   "noiseMaximumValue",
+   "noiseMinimumValue"
+  ],
+  ".ssl::GameCameraBehaviourEquipmentCameraController": [
+   "maxFov",
+   "minFov",
+   "presetTransitionRate",
+   "useFastBatch"
+  ],
+  ".ssl::GameCameraBehaviourVehicleCameraController": [
+   "maxFov",
+   "minFov",
+   "presetTransitionRate",
+   "useFastBatch"
+  ],
+  ".ssl::LevelDefaultsRentedTruck": [
+   "isRented"
+  ],
+  ".ssl::MoveByPointsRouteBehaviourDesc": [
+   "applyDecelerationDistance",
+   "applyDecelerationDistanceSquared",
+   "gearboxSettings"
+  ],
+  ".ssl::MoveByPointsStuckCancelRouteBehaviourDesc": [
+   "applyDecelerationDistance",
+   "applyDecelerationDistanceSquared",
+   "gearboxSettings"
+  ],
+  ".ssl::MoveByPointsWithTasksRouteBehaviourDesc": [
+   "gearboxSettings"
+  ],
+  ".ssl::MoveToGarageBehaviourDesc": [
+   "applyDecelerationDistance",
+   "applyDecelerationDistanceSquared",
+   "applyDecelerationScaleByDistanceSquared",
+   "applySteerByDistanceSquared",
+   "decelerationScaleByAngle",
+   "pointMixing",
+   "stageSwitchingDelay",
+   "steerByAngle",
+   "steerScale",
+   "targetVelocity",
+   "targetVelocityPedalControl"
+  ],
+  ".ssl::MoveToStartPointRouteBehaviourDesc": [
+   "gearboxSettings",
+   "maxPedal",
+   "minPedal",
+   "targetOffset",
+   "thresholdDistSquare"
+  ],
+  ".ssl::ProceduralShakeCamera": [
+   "unique"
+  ],
+  ".ssl::RbCockpitCameraParams": [
+   "baseRotationAngleLimit",
+   "baseRotationLerpSpeed",
+   "elasticMaxOffsetX",
+   "elasticMaxOffsetY",
+   "elasticMaxOffsetZ",
+   "rearViewDirection",
+   "rearViewEyeOffset",
+   "rearViewRollAngle",
+   "rearViewTransitionEnd",
+   "rearViewTransitionStart",
+   "rotationLimitsRearViewX"
+  ],
+  ".ssl::RbVehicleCameraParams": [
+   "angleFocusSlerpRate",
+   "cameraSensivity",
+   "defaultScrollIndex",
+   "distance",
+   "distanceMax",
+   "distanceMin",
+   "elasticBoostX",
+   "elasticBoostY",
+   "elasticBoostZ",
+   "elasticEffectMultiplier",
+   "elasticEnabled",
+   "followTerrainOffset",
+   "isFollowEnabled"
+  ],
+  ".ssl::RbVehicleCinematicCameraController": [
+   "autoChangeState"
+  ],
+  ".ssl::SteerigElementCockpit": [
+   "damping"
+  ],
+  ".ssl::TrackParticlesTerrainMaterialAndSfx": [
+   "bottomSpreadAngle",
+   "emitFromBottom",
+   "spesialBottomEmitter",
+   "useSpacialBottomParticles",
+   "wrapParticles"
+  ],
+  ".ssl::TruckGearboxParams": [
+   "lowRangeMultiplier"
+  ],
+  ".ssl::UiCreditsNamesData": [
+   "namesIndexEnd",
+   "namesPrefix"
+  ],
+  ".ssl::WheelParticleMaterialSettings": [
+   "spreadAngle"
+  ],
+  ".tpl_markup::tpl_markup": [
+   "allowNegativeScale",
+   "components",
+   "excludeAnimInstFromLwiRender",
+   "materialCustomizations",
+   "mtlMutators",
+   "mutateAllMaterialsInTexture",
+   "rendParams"
+  ],
+  ".tpl_markup::tpl_markup_constraint_prismatic": [
+   "angleEnd",
+   "angleStart",
+   "limited"
+  ],
+  ".tpl_markup::tpl_markup_object_property_physics": [
+   "centerOfMass",
+   "overrideCenterOfMass"
+  ],
+  ".tpl_markup::tpl_markup_position_motor": [
+   "spring"
+  ],
+  ".tpl_markup::tpl_markup_spring_motor": [
+   "constantRecoveryVelocity",
+   "maxForce",
+   "proportionalRecoveryVelocity",
+   "tau"
+  ]
+ }
+}
