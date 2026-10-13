@@ -13,8 +13,9 @@ Checks wired into :mod:`roadcraft.bro_lint` (need the compiled model; RC047/RC04
 * RC047  a track's wheels hang on a body under ``FRAME_SHARE_WARNING`` of the vehicle's body mass.
          KGS25: 2.5 t frames (6 %) sank or lifted a track; 7.5 t (18 %, Greenway HT500 12.5 %) with
          the EPEC layout held roll to 0.2 deg.
-* RC048  sprung wheels on such a body: their springs scaled like the body they hang on, not the
-         vehicle (KGS25 fix 1: 25-40x softer than the vehicle-mass model), so predicted sag is unsafe.
+* RC048  sprung wheels on such a body: measure their rest on the bench. The original rationale (springs
+         scale with the parent body's mass; KGS25 fix 1 "25-40x softer") is unsupported: that bench run
+         was frozen and code shows no mass scaling (library/tracked-vehicles.md).
 """
 
 from __future__ import annotations
@@ -206,9 +207,9 @@ def track_findings(doc: dict[str, Any], nodes: TplNodes | None = None,
             sprung = [w["geomName"] for w in track["wheels"] if w.get("body") == body and w["kind"] == "sprung"]
             if sprung:
                 found.append(("RC048", "info",
-                              f"sprung wheels {sprung} hang on {body} ({share:.0%} of the body mass): springs seem to scale "
-                              "with the body a wheel hangs on, not the vehicle (KGS25 fix 1 was 25-40x softer than the "
-                              "vehicle-mass model). Measure the rest on the physics bench", where))
+                              f"sprung wheels {sprung} hang on {body} ({share:.0%} of the body mass): the sag law is "
+                              "unknown, so measure the rest on the physics bench (the earlier mass-scaling rationale is "
+                              "unsupported, tracked-vehicles.md)", where))
     return found
 
 

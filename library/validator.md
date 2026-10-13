@@ -197,3 +197,13 @@ missing-flag fault and the misspelt lamp state, so a mod copied from it is caugh
 Evidence: scratch runs of 2026-10-13 (retail calibration, `final.json` for the owner's mods). The tests are
 `tests/test_validate.py` (one synthetic fixture per rule, a pak, the CLI contract, SDK-gated checks on the TUZ
 sample) and `tests/test_schema.py`.
+
+## Code changes in the vehicle-authoring-library merge
+
+Merging `origin/vehicle-authoring-library` (dea0605, 3649aa4) into `feature/headless-editor`
+(2026-10-13) renumbered **no** lint codes. The desktop branch's code (`bro_lint.py`, `ps_format.py`,
+`vehicle.py`, `library.py`, `retail.py`, `tpl_reader.py`, `cli.py`) is the same as the version this
+branch already carried from origin/main, and it assigns only RC001-RC005, RC010-RC013, RC020-RC024 and
+RC030-RC032, each with the same meaning here. Nothing on the desktop side uses RC033-RC072, so its
+references stay valid unchanged. RC048 keeps its code and severity; only its rationale and message
+changed (superseded mass-scaling claim, see tracked-vehicles.md).

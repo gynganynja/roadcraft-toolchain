@@ -55,7 +55,9 @@ compiled class (Build/Retail, 2026-10-04).
   log mass is -0.20 (0 would be relative, -1 absolute). Relative fits better, with wide scatter
   (**Inferred**; a one-off script in the KGS-25 drive-fix workspace, `tools/strength_scaling.py`,
   result in `reports/strength_scaling.json`). It cannot show how frame-hung wheels scale: every wheel
-  there hangs on the main body.
+  there hangs on the main body. **Note 2026-10-13** (code analysis, static: `C:\RC_RE\research\physics_semantics.md`, T4/F3):
+  code shows no Saber mass scaling of `strength`, and the sag law is Unknown, so this fit is
+  statistics over assumed rests, not a mechanism; calibrate per vehicle.
 
 ## Local mod activation settings (2026-10-01)
 

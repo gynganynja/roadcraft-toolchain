@@ -65,6 +65,14 @@ At full inputs (pedal 1 straight, pedal 0.6 at full lock) both candidate 03 and 
 the pivots, a stick-slip lurch at about 1 Hz. Fix 2 lifts a track less (7 cm against 13-15 cm),
 keeps roll at 0.8-2.0 deg (candidate 03: 1.5-2.4) and settles at once.
 
+Candidate cause from the engine code (physics_semantics.md T3, code analysis, static): at full lock
+the engine zeroes the inner track's wheel spin every step, an unlimited brake, and the TC305 curve
+`steeringInputToInnerTrackTorqueMult` ends at -1. Trial (2026-10-13): KGS-25 build cf9dca20, whose
+only change against 5c4dd65d is that curve ending at -0.6 (`[0,1, 0.5,0, 1.004563,-0.6]`, main and
+preview classes). The owner: "felt the same, maybe a bit smoother" (Game, one drive, first
+impression). A weak positive, not a fix: the inner-track brake is not the main source of the
+tracked jank. Not yet benched against a retail crawler.
+
 The owner drove fix 1 in the game: "it does it worse now", "bounces or wobbles" (Game). Fix 2 is
 installed; the owner's drive is pending.
 
@@ -76,6 +84,20 @@ wheel, 25-40 times softer than `axle_report` predicts at beta 58-105 from the ve
 2.5 t frame: beta about 40), not the whole vehicle's. Retail wheeled vehicles hang their wheels on
 the main body, so their survey cannot show it ([retail-data.md](retail-data.md)). Do not size
 springs for wheels on track frames or bogies from the vehicle mass; measure them on the bench.
+
+> **Superseded 2026-10-13** (code analysis, static: `C:\RC_RE\research\physics_semantics.md`, T4 and Follow-up F3):
+> - The "about 49 kN/m per wheel, 25-40 times softer" figure is withdrawn as evidence. It was read
+>   from KGS fix 1 bench run `v1_155728`, which was frozen: every wheel and bone value is identical
+>   across all 478 samples while the frame counter advanced, so it is a rigid pose against the pad,
+>   not a settled spring, and no spring law can be fitted to it.
+> - The inference that `strength` scales with the mass of the body a wheel hangs on is refuted from
+>   code: `strength`/`damping` go straight into the Havok wheel constraint's soft tau/damping, and no
+>   Saber code scales them by any mass.
+> - The physics_semantics.md T4 closed-form sag law is withdrawn as well (F3): the static sag law is
+>   **Unknown**. Calibrate per vehicle; the Roamer 105 beta of about 106 is the only valid measurement.
+> - Still standing: the owner's "bounces or wobbles" drive of fix 1 (Game; its cause is not
+>   established) and the fix 2 recipe below (Game, one vehicle). Measuring springs on a working,
+>   non-frozen bench rather than sizing them from a formula remains the advice.
 
 ## Recipe for a heavy crawler on track-frame bodies
 
@@ -127,7 +149,13 @@ read by default) runs `roadcraft.tracks`:
 |---|---|---|---|
 | RC046 | warning | a track whose ground wheels are all stop fakes, no real wheel at ground level (needs the model) | none |
 | RC047 | warning | a wheel-carrying body welded to its parent by a fixed constraint and under 10 % of the total body mass (KGS-25 frames: 6 %) | none |
-| RC048 | info | sprung wheels on a jointed body under 10 % of the total body mass: expect springs softer than the vehicle-mass formula | Aramatsu Forester Neo crane and forwarder |
+| RC048 | info | sprung wheels on a jointed body under 10 % of the total body mass: expect springs softer than the vehicle-mass formula (rationale superseded 2026-10-13, see below; the flag stays) | Aramatsu Forester Neo crane and forwarder |
+
+**RC048's rationale is now unsupported** (2026-10-13): it rested on the mass-scaling inference and
+the frozen-run figure superseded in "Springs on a light body" above (`C:\RC_RE\research\physics_semantics.md`, T4 and F3;
+code analysis, static). The check is kept with the same code and severity as an informational flag
+for sprung wheels on a light jointed body, whose rest should be measured on the bench; it no longer
+claims that such springs come out softer.
 
 Stop fakes beside a rigid real ground wheel are reported as by design (RC005 info), and rigid
 axles are exempt from RC004's travel check.
@@ -144,7 +172,10 @@ next build ([build-pipeline.md](build-pipeline.md)).
 
 - The full-lock judder (both layouts). Settle it by benching a retail crawler (EPEC TC305) with
   the same harsh schedule: if it judders too, it is the engine's.
-- Whether `strength` really scales with the parent body's mass: bench one frame-hung axle at two
+- ~~Whether `strength` really scales with the parent body's mass~~ Answered from code: no mass
+  scaling (physics_semantics.md T4/F3, code analysis, static). Still open: the static sag law,
+  which needs a non-frozen bench with known per-wheel load and a damping sweep. The original plan:
+  bench one frame-hung axle at two
   frame masses.
 - Deformable terrain: spawning the crane on the acceptance scene's terrain crashed the editor
   engine for every variant, so terrain behaviour rests on the owner's drives.

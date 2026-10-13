@@ -24,7 +24,7 @@ Its rules, as this library grades them:
 | Textures uncompressed TGA type 2 with `_nm`, `_spec` (metal / rough / AO) postfixes | holds (textures-and-materials.md) |
 | Blender 4.5 or 5.0 | holds |
 | Truck mods need the five `auto_*` `.sso.resource` assets in the Mod Manager and the Vehicle category on PROS (co-op breaks otherwise) | not tested here |
-| Physics defaults: angular damping 1.5, linear 0.01, restitution 0.01, mass by hand | used |
+| Physics defaults: angular damping 1.5, linear 0.01, restitution 0.01, mass by hand | used; superseded as engine defaults 2026-10-13 (frames.md; physics_semantics.md Q2/F2, code analysis, static) |
 | LOD hide distances 800 m vehicle / 350 m wheel; LWI transition off for trucks | used |
 
 The documentation does not cover suspension semantics, the axle controller or visual IK; those

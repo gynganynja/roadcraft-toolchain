@@ -32,7 +32,7 @@ Each check comes from something that went wrong in a drive or a build (library/s
 * RC045  explicit crane movement-sound subscriber bodies or joints missing from the selected model/markup.
 * RC046-RC048  tracked vehicles (roadcraft.tracks, tracked-vehicles.md): a track carried only by fakes on
          their top stops; wheels on a welded (fixed-joint) track frame under 10 % of the body mass; sprung
-         wheels on a light jointed body (springs scale like that body). RC046 needs the model, RC047/RC048
+         wheels on a light jointed body (measure on the bench; mass-scaling rationale unsupported). RC046 needs the model, RC047/RC048
          the markup.
 * RC040-RC044  load-grid geometry from roadcraft.load_volume (cells at the pivot height, sheet over
          4 m, misplaced borders, ledges, grid outside the tub): run in Blender via blender_load.grid_report;

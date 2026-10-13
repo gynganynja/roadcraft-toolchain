@@ -41,8 +41,9 @@ directory is not the project.
 - Do not copy the SDK TUZ Lynx sample's truck settings.
 - Crawlers: a track must not rest on stop fakes alone. Use a retail layout (EPEC TC305: rigid real
   wheels at ground level at each track end beside near-zero fakes) and give wheel-carrying track
-  frames retail-like mass; springs on a light frame come out far softer than the vehicle-mass formula
-  (tracked-vehicles.md, RC046-RC048).
+  frames retail-like mass. The earlier claim that springs on a light frame come out far softer
+  (strength scaling with the parent mass) is superseded: no mass scaling in code, and the sag law is
+  unknown, so calibrate per vehicle (tracked-vehicles.md, RC046-RC048).
 - Measure a change to suspension, wheels, masses or joints on the physics bench (`roadcraft bench`,
   physics-bench.md) against the installed version before installing it, with the owner's go-ahead:
   a formula-designed KGS-25 fix made the crane worse.

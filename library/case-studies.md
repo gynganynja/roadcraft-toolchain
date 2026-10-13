@@ -1352,7 +1352,9 @@ Mod Editor's automation scenario and samples every body and wheel at 10 Hz; Code
 was not touched.
 
 - Fix 1's springs were 25-40 times softer than predicted, apparently scaled by the 2.5 t frame
-  they hang on.
+  they hang on. **Superseded 2026-10-13** (code analysis, static: `C:\RC_RE\research\physics_semantics.md`, F3 and the
+  T4 correction): that run (`v1_155728`) was frozen, all 478 samples identical, so the figure is
+  not evidence, and code shows no mass scaling of `strength`.
 - Candidate 03's real fault: in pivot turns one track sinks up to 19 cm into a flat pad while
   its wheels still report contact, and the hull rolls 3-4 deg.
 

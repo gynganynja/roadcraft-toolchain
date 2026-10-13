@@ -135,6 +135,24 @@ crown 8.25 m, sides 6.95 m, front and rear slopes 32 / 30 degrees, clearance 0.0
 | `volumeMass` is the full payload mass (native `GetMaxMass`), independent of `density` x volume | Native fixture |
 
 
+## Body terrain effects are separate from collision (Apoc, 2026-09-30)
+
+`propVFX.vfxSkeleton.vfxBones` compiles to the truck class's `vfx` property. The installed SDK
+`vfx_skel_bone.systems` flags specify shadow=1, water=2, slime=4, grass=8, mud=16. In particular,
+26 enables water, grass and mud (**SDK**); changing CDT does not rewrite these authored boxes.
+
+The Apoc copied the donor's environment volumes into a different rig without fitting their
+positions. Its compiled chassis is identity in native X-left/Y-up/Z-forward coordinates;
+the two mud boxes reached Y=-2.354 and -2.0925 m and extended behind the buggy (**Build**).
+The owner saw a wide patch of unexplained rear mud deformation after the CDT repair (**Game**).
+The observed symptom is consistent with these volumes, independent of spring bottoming.
+
+Candidate `apb-mud-proxy-20260930` replaces the donor environment boxes with four native-axis
+boxes inset within the measured compact collision bounds. Audit active mud shapes' bone
+transforms, extents and compression/pitch clearance in the packaged class. Keep tyre effects
+and wheel definitions intact, and compare archive members occurrence by occurrence. Passing
+these checks is **Build** evidence; the next retail mud drive is still required (**Open**).
+
 ## Direction-change delays (Lada follow-up, 2026-09-30)
 
 **SDK/Retail:** `truck_components.ssl` documents `defaultGearSwitchDelay` for non-upshift changes, plus `clutchSwitchTime`; higher forward gears use the separate upper-gear delay formula. Shipped Armiger scouts use 0.15 s default delay, 0.1 s clutch and 0.1 s downshift delay. Lada v3 used 0.75/0.5 s and the owner reported 1–2 s forward/reverse hesitation (**Game report**). V4 adopts the scout delays and lowers the upper gear angular velocities while preserving first gear. Do not confuse these timers with the standstill-to-neutral timer. Parameter arithmetic is not a measured complete direction-change time. Evidence: Lada `revisions/rut_contact_v4/retail_contact.json`, `feedback.json`, and native `truck_components.ssl`.
