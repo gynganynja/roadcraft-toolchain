@@ -94,7 +94,40 @@ and the steering feel off, not tipping or grip):
 |---|---|---|---|
 | cf9dca20 | inner-track steering curve ends at -0.6 | "felt the same, maybe a bit smoother" | Game, one drive: weak positive |
 | 93c5e889 | TC305 wheel friction tables, `softForceScale` 0.75, drive/idler wheels 120 -> 450 kg | "feels better, still a bit janky when one wheel is climbing something" | Game, one drive: positive |
-| f841eb34 | track frames on the HT500 sprung hinge instead of a weld | not yet driven | Build |
+| f841eb34 | track frames on the HT500 sprung hinge instead of a weld | wants softer springiness; the idler should conform to what it climbs | Game, one drive |
+| 3cb0efda | softer frames: hinge +-8 deg, spring motor 3e6 / 3.3e6 (and hook ball-and-socket) | not yet driven | Build |
+
+### Headless bench of the five builds (2026-10-13, laptop)
+
+Grade **Game (engine, headless play)**: the windowless editor engine, each build's pak overlaid on the 2026-10-02 bench
+project (`roadcraft.pak_overlay`), checked in the engine by readback (softForceScale, frame-hinge motor values).
+**One run per cell, so run-to-run noise is unknown.** 7 of the 18 planned runs completed: flat `normal` for all six
+variants, and the step course for the baseline only. The remaining runs stopped on laptop memory/disk, see
+headless-bench.md. Scenarios: `library/bench-scenarios/kgs25_*.json`. Results:
+`C:\RC_RE\bench-headless\kgs25\results.md`, copied to `\\192.168.0.129\Downloads\roadcraft_laptop_research\kgs25_bench\`.
+
+| Build | Pivot roll peak (deg) | Hull jitter in pivots, roll RMS + / - (deg) | Yaw in 4 s pivot + / - (deg) | Frame swing vs hull (deg) | Settle after pivots (s) |
+|---|---|---|---|---|---|
+| 5c4dd65d baseline | 2.2 | 0.18 / 0.16 | 45 / 46 (nearly in place, 2.6 m) | 0.04 (welded) | 0.4 / 1.2 |
+| cf9dca20 curve -0.6 | 5.5 | 0.28 / 0.19 | 19 / 14 (sweeps 7-9 m) | 0.04 | 1.6 / 1.2 |
+| 93c5e889 wheel feel | 4.0 | 0.19 / 0.14 | 14 / 9 | 0.03 | 0.7 / 1.3 |
+| f841eb34 hinge 1e7 | 3.1 | 0.11 / 0.16 | 11 / 21 | 0.5 | 1.4 / 1.6 |
+| 3cb0efda hinge 3e6 | 3.2 | 0.13 / 0.21 | 13 / 18 | 0.85 / 0.69 | 1.7 / 2.7 |
+| 3cb0efda + frame damping 0.05 / 0 (retail) | 3.2 | 0.11 / 0.11 | 14 / 17 | 0.77 / 0.73 | 1.4 / 1.5 |
+
+- Straight driving is calm in every build (roll/pitch residual 0.02-0.05 deg RMS). The KGS jank is in pivots and on
+  obstacles, not in straight-line driving on a flat pad.
+- **The inner-track curve at -0.6 (cf9dca20) cost most of the pivot.** Yaw in a 4 s pivot at steer 0.8 fell from 45
+  to 9-21 deg, the crane sweeps forward instead of turning in place, and roll rose. Every later build keeps the
+  curve. Compare with the owner's "steering feels off" before reverting or keeping it.
+- The sprung hinge made the frames articulate on the flat (0.5 to 0.85 deg) and lowered pivot roll against the
+  welded wheel-feel build. The softer 3e6 hinge slowed one settle to 2.7 s. **Retail frame damping (0.05 / 0)
+  was the calmest build measured.** The 1.5 / 0.03 body damping does not steady the hull: a lead for the next
+  build, within single-run noise.
+- Step course, welded baseline only. Left track onto a 0.3 m slab in low gear: hull roll peak 6.4 deg, pitch
+  4.35 deg, residual swings 3.9 / 2.7 deg peak-to-peak. The mid road wheel took 170 mm of spring travel, while the
+  rigid sprocket and idler moved +-15 mm with the frame at 0.11 deg. This is the welded "janky when one wheel is
+  climbing" case. Whether the hinged builds let the idler conform is **open**: their step runs did not run.
 
 ## Springs on a light body
 
@@ -207,3 +240,6 @@ next build ([build-pipeline.md](build-pipeline.md)).
 - Deformable terrain: spawning the crane on the acceptance scene's terrain crashed the editor
   engine for every variant, so terrain behaviour rests on the owner's drives.
 - The owner's drive of fix 2.
+- KGS-25 headless campaign, the remaining 11 runs (2026-10-13): the harsh course for all six variants and the step
+  course for f841eb34 / 3cb0efda / retail damping. They answer whether the sprung frames let the idler conform, and
+  repeat runs would give the run-to-run noise.

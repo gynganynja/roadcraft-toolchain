@@ -1,0 +1,145 @@
+{
+ "schemaVersion": 1,
+ "seed": 1,
+ "timestep": 0.0166667,
+ "wallClockSeconds": 1200,
+ "startupTimeoutSeconds": 300,
+ "scene": {
+  "file": "xscenes/mods/kgs25_acceptance/kgs25_acceptance.scn",
+  "settleSeconds": 5,
+  "readyTimeoutSeconds": 400
+ },
+ "vehicle": {
+  "tpl": "kgs25",
+  "hull": "BoneChassis_cdt",
+  "frames": [
+   "BoneTrackSusp_L_cdt",
+   "BoneTrackSusp_R_cdt"
+  ],
+  "suspensionTravel": {
+   "min": 0.0,
+   "max": 0.4
+  },
+  "wheelNames": [
+   "kgs_L_idler0",
+   "kgs_L_drive0",
+   "kgs_L_contact0",
+   "kgs_L_contact1",
+   "kgs_L_contact2",
+   "kgs_L_contact3",
+   "kgs_L_contact4",
+   "kgs_L_contact5",
+   "kgs_L_contact6",
+   "kgs_R_idler0",
+   "kgs_R_drive0",
+   "kgs_R_contact0",
+   "kgs_R_contact1",
+   "kgs_R_contact2",
+   "kgs_R_contact3",
+   "kgs_R_contact4",
+   "kgs_R_contact5",
+   "kgs_R_contact6",
+   "kgs_L_ramp0",
+   "kgs_L_ramp1",
+   "kgs_R_ramp0",
+   "kgs_R_ramp1"
+  ]
+ },
+ "probes": {
+  "rateHz": 10,
+  "items": [
+   "engine",
+   "bodies",
+   "com",
+   "wheels",
+   "joints",
+   "tracks"
+  ],
+  "readback": true
+ },
+ "name": "kgs25-step-left",
+ "note": "Single-track step climb: a 0.3 m static slab (scene unit-cube mesh, all_collision, like the Goliath RC3 bench's gd11_ledge_*) under the LEFT track only (track centre x = crane x + 1.385; slab x 21.05-23.55, the right track at 18.3-18.9 stays on the pad), its edge 1.7 m ahead of the sprocket; crane at (20, 60.12, -35) heading +z; low gear, pedal 0.35, straight, then stop on the slab and settle",
+ "durationSeconds": 40,
+ "spawn": {
+  "method": "scene",
+  "scene": "xscenes/mods/kgs25_acceptance/kgs25_acceptance.scn",
+  "vehicle": "kgs25_test_vehicle",
+  "position": [
+   20,
+   60.12,
+   -35
+  ],
+  "boxes": [
+   {
+    "name": "kgs25_step_slab_030",
+    "position": [
+     22.3,
+     60.15,
+     -18
+    ],
+    "scale": [
+     2.5,
+     0.3,
+     24
+    ],
+    "yaw": 0
+   }
+  ]
+ },
+ "inputs": {
+  "method": "Debug",
+  "schedule": [
+   {
+    "at": 0,
+    "phase": "rest",
+    "handbrake": "On",
+    "gear": "AUTO"
+   },
+   {
+    "at": 8,
+    "phase": "climb",
+    "pedal": 0.35,
+    "handbrake": "Off",
+    "gear": "LOW_GEAR"
+   },
+   {
+    "at": 28,
+    "phase": "stop",
+    "handbrake": "On",
+    "gear": "AUTO"
+   }
+  ]
+ },
+ "analysis": {
+  "pivotSteer": 0.5,
+  "settle": {
+   "rollDeg": 0.2,
+   "pitchDeg": 0.2,
+   "heightMm": 5
+  },
+  "stopToleranceM": 0.005,
+  "judderMinHz": 0.3,
+  "articulation": {
+   "frames": [
+    "BoneTrackSusp_L_cdt",
+    "BoneTrackSusp_R_cdt"
+   ],
+   "wheels": [
+    "kgs_L_drive0",
+    "kgs_L_idler0",
+    "kgs_L_ramp0",
+    "kgs_L_ramp1",
+    "kgs_L_contact0",
+    "kgs_L_contact3",
+    "kgs_L_contact6",
+    "kgs_R_drive0",
+    "kgs_R_idler0",
+    "kgs_R_contact3"
+   ],
+   "joints": [
+    "TrackSusp_L",
+    "TrackSusp_R"
+   ]
+  }
+ }
+}

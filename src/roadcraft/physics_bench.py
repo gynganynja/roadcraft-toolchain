@@ -330,6 +330,35 @@ def place_vehicle(scene_text: str, vehicle: str, position: list[float]) -> str:
     return new
 
 
+_MESH_OBJECT = re.compile(r'(?m)^([ \t]+)([A-Za-z_][A-Za-z0-9_]*) = \{\r?\n(?:[ \t]+isActive = \w+\r?\n)?'
+                          r'[ \t]+mesh = \{\r?\n[ \t]+data = "([A-Za-z0-9+/=]+)"')
+
+
+def add_box(scene_text: str, name: str, position: list[float], scale: list[float], yaw: float = 0.0) -> str:
+    """A static collision box (the scene's own unit-cube ``EditorMesh``, scaled) inserted next to the first
+    mesh object of the scene, as the Goliath RC3 bench added its ledges and rocks (``bench_build.py box``).
+    ``position`` is the box centre (a slab of height h on ground y sits at y + h/2)."""
+    if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", name):
+        raise BenchError(f"box name {name!r} must be an identifier")
+    if re.search(r"(?m)^[ \t]+" + re.escape(name) + r" = \{", scene_text):
+        raise BenchError(f"the scene already has an object {name}")
+    m = _MESH_OBJECT.search(scene_text)
+    if not m:
+        raise BenchError("the scene has no mesh object to take the cube from")
+    ind, cube = m.group(1), m.group(3)
+    nl = "\r\n" if "\r\n" in scene_text else "\n"
+    p = ", ".join(f"{float(v):g}" for v in position)
+    s = ", ".join(f"{float(v):g}" for v in scale)
+    i1, i2, i3, i4 = ind + "   ", ind + "      ", ind + "         ", ind + "            "
+    block = nl.join([f"{ind}{name} = {{", f"{i1}mesh = {{", f'{i2}data = "{cube}"', f'{i2}__type = "EditorMesh"',
+                     f"{i2}cdt = {{", f'{i3}nav_mesh_geometry = "ON"', f'{i3}__type = "EditorMeshNavmeshState"',
+                     f"{i2}}}", f"{i2}flags = {{", f"{i3}collision = {{", f'{i4}__type = "all_collision"',
+                     f"{i3}}}", f"{i2}}}", f"{i1}}}", f"{i1}transform = {{", f"{i2}position = [ {p} ]",
+                     f"{i2}scale = [ {s} ]", f"{i2}rotation = [ 0, {float(yaw):g}, 0 ]", f"{i1}}}",
+                     f'{i1}__type = "mesh"', f"{ind}}}"]) + nl
+    return scene_text[:m.start()] + block + scene_text[m.start():]
+
+
 # ------------------------------------------------------------------ bench folder
 CONFIG_FILES = (".project", "game_launcher.cfg")
 
