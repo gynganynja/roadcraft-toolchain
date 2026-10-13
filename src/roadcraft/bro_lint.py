@@ -57,6 +57,19 @@ def _finding(code: str, severity: str, message: str, where: str, article: str) -
             "library": f"library/{article}"}
 
 
+def wheel_model_references(settings: dict[str, Any], model: TplNodes | Iterable[str], *, tire_name: str = "tire") -> list[dict[str, str]]:
+    """Native default deformation requires a named tyre mesh (Jimny startup assertion).
+
+    A supported custom deforming-object contract can supply its explicit name.
+    Disabled deformation does not require this object. This checks presence only,
+    not deformation quality or native acceptance.
+    """
+    names = set(model.names) if isinstance(model, TplNodes) else set(model)
+    if settings.get("deformEnable") and tire_name not in names:
+        return [_finding("RC049", "error", f"wheel deformation requires model object {tire_name!r}", "wheel model", "suspension-and-wheels.md")]
+    return []
+
+
 def _walk(value: Any) -> Iterable[dict[str, Any]]:
     if isinstance(value, dict):
         yield value
@@ -426,7 +439,13 @@ def lint_files(bro: str | Path, compiled_class: str | Path | None = None, tpl: s
     if markup is None and tpl:
         markup = lamps.markup_beside(tpl)
     markup_doc = ps_format.load(markup) if markup else None
-    findings = lint_truck(doc, compiled_class=class_text, model=model, beta=beta, markup=markup_doc)
+    if "truckWheel" in doc:
+        settings = doc["truckWheel"]
+        if class_text:
+            settings = ps_format.loads(class_text).get("properties", {}).get("prop_truck_wheel", settings)
+        findings = wheel_model_references(settings, model) if model is not None else []
+    else:
+        findings = lint_truck(doc, compiled_class=class_text, model=model, beta=beta, markup=markup_doc)
     return {"bro": str(bro), "compiledClass": str(compiled_class) if compiled_class else None,
             "model": str(tpl) if tpl else None, "markup": str(markup) if markup else None, "findings": findings,
             "errors": sum(1 for f in findings if f["severity"] == "error"),

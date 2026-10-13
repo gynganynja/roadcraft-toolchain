@@ -9,6 +9,8 @@ int/float, ``True``/``False`` -> bool, strings -> str.
 from __future__ import annotations
 
 import json
+import math
+from decimal import Decimal
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -161,7 +163,13 @@ def _value_text(value: Any, level: int) -> str:
     if isinstance(value, int):
         return str(value)
     if isinstance(value, float):
-        return repr(value)
+        if not math.isfinite(value):
+            raise ValueError("PS floating-point values must be finite")
+        # Native class loading can interpret scientific notation as psARRAY
+        # even though our permissive reader accepts it. Expand the shortest
+        # round-tripping float representation without losing precision.
+        number = format(Decimal(repr(value)), "f")
+        return number if "." in number else number + ".0"
     if isinstance(value, dict):
         rows = ["   " * (level + 1) + _key_text(k) + " = " + _value_text(v, level + 1) for k, v in value.items()]
         return "{\n" + "\n".join(rows) + "\n" + pad + "}"

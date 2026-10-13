@@ -34,6 +34,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
+from .bench_stability import phase_stability
 
 INTEGRATION = Path(__file__).resolve().parents[2] / "integrations" / "physics-bench"
 PWSH = "pwsh"
@@ -46,14 +47,32 @@ SCHEDULES: dict[str, dict[str, Any]] = {
                "steps": [(0, (0, 0, "On", "AUTO")), (10, (0.35, 0, "Off", "AUTO")), (14, (0, 0, "On", "AUTO")),
                          (22, (0.3, 0.8, "Off", "AUTO")), (26, (0, 0, "On", "AUTO")),
                          (36, (0.3, -0.8, "Off", "AUTO")), (40, (0, 0, "On", "AUTO")),
-                         (50, (0.35, 0, "Off", "REVERSE")), (54, (0, 0, "On", "AUTO"))]},
+                         (50, (-0.35, 0, "Off", "REVERSE")), (54, (0, 0, "On", "AUTO"))]},
     "harsh": {"duration": 56, "names": ["rest", "fast", "brake", "lock+", "settle+", "lock-", "settle-",
                                         "fastrev", "final"],
               "steps": [(0, (0, 0, "On", "AUTO")), (6, (1.0, 0, "Off", "AUTO")), (14, (0, 0, "On", "AUTO")),
                         (20, (0.6, 1.0, "Off", "AUTO")), (25, (0, 0, "On", "AUTO")),
                         (31, (0.6, -1.0, "Off", "AUTO")), (36, (0, 0, "On", "AUTO")),
-                        (42, (1.0, 0, "Off", "REVERSE")), (48, (0, 0, "On", "AUTO"))]},
+                        (42, (-1.0, 0, "Off", "REVERSE")), (48, (0, 0, "On", "AUTO"))]},
 }
+
+
+# Longer, zero-steer travel plus parked/unbraked idle cover faults hidden by brief pivot schedules.
+SCHEDULES["straight"] = {"duration": 80, "names": ["rest", "forward", "stop", "reverse", "final"],
+    "steps": [(0, (0, 0, "On", "AUTO")), (12, (.35, 0, "Off", "AUTO")),
+              (32, (0, 0, "On", "AUTO")), (44, (-.35, 0, "Off", "REVERSE")),
+              (64, (0, 0, "On", "AUTO"))]}
+# Same duration and zero steering at full pedal: keep its baseline separate.
+SCHEDULES["straightfull"] = {"duration": 80, "names": ["rest", "forward", "stop", "reverse", "final"],
+    "steps": [(0, (0, 0, "On", "AUTO")), (12, (1, 0, "Off", "AUTO")),
+              (32, (0, 0, "On", "AUTO")), (44, (-1, 0, "Off", "REVERSE")),
+              (64, (0, 0, "On", "AUTO"))]}
+SCHEDULES["idle"] = {"duration": 76,
+    "names": ["rest", "idle", "forward", "coast", "reverse", "coast_reverse", "final"],
+    "steps": [(0, (0, 0, "On", "AUTO")), (10, (0, 0, "Off", "AUTO")),
+              (26, (.35, 0, "Off", "AUTO")), (30, (0, 0, "Off", "AUTO")),
+              (46, (-.35, 0, "Off", "REVERSE")), (50, (0, 0, "Off", "AUTO")),
+              (66, (0, 0, "On", "AUTO"))]}
 
 
 class BenchError(ValueError):
@@ -238,6 +257,12 @@ def _rewrite_bytes(data: bytes, old: Path, new: Path) -> bytes:
     text = data.decode("utf-8")
     for a, b in ((old.as_posix(), new.as_posix()), (str(old), str(new))):
         text = text.replace(a, b)
+        # SDK YAML emitters fold long plain path scalars at a space. Match that
+        # one folded separator too, or a copied bench keeps its source project.
+        parts = re.split(r"[ \t]+", a)
+        if len(parts) > 1:
+            pattern = r"(?:[ \t]+|\r?\n[ \t]+)".join(re.escape(part) for part in parts)
+            text = re.sub(pattern, lambda match: b, text)
     return text.encode("utf-8")
 
 
@@ -566,7 +591,15 @@ def summarise(samples: list[dict[str, Any]], schedule: str = "normal", hull: str
             "vmax": round(max(abs(s.get("speed", 0.0)) for s in window), 2)}
     span = rows[-1]["t"] - rows[0]["t"]
     return {"hull": hull, "frames": list(frames), "samples": len(rows),
-            "sampleHz": round((len(rows) - 1) / span, 1) if span > 0 else None, "phases": phases, "motion": motion}
+            "sampleHz": round((len(rows) - 1) / span, 1) if span > 0 else None, "phases": phases, "motion": motion,
+            "stabilityBrakeBounded": phase_stability(samples, plan, hull, settle_seconds=0, end_margin_seconds=0,
+                                                       observed_windows=True, include_pedal_ramp=True)
+                                     if schedule in ("straight", "straightfull", "stateprobe") else {},
+            "stability": phase_stability(samples, plan, hull),
+            "stabilityObserved": phase_stability(samples, plan, hull, observed_windows=True),
+            "stabilityPlannedWholePhase": phase_stability(samples, plan, hull, settle_seconds=0, end_margin_seconds=0),
+            "stabilityWholePhase": phase_stability(samples, plan, hull, settle_seconds=0, end_margin_seconds=0,
+                                                   observed_windows=True)}
 
 
 def analyse(folder: str | Path, schedule: str | None = None) -> dict[str, Any]:

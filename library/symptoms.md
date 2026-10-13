@@ -571,3 +571,46 @@ frames and the hull centre of mass lowered held roll to 0.2 deg in the same turn
 values: [tracked-vehicles.md](tracked-vehicles.md); `lint-bro` flags the layout (RC046) and light
 welded frames (RC047), and [physics-bench.md](physics-bench.md) measures a change before it is
 installed.
+
+## Stationary wheels but moving belt; short drive misses wandering (2026-10-05)
+
+WALL-E r2 reproduced the owner's idle-track and straightness complaints in the isolated
+native editor. Physical-wheel spin and chassis height can be zero while the rendered
+belt changes shape. Check a fixed-camera native image sequence separately from wheel
+telemetry. Check extended zero-steering drives using heading range and maximum local
+cross-track deviation; a small final heading difference alone can hide a curved path.
+Source: WALL-E `stability_20261005`, `baseline_straight_034400` and
+`baseline_idle_035713`; shared `bench_stability.py`. Cause/final remedy are still under
+investigation; higher friction, higher rotational damping and differential locking did
+not solve this instance. See tracked-vehicles.md for experiment scope.
+
+
+### WALL-E r5 track-flapping outcome (2026-10-05)
+
+**Game (owner report):** the installed r5 combined tuning fixes track flapping,
+the owner's main complaint; residual wandering is acceptable for current use.
+The earlier wheel-layout symptom row describes an earlier failure mode, not
+the complete later repair. Tension10 held the outline in editor sequences and
+is part of r5; the owner report alone cannot isolate it from the other settings.
+Retain the combined working version and the failed numerical straightness
+repeat separately. See [the exact build and feedback](../docs/case-studies/walle-stability.md).
+
+
+### Recovered Jimny running gear or steering wheel detached from the body
+
+**Build (SnowRunner CombineXMesh recovery, 2026-10-05):** the first import treated stored skinned vertices as model-space geometry. Reconstruct the weighted rest position using the submesh's link palette and `boneWorld * linkMatrix`, then convert coordinates; do not invert the Jimny's link matrix. Also combine repeated influences for the same vertex/bone before writing a Blender group with `REPLACE`. The first saved-source inspection caught three underweighted chassis LODs; the repaired source passed all 477 checks. See [the bind-pose finding](frames.md#recovered-snowrunner-combinexmesh-bind-poses-jimny-2026-10-05). This is Blender/native compilation evidence, not confirmation of suspension movement in retail.
+
+
+### Y61 editor fails to initialise despite a compiled package
+
+**SDK/Game:** inspect the native log before changing geometry. This conversion independently encountered an invalid narrow hinge, absent source-fixture wheel registration, and a missing blueprint-module import. The repaired model's axes alone did not establish loadability. See [hinge limits](frames.md#y61-native-body-hinge-limits-2026-10-06) and [fixture/module dependencies](build-pipeline.md#y61-source-fixture-registration-and-blueprint-imports-2026-10-06). Preserve each failure and recover only after verifying stopped owned processes and terminal installation state.
+
+
+### Roamer ute bench succeeds on the wrong truck or leaves a rod detached
+
+**SDK/Game, 2026-10-06:** a successful physics series can still sample the scene's default stock truck. Verify the selected truck name before accepting any dimensions or motion. For this ute's detached drag link, native rendered-frame endpoint comparison found the missing third angular constraint; adding it corrected the gap without changing physics. See [fixture identity](physics-bench.md#roamer-ute-fixture-and-input-identity-2026-10-06) and [terminal constraint](ik-visual-rigs.md#passive-pitman-terminal-constraint-roamer-ute-2026-10-06). Preserve failed/excluded receipts.
+
+
+## Wheel initialization assertion (Jimny, 2026-10-06)
+
+**Game:** `failed to find deforming geom obj with name tire` means the enabled default tyre-deformation reference does not match the wheel model. Rename the tyre object in each authored LOD and verify the compiled TPL, or author an explicit supported custom reference. RC049 checks the default name before startup. See suspension-and-wheels.md and the preserved Jimny `J31TestC_20261006` native assertion.

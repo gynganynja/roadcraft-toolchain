@@ -232,3 +232,24 @@ class AnalysisTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FoldedBenchPathTests(unittest.TestCase):
+    def test_sdk_folded_yaml_project_paths_are_relocated(self):
+        old = Path("C:/Games/Roadcraft Development Package/mod/project")
+        new = Path("C:/Games/isolated-bench/project")
+        for original, replacement in ((old.as_posix(), new.as_posix()), (str(old), str(new))):
+            folded = original.replace("Development Package", "Development\r\n  Package")
+            data = ("documents-dir: " + folded + "\r\nreference: C:/Games/root/.project\r\n").encode()
+            result = pb._rewrite_bytes(data, old, new).decode()
+            self.assertEqual(result, "documents-dir: " + replacement + "\r\nreference: C:/Games/root/.project\r\n")
+
+
+class ReverseScheduleTests(unittest.TestCase):
+    def test_native_debug_reverse_uses_signed_negative_pedal(self):
+        for name in ('normal', 'harsh', 'straight', 'straightfull', 'idle'):
+            reverse = [controls for _, controls in pb.SCHEDULES[name]['steps'] if controls[3] == 'REVERSE']
+            self.assertTrue(reverse, name)
+            for pedal, steer, handbrake, gear in reverse:
+                self.assertLess(pedal, 0, name)
+                self.assertEqual(handbrake, 'Off', name)

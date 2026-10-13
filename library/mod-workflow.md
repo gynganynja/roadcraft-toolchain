@@ -138,3 +138,22 @@ Evidence: CAT 793D RC26 encountered seven connector servers with no open Blender
 `tests/test_core.py` (8 tests) pass. The lamp suite also passes (15 tests). The full core suite
 needs the installed toolchain environment's console entry point; a bare interpreter without
 `Scripts/roadcraft.exe` does not satisfy that environment test.
+
+
+### Owner-requested imperfect trial versus acceptance (2026-10-05)
+
+**Workflow evidence:** WALL-E's owner stopped a long stability investigation
+and explicitly requested the best current version for an in-game test. That
+request authorizes delivery of a clearly identified trial even when a handling
+repeat gate remains unmet. Stop exploratory loops, select and pin the measured
+configuration, preserve its failed evidence, synchronize authoring sources,
+run the applicable build/package checks, and install through the normal
+expected-hash/backup transaction. Keep numerical and campaign acceptance separate;
+never relabel the candidate as NATIVE_VALIDATED or populate accepted merely to
+install it. A test installation is a concrete result, not proof of a full fix.
+
+Reference: [WALL-E installed r5 trial](../docs/case-studies/walle-stability.md),
+build `20261005T084226Z-a4a0279e8438`, test `20261005T084243Z-8bbd0abdde7f`,
+transaction `8ca355d7acf54874a874b86a2326cb65`. The user reported twelve hours
+without useful progress; avoid extending exploratory work after a clear delivery
+instruction. No new approval or additional driving loop was necessary.

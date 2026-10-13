@@ -21,6 +21,7 @@ before installing it. Read the subject articles when authoring:
 | [tracked-vehicles.md](tracked-vehicles.md) | Crawlers: the retail track layouts, track-frame masses, the KGS-25 fix, checks RC046-RC048 |
 | [physics-bench.md](physics-bench.md) | Measuring a handling change in the Mod Editor before installing it (`roadcraft bench`) |
 | [ik-visual-rigs.md](ik-visual-rigs.md) | Visual IK chains: wishbones, uprights, dampers, cylinders, linkages |
+| [animated-parts.md](animated-parts.md) | Parts that move by themselves or on a key: model clips, `prop_animation_controller`, blueprint triggers; why custom SSL is not a mod route |
 | [truck-settings.md](truck-settings.md) | Truck BRO settings: steering, pedals, gearbox, controls, the SDK sample's gaps |
 | [cockpit-and-lamps.md](cockpit-and-lamps.md) | Steering wheel and gauges (`dataDashboard`), lamps that work in the campaign |
 | [textures-and-materials.md](textures-and-materials.md) | Texture sets, channel packing, material instances, interface images |
@@ -30,7 +31,8 @@ before installing it. Read the subject articles when authoring:
 | [sources.md](sources.md) | Official documentation, the community guide, the unofficial route, support channels |
 
 The [D11 case study](../docs/case-studies/d11.md) preserves its source-repair and
-capture findings. [Components](../docs/components.md) distinguishes shared tooling
+capture findings. The [WALL-E stability case](../docs/case-studies/walle-stability.md)
+preserves the miniature-crawler investigation, rejected trials and owner-confirmed r5 track fix. [Components](../docs/components.md) distinguishes shared tooling
 from historical probes. Apply a case's rules only within their stated scope.
 
 ## Evidence grades

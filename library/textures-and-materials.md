@@ -287,3 +287,28 @@ under one level on average, same orientation. A lit overlay (`vehicle_lights`) c
 as `texDiff` with the emissive map as `emissiveTex` when the emissive map is dark everywhere else
 (WALL-E's solar-charge display: 0.1 % of the atlas). Game look not yet reported. Evidence: WALL-E project
 `tools/build_textures.py`, `reports/textures.json`.
+
+
+### Jimny v7 atlas export and package reachability (2026-10-06)
+
+**Build:** Blender image datablock names used by the SDK exporter must match
+the compiled texture resource stem. The newly added spec image initially kept
+its default `.tga` suffix; the TPL requested `_spec.tga.td.resource` although
+the converter produced `_spec.td.resource`. Explicitly naming that image
+`name + "_spec"` fixed the native graph error. Albedo had already been named.
+
+When replacing source faces/materials, the recovered material plan may still
+compile unused maps. The native packer follows final resource reachability,
+so unused compiled descriptors need not appear in the PAK. Audit every texture
+referenced by included material instances and every reachable local descriptor
+and mip, while recording excluded unused descriptors. Requiring all recovered
+material-plan maps falsely failed Jimny's diff/shock/spring replacements.
+Do not waive missing referenced resources or mip payloads.
+
+Evidence: Jimny tools/suspension_model.py and tools/package.py;
+jobs/20261006T073116Z-fe3231dcc2a0/receipt.json (suffix failure),
+jobs/20261006T073508Z-7198911d9d3c/receipt.json and
+jobs/20261006T073832Z-a2afefbd0767/receipt.json (unused-map false failures),
+jobs/20261006T074204Z-dff1b4564bb2/receipt.json (full build passed).
+Scope: this native-Blender atlas pipeline. Asset-specific checks are wired into
+its existing package audit; a universal unused-map policy is not inferred.
