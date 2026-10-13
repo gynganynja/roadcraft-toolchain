@@ -14,6 +14,7 @@ before installing it. Read the subject articles when authoring:
 | Article | Subject |
 |---|---|
 | [new-mod-creation.md](new-mod-creation.md) | Practical creation checkpoints from supplied art through driving, effects, utilities and cockpit verification |
+| [snowrunner-ports.md](snowrunner-ports.md) | Porting a SnowRunner truck mod: what carries over (shading maps, XML hardpoints, skin weights, AutomaticIK), the importer's mirror and the parts-browser rigs, and add-ons as several configurations |
 | [mod-workflow.md](mod-workflow.md) | New mods, existing source/package edits, project selection, build and installation lifecycle |
 | [learning.md](learning.md) | Required integration of discoveries, failures, fixes and feedback into shared knowledge and tools |
 | [frames.md](frames.md) | Axes, units, bone frames, hinge axes, centre of mass, source-art conversion |

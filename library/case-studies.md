@@ -1003,6 +1003,20 @@ for this cab is open until the owner drives. Evidence: tools/glass_fit.py
 history/attempt_001_lamp_glass_misassigned (and attempt_002: the audit first rejected links to shipped game textures), reports/glass_jobs_recover_applied_scoped.json. Installed 2026-10-13 as `be7cb530...` over `ed0cf96f...` with transaction receipt `transactions/a3d6bfdb623245519b2c48e3dea88469`.
 
 
+### Roamer cut-off proxies hidden from the class init (2026-10-13)
+
+**Build / installed, not driven:** a second candidate for the dark-windscreen report, on top of the glass
+fix. The maintained validator's RC074 (engine code analysis) shows markup `objSettings` visibility is applied
+only with `exportedVersion` >= 2; no Roamer or retail truck markup sets it, so the two cut-off volume proxies
+(`r105_mod_105_windshield`, 624 faces, a materialless copy of the window mesh; `r105_mod_105_cockpit`, a cab box)
+were probably rendered. `campaign/proxies_20261013_02` adds a `HideCutoffProxies` show/hide node fired from the
+existing `OnInit_1` to the source overlay and the eleven colour classes; only those eleven class members changed
+and `roadcraft validate --baseline` reported no new findings. Setting `exportedVersion` was rejected because it
+would also switch on 27 collision and the lighting entries. Installed as `1224b0f8...`, transaction
+`transactions/a3097eb54c4342bfb1ba8a3ae4ca5046`. Which of the two candidates (film or proxies) fixes the report,
+and whether the cut-off volume still works, is open until the owner drives.
+
+
 ### Dump Twuck: native behavior passes before camera review
 
 **Native private fixture, 2026-10-01:** build-010 passed 603 package checks,
