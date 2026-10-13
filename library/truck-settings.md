@@ -87,7 +87,7 @@ game's script declarations; the v8 build applying them has not been driven yet.
 |---|---|
 | `chassisInfo.uiCustomShopIcon` (368 x 308) and `uiInfo.uiCustomIcon` (960 x 640) name UI textures compiled as one-level BC7 with alpha; link them into the catalog descriptor so they are packaged | Build, Game (icons shown) |
 | `uiType` places the vehicle in a store section (`UID_TRUCKS_TYPE_SCOUT`, `UID_TRUCKS_TYPE_ROADWORKS`, ...) | Retail, Game |
-| The retail game finds mod trucks by flattened `ssl/<brand>_<suffix>` brands (the Mod Manager's export naming), while the editor package keeps them under `autogen_dw/`: every build re-exports the package (build-pipeline.md) | Build, Game (the mods appear in the store) |
+| The retail game finds mod trucks by flattened `ssl/<brand>_<suffix>` brands (a per-mod suffix such as `_kgs25`), while the editor package keeps them under `autogen_dw/`: every build stages them (`pak build --stage-classes`, headless-build.md "Class staging") | Build, Game (the mods appear in the store) |
 | Truck mods need the five `auto_*` `.sso.resource` assets in the Mod Manager and the Vehicle category on PROS, or co-op breaks | SDK (official documentation) |
 
 ## Dump truck loads with `roadcraft.load_volume` (start here, 2026-10-02)

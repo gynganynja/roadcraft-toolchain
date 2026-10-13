@@ -549,6 +549,7 @@ def _transaction_process_check() -> list[dict[str, Any]]:
 
 PASSTHROUGH_HELP = """headless editor commands (each has its own --help):
   pak build ...         pack a mod without the Mod Editor (library/headless-build.md)
+  pak stage ...         stage autogen_dw/ classes as ssl/<stem>_<suffix> in a copy (library/headless-build.md)
   pak normalize|check   deterministic package bytes (library/deterministic-paks.md)
   pak manifest ...      which retail file or other mod each member overrides (library/install-manifest.md)
   validate <target>     runtime-failure checks for a source tree or .pak (library/validator.md)
@@ -566,6 +567,9 @@ def _passthrough(argv: list[str]) -> int | None:
         if rest[0] == "build":
             from . import pak_build
             return pak_build.main(rest[1:])
+        if rest[0] == "stage":
+            from . import class_staging
+            return class_staging.main(rest[1:])
         if rest[0] in ("normalize", "check"):
             from . import pak_determinism
             return pak_determinism.main(rest)

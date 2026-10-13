@@ -57,10 +57,13 @@ machine.json sdkRoot, then the default Steam path.
   blobs the packer only logs, gives byte-identical output for identical input, and
   writes <output>.build/build.json, whose candidate/packageSha256/accepted:false keys
   are the package receipt for install and jobs-recover (library/headless-build.md).
-  CAVEAT: it packs a project whose generated classes are already staged under ssl/
-  (as every installed mod ships them). It does not yet do the editor's class staging
-  (autogen_dw/ -> ssl/<class>_<suffix>) and refuses an unstaged project; use the
-  editor's Build Mod, or the mod's own staging script, for those until it does.
+  For an ordinary editor project (classes under autogen_dw/) add `--stage-classes --suffix S`:
+  it copies the project to <work>/staged, moves the reachable generated classes to
+  ssl/<stem>_S with every link and identifier retagged (as every installed mod ships them),
+  packs from the copy and records the staging report in the receipt. S is the mod's own
+  short suffix (kgs25, jimny, gd11...): reuse the installed pak's suffix for an update.
+  Without it an unstaged project is refused. `roadcraft pak stage ... [--apply]` shows the
+  plan alone. The source project is never written.
 - Before every install run `roadcraft validate NEW.pak --baseline <installed pak> --json`
   and do not install on a NEW error. Fix or explain new warnings (library/validator.md).
 - Before and after any handling or physics change run `roadcraft physics report` and

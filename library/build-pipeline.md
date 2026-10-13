@@ -36,7 +36,7 @@ candidate carries receipts for what built and checked it.
 
 | Package | `tools/bin/ModPakBuilder/mod_pak_builder.exe --project <p> --resource-roots-file <roots> --output <pak> --mod_file <mod>` | exit 0 and the pak exists | Build |
 
-| Retail export | the editor package's `autogen_dw/` brands re-exported as the flattened `ssl/<brand>_<suffix>` brands the retail game discovers (the Mod Manager's export naming) | the export audit | Build, Game (the mods appear in the store) |
+| Retail export | the editor package's `autogen_dw/` brands re-exported as the flattened `ssl/<brand>_<suffix>` brands the retail game discovers: `roadcraft pak build --stage-classes --suffix S` (headless-build.md "Class staging"). The editor's own renamer uses a per-launch GUID; the short per-mod suffix is the mods' release-script convention, not editor code | the staging report (no `unmapped`) and the export audit | Build, Game (the mods appear in the store) |
 
 | Install | copy to `<game>/root/mods/<mod>.pak`; game and editor closed; keep the previous bytes and a receipt | hash of the installed file | Build |
 

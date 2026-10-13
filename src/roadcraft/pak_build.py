@@ -23,9 +23,15 @@ The Mod Editor's Build Mod (``ModEditorCommands.ExecuteBuildMod``, decompiled Mo
   window the packer tree showed on the user's desktop, and the output hash; it carries the package
   receipt keys ``candidate``, ``packageSha256`` and ``accepted: false`` (a build never accepts).
 
-Scene export (``furnace scene``) and the editor's asset renaming are not part of this step: every
-released mod packs assets only (``scenes: []``).  A ``.mod`` that lists scenes is refused with a pointer
-to the library article.  Nothing here installs a package; use ``roadcraft install``.
+An editor project keeps its generated classes under ``autogen_dw/``; installed mods ship them only as
+``ssl/<stem>_<suffix>``.  Such a project is refused unless ``--stage-classes --suffix S`` (or ``--suffix S``
+alone on an unstaged project) asks for :mod:`roadcraft.class_staging` to copy it into ``<work>/staged`` with
+the classes staged; the packer then runs on that copy and the receipt carries the staging report.
+
+Scene export (``furnace scene``) and the editor's GUID renaming of textures/materials/models are not part of
+this step: every released mod packs assets only (``scenes: []``) and keeps those names.  A ``.mod`` that lists
+scenes is refused with a pointer to the library article.  Nothing here installs a package; use
+``roadcraft install``.
 """
 
 from __future__ import annotations
@@ -70,6 +76,9 @@ class BuildPlan:
     roots_source: str = "mod"
     candidate: str = ""
     problems: list[str] = field(default_factory=list)
+    stage_suffix: str | None = None              # class staging into <work>/staged (class_staging.py)
+    staging: dict[str, Any] | None = None        # the dry-run staging plan; the build's own report replaces it
+    source_roots: list[str] | None = None        # the roots before staging (explicit roots only)
 
 
 def _sha256(path: Path) -> str:
@@ -82,9 +91,13 @@ def _sha256(path: Path) -> str:
 
 def read_mod_file(path: Path) -> dict[str, Any]:
     """Read the ``title``/``description``/``scenes``/``assets`` of a ``.mod`` (YAML, block or flow lists)."""
+    return read_mod_file_text(path.read_text(encoding="utf-8-sig"), str(path))
+
+
+def read_mod_file_text(text: str, path: str = "<mod>") -> dict[str, Any]:
     data: dict[str, Any] = {}
     current: str | None = None
-    for raw in path.read_text(encoding="utf-8-sig").splitlines():
+    for raw in text.lstrip("\ufeff").splitlines():
         line = raw.rstrip()
         if not line.strip() or line.lstrip().startswith("#"):
             continue
@@ -129,8 +142,13 @@ def roots_from_mod(mod: dict[str, Any]) -> list[str]:
 
 def plan(project: str | Path, mod_file: str | Path, output: str | Path, *, roots_file: str | Path | None = None,
          roots: Sequence[str] | None = None, work: str | Path | None = None, game_root: str | Path | None = None,
-         normalize: bool = True, timeout: float = DEFAULT_TIMEOUT, candidate: str | None = None) -> BuildPlan:
-    """Check the inputs without running anything; ``problems`` lists every reason the build would be refused."""
+         normalize: bool = True, timeout: float = DEFAULT_TIMEOUT, candidate: str | None = None,
+         stage_classes: bool = False, suffix: str | None = None) -> BuildPlan:
+    """Check the inputs without running anything; ``problems`` lists every reason the build would be refused.
+
+    ``stage_classes`` (or a ``suffix`` on a project whose classes are unstaged) plans the editor's class
+    staging into ``<work>/staged`` (:mod:`roadcraft.class_staging`); the build then packs from there.
+    """
     project, mod_file, output = Path(project).resolve(), Path(mod_file).resolve(), Path(output).resolve()
     game = Path(game_root).resolve() if game_root else _default_game_root()
     work_dir = Path(work).resolve() if work else output.parent / (output.stem + ".build")
@@ -163,14 +181,27 @@ def plan(project: str | Path, mod_file: str | Path, output: str | Path, *, roots
             problems.append(f"root {number} is blank (the packer would turn it into an empty tag)")
         elif not tag.startswith("res://"):
             problems.append(f"root {number} {tag!r} is not a res:// tag")
-    unstaged = [t for t in tags if t.strip().lower().startswith("res://autogen")]
-    if unstaged or (not any(t.strip().lower().startswith("res://ssl/") for t in tags)
-                    and any((project / "mods_source").glob("autogen*/**/*.cls"))):
+    source_roots = [t.strip() for t in tags]
+    unstaged = _unstaged(project, tags)
+    staging = None
+    if stage_classes and not suffix:
+        problems.append("--stage-classes needs --suffix <s>: the mod's short class suffix (ssl/<stem>_<s>), "
+                        f"chosen per mod, e.g. {mod_file.stem.replace('-', '_').lower()!r}")
+    if suffix and (stage_classes or unstaged):
+        from . import class_staging
+        staging = class_staging.stage(project, work_dir / "staged", suffix, mod_file=mod_file if mod_file.is_file()
+                                      else None, roots=tags if source != "mod" else None, dry_run=True)
+        problems.extend("class staging: " + item for item in staging["problems"])
+        problems.extend(f"class staging: {item['file']} {item['link']}: {item['reason']}" for item in staging["unmapped"])
+        if not staging["problems"]:
+            tags = staging["roots"]
+            unstaged = any(t.strip().lower().startswith("res://autogen") for t in tags)
+    if unstaged:
         problems.append(
             "the generated classes are not staged: roots point into autogen_dw/ (or no root is under ssl/ while "
             "mods_source has autogen classes). The editor's Build Mod / Mod Manager export moves them to "
-            "ssl/<class>_<suffix> before packing, and every installed mod ships them only there; pack a project "
-            "staged that way (library/headless-build.md 'Class staging')")
+            "ssl/<class>_<suffix> before packing, and every installed mod ships them only there; pass "
+            "--stage-classes --suffix <s> to stage a copy headlessly (library/headless-build.md 'Class staging')")
     packer = game / PACKER
     if not packer.is_file():
         problems.append(f"packer not found: {packer}")
@@ -179,7 +210,17 @@ def plan(project: str | Path, mod_file: str | Path, output: str | Path, *, roots
     if output.suffix.lower() != ".pak":
         problems.append(f"{output} is not a .pak path")
     return BuildPlan(project, mod_file, [t.strip() for t in tags], output, work_dir, packer, game, normalize,
-                     timeout, source, candidate or output.stem, problems)
+                     timeout, source, candidate or output.stem, problems,
+                     stage_suffix=suffix if staging is not None else None, staging=staging,
+                     source_roots=source_roots if source != "mod" else None)
+
+
+def _unstaged(project: Path, tags: Sequence[str]) -> bool:
+    """Roots into autogen*/, or no root under ssl/ while mods_source still has generated classes."""
+    if any(t.strip().lower().startswith("res://autogen") for t in tags):
+        return True
+    return (not any(t.strip().lower().startswith("res://ssl/") for t in tags)
+            and any((project / "mods_source").glob("autogen*/**/*.cls")))
 
 
 def _default_game_root() -> Path:
@@ -200,6 +241,20 @@ def build(p: BuildPlan) -> dict[str, Any]:
         raise PakBuildError("; ".join(p.problems))
     if p.work.exists() and any(p.work.iterdir()):
         raise PakBuildError(f"work folder {p.work} is not empty; move it away first")
+    source_project, source_mod = p.project, p.mod_file
+    staging = None
+    if p.stage_suffix:
+        from . import class_staging
+        staging = class_staging.stage(p.project, p.work / "staged", p.stage_suffix, mod_file=p.mod_file,
+                                      roots=p.source_roots)
+        (p.work / "staging.json").write_text(json.dumps(staging, indent=1, sort_keys=True), encoding="utf-8")
+        if staging["problems"] or staging["unmapped"]:
+            raise PakBuildError("class staging failed: " + "; ".join(
+                staging["problems"] + [f"{u['file']} {u['link']}: {u['reason']}" for u in staging["unmapped"]]))
+        if staging["roots"] != p.roots:
+            raise PakBuildError("class staging produced other roots than its plan")
+        p.project = Path(staging["out"])
+        p.mod_file = Path(staging["modFile"]["staged"])
     scratch = p.work / "scratch"
     scratch.mkdir(parents=True, exist_ok=True)
     roots_path = p.work / "roots.txt"
@@ -222,7 +277,13 @@ def build(p: BuildPlan) -> dict[str, Any]:
         "inputs": {"project": str(p.project), "modFile": {"path": str(p.mod_file), "sha256": _sha256(p.mod_file)},
                    "roots": {"source": p.roots_source, "count": len(p.roots),
                              "sha256": hashlib.sha256("\n".join(p.roots).encode()).hexdigest()},
-                   "packer": {"path": str(p.packer), "sha256": _sha256(p.packer)}},
+                   "packer": {"path": str(p.packer), "sha256": _sha256(p.packer)},
+                   "sourceProject": str(source_project), "sourceModFile": str(source_mod)},
+        "staging": None if staging is None else {
+            "suffix": p.stage_suffix, "report": str(p.work / "staging.json"), "out": staging["out"],
+            "renames": staging["renames"], "rewritten": staging["rewritten"], "projectFiles": staging["projectFiles"],
+            "notStaged": staging["notStaged"], "unmapped": staging["unmapped"], "skipped": len(staging["skipped"]),
+            "copied": staging["copied"], "notes": staging.get("notes", [])},
         "packer": {"returncode": result.returncode, "timedOut": result.timed_out, "log": str(log_path),
                    "leakedWindows": result.leaked_windows, "privateWindows": result.private_windows,
                    "orphansKilled": result.orphans_killed},
@@ -268,16 +329,26 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--no-normalize", action="store_true", help="keep the packer's timestamps")
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
     parser.add_argument("--candidate", help="candidate name recorded in the receipt (default: the output's stem)")
+    parser.add_argument("--stage-classes", action="store_true",
+                        help="stage the generated classes (autogen*/ -> ssl/<stem>_<suffix>) into <work>/staged first")
+    parser.add_argument("--suffix", help="the mod's short class suffix for --stage-classes (also stages an unstaged "
+                        "project on its own), e.g. kgs25")
     parser.add_argument("--apply", action="store_true", help="run the packer (default: preflight only)")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     p = plan(args.project, args.mod_file, args.output, roots_file=args.roots_file, roots=args.root, work=args.work,
              game_root=args.game_root, normalize=not args.no_normalize, timeout=args.timeout,
-             candidate=args.candidate)
+             candidate=args.candidate, stage_classes=args.stage_classes, suffix=args.suffix)
     if not args.apply:
         report = {"preflight": True, "ready": not p.problems, "problems": p.problems, "roots": len(p.roots),
                   "rootsSource": p.roots_source, "output": str(p.output), "work": str(p.work),
                   "packer": str(p.packer)}
+        if p.staging is not None:
+            report["staging"] = {"suffix": p.stage_suffix, "into": p.staging["out"],
+                                 "renames": [(r["from"], r["to"]) for r in p.staging["renames"]],
+                                 "rewritten": len(p.staging["rewritten"]), "notStaged": p.staging["notStaged"],
+                                 "unmapped": p.staging["unmapped"], "projectFiles": p.staging["projectFiles"],
+                                 "stagedRoots": p.roots}
         print(json.dumps(report, indent=1) if args.json else
               ("ready" if not p.problems else "not ready:\n  " + "\n  ".join(p.problems)))
         return 0 if not p.problems else 2
