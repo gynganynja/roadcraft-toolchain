@@ -139,13 +139,16 @@ set PYTHONPATH=src
 
 | scene_001 | `bench_headless scene` on the Goliath RC3 bench project (`gd11_bench.scn`, project copy, adapter 1 = the RTX 4060): the "Game editor" connector attached, `StartFrameSharing` + `LoadScenePlay` sent, scene loaded in ~94 s, level `gd11_bench`, truck current, 1 viewport; the screenshot WAS written but as `scene.png.png`: the engine appends the extension itself (now passed without it) | Game (engine, headless play) |
 | run_001 | first headless bench drive: same project/scene, `normal` schedule, 10 Hz probes; all 10 inputs applied; forward 5.5 m, pivots -32 / +35 deg, reverse 4.3 m; 563 series samples, six CSVs and summary.json; 224 s wall clock | Game (engine, headless play) |
+| pakmount_001 | smoke with the Goliath RC6 candidate copied into the private `ModDirs/local` folder: the engine ran, but in `--editor` mode it builds its resource layers from `local`, `resource_overrides`, `mods_source`, `source_extra` and the retail paks only and never scans a mods folder; no mod line in engine.log. The `ModDirs` override does not mount a pak in the editor engine | Game (engine) |
 
 All three: no window and no dialog on the user's desktop (`leakedWindows` empty); the engine's own
 windows (`RoadBuilder`, five child console windows) stayed invisible on the private desktop.
 Confirmed: the engine runs without IntegrationStudio, without a window, on a private desktop, and
 answers ExecSsl through the helper hub. Since scene_001/run_001 also confirmed: loading a scene, entering play with a current truck,
-screenshots, and a full scripted drive with probes, all headless. Still open: the `ModDirs` override
-mounting a candidate .pak, and determinism across two identical runs.
+screenshots, and a full scripted drive with probes, all headless. Not possible as designed: mounting a
+candidate .pak through `ModDirs` (the editor engine reads no mods folder). To bench a built package,
+extract its members into the private `mods_source` copy (member paths are resource paths): proposed,
+not yet run. Still open: determinism across two identical runs.
 
 ## Scene, play mode, truck, screenshot (`scene` command; Build with the fake, not yet run live)
 
