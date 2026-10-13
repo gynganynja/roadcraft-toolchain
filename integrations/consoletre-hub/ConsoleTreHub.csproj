@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    ConsoleTre hub helper for the windowless engine (src/roadcraft/engine.py, library/headless-bench.md).
+    Hosts the SDK's own Saber.ConsoleTre ConsoleServer the way IntegrationStudio does with
+    AutoStartConsoleTre=Host, and drives the engine's Automation/ExecSsl listener through the SDK's
+    ConsoleClient (the transport proven by integrations/physics-bench/*.ps1).
+
+    The SDK assemblies are referenced for compilation only (Private=false: never copied into the
+    output or the repository) and loaded from the SDK folder at run time (Program.cs, - -sdk).
+    Build:  dotnet build -c Release -p:RoadCraftSdkEditorDir=<SDK>/tools/bin/ModEditor -o <out>
+    (engine.build_hub does this through quiet.run into a per-user cache folder.)
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>roadcraft-consoletre-hub</AssemblyName>
+    <RootNamespace>RoadCraft.ConsoleTreHub</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <RollForward>Major</RollForward>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);MSB3270</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Saber.ConsoleTre">
+      <HintPath>$(RoadCraftSdkEditorDir)\Saber.ConsoleTre.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Saber.Json">
+      <HintPath>$(RoadCraftSdkEditorDir)\Saber.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

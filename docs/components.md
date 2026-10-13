@@ -11,6 +11,7 @@
 | Dump-truck loads | `load_volume.py`, `blender_load.py` | Load volume fitted to the tub floor, the four grid borders (back on the tail lid), native sand-grid emulation (RC040-RC044) and load settings; lint RC036 checks names and border parents |
 | Tracked vehicles | `tracks.py` | Track layouts against the retail patterns, light welded track frames (RC046-RC048 in the shared vehicle checks); `roadcraft retail tracks` surveys the shipped crawlers |
 | Physics bench | `physics_bench.py`, `integrations/physics-bench/` | Variants of suspension, wheels and masses driven in the Mod Editor on a copy of a project, per-phase summaries; starts the editor only on `run`/`batch`, with the owner's go-ahead |
+| Headless bench | `engine.py`, `bench_headless.py`, `integrations/consoletre-hub/` | Windowless engine session (SDK ConsoleTre hub helper, private desktop, private mod folders, gates), scenario timetable, probes, CSV/summary, capture; every engine run needs `--owner-approved`, otherwise a dry run |
 | Package text patches | `pak_patch.py` | Rewrites text members (classes, markup) of a built package, every occurrence, other members byte for byte; the editor sources must be changed the same way |
 | Parse/inspect | `core.py`, `ps_format.py`, `tpl_reader.py`, `retail.py` | Identity, duplicate archive occurrences, BRO/TPL and shipped reference data |
 | Build/test/capture | `jobs.py`, `incremental.py` | Pinned declared commands, process gates, per-project jobs and verified reuse |

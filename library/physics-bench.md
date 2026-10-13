@@ -6,6 +6,9 @@ suspension formula and installed unmeasured; the owner reported "it does it wors
 2026-10-02). The bench measures such a change in the Mod Editor first, on a copy of the mod, and
 compares it with the installed version.
 
+A windowless variant without IntegrationStudio, with a private mod folder per run, is described in
+[headless-bench.md](headless-bench.md) (not yet run against the real engine).
+
 **Ask the owner first.** Each run starts the editor and its engine for about three and a half minutes and takes
 the GPU, the CPU and window focus. The launcher refuses to start while the game or another editor
 runs. Bench results are evidence of grade Game (editor play mode) on a flat pad; the owner's drive

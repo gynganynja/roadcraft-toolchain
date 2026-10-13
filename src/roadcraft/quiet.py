@@ -73,6 +73,8 @@ from dataclasses import dataclass, field
 from typing import Any, BinaryIO, Mapping, Sequence
 
 SILENT_ENV = {"S3D_FORCE_SILENT_CRASH_REPORT": "1"}
+# CreateProcess priority classes (``priority=``); the engine runs below normal so the owner's work keeps the CPU.
+PRIORITY_CLASSES = {"normal": 0x00000020, "below_normal": 0x00004000, "idle": 0x00000040}
 WATCH_INTERVAL = 0.2
 ORPHAN_GRACE = 0.5
 
@@ -288,12 +290,13 @@ if sys.platform == "win32":
     def _inheritable_sa() -> SECURITY_ATTRIBUTES:
         return SECURITY_ATTRIBUTES(ctypes.sizeof(SECURITY_ATTRIBUTES), None, True)
 
-    def _pipe() -> tuple[int, int]:
+    def _pipe(child_reads: bool = False) -> tuple[int, int]:
+        """(read, write); only the child's end stays inheritable (the write end unless ``child_reads``)."""
         r, w = H(), H()
         sa = _inheritable_sa()
         if not _CreatePipe(ctypes.byref(r), ctypes.byref(w), ctypes.byref(sa), 0):
             raise _fail("CreatePipe")
-        _SetHandleInformation(r, HANDLE_FLAG_INHERIT, 0)
+        _SetHandleInformation(w if child_reads else r, HANDLE_FLAG_INHERIT, 0)
         return r.value, w.value
 
     def _nul() -> int:
@@ -372,7 +375,10 @@ if sys.platform == "win32":
         """A quietly started process tree (Popen-like: ``pid``, ``poll``, ``wait``, ``kill``, ``result``)."""
 
         def __init__(self, argv, *, cwd=None, env=None, desktop="private", capture=True, log=None,
-                     show="hide", text=True, watch=True, crash_dump_dir=None, breakaway=False):
+                     show="hide", text=True, watch=True, crash_dump_dir=None, breakaway=False,
+                     priority=None, pipes=False):
+            if priority is not None and priority not in PRIORITY_CLASSES:
+                raise ValueError(f"priority must be one of {sorted(PRIORITY_CLASSES)}")
             if desktop not in ("private", "default"):
                 raise ValueError("desktop must be 'private' or 'default'")
             if show not in ("hide", "noactivate"):
@@ -383,7 +389,7 @@ if sys.platform == "win32":
             self._stdout: list[bytes] = []
             self._stderr: list[bytes] = []
             self._readers: list[threading.Thread] = []
-            self._capture = capture and log is None
+            self._capture = capture and log is None and not pipes
             self._closed = False
             self._done = threading.Event()
             self._leaked: dict[int, dict[str, Any]] = {}
@@ -391,12 +397,31 @@ if sys.platform == "win32":
             self.returncode: int | None = None
             self.orphans_killed: list[dict[str, Any]] = []
 
+            self.stdin = self.stdout = None
             child_handles: list[int] = []
             parent_reads: list[int] = []
+            parent_pipes: list[int] = []
             try:
-                stdin = _nul()
-                child_handles.append(stdin)
-                if log is not None:
+                if pipes:  # line protocols: the caller writes self.stdin and reads self.stdout itself
+                    stdin, parent_in = _pipe(child_reads=True)
+                    child_handles.append(stdin)
+                    parent_pipes.append(parent_in)
+                    parent_out, out = _pipe()
+                    child_handles.append(out)
+                    parent_pipes.append(parent_out)
+                    if log is not None:
+                        err = _inheritable_copy(log)
+                        child_handles.append(err)
+                    else:
+                        r2, err = _pipe()
+                        parent_reads.append(r2)
+                        child_handles.append(err)
+                else:
+                    stdin = _nul()
+                    child_handles.append(stdin)
+                if pipes:
+                    pass
+                elif log is not None:
                     out = err = _inheritable_copy(log)
                     child_handles.append(out)
                 elif capture:
@@ -427,7 +452,7 @@ if sys.platform == "win32":
                     si.lpAttributeList = ctypes.cast(attrs, ctypes.c_void_p)
                     self._job = _new_job()
                     flags = (CREATE_SUSPENDED | CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW
-                             | EXTENDED_STARTUPINFO_PRESENT)
+                             | EXTENDED_STARTUPINFO_PRESENT | PRIORITY_CLASSES.get(priority or "", 0))
                     cmdline, merged = _command_line(argv), _environment(env, crash_dump_dir)
                     pi = None
                     if breakaway and _in_job():
@@ -441,7 +466,7 @@ if sys.platform == "win32":
                 finally:
                     _DeleteProcThreadAttributeList(attrs)
             except BaseException:
-                for h in child_handles + parent_reads:
+                for h in child_handles + parent_reads + parent_pipes:
                     _CloseHandle(h)
                 if getattr(self, "_job", None):
                     _CloseHandle(self._job)
@@ -452,12 +477,16 @@ if sys.platform == "win32":
             if not _AssignProcessToJobObject(self._job, pi.hProcess):
                 error = _fail("AssignProcessToJobObject")
                 _TerminateProcess(pi.hProcess, 1)
-                for h in (pi.hThread, pi.hProcess, self._job, *parent_reads):
+                for h in (pi.hThread, pi.hProcess, self._job, *parent_reads, *parent_pipes):
                     _CloseHandle(h)
                 raise error
             _ResumeThread(pi.hThread)
             _CloseHandle(pi.hThread)
-            for handle, sink in zip(parent_reads, (self._stdout, self._stderr)):
+            if pipes:
+                self.stdin = open(msvcrt.open_osfhandle(parent_pipes[0], 0), "wb", buffering=0)
+                self.stdout = open(msvcrt.open_osfhandle(parent_pipes[1], os.O_RDONLY), "rb", buffering=0)
+            sinks = (self._stderr,) if pipes else (self._stdout, self._stderr)
+            for handle, sink in zip(parent_reads, sinks):
                 stream = open(msvcrt.open_osfhandle(handle, os.O_RDONLY), "rb", buffering=0)
                 thread = threading.Thread(target=self._drain, args=(stream, sink), daemon=True)
                 thread.start()
@@ -549,6 +578,12 @@ if sys.platform == "win32":
                 info.BasicLimitInformation.LimitFlags = JOB_DIE_ON_UNHANDLED_EXCEPTION
                 _SetInformationJobObject(self._job, JobObjectExtendedLimitInformation, ctypes.byref(info),
                                          ctypes.sizeof(info))
+            for stream in (self.stdin, self.stdout):
+                if stream is not None:
+                    try:
+                        stream.close()
+                    except OSError:
+                        pass
             for thread in self._readers:
                 thread.join(5)
             self._closed = True
@@ -592,14 +627,21 @@ else:  # POSIX fallback: plain subprocess, own session so kill reaches the tree.
 
     class QuietProcess:  # type: ignore[no-redef]
         def __init__(self, argv, *, cwd=None, env=None, desktop="private", capture=True, log=None,
-                     show="hide", text=True, watch=True, crash_dump_dir=None, breakaway=False):
+                     show="hide", text=True, watch=True, crash_dump_dir=None, breakaway=False,
+                     priority=None, pipes=False):
             self.args, self.text, self._started = argv, text, time.monotonic()
-            self._capture = capture and log is None
+            self._capture = capture and log is None and not pipes
             out = log if log is not None else (subprocess.PIPE if capture else subprocess.DEVNULL)
-            self._p = subprocess.Popen(argv, cwd=cwd, env=_environment(env, crash_dump_dir),
-                                       stdin=subprocess.DEVNULL, stdout=out,
-                                       stderr=subprocess.STDOUT if log is not None else out,
-                                       start_new_session=True, shell=isinstance(argv, str))
+            if pipes:
+                stdin, stdout = subprocess.PIPE, subprocess.PIPE
+                stderr = log if log is not None else subprocess.DEVNULL
+            else:
+                stdin, stdout, stderr = subprocess.DEVNULL, out, subprocess.STDOUT if log is not None else out
+            nice = (lambda: os.nice(5)) if priority in ("below_normal", "idle") else None
+            self._p = subprocess.Popen(argv, cwd=cwd, env=_environment(env, crash_dump_dir), stdin=stdin,
+                                       stdout=stdout, stderr=stderr, bufsize=0, start_new_session=True,
+                                       shell=isinstance(argv, str), preexec_fn=nice)
+            self.stdin, self.stdout = (self._p.stdin, self._p.stdout) if pipes else (None, None)
             self.pid, self.desktop_name = self._p.pid, None
             self.leaked_windows, self.private_windows, self.orphans_killed = [], [], []
 
@@ -654,16 +696,21 @@ else:  # POSIX fallback: plain subprocess, own session so kill reaches the tree.
 
 def start(argv: Sequence[str] | str, *, cwd=None, env: Mapping[str, str] | None = None,
           desktop: str = "private", capture: bool = True, log: BinaryIO | None = None, show: str = "hide",
-          text: bool = True, watch: bool = True, crash_dump_dir=None, breakaway: bool = False) -> QuietProcess:
+          text: bool = True, watch: bool = True, crash_dump_dir=None, breakaway: bool = False,
+          priority: str | None = None, pipes: bool = False) -> QuietProcess:
     """Start a process tree quietly and return its handle (for long-lived processes such as the engine).
 
     ``log``: an open binary file receiving stdout and stderr (prefer this over ``capture`` for long runs).
     ``env``: the full environment (default: os.environ); the dialog-suppression variables are added.
     ``breakaway``: try CREATE_BREAKAWAY_FROM_JOB when this process is in a job (falls back if denied).
+    ``priority``: "below_normal", "idle" or "normal" priority class (default: inherited).
+    ``pipes``: give the child a stdin pipe and a stdout pipe that the caller drives (``process.stdin``,
+    ``process.stdout``, binary, unbuffered) for line protocols; stderr then goes to ``log`` or is captured.
     Use as a context manager, or call ``result()``/``close()``: closing kills what is left of the tree.
     """
     return QuietProcess(argv, cwd=cwd, env=env, desktop=desktop, capture=capture, log=log, show=show,
-                        text=text, watch=watch, crash_dump_dir=crash_dump_dir, breakaway=breakaway)
+                        text=text, watch=watch, crash_dump_dir=crash_dump_dir, breakaway=breakaway,
+                        priority=priority, pipes=pipes)
 
 
 def run(argv: Sequence[str] | str, *, cwd=None, env: Mapping[str, str] | None = None,

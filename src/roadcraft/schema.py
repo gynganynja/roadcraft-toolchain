@@ -354,8 +354,8 @@ def sdk_present(game_root: str | Path | None = None) -> bool:
 
 
 def default_game_root() -> Path:
-    env = os.environ.get("ROADCRAFT_GAME_ROOT")
-    return Path(env) if env else DEFAULT_GAME_ROOT
+    from .project_context import game_root
+    return game_root()
 
 
 # ------------------------------------------------------------------------------------------------ Schema

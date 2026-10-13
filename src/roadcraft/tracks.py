@@ -10,9 +10,12 @@ Checks wired into :mod:`roadcraft.bro_lint` (need the compiled model; RC047/RC04
 
 * RC046  a track's ground-level wheels are all fakes resting on their top stops (no real wheel, none
          sprung).  KGS25 c02/c03: one track sank up to 19 cm into a pad in pivot turns.
-* RC047  a track's wheels hang on a body under ``FRAME_SHARE_WARNING`` of the vehicle's body mass.
-         KGS25: 2.5 t frames (6 %) sank or lifted a track; 7.5 t (18 %, Greenway HT500 12.5 %) with
-         the EPEC layout held roll to 0.2 deg.
+* RC047  a body carrying a track's wheels (a track frame) is welded on with a fixed joint, at any mass
+         share, or hangs on a hinge/slide without a motor (an unsprung joint flops).  Retail springs its
+         frames: Greenway HT500 ``BoneTrackSusp_L/R_cdt`` 7.5 t on a hinge, childRotation [0,90,0],
+         limited -5..5 deg, ``tpl_markup_spring_motor`` 1e7 / 1.1e7.  The owner on the vanilla HT500:
+         "the track frames have springyness" (Game).  KGS25: welded 2.5 t frames (6 %) sank or lifted a
+         track; light frames (under ``FRAME_SHARE_WARNING``) are named in the message.
 * RC048  sprung wheels on such a body: measure their rest on the bench. The original rationale (springs
          scale with the parent body's mass; KGS25 fix 1 "25-40x softer") is unsupported: that bench run
          was frozen and code shows no mass scaling (library/tracked-vehicles.md).
@@ -112,6 +115,22 @@ def body_joints(markup: dict[str, Any] | None) -> dict[str, str]:
     return joints
 
 
+def body_motors(markup: dict[str, Any] | None) -> dict[str, str | None]:
+    """The motor type (``tpl_markup_spring_motor``, ...) on each jointed body's constraint, ``None`` if it has none."""
+    motors: dict[str, str | None] = {}
+    for info in (markup or {}).get("objectInfos") or []:
+        name = (info.get("objectId") or {}).get("name")
+        for entity in info.get("entities") or []:
+            if str(entity.get("__type", "")).startswith("tpl_markup_constraint_"):
+                motor = entity.get("motor")
+                motors[name] = str(motor.get("__type")) if isinstance(motor, dict) and motor.get("__type") else None
+    return motors
+
+
+HT500_FRAME_HINT = ("retail Greenway HT500: tpl_markup_constraint_hinge, childRotation [0,90,0], limited -5..5 deg, "
+                    "motor tpl_markup_spring_motor { spring = 10000000, damping = 11000000 }, pivot at the frame bone")
+
+
 def body_masses(markup: dict[str, Any] | None) -> dict[str, float]:
     """Explicit rigid-body masses of a parsed ``.tpl_markup`` (objectInfos with physics properties)."""
     masses: dict[str, float] = {}
@@ -192,18 +211,25 @@ def track_findings(doc: dict[str, Any], nodes: TplNodes | None = None,
                           "ground level (EPEC TC305) or springs the fakes; KGS25 sank a track 19 cm in pivot turns",
                           where))
         bodies = {w.get("body") for w in track["wheels"] if w.get("body")}
+        motors = body_motors(markup) if markup is not None else {}
         for body in sorted(bodies):
-            if body not in masses or body not in joints or total <= 0:
-                continue          # unknown mass, or a root body (no joint to a parent)
-            share = masses[body] / total
-            if share >= FRAME_SHARE_WARNING:
-                continue
+            if body not in joints:
+                continue          # a root body (no joint to a parent), or no markup
+            share = masses[body] / total if body in masses and total > 0 else None
+            weight = (f" at {masses[body]:g} kg ({share:.0%} of {total:g} kg of bodies)" if share is not None else "")
+            light = (f"; it is also light (under {FRAME_SHARE_WARNING:.0%}: KGS25 frames at 6 % sank or lifted a track)"
+                     if share is not None and share < FRAME_SHARE_WARNING else "")
             if joints[body] == "fixed":
                 found.append(("RC047", "warning",
-                              f"the track's wheels hang on {body}, welded on with a fixed joint at {masses[body]:g} kg "
-                              f"({share:.0%} of {total:g} kg of bodies). KGS25 frames at 6 % sank or lifted a track in "
-                              f"pivot turns; at 18 % with the EPEC layout they held. Give it at least {FRAME_SHARE_WARNING:.0%} "
-                              "(retail hinges their frames: Greenway HT500 12.5 %)", where))
+                              f"the track's wheels hang on {body}, welded on with a fixed joint{weight}: the frame "
+                              f"cannot spring, so every bump goes straight into the hull{light}. Fix: {HT500_FRAME_HINT}",
+                              where))
+            elif joints[body] in ("hinge", "prismatic") and motors.get(body) is None:
+                found.append(("RC047", "warning",
+                              f"the track's wheels hang on {body}, on a {joints[body]} with no motor{weight}: an unsprung "
+                              f"frame flops between its limits. Fix: {HT500_FRAME_HINT}", where))
+            if share is None or share >= FRAME_SHARE_WARNING:
+                continue
             sprung = [w["geomName"] for w in track["wheels"] if w.get("body") == body and w["kind"] == "sprung"]
             if sprung:
                 found.append(("RC048", "info",

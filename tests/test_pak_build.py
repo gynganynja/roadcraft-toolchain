@@ -89,6 +89,8 @@ class PakBuildTest(unittest.TestCase):
             hashes.append(receipt["output"]["sha256"])
             saved = json.loads((p.work / "build.json").read_text(encoding="utf-8"))
             self.assertEqual(saved["output"]["sha256"], receipt["output"]["sha256"])
+            self.assertEqual((saved["candidate"], saved["packageSha256"], saved["accepted"]),
+                             (f"out{n}", receipt["output"]["sha256"], False))
         self.assertEqual(hashes[0], hashes[1])
 
     def test_nonzero_exit_and_no_output_fail(self):

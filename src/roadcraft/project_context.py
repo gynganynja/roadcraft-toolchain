@@ -56,3 +56,23 @@ def jobs_path(explicit: Path | None = None, *, registry: Path | None = None,
         return core.resolve_path(root, recipe) / "jobs"
     selected = registry if registry is not None else registry_path()
     return selected.parent / "jobs"
+
+
+STEAM_GAME_ROOT = Path(r"C:\Program Files (x86)\Steam\steamapps\common\RoadCraft")
+
+
+def game_root(explicit: Path | str | None = None) -> Path:
+    """The RoadCraft install (holds root/ and tools/bin): explicit argument, ROADCRAFT_GAME_ROOT,
+    ROADCRAFT_ROOT, the selected mod's machine configuration ``sdkRoot``, then the default Steam path."""
+    for value in (explicit, os.environ.get("ROADCRAFT_GAME_ROOT"), os.environ.get("ROADCRAFT_ROOT")):
+        if value:
+            return Path(value).expanduser().resolve()
+    try:
+        config = config_path()
+    except core.RoadcraftError:
+        config = None
+    if config is not None and config.is_file():
+        sdk = (core.load_json(config) or {}).get("sdkRoot")
+        if sdk:
+            return core.resolve_path(sdk, config)
+    return STEAM_GAME_ROOT

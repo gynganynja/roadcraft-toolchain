@@ -1,0 +1,115 @@
+{
+ "about": "RC072 'present but ignored' keys that retail content carries too, counted per (type key, key) over every retail .cls, .prop and .tpl_markup with the validator's walker and read-fields tables. validate reports such keys at info. Regenerate after a game update or a read_fields.json change (library/validator.md 'Present but ignored').",
+ "generated": "2026-10-13",
+ "retailMembers": 5921,
+ "counts": {
+  ".prop::prop_truck_wheel|substanceFriction": {
+   "occurrences": 523,
+   "files": 523
+  },
+  ".ssl::TruckGearboxParams|lowRangeMultiplier": {
+   "occurrences": 51,
+   "files": 51
+  },
+  ".ssl::WheelParticleMaterialSettings|spreadAngle": {
+   "occurrences": 2263,
+   "files": 81
+  },
+  ".tpl_markup::tpl_markup_constraint_fixed|breakThreshold": {
+   "occurrences": 40,
+   "files": 40
+  },
+  ".tpl_markup::tpl_markup_constraint_fixed|linearLimitsMax": {
+   "occurrences": 4,
+   "files": 4
+  },
+  ".tpl_markup::tpl_markup_constraint_fixed|linearLimitsMin": {
+   "occurrences": 4,
+   "files": 4
+  },
+  ".tpl_markup::tpl_markup_constraint_fixed|malleableStrength": {
+   "occurrences": 2,
+   "files": 2
+  },
+  ".tpl_markup::tpl_markup_constraint_fixed|motor": {
+   "occurrences": 3,
+   "files": 3
+  },
+  ".tpl_markup::tpl_markup_constraint_hinge|angleEnd": {
+   "occurrences": 17,
+   "files": 10
+  },
+  ".tpl_markup::tpl_markup_constraint_hinge|angleStart": {
+   "occurrences": 17,
+   "files": 10
+  },
+  ".tpl_markup::tpl_markup_constraint_hinge|breakThreshold": {
+   "occurrences": 3,
+   "files": 3
+  },
+  ".tpl_markup::tpl_markup_constraint_hinge|malleableStrength": {
+   "occurrences": 45,
+   "files": 13
+  },
+  ".tpl_markup::tpl_markup_constraint_prismatic|malleableStrength": {
+   "occurrences": 2,
+   "files": 2
+  },
+  ".tpl_markup::tpl_markup_constraint_prismatic|maxLimit": {
+   "occurrences": 1,
+   "files": 1
+  },
+  ".tpl_markup::tpl_markup_constraint_prismatic|minLimit": {
+   "occurrences": 1,
+   "files": 1
+  },
+  ".tpl_markup::tpl_markup_constraint_ragdoll|breakThreshold": {
+   "occurrences": 451,
+   "files": 69
+  },
+  ".tpl_markup::tpl_markup_constraint_ragdoll|malleableStrength": {
+   "occurrences": 2,
+   "files": 2
+  },
+  ".tpl_markup::tpl_markup_object_property_physics|boneCenterOfMassOffset": {
+   "occurrences": 401,
+   "files": 179
+  },
+  ".tpl_markup::tpl_markup_object_property_physics|density": {
+   "occurrences": 100,
+   "files": 66
+  },
+  ".tpl_markup::tpl_markup_object_property_physics|hkCenterOfMassOffset": {
+   "occurrences": 28,
+   "files": 18
+  },
+  ".tpl_markup::tpl_markup_object_property_physics|mass": {
+   "occurrences": 1,
+   "files": 1
+  },
+  ".tpl_markup::tpl_markup_position_motor|spring": {
+   "occurrences": 92,
+   "files": 36
+  },
+  ".tpl_markup::tpl_markup_spring_motor|constantRecoveryVelocity": {
+   "occurrences": 23,
+   "files": 3
+  },
+  ".tpl_markup::tpl_markup_spring_motor|maxForce": {
+   "occurrences": 76,
+   "files": 28
+  },
+  ".tpl_markup::tpl_markup_spring_motor|proportionalRecoveryVelocity": {
+   "occurrences": 15,
+   "files": 1
+  },
+  ".tpl_markup::tpl_markup_spring_motor|tau": {
+   "occurrences": 66,
+   "files": 20
+  },
+  ".tpl_markup::tpl_markup|jointGroups": {
+   "occurrences": 143,
+   "files": 143
+  }
+ }
+}

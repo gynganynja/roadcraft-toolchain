@@ -1,0 +1,113 @@
+{
+ "schemaVersion": 1,
+ "about": "Validator-side additions merged after data/read_fields.json (a verbatim copy of C:/RC_RE/research/read_fields.json): fix hints, and interim rules the research table does not carry yet. Drop an entry here once the research table carries it. See library/validator.md 'Present but ignored'. keepWarning: keep RC072 at warning even when retail carries the key (data/retail_ignored_counts.json).",
+ "ignoredKeys": {
+  ".prop::prop_truck_wheel": {
+   "bodyFriction": {
+    "fixHint": "set prop_truck_friction_updater.frictionMaterialsList.<material>.frictionValue (the friction updater writes it into wheel.bodyFriction at wheel start and on every material change)"
+   },
+   "substanceFriction": {
+    "why": "runtime field: prop_truck_friction_updater.Init replaces the wheel's substanceFriction with frictionMaterialsList.default.substanceFriction (0.5 when unset)",
+    "evidence": "read_fields.md 3(2); prop_truck_friction_updater.ssc",
+    "fixHint": "set prop_truck_friction_updater.frictionMaterialsList.<material>.substanceFriction"
+   },
+   "terrainDeformationFactor": {
+    "fixHint": "set prop_truck_friction_updater.frictionMaterialsList.<material>.terrainDeformationFactor"
+   }
+  },
+  ".tpl_markup::tpl_markup_position_motor": {
+   "spring": {
+    "fixHint": "move `spring` to a tpl_markup_spring_motor {spring, damping} (it reads only those two: default 0, unlimited force)",
+    "keepWarning": true
+   }
+  },
+  ".tpl_markup::tpl_markup_spring_motor": {
+   "tau": {
+    "fixHint": "drop it, or use a tpl_markup_position_motor if a tau-driven motor was meant; a spring motor reads only spring and damping"
+   },
+   "maxForce": {
+    "fixHint": "drop it: a spring motor's force is unlimited (FLT_MAX); it reads only spring and damping"
+   },
+   "proportionalRecoveryVelocity": {
+    "fixHint": "drop it: a spring motor reads only spring and damping"
+   },
+   "constantRecoveryVelocity": {
+    "fixHint": "drop it: a spring motor reads only spring and damping"
+   }
+  },
+  ".ssl::WheelParticleMaterialSettings": {
+   "spreadAngle": {
+    "fixHint": "spreadAngle is only read under TrackParticleMaterialSettings; WheelParticleMaterialSettings uses spreadAngleProb"
+   }
+  },
+  ".ssl::TruckGearboxParams": {
+   "lowRangeMultiplier": {
+    "fixHint": "lowRangeMultiplier is read by nothing (retail carries it dead); low range is lowRangeGear (set lowRangeGear.angularVelocity for the speed cap)"
+   }
+  }
+ },
+ "conditional": {
+  ".tpl_markup::tpl_markup_object_property_physics": [
+   {
+    "key": "mass",
+    "fixHint": "set massFromDensity = False to use mass (the default True uses density, 600)"
+   },
+   {
+    "key": "density",
+    "fixHint": "remove density, or set massFromDensity = True if the density was meant"
+   },
+   {
+    "key": "boneCenterOfMassOffset",
+    "fixHint": "set havokMassCenter = False to use boneCenterOfMassOffset, or use hkCenterOfMassOffset"
+   },
+   {
+    "key": "hkCenterOfMassOffset",
+    "fixHint": "set havokMassCenter = True to use hkCenterOfMassOffset, or use boneCenterOfMassOffset"
+   }
+  ],
+  ".tpl_markup::tpl_markup_constraint": [
+   {
+    "key": "breakThreshold",
+    "fixHint": "set isBreakable = True if the joint is meant to break, else remove breakThreshold"
+   },
+   {
+    "key": "malleableStrength",
+    "fixHint": "set isMalleable = True if the joint is meant to be soft, else remove malleableStrength"
+   }
+  ],
+  ".tpl_markup::tpl_markup_constraint_hinge": [
+   {
+    "key": "angleStart",
+    "fixHint": "set limited = True if the angles are meant as stops, else remove them (unlimited hinges use +-1e14)"
+   },
+   {
+    "key": "angleEnd",
+    "fixHint": "set limited = True if the angles are meant as stops, else remove them (unlimited hinges use +-1e14)"
+   }
+  ],
+  ".tpl_markup::tpl_markup_constraint_prismatic": [
+   {
+    "key": "minLimit",
+    "fixHint": "set isMinLimit = True if the stop is meant, else remove minLimit"
+   },
+   {
+    "key": "maxLimit",
+    "fixHint": "set isMaxLimit = True if the stop is meant, else remove maxLimit"
+   }
+  ],
+  ".tpl_markup::tpl_markup_constraint_fixed": [
+   {
+    "key": "linearLimitsMin",
+    "fixHint": "set limited = True to use the limits and motor, else remove them"
+   },
+   {
+    "key": "linearLimitsMax",
+    "fixHint": "set limited = True to use the limits and motor, else remove them"
+   },
+   {
+    "key": "motor",
+    "fixHint": "set limited = True to use the limits and motor, else remove them"
+   }
+  ]
+ }
+}

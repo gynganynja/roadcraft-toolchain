@@ -47,12 +47,14 @@ def truck(contact_axle, *, real_ends=False, end_axle="Fixed"):
                                           "parentTracker": {"locator": "BoneTrackSusp_L_cdt"}}]}}
 
 
-def markup(frame_mass=2500, hull_mass=19900, joint="tpl_markup_constraint_fixed"):
+def markup(frame_mass=2500, hull_mass=19900, joint="tpl_markup_constraint_fixed", motor=None):
     def body(name, mass, entity=None):
         info = {"objectId": {"name": name}, "properties": [
             {"massFromDensity": False, "mass": mass, "__type": "tpl_markup_object_property_physics"}]}
         if entity:
             info["entities"] = [{"name": name + "_joint", "target": "BoneChassis_cdt", "__type": entity}]
+            if motor and "TrackSusp" in name:
+                info["entities"][0]["motor"] = {"spring": 1e7, "damping": 1.1e7, "__type": motor}
         return info
     rest = 41180 - hull_mass - 2 * frame_mass
     return {"objectInfos": [body("BoneChassis_cdt", hull_mass), body("BoneTurret_cdt", rest, "tpl_markup_constraint_hinge"),
@@ -94,10 +96,20 @@ class FindingTests(unittest.TestCase):
         found = tracks.track_findings(truck(STOPS), model(), markup())
         self.assertEqual(codes(found), ["RC046", "RC047"])
 
-    def test_fix2_shape_passes(self):
+    def test_fix2_shape_still_flags_its_welded_frames(self):
+        # KGS25 fix 2 raised frame mass but kept the weld; the owner on the vanilla HT500: "the track
+        # frames have springyness" (Game, 2026-10-13)
         doc = truck({"min": 0, "max": 0.4, "height": 0, "strength": 0.001}, real_ends=True)
-        self.assertEqual(tracks.track_findings(doc, model(), markup(frame_mass=7500, hull_mass=9900)), [])
+        found = tracks.track_findings(doc, model(), markup(frame_mass=7500, hull_mass=9900))
+        self.assertEqual(codes(found), ["RC047"])
+        self.assertIn("spring_motor", found[0][2])
         self.assertEqual(tracks.stop_fake_axles(doc, model()), {"Contact"})
+
+    def test_ht500_style_sprung_hinge_passes(self):
+        doc = truck({"min": 0, "max": 0.4, "height": 0, "strength": 0.001}, real_ends=True)
+        frames = markup(frame_mass=7500, hull_mass=9900, joint="tpl_markup_constraint_hinge",
+                        motor="tpl_markup_spring_motor")
+        self.assertEqual(tracks.track_findings(doc, model(), frames), [])
 
     def test_epec_layout_with_light_frames_still_warns_about_the_frame(self):
         doc = truck({"min": 0, "max": 0.4, "height": 0, "strength": 0.001}, real_ends=True)
@@ -108,8 +120,14 @@ class FindingTests(unittest.TestCase):
         self.assertEqual(codes(found), ["RC047", "RC048"])
         self.assertEqual([f[1] for f in found if f[0] == "RC048"], ["info"])
 
-    def test_hinged_light_bogie_is_not_rc047(self):
+    def test_unsprung_hinged_bogie_is_rc047(self):
         found = tracks.track_findings(truck(SPRUNG), model(), markup(joint="tpl_markup_constraint_hinge"))
+        self.assertEqual(codes(found), ["RC047", "RC048"])
+        self.assertIn("no motor", [f for f in found if f[0] == "RC047"][0][2])
+
+    def test_sprung_hinged_light_bogie_is_not_rc047(self):
+        found = tracks.track_findings(truck(SPRUNG), model(), markup(joint="tpl_markup_constraint_hinge",
+                                                                     motor="tpl_markup_spring_motor"))
         self.assertEqual(codes(found), ["RC048"])
 
     def test_wheels_on_root_body_have_no_frame_findings(self):

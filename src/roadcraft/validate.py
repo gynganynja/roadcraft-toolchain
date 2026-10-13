@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import fnmatch
 import hashlib
 import json
 import os
@@ -36,7 +37,7 @@ import posixpath
 import re
 import sys
 import zipfile
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator
 
@@ -115,7 +116,16 @@ CODES: dict[str, tuple[str, str, str]] = {
               "Build: the packager writes byte-identical duplicates of each markup (library/build-pipeline.md, "
               "pak_and_assets.md 1.4); differing copies are Open (which one loads is not known)"),
     "RC072": ("ignored-fields", "field present but not read by the component",
-              "Hook: needs a per-component read-fields table from code (C:/RC_RE/research/physics_semantics.md)"),
+              "code analysis, static: per-component reader tables (C:/RC_RE/research/physics_semantics.md T5, T7, "
+              "F1; data/read_fields.json when present)"),
+    "RC073": ("engine-defaults", "markup physics body leaves a property to the engine default",
+              "code analysis, static: markup body constructor FUN_1430811e0 sets restitution 0.4, friction 0.5, "
+              "angularDamping 0.05, density 600 and the reader FUN_1430812a0 overwrites only keys present "
+              "(physics_semantics.md F2); Retail: crawler markups omit restitution"),
+    "RC074": ("objsettings-gate", "markup objSettings entries gated off by objSettings.exportedVersion",
+              "code analysis, static; in-game check pending: consumer 0x1431e6c60 applies per-object objSettings only "
+              "when exportedVersion >= 1 (collision), 2 (visibility), 3 (lighting, sorting, render); absent = 0 "
+              "(list ctor 0x1435ca970); read_fields.json 'gated', read_fields.md 3a"),
 }
 RULES = sorted({rule for rule, _, _ in CODES.values()} | {"bro-lint"})
 
@@ -130,9 +140,20 @@ class Finding:
     evidence: str
     code: str = ""
     key: str = ""
+    fixHint: str = ""               # noqa: N815 - JSON field name used by the desktop agent
+    member: str = ""                # path inside the mod root (lower case), without the pak/tree prefix
+    id: str = ""                    # stable id: short hash of (code, member, key); see finding_id
 
     def as_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        out = asdict(self)
+        out["keyPath"] = self.key
+        return out
+
+
+def finding_id(code: str, member: str, key: str) -> str:
+    """Stable finding id: 12 hex digits of sha1(code | member | keyPath).  No line number, message or pak name,
+    so the same fault keeps its id across builds, line shifts and pak/tree targets."""
+    return hashlib.sha1(f"{code}|{member.lower()}|{key}".encode("utf-8")).hexdigest()[:12]
 
 
 # ------------------------------------------------------------------------------------------------ bundles
@@ -170,6 +191,11 @@ class Bundle:
 
     def display(self, name: str) -> str:
         return f"{self.label}!{name}" if self.kind == "pak" else f"{self.label}/{name}"
+
+    def member_of(self, path: str) -> str:
+        """The mod-root member path of a displayed path (inverse of :meth:`display`), lower case."""
+        prefix = self.label + ("!" if self.kind == "pak" else "/")
+        return (path[len(prefix):] if path.startswith(prefix) else path).lower()
 
 
 def _open_pak(path: Path) -> Bundle:
@@ -243,14 +269,388 @@ class Retail:
 _EXPONENT = re.compile(r"^[-+]?\d+(\.\d*)?[eE][-+]?\d")
 
 
+# ------------------------------------------------------------------------------------------------ read fields (RC072)
+
+DATA_DIR = Path(__file__).with_name("data")
+READ_FIELDS_FILE = DATA_DIR / "read_fields.json"
+READ_FIELDS_LOCAL = DATA_DIR / "read_fields_local.json"
+_STATIC = "code analysis, static"
+_GLOB = "glob:"
+# Families whose table readers list every key they look up (the generated native tplMARKUP readers,
+# read_fields.md 1).  .ssl/.prop readers come from native binding tables only; SSL code reads the rest, so a
+# key missing from their lists proves nothing and the "not in the reads list" info is not raised for them.
+EXHAUSTIVE_FAMILIES = (".tpl_markup::", ".obj_settings::", "!global::")
+
+
+@dataclass
+class Condition:
+    """A key ignored only for some values of another key (read_fields.json ``conditional``).
+
+    ``when`` maps a gate to a value: ``{"massFromDensity": true}`` (a sibling key, equality) or
+    ``{"/objSettings.exportedVersion": {"notIn": [3, "OBJ_SETTINGS_EXPORT_VER_MOD_EDITOR"], "default": 0}}``
+    (a leading ``/`` = a dotted path from the file root; operators ``eq``, ``ne``, ``in``, ``notIn``, ``lt``,
+    ``le``, ``gt``, ``ge``; ``default`` = the value when the gate key is absent, else the reader's default for
+    a sibling).  ``aggregate`` ``file`` reports one finding per file instead of one per occurrence."""
+    key: str
+    when: dict[str, Any]
+    why: str = ""
+    evidence: str = ""
+    fixHint: str = ""               # noqa: N815
+    severity: str = "warning"
+    aggregate: str = ""
+    status: str = ""
+
+
+@dataclass
+class Reader:
+    """One native/SSL reader of a type: the keys it reads, keys known to be present but never read, and
+    conditionally ignored keys.
+
+    ``type_key`` names the type (``.ssl::WheelParticleMaterialSettings``, or the short ``WheelParticleMaterialSettings``;
+    ``*`` = any type); the reader also applies to subtypes (the schema chain).  The research file's ``context``
+    and ``match`` are descriptions; only a ``match`` written ``glob:<pattern>`` restricts by fnmatch on the
+    section's key path with indices normalised (``a.b[].c``)."""
+    type_key: str
+    match: str = ""
+    reads: dict[str, dict] = field(default_factory=dict)
+    ignored: dict[str, dict] = field(default_factory=dict)
+    conditions: dict[str, Condition] = field(default_factory=dict)
+    address: str = ""
+    grade: str = ""
+    source: str = ""
+    exhaustive: bool | None = None  # reads lists every key looked up; None = by family (EXHAUSTIVE_FAMILIES)
+
+    def complete(self) -> bool:
+        return self.exhaustive if self.exhaustive is not None else self.type_key.startswith(EXHAUSTIVE_FAMILIES)
+
+    def applies(self, chain: list[str], key_path: str) -> bool:
+        if self.type_key not in ("", "*"):
+            names = set(chain) | {t.split("::", 1)[-1] for t in chain}
+            if self.type_key not in names:
+                return False
+        if self.match.startswith(_GLOB):
+            return fnmatch.fnmatchcase(normalise_key(key_path), self.match[len(_GLOB):])
+        return True
+
+    def evidence(self, extra: str = "") -> str:
+        parts = [_STATIC + (f" ({self.grade})" if self.grade else "")]
+        if self.address:
+            parts.append(self.address)
+        if extra and extra != self.address:
+            parts.append(extra)
+        if self.source:
+            parts.append(self.source)
+        return "; ".join(parts)
+
+
+# Code-confirmed present-but-ignored keys (C:/RC_RE/research/physics_semantics.md T5, T7 and Follow-up F1).  They
+# hold whether or not data/read_fields.json is present, and retail carrying the same dead keys (2,235 wheel
+# spreadAngle, 52 lowRangeMultiplier, position-motor spring) does not make them live.
+BUILTIN_READERS = [
+    Reader("tpl_markup_position_motor", address="FUN_141594b60", grade="C", source="physics_semantics.md T5",
+           ignored={"spring": {
+               "keepWarning": True,
+               "why": "the position-motor reader reads tau, damping, maxForce and the two recovery velocities only; "
+                      "`spring` is never read, so the motor runs on its tau",
+               "fixHint": "move `spring` to a tpl_markup_spring_motor {spring, damping} on this constraint (true "
+                          "N/m or N*m/rad; it reads only those two, default 0, unlimited force), with the joint "
+                          "limits as end stops"}}),
+    Reader("*", address="no reader: the string is in neither exe and TruckGearboxParams (truck_components.ssl) "
+                        "does not declare it", grade="C", source="physics_semantics.md F1",
+           ignored={"lowRangeMultiplier": {
+               "why": "`lowRangeMultiplier` is read by nothing; retail carries it dead in TruckGearboxParams "
+                      "(only the debug UI scales low range, via SetLowRangeGearMultiplier)",
+               "fixHint": "lowRangeMultiplier is read by nothing (retail carries it dead); low range is lowRangeGear "
+                          "(set lowRangeGear.angularVelocity for the speed cap)"}}),
+    Reader("WheelParticleMaterialSettings", address="FUN_140cbbfe0", grade="C", source="physics_semantics.md F1",
+           ignored={"spreadAngle": {
+               "why": "WheelParticleMaterialSettings is registered by FUN_140cbbfe0 without `spreadAngle`; only "
+                      "TrackParticleMaterialSettings (FUN_140cbbdb0) reads it",
+               "fixHint": "spreadAngle is only read under TrackParticleMaterialSettings; "
+                          "WheelParticleMaterialSettings uses spreadAngleProb"}}),
+]
+
+
+def _merge_spec(old: dict | None, new: dict) -> dict:
+    out = dict(old or {})
+    out.update({k: v for k, v in new.items() if v not in (None, "")})
+    return out
+
+
+class ReadFields:
+    """Reader tables for RC072: the built-in code-confirmed cases, then data/read_fields.json (the research
+    file, copied unchanged) and data/read_fields_local.json (validator-side additions: fix hints, interim
+    rules) when present.  Later sources refine earlier ones key by key.
+
+    Accepted shapes: the research schema ``{"schemaVersion": 1, "readers": [{"context", "typeKey", "match",
+    "reads": [{"key", "default", "notes"}], "ignoredKnown": [{"key", "why", "evidence"}], "conditional":
+    [{"key", "ignoredWhen"}], "address", "grade"}], "ignoredKeys": {typeKey: {key: why}}, "conditional":
+    {typeKey: [{"key", "ignoredWhen", ...}]}}``, and a legacy ``{type key: [fields read]}`` mapping."""
+
+    def __init__(self, readers: list[Reader] | None = None, *, table_loaded: bool = False, note: str = "",
+                 gated: dict | None = None) -> None:
+        self.readers = list(BUILTIN_READERS) + list(readers or [])
+        self.table_loaded = table_loaded
+        self.note = note
+        self.gated = gated if isinstance(gated, dict) else None     # read_fields.json "gated" (objSettings, RC074)
+
+    # ---- loading
+    @staticmethod
+    def parse(data: Any, source: str = "") -> list[Reader]:
+        label = posixpath.basename(source.replace("\\", "/")) if source else ""
+        readers: list[Reader] = []
+        if not isinstance(data, dict):
+            raise ValueError(f"{source or 'read fields'}: expected a JSON object")
+        if "readers" in data or "ignoredKeys" in data or "conditional" in data:
+            version = data.get("schemaVersion")
+            if version != 1:
+                raise ValueError(f"{source or 'read fields'}: schemaVersion {version!r} is not supported (1)")
+            by_type: dict[str, Reader] = {}
+            for index, item in enumerate(data.get("readers") or []):
+                if not isinstance(item, dict):
+                    raise ValueError(f"{source}: readers[{index}] is not an object")
+                type_key = str(item.get("typeKey") or item.get("context") or "*")
+                conditional_keys = {c.get("key") for c in item.get("conditional") or [] if isinstance(c, dict)}
+                reads = {r["key"]: r for r in item.get("reads") or [] if isinstance(r, dict) and r.get("key")}
+                ignored, conditions = {}, {}
+                for r in item.get("ignoredKnown") or []:
+                    if not (isinstance(r, dict) and r.get("key")):
+                        continue
+                    if r["key"] in conditional_keys:      # described here, applied only under its condition
+                        conditions[r["key"]] = Condition(r["key"], {}, str(r.get("why") or ""),
+                                                         str(r.get("evidence") or ""))
+                    else:
+                        ignored[r["key"]] = r
+                match = str(item.get("match") or "")
+                reader = Reader(type_key, match if match.startswith(_GLOB) else "", reads, ignored, conditions,
+                                str(item.get("address") or ""), _grade(item.get("grade")), label,
+                                item["exhaustive"] if isinstance(item.get("exhaustive"), bool) else None)
+                for c in item.get("conditional") or []:
+                    _add_condition(reader, c)
+                readers.append(reader)
+                by_type.setdefault(type_key, reader)
+            for type_key, keys in (data.get("ignoredKeys") or {}).items():
+                reader = by_type.get(type_key) or _new(readers, by_type, type_key, label)
+                for key, why in (keys or {}).items():
+                    if key not in reader.conditions:
+                        spec = why if isinstance(why, dict) else {"why": str(why)}
+                        reader.ignored[key] = _merge_spec(reader.ignored.get(key), spec)
+            for type_key, entries in (data.get("conditional") or {}).items():
+                reader = by_type.get(type_key) or _new(readers, by_type, type_key, label)
+                for c in entries or []:
+                    _add_condition(reader, c)
+                    reader.ignored.pop(c.get("key"), None) if isinstance(c, dict) else None
+        else:
+            for type_key, keys in data.items():
+                if isinstance(keys, (list, tuple, set, frozenset)):
+                    readers.append(Reader(type_key, reads={k: {} for k in keys}, source=label, exhaustive=True))
+        return readers
+
+    @classmethod
+    def from_data(cls, data: Any, source: str = "") -> "ReadFields":
+        readers = cls.parse(data, source)
+        return cls(readers, table_loaded=True, gated=data.get("gated"),
+                   note=f"RC072 reader table: {source or 'in-memory'} "
+                                                    f"({len(readers)} readers) + {len(BUILTIN_READERS)} built-in cases")
+
+    @classmethod
+    def load(cls, path: str | Path | None = None) -> "ReadFields":
+        """``path`` (or ROADCRAFT_READ_FIELDS, or data/read_fields.json, plus data/read_fields_local.json).  An
+        absent default file disables the table-driven part with a note; the built-in cases still run."""
+        explicit = path or os.environ.get("ROADCRAFT_READ_FIELDS")
+        target = Path(explicit) if explicit else READ_FIELDS_FILE
+        readers: list[Reader] = []
+        notes = []
+        gated = None
+        if target.is_file():
+            data = json.loads(target.read_text(encoding="utf-8"))
+            readers += cls.parse(data, str(target))
+            gated = data.get("gated") if isinstance(data, dict) else None
+            notes.append(f"{target.name} ({len(readers)} readers)")
+        elif explicit:
+            raise FileNotFoundError(f"read-fields table not found: {target}")
+        if not explicit and READ_FIELDS_LOCAL.is_file() and readers:
+            local = cls.parse(json.loads(READ_FIELDS_LOCAL.read_text(encoding="utf-8")), str(READ_FIELDS_LOCAL))
+            readers += local
+            notes.append(f"{READ_FIELDS_LOCAL.name} ({len(local)} readers)")
+        if not readers:
+            return cls(note=f"RC072 reader table {target.name} not present (src/roadcraft/data): the table-driven "
+                            f"check is disabled; only the {len(BUILTIN_READERS)} built-in code-confirmed cases "
+                            "(position-motor spring, lowRangeMultiplier, wheel-particle spreadAngle) run")
+        return cls(readers, table_loaded=True, gated=gated,
+                   note="RC072 reader table: " + " + ".join(notes) + f" + {len(BUILTIN_READERS)} built-in cases")
+
+    # ---- queries
+    def applicable(self, chain: list[str], section_path: str) -> list[Reader]:
+        return [r for r in self.readers if r.applies(chain, section_path)]
+
+    def ignored(self, chain: list[str] | str, key: str, section_path: str) -> tuple[Reader, dict] | None:
+        """(reader, merged spec) when ``key`` is unconditionally ignored here; the reader cited is the last one
+        with an address, the spec merges every source (later ones refine the text and add fix hints)."""
+        chain = [chain] if isinstance(chain, str) else chain
+        hits = [r for r in self.applicable(chain, section_path) if key in r.ignored]
+        if not hits:
+            return None
+        spec: dict = {}
+        for reader in hits:
+            spec = _merge_spec(spec, reader.ignored[key])
+        cited = next((r for r in reversed(hits) if r.address), hits[-1])
+        return cited, spec
+
+    def condition(self, chain: list[str], key: str, section_path: str) -> tuple[Reader, Condition] | None:
+        """(reader, merged condition) when ``key`` is ignored only for some values of a gate key."""
+        hits = [r for r in self.applicable(chain, section_path) if key in r.conditions]
+        merged: Condition | None = None
+        for reader in hits:
+            merged = reader.conditions[key] if merged is None else _merge_condition(merged, reader.conditions[key])
+        if merged is None or not merged.when:
+            return None
+        cited = next((r for r in reversed(hits) if r.address), hits[-1])
+        return cited, merged
+
+    def reads(self, chain: list[str], section_path: str) -> set[str]:
+        """Keys a table reader of this type (or a parent) reads: schema gaps such as TplObjSettingsGeom.lighting."""
+        out: set[str] = set()
+        for reader in self.applicable(chain, section_path):
+            if reader not in BUILTIN_READERS:
+                out.update(reader.reads)
+        return out
+
+    def default(self, chain: list[str], key: str) -> Any:
+        for reader in self.applicable(chain, ""):
+            spec = reader.reads.get(key)
+            if isinstance(spec, dict) and "default" in spec:
+                return spec["default"]
+        return None
+
+    def unread(self, chain: list[str] | str, key: str, section_path: str) -> Reader | None:
+        """A table reader of this type with a reads list that lacks ``key`` (and no reader of it reads it)."""
+        chain = [chain] if isinstance(chain, str) else chain
+        candidates = [r for r in self.applicable(chain, section_path)
+                      if r.reads and r.complete() and r not in BUILTIN_READERS]
+        if not candidates or any(key in r.reads for r in candidates):
+            return None
+        return candidates[0]
+
+    def global_ignored(self) -> dict[str, tuple[Reader, dict]]:
+        """Keys ignored under every type (``*``), checked on every document, typed or not."""
+        out = {}
+        for reader in self.readers:
+            if reader.type_key in ("", "*") and not reader.match:
+                for key, spec in reader.ignored.items():
+                    out[key] = (reader, _merge_spec(out.get(key, (None, {}))[1], spec))
+        return out
+
+
+def _grade(value: Any) -> str:
+    text = str(value or "")
+    return {"Confirmed-from-code": "C", "Inferred": "I", "Unknown": "U"}.get(text, text)
+
+
+def _new(readers: list[Reader], by_type: dict[str, Reader], type_key: str, label: str) -> Reader:
+    reader = Reader(type_key, source=label)
+    readers.append(reader)
+    by_type[type_key] = reader
+    return reader
+
+
+def _add_condition(reader: Reader, item: Any) -> None:
+    if not (isinstance(item, dict) and item.get("key") and isinstance(item.get("ignoredWhen", {}), dict)):
+        return
+    old = reader.conditions.get(item["key"])
+    new = Condition(item["key"], dict(item.get("ignoredWhen") or {}), str(item.get("why") or ""),
+                    str(item.get("evidence") or ""), str(item.get("fixHint") or ""),
+                    str(item.get("severity") or "warning"), str(item.get("aggregate") or ""),
+                    str(item.get("status") or ""))
+    reader.conditions[item["key"]] = _merge_condition(old, new) if old else new
+
+
+def _merge_condition(old: Condition, new: Condition) -> Condition:
+    return Condition(old.key, new.when or old.when, new.why or old.why, new.evidence or old.evidence,
+                     new.fixHint or old.fixHint, new.severity if new.when else old.severity,
+                     new.aggregate or old.aggregate, new.status or old.status)
+
+
+_OPS: dict[str, Callable[[Any, Any], bool]] = {
+    "eq": lambda a, b: a == b, "ne": lambda a, b: a != b,
+    "in": lambda a, b: a in b, "notIn": lambda a, b: a not in b,
+    "lt": lambda a, b: _num(a) is not None and _num(a) < b, "le": lambda a, b: _num(a) is not None and _num(a) <= b,
+    "gt": lambda a, b: _num(a) is not None and _num(a) > b, "ge": lambda a, b: _num(a) is not None and _num(a) >= b,
+}
+
+
+def _num(value: Any) -> float | None:
+    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+
+
+def condition_holds(cond: Condition, section: dict, root: Any, default_of: Callable[[str], Any]) -> bool | None:
+    """True when every gate of ``cond`` says the key is ignored; None when a gate value is unknown."""
+    for gate, expected in cond.when.items():
+        spec = expected if isinstance(expected, dict) and any(op in expected for op in _OPS) else {"eq": expected}
+        if gate.startswith("/"):
+            value: Any = root
+            for part in gate[1:].split("."):
+                value = value.get(part) if isinstance(value, dict) else None
+            if value is None:
+                value = spec.get("default")
+        else:
+            value = section.get(gate) if gate in section else spec.get("default", default_of(gate))
+        if value is None:
+            return None
+        for op, operand in spec.items():
+            if op in _OPS and not _OPS[op](value, operand):
+                return False
+    return True
+
+
+RETAIL_IGNORED_FILE = DATA_DIR / "retail_ignored_counts.json"
+_retail_ignored: dict[str, dict] | None = None
+
+
+def retail_ignored() -> dict[str, dict]:
+    """``"<type key>|<key>" -> {"occurrences", "files"}``: RC072 keys retail content carries the same way
+    (data/retail_ignored_counts.json, made by :func:`count_retail_ignored`); empty when the file is absent."""
+    global _retail_ignored
+    if _retail_ignored is None:
+        try:
+            _retail_ignored = json.loads(RETAIL_IGNORED_FILE.read_text(encoding="utf-8")).get("counts") or {}
+        except (OSError, ValueError):
+            _retail_ignored = {}
+    return _retail_ignored
+
+
+def dead_key_severity(type_key: str, key: str, severity: str, spec: dict | None = None) -> tuple[str, str]:
+    """RC072 severity and message note.  A dead key that retail carries at the same type is info: retail's own
+    value is equally inert, so the author lost nothing.  ``keepWarning`` in the reader spec (position-motor
+    ``spring``, where the author clearly expected a spring) keeps the warning."""
+    counts = retail_ignored()
+    if type_key == "*":
+        hits = [v for k, v in counts.items() if k.endswith("|" + key)]
+    else:
+        hits = [counts[f"{type_key}|{key}"]] if f"{type_key}|{key}" in counts else []
+    total = sum(int(h.get("occurrences", 0)) for h in hits)
+    if not total:
+        return severity, ""
+    note = f"; retail carries it too ({total} retail occurrences)"
+    if (spec or {}).get("keepWarning"):
+        return severity, note
+    return ("info" if severity == "warning" else severity), note + "; harmless unless you expected it to do something"
+
+
+def normalise_key(key: str) -> str:
+    """A key path with list indices removed: ``objectInfos[3].entities[0].motor`` -> ``objectInfos[].entities[].motor``."""
+    return re.sub(r"\[\d+\]", "[]", key or "")
+
+
 class Context:
     def __init__(self, bundle: Bundle, retail_view: Retail | None, schema: schema_mod.Schema | None,
-                 rules: set[str], read_fields: dict[str, set[str]] | None = None) -> None:
+                 rules: set[str], read_fields: ReadFields | None = None) -> None:
         self.bundle = bundle
         self.retail = retail_view
         self.schema = schema
         self.rules = rules
-        self.read_fields = read_fields or {}
+        self.read_fields = read_fields or ReadFields()
+        self.game_root: Path | None = None
         self.findings: list[Finding] = []
         self._docs: dict[tuple[str, str], Any] = {}
         self._nodes: dict[str, TplNodes | None] = {}
@@ -274,11 +674,12 @@ class Context:
 
     # ---- reporting
     def add(self, code: str, severity: str, path: str, message: str, *, line: int | None = None, key: str = "",
-            evidence: str | None = None) -> None:
+            evidence: str | None = None, fix: str = "") -> None:
         rule = CODES[code][0] if code in CODES else "bro-lint"
         if rule not in self.rules:
             return
-        self.findings.append(Finding(rule, severity, path, line, message, evidence or CODES[code][2], code, key))
+        self.findings.append(Finding(rule, severity, path, line, message, evidence or CODES[code][2], code, key,
+                                     fix))
 
     # ---- files
     def source_of(self, name: str) -> str | None:
@@ -333,21 +734,25 @@ class Context:
         for kind, line, detail in warnings:
             if kind == "number_followed_by_letters":
                 exp = bool(_EXPONENT.match(detail))
+                token = detail.split()[0].rstrip(",]}")
                 self.add("RC050", "error", path,
-                         (f"exponent notation {detail.split()[0]!r}: the editor reads the number up to 'e' and then a "
+                         (f"exponent notation {token!r}: the editor reads the number up to 'e' and then a "
                           "new key (a parse error; inside [ ] the value silently becomes [n, \"e\", m]); write it in "
                           "full decimal") if exp else
-                         f"{detail.split()[0]!r}: a number followed by letters splits into a number and a new key",
-                         line=line)
+                         f"{token!r}: a number followed by letters splits into a number and a new key",
+                         line=line,
+                         fix=f"write {_full_decimal(token)} instead of {token}" if exp and _full_decimal(token) else "")
             elif kind == "leading_dot_number":
                 text = detail.split()[0].rstrip(",]}")
+                fixed = text.replace(".", "0.", 1) if not text.startswith(("-", "+")) else text[0] + "0" + text[1:]
                 self.add("RC051", "error", path,
                          f"{text!r} is read by the editor as {_leading_dot_value(text)!r}: write a 0 before the point",
-                         line=line)
+                         line=line, fix=f"write {fixed} instead of {text}")
             elif kind == "bare_bool_keyword":
                 self.add("RC052", "warning", path,
                          f"bare {detail!r} is read as the bool {detail.lower() in ('on', 'yes')}; quote it if a "
-                         "string or enum value was meant", line=line)
+                         "string or enum value was meant", line=line,
+                         fix=f'write "{detail}" (quoted) if a string or enum value was meant')
 
     def nodes(self, tpl_name: str | None, anchor: str | None = None) -> TplNodes | None:
         """Node table of the compiled model ``<name>.tpl`` (mod first, then retail); ``anchor`` is a node name
@@ -391,6 +796,17 @@ class Context:
         return merged, markup_name
 
 
+def _full_decimal(token: str) -> str:
+    """``1e-05`` -> ``0.00001`` (the exponent-free spelling the editor parses), '' when not a number."""
+    from decimal import Decimal, InvalidOperation
+    try:
+        value = Decimal(token.rstrip(",]}"))
+    except InvalidOperation:
+        return ""
+    text = format(value, "f")
+    return text.rstrip("0").rstrip(".") if "." in text else text
+
+
 def _leading_dot_value(text: str) -> float:
     try:
         return ps_format.editor_loads("v = " + text, lines=False)["v"]
@@ -425,6 +841,7 @@ class _TypeWalker:
         self.schema = ctx.schema
         self.name = name
         self.path = ctx.bundle.display(name)
+        self.aggregated: dict[tuple[str, str], dict] = {}
 
     def resolve(self, type_name: Any, ns: str | None) -> tuple[str | None, set[str]]:
         """Schema type key (or _OPAQUE) for a ``__type`` / element name, plus extra keys an instance file allows."""
@@ -476,8 +893,17 @@ class _TypeWalker:
         return result
 
     # ---- walking
+    def chain(self, type_key: str) -> list[str]:
+        try:
+            chain = list(self.schema.chain(type_key)) if self.schema is not None else []
+        except (KeyError, ValueError, AttributeError):
+            chain = []
+        return [type_key] + [t for t in chain if t != type_key]
+
     def check_members(self, section: dict, type_key: str, path: str, extra: set[str]) -> None:
         schema = self.schema
+        fields = self.ctx.read_fields
+        chain = self.chain(type_key)
         owners = {name: type_key for name in schema.member_names(type_key)}
         family = type_key.split("::", 1)[0]
         root = schema.find(schema_mod.FAMILY_ROOTS[family], family) if family in schema_mod.FAMILY_ROOTS else None
@@ -486,29 +912,80 @@ class _TypeWalker:
             for name in schema.member_names(root):
                 owners.setdefault(name, root)
         names = set(owners)
-        allowed = names | extra | RETAIL_KEYS.get(type_key, frozenset())
+        table_reads = fields.reads(chain, path)          # keys the exe reads that the schema lacks (schema gaps)
+        allowed = names | extra | RETAIL_KEYS.get(type_key, frozenset()) | table_reads
         lines = getattr(section, "lines", {})
         for key, value in section.items():
             if key.startswith("__") or key in ("", "#ssl"):
                 continue
             here = f"{path}.{key}" if path else key
             line = lines.get(key)
+            # RC072 first: a key that code shows is never read is reported even when retail ships it too
+            # (data/retail_unknown_keys.json only says retail carries it, not that anything reads it)
+            known = fields.ignored(chain, key, path)
+            if known is not None:
+                reader, spec = known
+                severity, note = dead_key_severity(type_key, key, "warning", spec)
+                self.ctx.add("RC072", severity, self.path,
+                             f"{type_key}.{key} is present but ignored: {spec.get('why') or 'not read by the reader'}"
+                             + note, line=line, key=here, fix=spec.get("fixHint", ""),
+                             evidence=reader.evidence(str(spec.get("evidence") or "")))
+                continue
+            conditional = fields.condition(chain, key, path)
+            if conditional is not None:
+                self.check_condition(conditional, section, chain, type_key, key, here, line)
             if key not in allowed:
                 hint = difflib.get_close_matches(key, sorted(names), n=1, cutoff=0.75)
                 self.ctx.add("RC053", "warning", self.path,
                              f"{key!r} is not a field of {type_key}" + (f"; did you mean {hint[0]!r}?" if hint else "") +
                              " The editor keeps it as a 'removed field' hint and the engine is expected to ignore it.",
-                             line=line, key=here)
+                             line=line, key=here, fix=f"rename {key!r} to {hint[0]!r}" if hint else "")
                 continue
+            reader = fields.unread(chain, key, path)
+            if reader is not None and conditional is None:
+                self.ctx.add("RC072", "info", self.path,
+                             f"{type_key}.{key} is not in the reader's list of keys it reads"
+                             + (f" ({reader.address})" if reader.address else "")
+                             + "; a static reads list can be incomplete, so this is for review",
+                             line=line, key=here, evidence=reader.evidence())
             if key not in names:
                 continue
             fld = schema.field(owners[key], key)
             if fld is not None:
-                read = self.ctx.read_fields.get(type_key)
-                if read is not None and key not in read:
-                    self.ctx.add("RC072", "warning", self.path, f"{type_key}.{key} is not read by the loader",
-                                 line=line, key=here)
                 self.check_value(value, fld, here, line, type_key.split("::", 1)[0])
+
+    def check_condition(self, found: tuple[Reader, Condition], section: dict, chain: list[str], type_key: str,
+                        key: str, here: str, line: int | None) -> None:
+        reader, cond = found
+        holds = condition_holds(cond, section, self.ctx.ps(self.name),
+                                lambda gate: self.ctx.read_fields.default(chain, gate))
+        if not holds:
+            return
+        gates = ", ".join(f"{g.lstrip('/')} {v}" for g, v in cond.when.items())
+        why = cond.why or f"ignored when {gates}"
+        status = f" ({cond.status})" if cond.status else ""
+        evidence = reader.evidence(cond.evidence)
+        if cond.aggregate == "file":
+            group = self.aggregated.setdefault((type_key, key), {"cond": cond, "evidence": evidence, "keys": [],
+                                                                 "line": line, "why": why + status})
+            group["keys"].append(here)
+            return
+        severity, note = dead_key_severity(type_key, key, cond.severity if cond.severity in SEVERITIES else "warning")
+        self.ctx.add("RC072", severity, self.path,
+                     f"{type_key}.{key} has no effect here: {why}{status}{note}", line=line, key=here,
+                     fix=cond.fixHint, evidence=evidence)
+
+    def flush(self) -> None:
+        """One RC072 per file and (type, key) for ``aggregate: file`` conditions, keyed by the pattern."""
+        for (type_key, key), group in sorted(self.aggregated.items()):
+            cond: Condition = group["cond"]
+            keys = group["keys"]
+            pattern = re.sub(r"\.[^.\[\]]+\.(?=" + re.escape(key) + r"$)", ".*.", keys[0])
+            self.ctx.add("RC072", cond.severity if cond.severity in SEVERITIES else "info", self.path,
+                         f"{type_key}.{key} on {len(keys)} object(s) ({', '.join(k for k in keys[:3])}"
+                         f"{' ...' if len(keys) > 3 else ''}): {group['why']}", line=group["line"],
+                         key=pattern, fix=cond.fixHint, evidence=group["evidence"])
+        self.aggregated.clear()
 
     def check_value(self, value: Any, fld: dict, path: str, line: int | None, owner_ns: str) -> None:
         kind = fld.get("kind")
@@ -577,15 +1054,18 @@ class _TypeWalker:
                 hint = difflib.get_close_matches(value, [str(i) for i in items], n=1, cutoff=0.6)
                 self.ctx.add("RC055", "error", self.path,
                              f"{value!r} is not allowed; allowed: {items}" + (f"; did you mean {hint[0]!r}?" if hint else "")
-                             + shown_default, line=line, key=path)
+                             + shown_default, line=line, key=path,
+                             fix=f"set {path.rsplit('.', 1)[-1]} = \"{hint[0]}\"" if hint else "")
         elif kind == "string" and isinstance(value, bool):
             self.ctx.add("RC056", "error", self.path,
                          f"a bare yes/no/on/off/true/false became the bool {value}; quote the string{shown_default}",
-                         line=line, key=path)
+                         line=line, key=path, fix="quote the value as written (for example \"yes\")")
         elif kind == "bool" and isinstance(value, (int, float)) and not isinstance(value, bool) and value not in (0, 1):
-            self.ctx.add("RC056", "error", self.path, f"{value!r} is not a bool{shown_default}", line=line, key=path)
+            self.ctx.add("RC056", "error", self.path, f"{value!r} is not a bool{shown_default}", line=line, key=path,
+                         fix="use True or False")
         elif kind == "bool" and isinstance(value, str) and value.lower() not in ("true", "false", "1", "0"):
-            self.ctx.add("RC056", "error", self.path, f"{value!r} is not a bool{shown_default}", line=line, key=path)
+            self.ctx.add("RC056", "error", self.path, f"{value!r} is not a bool{shown_default}", line=line, key=path,
+                         fix="use True or False (unquoted)")
         elif kind in ("int", "float") and isinstance(value, str):
             try:
                 float(value)
@@ -638,6 +1118,231 @@ def rule_unknown_keys(ctx: Context) -> None:
                     line=getattr(doc, "lines", {}).get("__type"), key="__type")
         elif key and key != _OPAQUE:
             walker.check_members(doc, key, "", extra)
+        walker.flush()
+
+
+def _walk_paths(value: Any, path: str = "") -> Iterator[tuple[str, str, Any, Any]]:
+    """(section path, key, value, section) for every dict key of a parsed PS document, in the walker's
+    key-path spelling (``a.b[2].c``)."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if not isinstance(key, str) or key.startswith("__"):
+                continue
+            yield path, key, item, value
+            yield from _walk_paths(item, f"{path}.{key}" if path else key)
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            yield from _walk_paths(item, f"{path}[{index}]")
+
+
+def _walk_dicts(value: Any, path: str = "") -> Iterator[tuple[str, dict]]:
+    """(key path, dict) for every dict in a parsed PS document."""
+    if isinstance(value, dict):
+        yield path, value
+        for key, item in value.items():
+            if isinstance(key, str) and not key.startswith("__"):
+                yield from _walk_dicts(item, f"{path}.{key}" if path else key)
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            yield from _walk_dicts(item, f"{path}[{index}]")
+
+
+def rule_ignored_global(ctx: Context) -> None:
+    """RC072 for keys no reader of any type reads (``lowRangeMultiplier``), on every class/prop/BRO/markup the
+    mod ships, typed or not and with or without the SDK schema; the typed walk (rule_unknown_keys) already
+    reported the ones it reached."""
+    if "ignored-fields" not in ctx.rules:
+        return
+    keys = ctx.read_fields.global_ignored()
+    if not keys:
+        return
+    done = {(f.path, f.key) for f in ctx.findings if f.code == "RC072"}
+    for name in ctx.bundle.names():
+        if not name.lower().endswith((".cls", ".prop", ".bro", ".tpl_markup")):
+            continue
+        doc = ctx.ps(name)
+        if not isinstance(doc, dict):
+            continue
+        path = ctx.bundle.display(name)
+        for section_path, key, _value, section in _walk_paths(doc):
+            if key not in keys:
+                continue
+            here = f"{section_path}.{key}" if section_path else key
+            if (path, here) in done:
+                continue
+            reader, spec = keys[key]
+            severity, note = dead_key_severity("*", key, "warning", spec)
+            ctx.add("RC072", severity, path,
+                    f"{key} is present but ignored: {spec.get('why') or 'read by nothing'}{note}",
+                    line=getattr(section, "lines", {}).get(key), key=here, fix=spec.get("fixHint", ""),
+                    evidence=reader.evidence(str(spec.get("evidence") or "")))
+
+
+# Engine defaults of a markup physics body (FUN_1430811e0; physics_semantics.md F2): key -> (value, remark)
+BODY_DEFAULTS = {
+    "restitution": (0.4, "retail crawler markups (EPEC TC305, HT500) omit it too; against terrain (restitution "
+                         "0) it never bounces, it matters only between dynamic bodies"),
+    "friction": (0.5, ""),
+    "angularDamping": (0.05, ""),
+    "density": (600, "only used when massFromDensity is True (the default)"),
+}
+
+
+def rule_engine_defaults(ctx: Context) -> None:
+    """RC073 (info): one finding per mod markup listing how many physics bodies leave restitution, friction,
+    angularDamping or (with massFromDensity) density to the engine default."""
+    if "engine-defaults" not in ctx.rules:
+        return
+    for name in ctx.bundle.names():
+        lower = name.lower()
+        if not lower.endswith(".tpl_markup"):
+            continue
+        stem = lower.rsplit("/", 1)[-1][: -len(".tpl_markup")]
+        merged, _ = ctx.markup(stem)
+        doc = merged if isinstance(merged, dict) else ctx.ps(name)
+        if not isinstance(doc, dict):
+            continue
+        bodies = 0
+        omitted: dict[str, list[str]] = {}
+        for body_path, value in _walk_dicts(doc):
+            if value.get("__type") != "tpl_markup_object_property_physics" or value.get("disable") is True:
+                continue
+            bodies += 1
+            owner = _body_name(doc, body_path) or body_path
+            for field_name in BODY_DEFAULTS:
+                if field_name == "density" and value.get("massFromDensity", True) is False:
+                    continue
+                if field_name not in value:
+                    omitted.setdefault(field_name, []).append(owner)
+        if not omitted:
+            continue
+        parts = []
+        for field_name, owners in omitted.items():
+            default, remark = BODY_DEFAULTS[field_name]
+            shown = ", ".join(owners[:3]) + (" ..." if len(owners) > 3 else "")
+            parts.append(f"{field_name} -> {default} on {len(owners)}/{bodies} ({shown})"
+                         + (f" [{remark}]" if remark else ""))
+        ctx.add("RC073", "info", ctx.bundle.display(name),
+                "physics bodies that omit a key get the engine default: " + "; ".join(parts)
+                + ". Set the key in the body only where a different value is intended",
+                key="objectInfos[].physicsBody")
+
+
+# Exporter name prefixes that already hide an object (name_convention_config.json affixes with
+# visibility_hidden: cdt_, hidden_) plus prefixes the desktop treats as hidden helpers (hp_, sfx_, leading _;
+# no exporter rule found for them, read_fields.md 3a).  The config is re-read from the game root when present.
+HIDDEN_PREFIXES_EXTRA = ("hp_", "sfx_", "_")
+NAME_CONVENTION = Path("tools/bin/blender_to_usf_script/saber/blender/blender_to_usf/name_convention_config.json")
+
+
+def hidden_prefixes(game_root: Path | None) -> tuple[str, ...]:
+    found = {"cdt_", "hidden_"}
+    config = (game_root / NAME_CONVENTION) if game_root else None
+    if config is not None and config.is_file():
+        try:
+            affixes = json.loads(config.read_text(encoding="utf-8")).get("sys_affix_map") or {}
+            found = {prefix for prefix, items in affixes.items()
+                     if any(isinstance(i, dict) and "visibility_hidden" in i for i in items or [])} or found
+        except (ValueError, OSError, AttributeError):
+            pass
+    return tuple(sorted(found)) + HIDDEN_PREFIXES_EXTRA
+
+
+def _export_version(value: Any, enum: dict[str, int]) -> int | None:
+    if value is None:
+        return 0
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return int(value)
+    return enum.get(str(value))
+
+
+def rule_objsettings(ctx: Context) -> None:
+    """RC074: objSettings per-object entries are parsed but applied only from an exportedVersion threshold
+    (read_fields.json ``gated``).  One info per markup summarising what is inert (and which entries name no
+    node of the compiled model); a warning per node meant hidden (visibleDefault False) that renders because
+    the visibility gate is closed and no exporter prefix hides it."""
+    gated = ctx.read_fields.gated
+    if "objsettings-gate" not in ctx.rules or not gated:
+        return
+    enum = {str(k): int(v) for k, v in (gated.get("enum") or {}).items()}
+    names_by_value = {v: k for k, v in enum.items()}
+    mins: dict[str, dict[str, int]] = gated.get("minExportedVersion") or {}
+    geom = mins.get(".obj_settings::TplObjSettingsGeom") or {}
+    prefixes = hidden_prefixes(ctx.game_root)
+    for name in ctx.bundle.names():
+        lower = name.lower()
+        if not lower.endswith(".tpl_markup"):
+            continue
+        doc = ctx.ps(name)
+        obj_settings = doc.get("objSettings") if isinstance(doc, dict) else None
+        settings = obj_settings.get("settings") if isinstance(obj_settings, dict) else None
+        if not isinstance(settings, dict) or not settings:
+            continue
+        raw = obj_settings.get("exportedVersion")
+        version = _export_version(raw, enum)
+        if version is None:
+            continue                                   # unrecognised value: the enum reader leaves it at 0? Open
+        stem = lower.rsplit("/", 1)[-1][: -len(".tpl_markup")]
+        nodes = ctx.nodes(stem)
+        path = ctx.bundle.display(name)
+        inert: dict[str, int] = {}
+        needed = 0
+        stale: list[str] = []
+        lines = getattr(settings, "lines", {})
+        for obj, entry in settings.items():
+            if not isinstance(entry, dict) or obj.startswith("__"):
+                continue
+            type_key = ".obj_settings::" + str(entry.get("__type") or "TplObjSettingsGeom")
+            table = mins.get(type_key) or geom
+            blocks = [k for k in entry if not k.startswith("__")]
+            for block in blocks:
+                need = max(1, int(table.get(block, 1)))
+                if version < need:
+                    inert[block] = inert.get(block, 0) + 1
+                    needed = max(needed, need)
+            if nodes is not None and not _has_node(nodes, obj):
+                stale.append(obj)
+                continue
+            vis = entry.get("visibility")
+            gate = int(table.get("visibility", 2))
+            if isinstance(vis, dict) and vis.get("visibleDefault") is False and version < gate and nodes is not None \
+                    and not obj.lower().startswith(prefixes):
+                ctx.add("RC074", "warning", path,
+                        f"intended hidden, actually visible: {obj} has visibleDefault=False but "
+                        f"objSettings.exportedVersion is {'absent' if raw is None else repr(raw)}, so the engine "
+                        "ignores it and the node renders", line=lines.get(obj),
+                        key=f"objSettings.settings.{obj}.visibility.visibleDefault",
+                        fix=f"add objSettings.exportedVersion = {names_by_value.get(gate, gate)} ({gate}) or higher, "
+                            "or hide it by prefix/blueprint init")
+        if not inert and not stale:
+            continue
+        counts = ", ".join(f"{block} {n}" for block, n in sorted(inert.items(), key=lambda kv: -kv[1]))
+        gates = ", ".join(f"{block} needs >= {int(geom.get(block, 1))}" for block in sorted(inert) if block in geom)
+        message = (f"objSettings per-object entries are parsed but inert: exportedVersion is "
+                   f"{'absent (0)' if raw is None else f'{raw!r} ({version})'}"
+                   + (f"; {sum(inert.values())} entries ({counts}) have no effect" if inert else "")
+                   + (f"; {gates}" if gates else ""))
+        if stale:
+            message += (f"; stale entries, no effect (no such node in the compiled model): "
+                        f"{', '.join(stale[:8])}{' ...' if len(stale) > 8 else ''}")
+        elif nodes is None:
+            message += "; the compiled model's node table was not readable, so stale entries are not checked"
+        ctx.add("RC074", "info", path, message, line=getattr(obj_settings, "lines", {}).get("settings"),
+                key="objSettings.settings",
+                fix=(f"add objSettings.exportedVersion = {names_by_value.get(needed, needed)} if they are meant to "
+                     "apply; check name prefixes (cdt_/hidden_) already give the intended result") if inert else "")
+
+
+def _body_name(doc: dict, section_path: str) -> str | None:
+    match = re.match(r"objectInfos\[(\d+)\]", section_path)
+    infos = doc.get("objectInfos")
+    if match and isinstance(infos, list) and int(match.group(1)) < len(infos):
+        info = infos[int(match.group(1))]
+        name = (info.get("objectId") or {}).get("name") if isinstance(info, dict) else None
+        return name if isinstance(name, str) else None
+    return None
 
 
 # ------------------------------------------------------------------------------------------------ trucks
@@ -1049,8 +1754,10 @@ def rule_misspelt_states(ctx: Context, lamp_states: set[str]) -> None:
 
 
 def rule_state_pairs(ctx: Context, lamp_states: set[str]) -> None:
-    """``<x>_on`` / ``<x>_off`` dynamic states that use the same material in a slot (D11 beacon); one finding per
-    markup and state, listing the slots."""
+    """``<x>_on`` / ``<x>_off`` dynamic states (D11 beacon), one finding per markup and state, only when NO slot
+    of the pair differs: then switching the state can never be seen.  Slots where on = off = the slot's base
+    material are no-ops a copied markup carries for every body slot, and are ignored as long as some slot
+    differs (the Goliath: 82 no-op slots, one real beacon slot; verified by the RC6 fix)."""
     for name in ctx.bundle.names():
         if not name.lower().endswith(".tpl_markup"):
             continue
@@ -1059,6 +1766,7 @@ def rule_state_pairs(ctx: Context, lamp_states: set[str]) -> None:
         if not isinstance(materials, dict):
             continue
         same: dict[str, list[str]] = {}
+        differs: set[str] = set()
         for slot, entry in materials.items():
             states = (entry or {}).get("dynamicMaterials") if isinstance(entry, dict) else None
             if not isinstance(states, dict):
@@ -1069,13 +1777,19 @@ def rule_state_pairs(ctx: Context, lamp_states: set[str]) -> None:
                 other = states.get(state[:-3] + "_off")
                 lit = spec.get("materialName")
                 unlit = other.get("materialName") if isinstance(other, dict) else None
-                if lit and unlit and (lit == unlit or _same_material(ctx, lit, unlit)):
+                if not (lit and unlit):
+                    continue
+                if lit == unlit or _same_material(ctx, lit, unlit):
                     same.setdefault(state, []).append(slot)
+                else:
+                    differs.add(state)
         for state, slots in sorted(same.items()):
+            if state in differs:
+                continue                       # some slot shows the switch; identical slots are no-ops
             used = state in lamp_states
             ctx.add("RC067", "error" if used else "warning", ctx.bundle.display(name),
-                    f"states {state!r} / {state[:-3] + '_off'!r} use identical materials in {len(slots)} slot(s) "
-                    f"{slots[:6]}{' ...' if len(slots) > 6 else ''}: switching them shows no change"
+                    f"states {state!r} / {state[:-3] + '_off'!r} use identical materials in every slot that defines "
+                    f"them ({len(slots)}: {slots[:6]}{' ...' if len(slots) > 6 else ''}): the state can never be seen"
                     + ("" if used else " (no lamp of this mod uses the state)"),
                     line=getattr(materials, "lines", {}).get(slots[0]),
                     key=f"materials.{slots[0]}.dynamicMaterials.{state}")
@@ -1292,12 +2006,63 @@ def rule_bro(ctx: Context) -> None:
                                         f"lint-bro {f['code']} ({f['library']})", f["code"], f["where"]))
 
 
+def count_retail_ignored(game_root: str | Path | None = None, out: str | Path | None = RETAIL_IGNORED_FILE) -> dict:
+    """Count RC072 dead keys in retail content (every retail .cls, .prop and .tpl_markup) per (type key, key)
+    with this module's walker and read-fields tables, and write data/retail_ignored_counts.json.  Takes about
+    6 minutes.  Re-run after a game update or a read_fields.json change."""
+    import collections
+    import time
+    root = Path(game_root) if game_root else schema_mod.default_game_root()
+    index = retail._index(root)
+    names = sorted(n for n in index if n.lower().endswith((".cls", ".prop", ".tpl_markup")))
+    bundle = Bundle("retail", "pak", [_Member(n, (lambda n=n: retail.read_member(root, n))) for n in names])
+    global _retail_ignored
+    saved, _retail_ignored = _retail_ignored, {}       # count raw warnings, not the downgraded ones
+    try:
+        ctx = Context(bundle, Retail(root), schema_mod.load(root), {"ignored-fields"}, ReadFields.load())
+        ctx.game_root = root
+        rule_unknown_keys(ctx)
+        rule_ignored_global(ctx)
+    finally:
+        _retail_ignored = saved
+    counts: collections.Counter = collections.Counter()
+    files: dict[str, set] = collections.defaultdict(set)
+    for f in ctx.findings:
+        if f.code != "RC072" or f.severity != "warning":
+            continue
+        key = f.key.rsplit(".", 1)[-1]
+        head = f.message.split(" ", 1)[0]
+        type_key = head[: -len("." + key)] if head.endswith("." + key) and "::" in head else "*"
+        counts[f"{type_key}|{key}"] += 1
+        files[f"{type_key}|{key}"].add(f.path)
+    result = {"about": "RC072 'present but ignored' keys that retail content carries too, counted per (type key, "
+                       "key) over every retail .cls, .prop and .tpl_markup with the validator's walker and "
+                       "read-fields tables. validate reports such keys at info. Regenerate with "
+                       "roadcraft.validate.count_retail_ignored() after a game update or a read_fields.json change.",
+              "generated": time.strftime("%Y-%m-%d"), "retailMembers": len(names),
+              "counts": {k: {"occurrences": n, "files": len(files[k])} for k, n in sorted(counts.items())}}
+    if out:
+        Path(out).write_text(json.dumps(result, indent=1) + "\n", encoding="utf-8")
+        _retail_ignored = None
+    return result
+
+
 # ------------------------------------------------------------------------------------------------ driver
 
+def _read_fields_of(read_fields: Any) -> ReadFields:
+    if isinstance(read_fields, ReadFields):
+        return read_fields
+    if read_fields is None:
+        return ReadFields.load()
+    return ReadFields.from_data(read_fields)
+
+
 def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_root: str | Path | None = None,
-             read_fields: dict[str, Iterable[str]] | None = None, notes: list[str] | None = None) -> list[Finding]:
+             read_fields: ReadFields | dict | None = None, notes: list[str] | None = None) -> list[Finding]:
     """Findings for a mod folder or a built .pak (see the module docstring).  ``rules`` limits the rule names
-    (``RULES``); ``read_fields`` is the optional per-component table of fields the loader reads (RC072)."""
+    (``RULES``); ``read_fields`` is the RC072 reader table (:class:`ReadFields`, a read_fields.json-shaped dict, or a
+    legacy ``{type key: [fields read]}``); None loads data/read_fields.json when present.  Every finding carries
+    its ``member`` path and stable ``id`` (:func:`finding_id`)."""
     selected = set(rules) if rules else set(RULES)
     unknown = selected - set(RULES)
     if unknown:
@@ -1314,10 +2079,18 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
         schema = schema_mod.load(root)
     else:
         notes.append(f"no SDK meta descriptions under {root}: unknown-key/type/enum checks skipped")
-    ctx = Context(bundle, retail_view, schema, selected,
-                  {k: set(v) for k, v in (read_fields or {}).items()})
+    fields = _read_fields_of(read_fields)
+    if "ignored-fields" in selected and fields.note:
+        notes.append(fields.note)
+    ctx = Context(bundle, retail_view, schema, selected, fields)
+    ctx.game_root = root
+    if "objsettings-gate" in selected and not fields.gated:
+        notes.append("RC074 objSettings gate table ('gated' in read_fields.json) not loaded: check skipped")
     rule_ps(ctx)
     rule_unknown_keys(ctx)
+    rule_ignored_global(ctx)
+    rule_engine_defaults(ctx)
+    rule_objsettings(ctx)
     rule_duplicates(ctx)
     rule_references(ctx)
     rule_materials(ctx)
@@ -1359,59 +2132,188 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
     unique: dict[tuple, Finding] = {}
     for f in ctx.findings:
         unique.setdefault((f.code, f.path, f.line, f.key, f.message), f)
-    return sorted(unique.values(), key=lambda f: (SEVERITY_ROW(f), f.path, f.line or 0, f.code, f.key))
+    return _with_ids(bundle, sorted(unique.values(), key=lambda f: (SEVERITY_ROW(f), f.path, f.line or 0, f.code,
+                                                                     f.key)))
+
+
+def _with_ids(bundle: Bundle, findings: list[Finding]) -> list[Finding]:
+    """Set ``member`` and ``id``.  Findings sharing (code, member, keyPath) - several RC051 in one file, a rule
+    without a key path - are told apart by their order in the file: the first keeps the bare id, later ones get
+    ``-2``, ``-3``... (order by line, then message), which survives line shifts that keep their order."""
+    staged = [replace(f, member=bundle.member_of(f.path)) for f in findings]
+    by_base: dict[str, list[int]] = {}
+    for index, f in enumerate(staged):
+        by_base.setdefault(finding_id(f.code, f.member, f.key), []).append(index)
+    for base, indices in by_base.items():
+        ordered = sorted(indices, key=lambda i: (staged[i].line or 0, staged[i].message))
+        for rank, index in enumerate(ordered):
+            staged[index] = replace(staged[index], id=base if rank == 0 else f"{base}-{rank + 1}")
+    return staged
 
 
 def SEVERITY_ROW(f: Finding) -> int:  # noqa: N802 - sort helper
     return SEVERITY_RANK.get(f.severity, 3)
 
 
-def _load_read_fields(path: str | None) -> dict[str, list[str]] | None:
-    path = path or os.environ.get("ROADCRAFT_READ_FIELDS")
-    if not path:
-        return None
-    with open(path, encoding="utf-8") as handle:
-        return json.load(handle)
+# ------------------------------------------------------------------------------------------------ report
+
+GROUP_SHOWN = 3
+
+
+@dataclass(frozen=True)
+class TrackedFinding(Finding):
+    """A finding labelled against a baseline: ``new``, ``unchanged`` or ``fixed``."""
+    status: str = ""
+
+
+GROUP_BY_KEY_NAME = {"RC072"}      # one group per dead key, wherever it sits
+
+
+def group_pattern(f: Finding) -> str:
+    key = normalise_key(f.key)
+    if f.code in GROUP_BY_KEY_NAME and "." in key and "*" not in key:
+        return "*." + key.rsplit(".", 1)[-1]
+    return key
+
+
+def group_findings(findings: list[Finding], *, expand: bool = False) -> list[dict[str, Any]]:
+    """Findings grouped by (code, severity, keyPath with list indices normalised; for the per-key codes in
+    GROUP_BY_KEY_NAME only the last key, ``*.spreadAngle``): count, the first message and fix hint, the number
+    of members touched and the first GROUP_SHOWN locations (all with ``expand``)."""
+    groups: dict[tuple[str, str, str], list[Finding]] = {}
+    for f in findings:
+        groups.setdefault((f.code, f.severity, group_pattern(f)), []).append(f)
+    out = []
+    for (code, _severity, pattern), items in groups.items():
+        worst = min(items, key=SEVERITY_ROW)
+        shown = items if expand else items[:GROUP_SHOWN]
+        statuses: dict[str, int] = {}
+        for f in items:
+            if isinstance(f, TrackedFinding):
+                statuses[f.status] = statuses.get(f.status, 0) + 1
+        out.append({
+            "code": code, "rule": worst.rule, "severity": worst.severity, "keyPattern": pattern,
+            "count": len(items), "members": len({f.member for f in items}),
+            "message": items[0].message, "fixHint": next((f.fixHint for f in items if f.fixHint), ""),
+            "evidence": items[0].evidence, "statuses": statuses,
+            "locations": [{"id": f.id, "path": f.path, "line": f.line, "keyPath": f.key,
+                           **({"status": f.status} if isinstance(f, TrackedFinding) else {})} for f in shown],
+            "more": len(items) - len(shown),
+        })
+    return sorted(out, key=lambda g: (SEVERITY_RANK.get(g["severity"], 3), g["code"], -g["count"], g["keyPattern"]))
+
+
+def compare(current: list[Finding], baseline: list[Finding]) -> tuple[list[TrackedFinding], list[TrackedFinding]]:
+    """Label findings by id: current ones ``new`` or ``unchanged``; baseline ones absent now ``fixed``."""
+    old = {f.id for f in baseline}
+    now = {f.id for f in current}
+    labelled = [TrackedFinding(**asdict(f), status="unchanged" if f.id in old else "new") for f in current]
+    fixed = [TrackedFinding(**asdict(f), status="fixed") for f in baseline if f.id not in now]
+    return labelled, fixed
+
+
+def report(target: str, findings: list[Finding], notes: list[str], *, expand: bool = False,
+           baseline: tuple[str, list[Finding]] | None = None) -> dict[str, Any]:
+    """The JSON report of one target (library/validator.md 'Output')."""
+    counts = {s: sum(1 for f in findings if f.severity == s) for s in SEVERITIES}
+    item: dict[str, Any] = {"target": str(target), "counts": counts, "notes": notes}
+    if baseline is not None:
+        base_target, base_findings = baseline
+        labelled, fixed = compare(findings, base_findings)
+        findings = labelled
+        status = {s: sum(1 for f in labelled if f.status == s) for s in ("new", "unchanged")}
+        status["fixed"] = len(fixed)
+        item["baseline"] = {
+            "target": str(base_target), "counts": status,
+            "newBySeverity": {s: sum(1 for f in labelled if f.status == "new" and f.severity == s)
+                              for s in SEVERITIES},
+            "fixed": [f.as_dict() for f in fixed],
+            "fixedGroups": group_findings(fixed, expand=expand),
+        }
+    item["groups"] = group_findings(findings, expand=expand)
+    item["findings"] = [f.as_dict() for f in findings]
+    return item
+
+
+def exit_code(items: list[dict[str, Any]], fail_on: str) -> int:
+    """1 when a finding at or above ``fail_on`` exists; with a baseline only NEW findings count."""
+    threshold = SEVERITY_RANK[fail_on]
+    for item in items:
+        for f in item["findings"]:
+            if "baseline" in item and f.get("status") != "new":
+                continue
+            if SEVERITY_RANK.get(f["severity"], 3) <= threshold:
+                return 1
+    return 0
+
+
+def _print_text(item: dict[str, Any]) -> None:
+    c = item["counts"]
+    print(f"{item['target']}: {c['error']} errors, {c['warning']} warnings, {c['info']} info "
+          f"in {len(item['groups'])} groups")
+    if "baseline" in item:
+        b = item["baseline"]["counts"]
+        print(f"  baseline {item['baseline']['target']}: {b['new']} new, {b['fixed']} fixed, "
+              f"{b['unchanged']} unchanged")
+    for note in item["notes"]:
+        print(f"  note: {note}")
+    for g in item["groups"]:
+        status = ", ".join(f"{n} {s}" for s, n in sorted(g["statuses"].items()))
+        print(f"  {g['severity']:7} {g['code']} {g['rule']} x{g['count']} [{g['keyPattern'] or '-'}]"
+              + (f" ({status})" if status else ""))
+        print(f"          {g['message']}")
+        if g["fixHint"]:
+            print(f"          fix: {g['fixHint']}")
+        for loc in g["locations"]:
+            where = loc["path"] + (f":{loc['line']}" if loc["line"] else "") + \
+                (f" [{loc['keyPath']}]" if loc["keyPath"] else "")
+            print(f"          - {where} #{loc['id']}" + (f" {loc['status']}" if loc.get("status") else ""))
+        if g["more"]:
+            print(f"          ... {g['more']} more (--expand)")
+    if "baseline" in item and item["baseline"]["fixed"]:
+        print("  fixed since the baseline:")
+        for g in item["baseline"]["fixedGroups"]:
+            print(f"  {g['severity']:7} {g['code']} x{g['count']} [{g['keyPattern'] or '-'}] {g['message'][:120]}")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="roadcraft validate",
                                      description="Validate a mod folder or .pak for runtime failures (read-only)")
     parser.add_argument("target", nargs="+", help="mod source folder (p/, mods_source) or .pak")
-    parser.add_argument("--json", action="store_true", help="print findings as JSON")
+    parser.add_argument("--json", action="store_true", help="print the report as JSON")
     parser.add_argument("--rules", default=None, help=f"comma-separated subset of {','.join(RULES)}")
     parser.add_argument("--fail-on", choices=SEVERITIES, default="error",
-                        help="exit 1 when a finding at or above this severity exists (default error)")
+                        help="exit 1 when a finding at or above this severity exists (default error); with "
+                             "--baseline only NEW findings count")
+    parser.add_argument("--baseline", default=None,
+                        help="an older .pak or tree: label findings new/fixed/unchanged by id")
+    parser.add_argument("--expand", action="store_true", help="list every location of each group")
     parser.add_argument("--game-root", default=None)
-    parser.add_argument("--read-fields", default=None, help="JSON {type key: [fields the loader reads]} (RC072)")
+    parser.add_argument("--read-fields", default=None,
+                        help="RC072 reader table (read_fields.json schemaVersion 1, or legacy {type: [fields]}); "
+                             "default ROADCRAFT_READ_FIELDS or src/roadcraft/data/read_fields.json when present")
     args = parser.parse_args(argv)
     rules = [r.strip() for r in args.rules.split(",") if r.strip()] if args.rules else None
-    report: list[dict[str, Any]] = []
-    worst = 3
+    items: list[dict[str, Any]] = []
     try:
-        read_fields = _load_read_fields(args.read_fields)
+        fields = ReadFields.load(args.read_fields)
+        base = None
+        if args.baseline:
+            base = (args.baseline, validate(args.baseline, rules=rules, game_root=args.game_root, read_fields=fields,
+                                            notes=[]))
         for target in args.target:
             notes: list[str] = []
-            findings = validate(target, rules=rules, game_root=args.game_root, read_fields=read_fields, notes=notes)
-            counts = {s: sum(1 for f in findings if f.severity == s) for s in SEVERITIES}
-            worst = min([worst] + [SEVERITY_RANK[f.severity] for f in findings])
-            report.append({"target": str(target), "counts": counts, "notes": notes,
-                           "findings": [f.as_dict() for f in findings]})
+            findings = validate(target, rules=rules, game_root=args.game_root, read_fields=fields, notes=notes)
+            items.append(report(str(target), findings, notes, expand=args.expand, baseline=base))
     except Exception as exc:                                  # noqa: BLE001 - tool error -> exit 2
         print(f"error: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
     if args.json:
-        print(json.dumps(report if len(report) > 1 else report[0], indent=1))
+        print(json.dumps(items if len(items) > 1 else items[0], indent=1))
     else:
-        for item in report:
-            print(f"{item['target']}: {item['counts']['error']} errors, {item['counts']['warning']} warnings, "
-                  f"{item['counts']['info']} info")
-            for note in item["notes"]:
-                print(f"  note: {note}")
-            for f in item["findings"]:
-                where = f["path"] + (f":{f['line']}" if f["line"] else "") + (f" [{f['key']}]" if f["key"] else "")
-                print(f"  {f['severity']:7} {f['code']} {f['rule']}: {where}\n          {f['message']}")
-    return 1 if worst <= SEVERITY_RANK[args.fail_on] else 0
+        for item in items:
+            _print_text(item)
+    return exit_code(items, args.fail_on)
 
 
 if __name__ == "__main__":

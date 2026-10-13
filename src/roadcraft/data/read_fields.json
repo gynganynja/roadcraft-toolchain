@@ -1,0 +1,2365 @@
+{
+ "schemaVersion": 1,
+ "generated": "2026-10-13, static analysis of Roadcraft ModEditor.exe (Ghidra focus_me) + base-game SSL source; no game/editor launched",
+ "readers": [
+  {
+   "context": "tpl_markup body physics",
+   "typeKey": ".tpl_markup::tpl_markup_object_property_physics",
+   "match": "*.tpl_markup: objects[*].properties[*] with __type = tpl_markup_object_property_physics",
+   "reads": [
+    {
+     "key": "disable",
+     "default": false,
+     "notes": "+0x20; body skipped when true (consumer 0x141542b90)"
+    },
+    {
+     "key": "fixed",
+     "default": false,
+     "notes": "+0x21; fixed motion type (quality 5) instead of dynamic"
+    },
+    {
+     "key": "collisionLayer",
+     "default": "default",
+     "notes": "+0x24; resolved to a collision layer id when non-empty"
+    },
+    {
+     "key": "angularDamping",
+     "default": 0.05,
+     "notes": "+0x28 -> Havok angular damping"
+    },
+    {
+     "key": "linearDamping",
+     "default": 0.0,
+     "notes": "+0x2c -> Havok linear damping"
+    },
+    {
+     "key": "massFromDensity",
+     "default": true,
+     "notes": "+0x30; selects density (true) or mass (false)"
+    },
+    {
+     "key": "density",
+     "default": 600.0,
+     "notes": "+0x34; used only when massFromDensity = true"
+    },
+    {
+     "key": "mass",
+     "default": 1.0,
+     "notes": "+0x38; used only when massFromDensity = false"
+    },
+    {
+     "key": "havokMassCenter",
+     "default": true,
+     "notes": "+0x3c; true: hkCenterOfMassOffset added to the Havok centroid; false: boneCenterOfMassOffset"
+    },
+    {
+     "key": "hkCenterOfMassOffset",
+     "default": [
+      0,
+      0,
+      0
+     ],
+     "notes": "+0x40; used only when havokMassCenter = true"
+    },
+    {
+     "key": "boneCenterOfMassOffset",
+     "default": [
+      0,
+      0,
+      0
+     ],
+     "notes": "+0x4c; used only when havokMassCenter = false"
+    },
+    {
+     "key": "friction",
+     "default": 0.5,
+     "notes": "+0x58 -> Havok material friction"
+    },
+    {
+     "key": "restitution",
+     "default": 0.4,
+     "notes": "+0x5c -> Havok material restitution"
+    },
+    {
+     "key": "allowedPenetrationDepth",
+     "default": 0.05,
+     "notes": "+0x60 -> Havok allowed penetration depth"
+    },
+    {
+     "key": "nonConvexShape",
+     "default": false,
+     "notes": "+0x64; mesh shape path (warns about performance)"
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "mass",
+     "why": "ignored when massFromDensity is true (the default)",
+     "evidence": "0x141542b90: if (+0x30==0) use +0x38 else use +0x34"
+    },
+    {
+     "key": "density",
+     "why": "ignored when massFromDensity is false",
+     "evidence": "0x141542b90 same branch"
+    },
+    {
+     "key": "boneCenterOfMassOffset",
+     "why": "ignored when havokMassCenter is true (the default)",
+     "evidence": "0x141542b90: if (+0x3c==0) +0x4c else +0x40"
+    },
+    {
+     "key": "hkCenterOfMassOffset",
+     "why": "ignored when havokMassCenter is false",
+     "evidence": "0x141542b90 same branch"
+    }
+   ],
+   "address": "0x1430812a0",
+   "grade": "Confirmed-from-code",
+   "ctor": "0x1430811e0",
+   "consumer": "0x141542b90",
+   "conditional": [
+    {
+     "key": "mass",
+     "ignoredWhen": {
+      "massFromDensity": true
+     }
+    },
+    {
+     "key": "density",
+     "ignoredWhen": {
+      "massFromDensity": false
+     }
+    },
+    {
+     "key": "boneCenterOfMassOffset",
+     "ignoredWhen": {
+      "havokMassCenter": true
+     }
+    },
+    {
+     "key": "hkCenterOfMassOffset",
+     "ignoredWhen": {
+      "havokMassCenter": false
+     }
+    }
+   ]
+  },
+  {
+   "context": "tpl_markup shape physics property",
+   "typeKey": ".tpl_markup::tpl_markup_object_shape_property_physics",
+   "match": "*.tpl_markup: properties[*] __type = tpl_markup_object_shape_property_physics",
+   "reads": [],
+   "ignoredKnown": [],
+   "address": "0x143083570",
+   "grade": "Confirmed-from-code",
+   "notes": "marker type: the reader looks up no keys; any key inside is ignored"
+  },
+  {
+   "context": "tpl_markup position motor",
+   "typeKey": ".tpl_markup::tpl_markup_position_motor",
+   "match": "*.tpl_markup: constraint.motor (hinge/prismatic/fixed) or ragdoll motors[*].motor with __type = tpl_markup_position_motor",
+   "reads": [
+    {
+     "key": "tau",
+     "default": 0.23,
+     "notes": "+0x20 -> hkpPositionConstraintMotor.m_tau"
+    },
+    {
+     "key": "damping",
+     "default": 0.95,
+     "notes": "+0x24 -> m_damping"
+    },
+    {
+     "key": "maxForce",
+     "default": 100.0,
+     "notes": "+0x28 -> m_maxForce; m_minForce = -maxForce (FUN_141594b60)"
+    },
+    {
+     "key": "proportionalRecoveryVelocity",
+     "default": 1.0,
+     "notes": "+0x2c"
+    },
+    {
+     "key": "constantRecoveryVelocity",
+     "default": 0.15,
+     "notes": "+0x30"
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "spring",
+     "why": "not looked up by the reader; the position motor has no spring field (use tau/damping or a spring motor)",
+     "evidence": "reader 0x14306e560 looks up exactly tau, damping, maxForce, proportionalRecoveryVelocity, constantRecoveryVelocity; retail also ships it (retail_unknown_keys.json)"
+    }
+   ],
+   "address": "0x14306e560",
+   "grade": "Confirmed-from-code",
+   "ctor": "0x14306e510",
+   "consumer": "0x141594b60"
+  },
+  {
+   "context": "tpl_markup spring motor",
+   "typeKey": ".tpl_markup::tpl_markup_spring_motor",
+   "match": "*.tpl_markup: constraint.motor with __type = tpl_markup_spring_motor",
+   "reads": [
+    {
+     "key": "spring",
+     "default": 0.0,
+     "notes": "+0x20 -> hkpSpringDamperConstraintMotor.m_springConstant (N/m or N*m/rad); 0 = no spring"
+    },
+    {
+     "key": "damping",
+     "default": 0.0,
+     "notes": "+0x24 -> m_springDamping (N*s/m)"
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "tau",
+     "why": "position-motor key; the spring-motor reader never looks it up (maxForce is fixed at FLT_MAX)",
+     "evidence": "reader 0x14306d960 looks up only spring, damping; retail ships these keys on spring motors too"
+    },
+    {
+     "key": "maxForce",
+     "why": "position-motor key; the spring-motor reader never looks it up (maxForce is fixed at FLT_MAX)",
+     "evidence": "reader 0x14306d960 looks up only spring, damping; retail ships these keys on spring motors too"
+    },
+    {
+     "key": "proportionalRecoveryVelocity",
+     "why": "position-motor key; the spring-motor reader never looks it up (maxForce is fixed at FLT_MAX)",
+     "evidence": "reader 0x14306d960 looks up only spring, damping; retail ships these keys on spring motors too"
+    },
+    {
+     "key": "constantRecoveryVelocity",
+     "why": "position-motor key; the spring-motor reader never looks it up (maxForce is fixed at FLT_MAX)",
+     "evidence": "reader 0x14306d960 looks up only spring, damping; retail ships these keys on spring motors too"
+    }
+   ],
+   "address": "0x14306d960",
+   "grade": "Confirmed-from-code",
+   "ctor": "0x14306d930",
+   "consumer": "0x141594b60"
+  },
+  {
+   "context": "tpl_markup ragdoll motor entry",
+   "typeKey": ".tpl_markup::tpl_markup_ragdoll_motor",
+   "match": "*.tpl_markup: tpl_markup_constraint_ragdoll.motors[*]",
+   "reads": [
+    {
+     "key": "axis",
+     "default": "ALL",
+     "notes": "+0x20 bit mask (1/2/4), overlapping masks rejected"
+    },
+    {
+     "key": "motor",
+     "default": null,
+     "notes": "+0x28 motor (FUN_141594b60)"
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x14306d140",
+   "grade": "Confirmed-from-code"
+  },
+  {
+   "context": "tpl_markup constraint (common fields)",
+   "typeKey": ".tpl_markup::tpl_markup_constraint",
+   "match": "*.tpl_markup: any tpl_markup_constraint_* entity (inherited by every constraint type)",
+   "reads": [
+    {
+     "key": "enabled",
+     "default": true,
+     "notes": "+0x20; constraint skipped when false (0x14153cb90)"
+    },
+    {
+     "key": "target",
+     "default": "__parent",
+     "notes": "+0x28; parent body lookup (0x141542520)"
+    },
+    {
+     "key": "name",
+     "default": "",
+     "notes": "+0x38; log/debug name only"
+    },
+    {
+     "key": "childTranslation",
+     "default": [
+      0,
+      0,
+      0
+     ],
+     "notes": "+0x48; pivot frame (0x141544e80)"
+    },
+    {
+     "key": "childRotation",
+     "default": [
+      0,
+      0,
+      0
+     ],
+     "notes": "+0x54; pivot frame (0x141544e80)"
+    },
+    {
+     "key": "isBreakable",
+     "default": false,
+     "notes": "+0x60; wraps in hkpBreakableConstraintData (0x141594430)"
+    },
+    {
+     "key": "breakThreshold",
+     "default": 1000.0,
+     "notes": "+0x64; used only when isBreakable"
+    },
+    {
+     "key": "isMalleable",
+     "default": false,
+     "notes": "+0x68; wraps in hkpMalleableConstraintData"
+    },
+    {
+     "key": "malleableStrength",
+     "default": 0.01,
+     "notes": "+0x6c; used only when isMalleable"
+    },
+    {
+     "key": "massFactor",
+     "default": 1.0,
+     "notes": "+0x70; applied when |1 - massFactor| >= 1e-6 (0x14153ede0)"
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "breakThreshold",
+     "why": "ignored unless isBreakable = true",
+     "evidence": "0x141594430: if (+0x60) {hkpBreakableConstraintData; +0x64}"
+    },
+    {
+     "key": "malleableStrength",
+     "why": "ignored unless isMalleable = true",
+     "evidence": "0x141594430: if (+0x68) {hkpMalleableConstraintData; +0x6c}"
+    }
+   ],
+   "address": "0x143076970",
+   "grade": "Confirmed-from-code",
+   "ctor": "0x1430768d0",
+   "factory": "0x14153ede0",
+   "conditional": [
+    {
+     "key": "breakThreshold",
+     "ignoredWhen": {
+      "isBreakable": false
+     }
+    },
+    {
+     "key": "malleableStrength",
+     "ignoredWhen": {
+      "isMalleable": false
+     }
+    }
+   ]
+  },
+  {
+   "context": "tpl_markup hinge",
+   "typeKey": ".tpl_markup::tpl_markup_constraint_hinge",
+   "match": "*.tpl_markup: __type = tpl_markup_constraint_hinge",
+   "reads": [
+    {
+     "key": "limited",
+     "default": false,
+     "notes": "+0x78; false and no motor -> plain hkpHingeConstraintData"
+    },
+    {
+     "key": "angleStart",
+     "default": 0.0,
+     "notes": "+0x7c deg; used only when limited"
+    },
+    {
+     "key": "angleEnd",
+     "default": 0.0,
+     "notes": "+0x80 deg; used only when limited"
+    },
+    {
+     "key": "motor",
+     "default": null,
+     "notes": "+0x88; any motor forces hkpLimitedHinge (limits +-1e14 when not limited)"
+    },
+    {
+     "key": "isInitialFix",
+     "default": false,
+     "notes": "+0x90"
+    },
+    {
+     "key": "isTerminalFix",
+     "default": false,
+     "notes": "+0x91"
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "angleStart",
+     "why": "ignored when limited = false",
+     "evidence": "0x14153a980: limits +-1e14 when +0x78 == 0"
+    },
+    {
+     "key": "angleEnd",
+     "why": "ignored when limited = false",
+     "evidence": "0x14153a980"
+    }
+   ],
+   "address": "0x14307b6d0",
+   "grade": "Confirmed-from-code",
+   "ctor": "0x14307b690",
+   "consumer": "0x14153a980",
+   "conditional": [
+    {
+     "key": "angleStart",
+     "ignoredWhen": {
+      "limited": false
+     }
+    },
+    {
+     "key": "angleEnd",
+     "ignoredWhen": {
+      "limited": false
+     }
+    }
+   ]
+  },
+  {
+   "context": "tpl_markup prismatic",
+   "typeKey": ".tpl_markup::tpl_markup_constraint_prismatic",
+   "match": "*.tpl_markup: __type = tpl_markup_constraint_prismatic",
+   "reads": [
+    {
+     "key": "isMinLimit",
+     "default": false,
+     "notes": "+0x78"
+    },
+    {
+     "key": "minLimit",
+     "default": 0.0,
+     "notes": "+0x7c; used only when isMinLimit"
+    },
+    {
+     "key": "isMaxLimit",
+     "default": false,
+     "notes": "+0x80"
+    },
+    {
+     "key": "maxLimit",
+     "default": 0.0,
+     "notes": "+0x84; used only when isMaxLimit"
+    },
+    {
+     "key": "isInitialFix",
+     "default": false,
+     "notes": "+0x88"
+    },
+    {
+     "key": "isTerminalFix",
+     "default": false,
+     "notes": "+0x89"
+    },
+    {
+     "key": "motor",
+     "default": null,
+     "notes": "+0x90"
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "minLimit",
+     "why": "ignored when isMinLimit = false",
+     "evidence": "0x14153ae00"
+    },
+    {
+     "key": "maxLimit",
+     "why": "ignored when isMaxLimit = false",
+     "evidence": "0x14153ae00"
+    }
+   ],
+   "address": "0x14307c7a0",
+   "grade": "Confirmed-from-code",
+   "ctor": "0x14307c750",
+   "consumer": "0x14153ae00",
+   "conditional": [
+    {
+     "key": "minLimit",
+     "ignoredWhen": {
+      "isMinLimit": false
+     }
+    },
+    {
+     "key": "maxLimit",
+     "ignoredWhen": {
+      "isMaxLimit": false
+     }
+    }
+   ]
+  },
+  {
+   "context": "tpl_markup fixed",
+   "typeKey": ".tpl_markup::tpl_markup_constraint_fixed",
+   "match": "*.tpl_markup: __type = tpl_markup_constraint_fixed",
+   "reads": [
+    {
+     "key": "limited",
+     "default": false,
+     "notes": "+0x78; false -> hkpFixedConstraintData, true -> generic constraint with linear limits + motor"
+    },
+    {
+     "key": "linearLimitsMin",
+     "default": [
+      0.01,
+      0.01,
+      0.01
+     ],
+     "notes": "+0x7c; used only when limited"
+    },
+    {
+     "key": "linearLimitsMax",
+     "default": [
+      1,
+      1,
+      1
+     ],
+     "notes": "+0x88; used only when limited"
+    },
+    {
+     "key": "motor",
+     "default": null,
+     "notes": "+0x98; used only when limited (0x14153a3e0)"
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "linearLimitsMin",
+     "why": "ignored when limited = false (plain hkpFixedConstraintData)",
+     "evidence": "0x14153ede0: if ((char)+0x78 == 0) hkpFixedConstraintData else FUN_14153a3e0"
+    },
+    {
+     "key": "linearLimitsMax",
+     "why": "ignored when limited = false (plain hkpFixedConstraintData)",
+     "evidence": "0x14153ede0: if ((char)+0x78 == 0) hkpFixedConstraintData else FUN_14153a3e0"
+    },
+    {
+     "key": "motor",
+     "why": "ignored when limited = false (plain hkpFixedConstraintData)",
+     "evidence": "0x14153ede0: if ((char)+0x78 == 0) hkpFixedConstraintData else FUN_14153a3e0"
+    }
+   ],
+   "address": "0x143079a10",
+   "grade": "Confirmed-from-code",
+   "ctor": "0x1430799a0",
+   "consumer": "0x14153a3e0",
+   "conditional": [
+    {
+     "key": "linearLimitsMin",
+     "ignoredWhen": {
+      "limited": false
+     }
+    },
+    {
+     "key": "linearLimitsMax",
+     "ignoredWhen": {
+      "limited": false
+     }
+    },
+    {
+     "key": "motor",
+     "ignoredWhen": {
+      "limited": false
+     }
+    }
+   ]
+  },
+  {
+   "context": "tpl_markup constraint wheel",
+   "typeKey": ".tpl_markup::tpl_markup_constraint_wheel",
+   "match": "*.tpl_markup: __type = tpl_markup_constraint_wheel",
+   "reads": [
+    {
+     "key": "minLimit",
+     "default": 0.0,
+     "notes": "+0x78 -> suspension linear limit min"
+    },
+    {
+     "key": "maxLimit",
+     "default": 0.0,
+     "notes": "+0x7c -> max"
+    },
+    {
+     "key": "strengthFactor",
+     "default": 0.0,
+     "notes": "+0x80 -> wheel constraint soft tau (+0xE4)"
+    },
+    {
+     "key": "dampingFactor",
+     "default": 0.0,
+     "notes": "+0x84 -> soft damping (+0xE8)"
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x14307da70",
+   "grade": "Confirmed-from-code",
+   "ctor": "0x14307da30",
+   "consumer": "0x14153b1a0"
+  },
+  {
+   "context": "tpl_markup ragdoll",
+   "typeKey": ".tpl_markup::tpl_markup_constraint_ragdoll",
+   "match": "*.tpl_markup: __type = tpl_markup_constraint_ragdoll",
+   "reads": [
+    {
+     "key": "parentRotation",
+     "default": [
+      0,
+      0,
+      0
+     ],
+     "notes": "+0x78"
+    },
+    {
+     "key": "coneAngle",
+     "default": 60.0,
+     "notes": "+0x84"
+    },
+    {
+     "key": "planeMinAngle",
+     "default": -30.0,
+     "notes": "+0x88"
+    },
+    {
+     "key": "planeMaxAngle",
+     "default": 30.0,
+     "notes": "+0x8c"
+    },
+    {
+     "key": "twistAngleMin",
+     "default": -5.0,
+     "notes": "+0x90"
+    },
+    {
+     "key": "twistAngleMax",
+     "default": 5.0,
+     "notes": "+0x94"
+    },
+    {
+     "key": "limitTau",
+     "default": 0.8,
+     "notes": "+0x98"
+    },
+    {
+     "key": "motors",
+     "default": [],
+     "notes": "+0xa0"
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x1430782f0",
+   "grade": "Confirmed-from-code",
+   "ctor": "0x143078260",
+   "consumer": "0x14153b4a0"
+  },
+  {
+   "context": "tpl_markup six dof",
+   "typeKey": ".tpl_markup::tpl_markup_constraint_six_dof",
+   "match": "*.tpl_markup: __type = tpl_markup_constraint_six_dof",
+   "reads": [
+    {
+     "key": "linearX",
+     "default": null,
+     "notes": "axis param {mode, min, max}"
+    },
+    {
+     "key": "linearY",
+     "default": null,
+     "notes": "axis param {mode, min, max}"
+    },
+    {
+     "key": "linearZ",
+     "default": null,
+     "notes": "axis param {mode, min, max}"
+    },
+    {
+     "key": "angularX",
+     "default": null,
+     "notes": "axis param {mode, min, max}"
+    },
+    {
+     "key": "angularY",
+     "default": null,
+     "notes": "axis param {mode, min, max}"
+    },
+    {
+     "key": "angularZ",
+     "default": null,
+     "notes": "axis param {mode, min, max}"
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "warning",
+     "why": "editor-only section; the reader does not look it up",
+     "evidence": "reader 0x14307f7b0 looks up only the six axis keys"
+    }
+   ],
+   "address": "0x14307f7b0",
+   "grade": "Inferred",
+   "ctor": "0x14307f740",
+   "consumer": "0x14153c4e0",
+   "notes": "consumer per-axis use not traced line by line"
+  },
+  {
+   "context": "tpl_markup six dof axis",
+   "typeKey": ".tpl_markup::physSIX_DOF_LINEAR_AXIS_PARAM",
+   "match": "*.tpl_markup: six_dof linearX/Y/Z and angularX/Y/Z (also .tpl_markup::physSIX_DOF_ANGULAR_AXIS_PARAM)",
+   "reads": [
+    {
+     "key": "mode",
+     "default": "physSIX_DOF_AXIS_MODE_UNLIMITED",
+     "notes": ""
+    },
+    {
+     "key": "min",
+     "default": 0.0,
+     "notes": ""
+    },
+    {
+     "key": "max",
+     "default": 0.0,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x14307e870",
+   "grade": "Inferred"
+  },
+  {
+   "context": "tpl_markup keep distance",
+   "typeKey": ".tpl_markup::tpl_markup_constraint_keep_distance",
+   "match": "*.tpl_markup: __type = tpl_markup_constraint_keep_distance",
+   "reads": [
+    {
+     "key": "strength",
+     "default": 1.0,
+     "notes": "+0x78 -> hkpMalleableConstraintData strength"
+    },
+    {
+     "key": "linearLimit",
+     "default": 10.0,
+     "notes": "+0x7c -> hkpStiffSpringConstraintData max length (clamped >= 1e-6; min length 1e-6)"
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x14307a740",
+   "grade": "Confirmed-from-code",
+   "ctor": "0x14307a700",
+   "consumer": "0x14153ede0"
+  },
+  {
+   "context": "tpl_markup ball and socket",
+   "typeKey": ".tpl_markup::tpl_markup_constraint_ball_and_socket",
+   "match": "*.tpl_markup: __type = tpl_markup_constraint_ball_and_socket",
+   "reads": [],
+   "ignoredKnown": [],
+   "address": "0x14307b1b0",
+   "grade": "Confirmed-from-code",
+   "notes": "no own keys; only the common constraint fields"
+  },
+  {
+   "context": "tpl_markup objSettings list",
+   "typeKey": "!global::tplMARKUP_OBJ_SETTINGS_LIST",
+   "match": "*.tpl_markup: objSettings",
+   "reads": [
+    {
+     "key": "all",
+     "default": null,
+     "notes": "section; only all.visibility is read (+0x0); applied (ANDed into every object's visibility mask) only when exportedVersion >= 2"
+    },
+    {
+     "key": "settings",
+     "default": {},
+     "notes": "+0x8: per-object settings keyed by object name (16-byte entries {name, settings ptr})"
+    },
+    {
+     "key": "exportedVersion",
+     "default": "OBJ_SETTINGS_EXPORT_VER_NONE",
+     "notes": "+0x18 (= tplMARKUP+0x60). Absent -> NONE (0): ctor 0x1435ca970 zeroes it and both enum readers (0x1435c3010 text, 0x1435c3400 alt) write only on an exact enum string. Every consumer of per-object settings tests it: see 'gates'."
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x1435caaa0",
+   "grade": "Confirmed-from-code",
+   "consumer": "0x1431e6c60 (geom/decal), 0x1431a3b40 (render.materialCustomizationSet), 0x1431ddce0 (render.renderCoveringDisable)",
+   "ctor": "0x1435ca970",
+   "implicitWriters": "only FUN_141023360 (editor edtDynamicTplManager, 'dynamic_tpl_%p') sets it, to 1 (CDT), for editor-created dynamic tpls. None in the tpl loader 0x1431e4c60, the mod tooling C# (IntegrationStudio decomp) or any retail/mod markup (0 of 3,212 retail, 0 in all 17 installed mods)."
+  },
+  {
+   "context": "tpl_markup objSettings geom",
+   "typeKey": ".obj_settings::TplObjSettingsGeom",
+   "match": "*.tpl_markup: objSettings.settings.<obj> with __type = TplObjSettingsGeom (also Skinned/SkinCompound/BlendShape subclasses)",
+   "reads": [
+    {
+     "key": "sorting",
+     "default": null,
+     "notes": "base reader 0x1435c6e50 (+0x50 preset, +0x54 custom value, +0x58 z-bias). Applied by 0x1431e6c60 only when exportedVersion >= 3 (MOD_EDITOR)"
+    },
+    {
+     "key": "visibility",
+     "default": null,
+     "notes": "+0x60 tpl_markup_visibility_flags. Applied by 0x1431e6c60 only when exportedVersion >= 2 (VISIBILITY): object mask = flags & all.visibility"
+    },
+    {
+     "key": "collision",
+     "default": null,
+     "notes": "+0x68 tpl_markup_cdt_flags. Applied by 0x1431e6c60 when exportedVersion >= 1 (CDT): object collision mask = flags; mask 0 -> no-collision bit 0x40000"
+    },
+    {
+     "key": "lighting",
+     "default": null,
+     "notes": "section; the reader looks up lighting.smDontCastShadow only (+0x70). Applied by 0x1431e6c60 only when exportedVersion >= 3: geom flag 0x1000"
+    },
+    {
+     "key": "render",
+     "default": null,
+     "notes": "+0x78 {materialCustomizationSet (0x1431a3b40), renderCoveringDisable +0x88 (0x1431ddce0)}; both consumers require exportedVersion > 2"
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x1435c75f0",
+   "grade": "Confirmed-from-code",
+   "consumer": "0x1431e6c60",
+   "gates": {
+    "minExportedVersion": {
+     "sorting": 3,
+     "visibility": 2,
+     "collision": 1,
+     "lighting": 3,
+     "render": 3
+    },
+    "grade": "Confirmed-from-code",
+    "evidence": "0x1431e6c60: outer 'if (markup+0x60 != 0)'; 'if (1 < v)' visibility; 'if (2 < v)' lighting/sorting/z-bias; 0x1431a3b40 and 0x1431ddce0: 'if (2 < v)'"
+   },
+   "schemaGap": "schema/meta_desc lists only 'visibility' (+ 'sorting'): RC053 flags collision/lighting/render although the exe reads them",
+   "subReaders": {
+    "lighting": [
+     "smDontCastShadow"
+    ]
+   }
+  },
+  {
+   "context": "tpl_markup objSettings lighting",
+   "typeKey": "!global::tplMARKUP_OBJ_SETTINGS_LIGHTING",
+   "match": "*.tpl_markup: objSettings.settings.<obj>.lighting (TplObjSettingsGeom)",
+   "reads": [
+    {
+     "key": "smDontCastShadow",
+     "default": false,
+     "notes": "+0x70 of the geom settings; 0x1431e6c60 sets geom flag 0x1000 (no shadow-map casting) only when objSettings.exportedVersion > 2. Same bit as the exporter affix lighting_sm_dont_cast_shadow (0x1430545f0), which is how retail does it"
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x1435c75f0",
+   "grade": "Confirmed-from-code",
+   "consumer": "0x1431e6c60",
+   "gates": {
+    "minExportedVersion": {
+     "smDontCastShadow": 3
+    },
+    "grade": "Confirmed-from-code"
+   }
+  },
+  {
+   "context": "tpl_markup objSettings decal",
+   "typeKey": ".obj_settings::TplObjSettingsDecal",
+   "match": "*.tpl_markup: TplObjSettingsDecal",
+   "reads": [
+    {
+     "key": "sorting",
+     "default": null,
+     "notes": "via base reader 0x1435c6e50 (called first)"
+    },
+    {
+     "key": "render",
+     "default": null,
+     "notes": "+0x60"
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x1435c9d30",
+   "grade": "Confirmed-from-code",
+   "gates": {
+    "minExportedVersion": {
+     "<type itself: decal flag 0x8000>": 1,
+     "render": 3,
+     "sorting": 3
+    },
+    "grade": "Confirmed-from-code"
+   }
+  },
+  {
+   "context": "tpl_markup objSettings editor mesh",
+   "typeKey": ".obj_settings::tplMARKUP_OBJ_SETTINGS_EDITOR_MESH",
+   "match": "*.tpl_markup: tplMARKUP_OBJ_SETTINGS_EDITOR_MESH",
+   "reads": [
+    {
+     "key": "sorting",
+     "default": null,
+     "notes": "via base reader 0x1435c6e50 (called first)"
+    },
+    {
+     "key": "collision",
+     "default": null,
+     "notes": "+0x60"
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x1435c8420",
+   "grade": "Confirmed-from-code"
+  },
+  {
+   "context": "tpl_markup objSettings base",
+   "typeKey": ".obj_settings::TplObjSettingsBase",
+   "match": "*.tpl_markup: any objSettings entry",
+   "reads": [
+    {
+     "key": "physMaterial",
+     "default": null,
+     "notes": "TplObjSettingsPhysMaterial {useMaterial false, friction, restitution} (reader 0x1435c3eb0); consumer not traced, gate Unknown"
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x1435c61e0",
+   "grade": "Confirmed-from-code"
+  },
+  {
+   "context": "tpl_markup objSettings phys material",
+   "typeKey": "!global::TplObjSettingsPhysMaterial",
+   "match": "*.tpl_markup: objSettings.<obj>.physMaterial",
+   "reads": [
+    {
+     "key": "useMaterial",
+     "default": false,
+     "notes": "+0x20"
+    },
+    {
+     "key": "friction",
+     "default": null,
+     "notes": "+0x24"
+    },
+    {
+     "key": "restitution",
+     "default": null,
+     "notes": "+0x28"
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x1435c3eb0",
+   "grade": "Confirmed-from-code"
+  },
+  {
+   "context": "tpl_markup root",
+   "typeKey": ".tpl_markup::tpl_markup",
+   "match": "*.tpl_markup: file root",
+   "reads": [
+    {
+     "key": "colorizationSet",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "objects",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "objectInfos",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "objSettings",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "collisionGroups",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "lodInfo",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "windParams",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "bent_grassParams",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "imposterLodsParams",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "rendParams",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "giParams",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "navMeshParams",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "destructionSettings",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "terraformingParams",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "usePhysShape",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "materials",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "mtlMutators",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "mutateAllMaterialsInTexture",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "materialCustomizations",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "excludeAnimInstFromLwiRender",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "allowFullGeomDataUnloading",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "allowTerrainDeformBasedHiding",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "editorSettings",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "components",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "soundSettings",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "disableOcclusion",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "disableObstruction",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "allowNegativeScale",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "migrateAffixes",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "disableGeomStreaming",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "overrideMinimalLoadedLod",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "exportAnimationsInSaniFormat",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "foliageParticles",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "tplCustomization",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "version",
+     "default": 0,
+     "notes": "NOT looked up by the root reader 0x14309c3c0; kept as read because the resource loader may consume it (Unknown)"
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "jointGroups",
+     "why": "editor-only (IntegrationStudio TplMarkup.cs); the string 'jointGroups' is absent from both exes",
+     "evidence": "strings_modeditor_*/strings_retail_* have 0 hits; root reader 0x14309c3c0 does not look it up"
+    }
+   ],
+   "address": "0x14309c3c0",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup object",
+   "typeKey": ".tpl_markup::tpl_markup_object",
+   "match": "*.tpl_markup: objects[*]",
+   "reads": [
+    {
+     "key": "parentObjectId",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "name",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "localTransform",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x1430846c0",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup object base",
+   "typeKey": ".tpl_markup::tpl_markup_object_base",
+   "match": "*.tpl_markup: objects[*] (base)",
+   "reads": [
+    {
+     "key": "entities",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "properties",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x143083cc0",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup object info",
+   "typeKey": ".tpl_markup::tpl_markup_object_info",
+   "match": "*.tpl_markup: objectInfos[*]",
+   "reads": [
+    {
+     "key": "objectId",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "animationRole",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x143085130",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup locator",
+   "typeKey": ".tpl_markup::tpl_markup_locator",
+   "match": "*.tpl_markup: locator entity",
+   "reads": [
+    {
+     "key": "name",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "localTransform",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "properties",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x14306f4d0",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup shape",
+   "typeKey": ".tpl_markup::tpl_markup_shape",
+   "match": "*.tpl_markup: shape entity (base)",
+   "reads": [
+    {
+     "key": "localTransform",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "color",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "properties",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x1430701a0",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup shape sphere",
+   "typeKey": ".tpl_markup::tpl_markup_shape_sphere",
+   "match": "*.tpl_markup",
+   "reads": [
+    {
+     "key": "radius",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x143070c20",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup shape capsule",
+   "typeKey": ".tpl_markup::tpl_markup_shape_capsule",
+   "match": "*.tpl_markup",
+   "reads": [
+    {
+     "key": "radius",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "height",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x143071520",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup shape box",
+   "typeKey": ".tpl_markup::tpl_markup_shape_box",
+   "match": "*.tpl_markup",
+   "reads": [
+    {
+     "key": "width",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "height",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "depth",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x143071fa0",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup shape cylinder",
+   "typeKey": ".tpl_markup::tpl_markup_shape_cylinder",
+   "match": "*.tpl_markup",
+   "reads": [
+    {
+     "key": "radius",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "height",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x143072cf0",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup shape frustum",
+   "typeKey": ".tpl_markup::tpl_markup_shape_frustum",
+   "match": "*.tpl_markup",
+   "reads": [
+    {
+     "key": "bottomRadius",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "topRadius",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "height",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "segmentsNumber",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x143073780",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup silhouette",
+   "typeKey": ".tpl_markup::tpl_markup_silhouette",
+   "match": "*.tpl_markup",
+   "reads": [
+    {
+     "key": "offset",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "silhouetteType",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "orientedBox",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "yawAngle",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "size",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "cylinder",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "radius",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "height",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x143075190",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup placing setting",
+   "typeKey": ".tpl_markup::tpl_markup_placing_setting",
+   "match": "*.tpl_markup",
+   "reads": [
+    {
+     "key": "isExclude",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "objects",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x1430978e0",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup camera collision",
+   "typeKey": ".tpl_markup::tpl_markup_camera_collision",
+   "match": "*.tpl_markup",
+   "reads": [
+    {
+     "key": "disableCameraCollision",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "ignoreInFollowMode",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "disableTerrainDetailHeightLimit",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "isOverrideTerrainDetailHeightLimit",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "terrainDetailHeightLimitOverride",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x140d2d710",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup camera transparency",
+   "typeKey": ".tpl_markup::tpl_markup_camera_transparency",
+   "match": "*.tpl_markup",
+   "reads": [
+    {
+     "key": "isSeeThrough",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x140d15e70",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "tpl_markup occlusion logic",
+   "typeKey": ".tpl_markup::occlusion_logic",
+   "match": "*.tpl_markup",
+   "reads": [
+    {
+     "key": "enabled",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x143098ae0",
+   "grade": "Confirmed-from-code",
+   "notes": "reader key list only (defaults: schema); consumers not traced"
+  },
+  {
+   "context": "ssl:PropTruckWheel (prop_truck_wheel)",
+   "typeKey": ".prop::prop_truck_wheel",
+   "match": "*.cls: properties.prop_truck_wheel (wheel classes)",
+   "reads": [
+    {
+     "key": "width",
+     "default": 0.0,
+     "notes": "+0x58; physical cylinder width (clamped >= 0.01)"
+    },
+    {
+     "key": "radius",
+     "default": 0.0,
+     "notes": "+0x5c"
+    },
+    {
+     "key": "geomRadius",
+     "default": -1.0,
+     "notes": "+0x60"
+    },
+    {
+     "key": "mass",
+     "default": 0.0,
+     "notes": "+0x68; clamped >= 0.1"
+    },
+    {
+     "key": "collisionLayer",
+     "default": "physics",
+     "notes": "+0x40"
+    },
+    {
+     "key": "rimObjName",
+     "default": "rim",
+     "notes": "+0x48"
+    },
+    {
+     "key": "rearMassMultiplier",
+     "default": 1.0,
+     "notes": "+0x6c"
+    },
+    {
+     "key": "radiusOffset",
+     "default": 0.0,
+     "notes": "+0x7c"
+    },
+    {
+     "key": "substanceFriction",
+     "default": 0.0,
+     "notes": "+0x84; OVERWRITTEN by prop_truck_friction_updater at Init and per material"
+    },
+    {
+     "key": "substanceLinearResistance",
+     "default": 0.0,
+     "notes": "+0x88; substance drag action 0x140dc3b20"
+    },
+    {
+     "key": "steeringCastor",
+     "default": 0.0,
+     "notes": "+0x90"
+    },
+    {
+     "key": "softForceScale",
+     "default": 1.0,
+     "notes": "+0x70; soft-contact impulse fraction vs terrain/dynamic bodies (0x140ca86d0)"
+    },
+    {
+     "key": "softForceScaleStatic",
+     "default": 1.0,
+     "notes": "+0x74; impulse fraction vs fixed non-terrain bodies"
+    },
+    {
+     "key": "sidewaysFrictionMultiplier",
+     "default": 1.0,
+     "notes": "+0x9c (native-bound; force law not located)"
+    },
+    {
+     "key": "sidewaysFrictionMaxVelocity",
+     "default": 1.0,
+     "notes": "+0xa0 (native-bound; force law not located)"
+    },
+    {
+     "key": "isSoftContactEnabled",
+     "default": true,
+     "notes": "+0xc9; gates the soft-contact callback"
+    },
+    {
+     "key": "isSoftContactEnableForStaticOnly",
+     "default": false,
+     "notes": "+0xca; soft contact only against FIXED (motion type 5) bodies"
+    },
+    {
+     "key": "isWheelStabilizationEnabled",
+     "default": false,
+     "notes": "+0xa8; creates a phantom cylinder cast (visual wheel smoothing)"
+    },
+    {
+     "key": "maxSpeedFullPhysWheel",
+     "default": 15.0,
+     "notes": "+0xac km/h"
+    },
+    {
+     "key": "maxSpeedFullFakeWheel",
+     "default": 30.0,
+     "notes": "+0xb0 km/h"
+    },
+    {
+     "key": "rimRadius",
+     "default": 0.0,
+     "notes": "+0xb8"
+    },
+    {
+     "key": "deformEnable",
+     "default": false,
+     "notes": "+0xb4"
+    },
+    {
+     "key": "deformProperties",
+     "default": null,
+     "notes": "+0xe0"
+    },
+    {
+     "key": "decals",
+     "default": null,
+     "notes": "+0xd8"
+    },
+    {
+     "key": "activateCriticalCollisionTypeOnInit",
+     "default": false,
+     "notes": "SSL Setup"
+    },
+    {
+     "key": "activateAntiTunnelingModificatorOnInit",
+     "default": true,
+     "notes": "SSL Setup"
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "bodyFriction",
+     "why": "runtime field: not an [editor] member (not in meta_desc_ssl), and prop_truck_friction_updater.Init assigns it unconditionally (frictionMaterialsList.default.frictionValue, or 2.0 without a default entry) and again on every material change",
+     "evidence": "ssl/trucks/prop_truck_wheel.ssc l.66 ([public] native var, no [editor]); game/truck/friction/prop_truck_friction_updater.ssc l.80-91, 139-151"
+    },
+    {
+     "key": "terrainDeformationFactor",
+     "why": "runtime field written by the friction updater (FrictionMaterial.terrainDeformationFactor)",
+     "evidence": "prop_truck_wheel.ssc l.67; prop_truck_friction_updater.ssc l.85-89, 145-148"
+    }
+   ],
+   "address": "0x140dd1ad0",
+   "grade": "Confirmed-from-code",
+   "notes": "SSL class: unknown keys are RC053's job. Native binding table 0x140dd1ad0 gives the field offsets."
+  },
+  {
+   "context": "ssl:FrictionMaterial",
+   "typeKey": ".ssl::FrictionMaterial",
+   "match": "*.cls: prop_truck_friction_updater.frictionMaterialsList.<material>",
+   "reads": [
+    {
+     "key": "frictionValue",
+     "default": 2.0,
+     "notes": "-> wheel.bodyFriction (likeAsphalt: lerp to 6.0 with wheel speed)"
+    },
+    {
+     "key": "terrainDeformationFactor",
+     "default": 1.0,
+     "notes": "-> wheel.terrainDeformationFactor (0 when deformation disabled)"
+    },
+    {
+     "key": "substanceFriction",
+     "default": 0.0,
+     "notes": "-> wheel.substanceFriction"
+    },
+    {
+     "key": "likeAsphalt",
+     "default": false,
+     "notes": "ApplyAsphaltFriction every frame"
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "prop_truck_friction_updater.ssc",
+   "grade": "Confirmed-from-code"
+  },
+  {
+   "context": "ssl:WheelParticleMaterialSettings",
+   "typeKey": ".ssl::WheelParticleMaterialSettings",
+   "match": "*.cls: __type = WheelParticleMaterialSettings",
+   "reads": [
+    {
+     "key": "particleTenacity",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "baseDepth",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "spreadAngleProb",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "angleRandRange",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "maxParticleVelocity",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "spreadAngle",
+     "why": "member of TrackParticleMaterialSettings only (registered by 0x140cbbdb0)",
+     "evidence": "0x140cbbfe0 registers no spreadAngle; prop_wheel_particles_base.ssl l.236-246"
+    }
+   ],
+   "address": "0x140cbbfe0",
+   "grade": "Confirmed-from-code"
+  },
+  {
+   "context": "ssl:TrackParticleMaterialSettings",
+   "typeKey": ".ssl::TrackParticleMaterialSettings",
+   "match": "*.cls: __type = TrackParticleMaterialSettings",
+   "reads": [
+    {
+     "key": "spreadAngle",
+     "default": 0.0,
+     "notes": ""
+    },
+    {
+     "key": "bottomSpreadAngle",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [],
+   "address": "0x140cbbdb0",
+   "grade": "Confirmed-from-code",
+   "notes": "partial list: only the two keys distinguishing it from WheelParticleMaterialSettings were verified"
+  },
+  {
+   "context": "ssl:TruckGearboxParams",
+   "typeKey": ".ssl::TruckGearboxParams",
+   "match": "*.cls: __type = TruckGearboxParams",
+   "reads": [
+    {
+     "key": "name",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "type",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "gears",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "reverseGear",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "highGear",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "lowRangeGear",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "isLowRangeModeReverseEnabled",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "isLowRangeModeClutchingEnabled",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "finalDriveRatio",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "clutchSwitchTime",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "defaultGearSwitchDelay",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "upperGearSwitchDelayBase",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "upperGearSwitchDelayGearNumMultiplier",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "downGearSwitchDelay",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "neutralGearSwitchingDelay",
+     "default": null,
+     "notes": ""
+    },
+    {
+     "key": "useDeprecatedAutoGearSwitchLogic",
+     "default": null,
+     "notes": ""
+    }
+   ],
+   "ignoredKnown": [
+    {
+     "key": "lowRangeMultiplier",
+     "why": "read nowhere: not in either exe, no SSL source; stale designer key (retail ships it too)",
+     "evidence": "physics_semantics.md F1"
+    }
+   ],
+   "address": "ssl/trucks/truck_components.ssl",
+   "grade": "Confirmed-from-code"
+  }
+ ],
+ "validatorTable": {
+  ".tpl_markup::tpl_markup_object_property_physics": [
+   "allowedPenetrationDepth",
+   "angularDamping",
+   "boneCenterOfMassOffset",
+   "collisionLayer",
+   "density",
+   "disable",
+   "fixed",
+   "friction",
+   "havokMassCenter",
+   "hkCenterOfMassOffset",
+   "linearDamping",
+   "mass",
+   "massFromDensity",
+   "nonConvexShape",
+   "restitution"
+  ],
+  ".tpl_markup::tpl_markup_object_shape_property_physics": [],
+  ".tpl_markup::tpl_markup_position_motor": [
+   "constantRecoveryVelocity",
+   "damping",
+   "maxForce",
+   "proportionalRecoveryVelocity",
+   "tau"
+  ],
+  ".tpl_markup::tpl_markup_spring_motor": [
+   "damping",
+   "spring"
+  ],
+  ".tpl_markup::tpl_markup_ragdoll_motor": [
+   "axis",
+   "motor"
+  ],
+  ".tpl_markup::tpl_markup_constraint": [
+   "breakThreshold",
+   "childRotation",
+   "childTranslation",
+   "enabled",
+   "isBreakable",
+   "isMalleable",
+   "malleableStrength",
+   "massFactor",
+   "name",
+   "target"
+  ],
+  ".tpl_markup::tpl_markup_constraint_hinge": [
+   "angleEnd",
+   "angleStart",
+   "breakThreshold",
+   "childRotation",
+   "childTranslation",
+   "enabled",
+   "isBreakable",
+   "isInitialFix",
+   "isMalleable",
+   "isTerminalFix",
+   "limited",
+   "malleableStrength",
+   "massFactor",
+   "motor",
+   "name",
+   "target"
+  ],
+  ".tpl_markup::tpl_markup_constraint_prismatic": [
+   "breakThreshold",
+   "childRotation",
+   "childTranslation",
+   "enabled",
+   "isBreakable",
+   "isInitialFix",
+   "isMalleable",
+   "isMaxLimit",
+   "isMinLimit",
+   "isTerminalFix",
+   "malleableStrength",
+   "massFactor",
+   "maxLimit",
+   "minLimit",
+   "motor",
+   "name",
+   "target"
+  ],
+  ".tpl_markup::tpl_markup_constraint_fixed": [
+   "breakThreshold",
+   "childRotation",
+   "childTranslation",
+   "enabled",
+   "isBreakable",
+   "isMalleable",
+   "limited",
+   "linearLimitsMax",
+   "linearLimitsMin",
+   "malleableStrength",
+   "massFactor",
+   "motor",
+   "name",
+   "target"
+  ],
+  ".tpl_markup::tpl_markup_constraint_wheel": [
+   "breakThreshold",
+   "childRotation",
+   "childTranslation",
+   "dampingFactor",
+   "enabled",
+   "isBreakable",
+   "isMalleable",
+   "malleableStrength",
+   "massFactor",
+   "maxLimit",
+   "minLimit",
+   "name",
+   "strengthFactor",
+   "target"
+  ],
+  ".tpl_markup::tpl_markup_constraint_ragdoll": [
+   "breakThreshold",
+   "childRotation",
+   "childTranslation",
+   "coneAngle",
+   "enabled",
+   "isBreakable",
+   "isMalleable",
+   "limitTau",
+   "malleableStrength",
+   "massFactor",
+   "motors",
+   "name",
+   "parentRotation",
+   "planeMaxAngle",
+   "planeMinAngle",
+   "target",
+   "twistAngleMax",
+   "twistAngleMin"
+  ],
+  ".tpl_markup::tpl_markup_constraint_keep_distance": [
+   "breakThreshold",
+   "childRotation",
+   "childTranslation",
+   "enabled",
+   "isBreakable",
+   "isMalleable",
+   "linearLimit",
+   "malleableStrength",
+   "massFactor",
+   "name",
+   "strength",
+   "target"
+  ],
+  ".tpl_markup::tpl_markup_constraint_ball_and_socket": [
+   "breakThreshold",
+   "childRotation",
+   "childTranslation",
+   "enabled",
+   "isBreakable",
+   "isMalleable",
+   "malleableStrength",
+   "massFactor",
+   "name",
+   "target"
+  ],
+  ".obj_settings::TplObjSettingsGeom": [
+   "collision",
+   "lighting",
+   "physMaterial",
+   "render",
+   "sorting",
+   "visibility"
+  ],
+  ".obj_settings::TplObjSettingsDecal": [
+   "physMaterial",
+   "render",
+   "sorting"
+  ],
+  ".obj_settings::tplMARKUP_OBJ_SETTINGS_EDITOR_MESH": [
+   "collision",
+   "physMaterial",
+   "sorting"
+  ],
+  ".obj_settings::TplObjSettingsBase": [
+   "physMaterial"
+  ],
+  ".tpl_markup::tpl_markup": [
+   "allowFullGeomDataUnloading",
+   "allowNegativeScale",
+   "allowTerrainDeformBasedHiding",
+   "bent_grassParams",
+   "collisionGroups",
+   "colorizationSet",
+   "components",
+   "destructionSettings",
+   "disableGeomStreaming",
+   "disableObstruction",
+   "disableOcclusion",
+   "editorSettings",
+   "excludeAnimInstFromLwiRender",
+   "exportAnimationsInSaniFormat",
+   "foliageParticles",
+   "giParams",
+   "imposterLodsParams",
+   "lodInfo",
+   "materialCustomizations",
+   "materials",
+   "migrateAffixes",
+   "mtlMutators",
+   "mutateAllMaterialsInTexture",
+   "navMeshParams",
+   "objSettings",
+   "objectInfos",
+   "objects",
+   "overrideMinimalLoadedLod",
+   "rendParams",
+   "soundSettings",
+   "terraformingParams",
+   "tplCustomization",
+   "usePhysShape",
+   "version",
+   "windParams"
+  ],
+  ".tpl_markup::tpl_markup_object": [
+   "entities",
+   "localTransform",
+   "name",
+   "parentObjectId",
+   "properties"
+  ],
+  ".tpl_markup::tpl_markup_object_base": [
+   "entities",
+   "properties"
+  ],
+  ".tpl_markup::tpl_markup_object_info": [
+   "animationRole",
+   "entities",
+   "objectId",
+   "properties"
+  ],
+  ".tpl_markup::tpl_markup_locator": [
+   "localTransform",
+   "name",
+   "properties"
+  ],
+  ".tpl_markup::tpl_markup_shape": [
+   "color",
+   "localTransform",
+   "properties"
+  ],
+  ".tpl_markup::tpl_markup_shape_sphere": [
+   "color",
+   "localTransform",
+   "properties",
+   "radius"
+  ],
+  ".tpl_markup::tpl_markup_shape_capsule": [
+   "color",
+   "height",
+   "localTransform",
+   "properties",
+   "radius"
+  ],
+  ".tpl_markup::tpl_markup_shape_box": [
+   "color",
+   "depth",
+   "height",
+   "localTransform",
+   "properties",
+   "width"
+  ],
+  ".tpl_markup::tpl_markup_shape_cylinder": [
+   "color",
+   "height",
+   "localTransform",
+   "properties",
+   "radius"
+  ],
+  ".tpl_markup::tpl_markup_shape_frustum": [
+   "bottomRadius",
+   "color",
+   "height",
+   "localTransform",
+   "properties",
+   "segmentsNumber",
+   "topRadius"
+  ],
+  ".tpl_markup::tpl_markup_silhouette": [
+   "cylinder",
+   "height",
+   "offset",
+   "orientedBox",
+   "radius",
+   "silhouetteType",
+   "size",
+   "yawAngle"
+  ],
+  ".tpl_markup::tpl_markup_placing_setting": [
+   "isExclude",
+   "objects"
+  ],
+  ".tpl_markup::tpl_markup_camera_collision": [
+   "disableCameraCollision",
+   "disableTerrainDetailHeightLimit",
+   "ignoreInFollowMode",
+   "isOverrideTerrainDetailHeightLimit",
+   "terrainDetailHeightLimitOverride"
+  ],
+  ".tpl_markup::tpl_markup_camera_transparency": [
+   "isSeeThrough"
+  ],
+  ".tpl_markup::occlusion_logic": [
+   "enabled"
+  ],
+  ".obj_settings::TplObjSettingsSkinned": [
+   "collision",
+   "lighting",
+   "physMaterial",
+   "render",
+   "sorting",
+   "visibility"
+  ],
+  ".obj_settings::TplObjSettingsSkinCompound": [
+   "collision",
+   "lighting",
+   "physMaterial",
+   "render",
+   "sorting",
+   "visibility"
+  ],
+  ".obj_settings::TplObjSettingsBlendShape": [
+   "sorting",
+   "physMaterial"
+  ]
+ },
+ "ignoredKeys": {
+  ".tpl_markup::tpl_markup_position_motor": {
+   "spring": "not looked up by the reader; the position motor has no spring field (use tau/damping or a spring motor)"
+  },
+  ".tpl_markup::tpl_markup_spring_motor": {
+   "tau": "position-motor key; the spring-motor reader never looks it up (maxForce is fixed at FLT_MAX)",
+   "maxForce": "position-motor key; the spring-motor reader never looks it up (maxForce is fixed at FLT_MAX)",
+   "proportionalRecoveryVelocity": "position-motor key; the spring-motor reader never looks it up (maxForce is fixed at FLT_MAX)",
+   "constantRecoveryVelocity": "position-motor key; the spring-motor reader never looks it up (maxForce is fixed at FLT_MAX)"
+  },
+  ".tpl_markup::tpl_markup_constraint_six_dof": {
+   "warning": "editor-only section; the reader does not look it up"
+  },
+  ".tpl_markup::tpl_markup": {
+   "jointGroups": "editor-only (IntegrationStudio TplMarkup.cs); the string 'jointGroups' is absent from both exes"
+  },
+  ".prop::prop_truck_wheel": {
+   "bodyFriction": "runtime field: not an [editor] member (not in meta_desc_ssl), and prop_truck_friction_updater.Init assigns it unconditionally (frictionMaterialsList.default.frictionValue, or 2.0 without a default entry) and again on every material change",
+   "terrainDeformationFactor": "runtime field written by the friction updater (FrictionMaterial.terrainDeformationFactor)"
+  },
+  ".ssl::WheelParticleMaterialSettings": {
+   "spreadAngle": "member of TrackParticleMaterialSettings only (registered by 0x140cbbdb0)"
+  },
+  ".ssl::TruckGearboxParams": {
+   "lowRangeMultiplier": "read nowhere: not in either exe, no SSL source; stale designer key (retail ships it too)"
+  }
+ },
+ "conditional": {
+  ".tpl_markup::tpl_markup_object_property_physics": [
+   {
+    "key": "mass",
+    "ignoredWhen": {
+     "massFromDensity": true
+    }
+   },
+   {
+    "key": "density",
+    "ignoredWhen": {
+     "massFromDensity": false
+    }
+   },
+   {
+    "key": "boneCenterOfMassOffset",
+    "ignoredWhen": {
+     "havokMassCenter": true
+    }
+   },
+   {
+    "key": "hkCenterOfMassOffset",
+    "ignoredWhen": {
+     "havokMassCenter": false
+    }
+   }
+  ],
+  ".tpl_markup::tpl_markup_constraint": [
+   {
+    "key": "breakThreshold",
+    "ignoredWhen": {
+     "isBreakable": false
+    }
+   },
+   {
+    "key": "malleableStrength",
+    "ignoredWhen": {
+     "isMalleable": false
+    }
+   }
+  ],
+  ".tpl_markup::tpl_markup_constraint_hinge": [
+   {
+    "key": "angleStart",
+    "ignoredWhen": {
+     "limited": false
+    }
+   },
+   {
+    "key": "angleEnd",
+    "ignoredWhen": {
+     "limited": false
+    }
+   }
+  ],
+  ".tpl_markup::tpl_markup_constraint_prismatic": [
+   {
+    "key": "minLimit",
+    "ignoredWhen": {
+     "isMinLimit": false
+    }
+   },
+   {
+    "key": "maxLimit",
+    "ignoredWhen": {
+     "isMaxLimit": false
+    }
+   }
+  ],
+  ".tpl_markup::tpl_markup_constraint_fixed": [
+   {
+    "key": "linearLimitsMin",
+    "ignoredWhen": {
+     "limited": false
+    }
+   },
+   {
+    "key": "linearLimitsMax",
+    "ignoredWhen": {
+     "limited": false
+    }
+   },
+   {
+    "key": "motor",
+    "ignoredWhen": {
+     "limited": false
+    }
+   }
+  ]
+ },
+ "gated": {
+  "description": "Per-object objSettings sub-blocks are parsed (so they are not RC072 'unread' keys) but applied only when the markup's objSettings.exportedVersion reaches the value given. Absent exportedVersion = OBJ_SETTINGS_EXPORT_VER_NONE (0) = nothing per-object is applied. Validator: when objSettings.settings is non-empty and exportedVersion is absent/NONE, report each sub-block as parsed-but-inert (info).",
+  "gateKey": "tpl_markup.objSettings.exportedVersion",
+  "enum": {
+   "OBJ_SETTINGS_EXPORT_VER_NONE": 0,
+   "OBJ_SETTINGS_EXPORT_VER_CDT": 1,
+   "OBJ_SETTINGS_EXPORT_VER_VISIBILITY": 2,
+   "OBJ_SETTINGS_EXPORT_VER_MOD_EDITOR": 3
+  },
+  "minExportedVersion": {
+   ".obj_settings::TplObjSettingsGeom": {
+    "collision": 1,
+    "visibility": 2,
+    "lighting": 3,
+    "sorting": 3,
+    "render": 3
+   },
+   ".obj_settings::TplObjSettingsSkinned": {
+    "collision": 1,
+    "visibility": 2,
+    "lighting": 3,
+    "sorting": 3,
+    "render": 3
+   },
+   ".obj_settings::TplObjSettingsSkinCompound": {
+    "collision": 1,
+    "visibility": 2,
+    "lighting": 3,
+    "sorting": 3,
+    "render": 3
+   },
+   ".obj_settings::TplObjSettingsDecal": {
+    "render": 3,
+    "sorting": 3
+   },
+   "!global::tplMARKUP_OBJ_SETTINGS_LIST": {
+    "all": 2
+   }
+  },
+  "addresses": {
+   "consumer": "0x1431e6c60",
+   "render.materialCustomizationSet": "0x1431a3b40",
+   "render.renderCoveringDisable": "0x1431ddce0",
+   "enumReaderText": "0x1435c3010",
+   "enumReaderAlt": "0x1435c3400",
+   "listCtor": "0x1435ca970",
+   "onlyWriterFound": "0x141023360 (editor dynamic tpl, sets 1)"
+  },
+  "grade": "Confirmed-from-code",
+  "unknown": "physMaterial consumer/gate not traced"
+ }
+}

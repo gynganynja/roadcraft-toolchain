@@ -44,6 +44,17 @@ wheel-carrying body to the hull with a fixed constraint: track frames and bogies
 slides (Retail, RC047). Retail track frames are heavy: Greenway HT500's weigh 7.5 t each, 12.5 % of
 its body mass.
 
+**Retail springs its track frames.** Greenway HT500 (Retail): `BoneTrackSusp_L/R_cdt`, 7.5 t, on a
+`tpl_markup_constraint_hinge` with `childRotation [0, 90, 0]`, `limited` -5..5 deg and
+`motor = { spring = 10000000, damping = 11000000, __type = "tpl_markup_spring_motor" }`, the pivot at
+the frame bone (z -1.86 on a track running 1.03 to -2.87, rear-biased). The owner on the vanilla
+HT500: "the track frames have springyness, allows the wheels to move smoothly up and down; my mods
+don't" (Game, 2026-10-13). A spring motor takes real units and unlimited force; a position motor's
+`spring` key is never read (physics_semantics.md T5, read_fields.md). Mods: Goliath D11 already
+hinges its frames HT500-style (+-5 deg, 1.56e7 / 1.7e7); T-80 +-2 deg, 1.2e7 / 4.4e6; Hitachi
+EX5600 has no frame bodies; KGS-25 welded its frames with `tpl_markup_constraint_fixed` until
+candidate f841eb34 (Build).
+
 ## The KGS-25 failure: "like there isn't anything underneath it"
 
 Owner report on candidate 03: the crane lifts on one side and is pushed around while driving.
@@ -75,6 +86,15 @@ tracked jank. Not yet benched against a retail crawler.
 
 The owner drove fix 1 in the game: "it does it worse now", "bounces or wobbles" (Game). Fix 2 is
 installed; the owner's drive is pending.
+
+Later KGS-25 drives (2026-10-13; owner's symptoms against the vanilla TC305: a bouncy, jittery hull
+and the steering feel off, not tipping or grip):
+
+| Build | Change | Owner | Grade |
+|---|---|---|---|
+| cf9dca20 | inner-track steering curve ends at -0.6 | "felt the same, maybe a bit smoother" | Game, one drive: weak positive |
+| 93c5e889 | TC305 wheel friction tables, `softForceScale` 0.75, drive/idler wheels 120 -> 450 kg | "feels better, still a bit janky when one wheel is climbing something" | Game, one drive: positive |
+| f841eb34 | track frames on the HT500 sprung hinge instead of a weld | not yet driven | Build |
 
 ## Springs on a light body
 
@@ -110,7 +130,14 @@ Game, one vehicle (KGS-25 fix 2); every step was needed, none alone was enough:
 3. Keep the idler and sprocket real and rigid, raised as modelled.
 4. Give the track frames retail-like mass (7.5 t each on a 41 t crane) and take it from the hull,
    keeping the total; lower the hull's centre of mass (`[0, -1, 0]`).
-5. Run `roadcraft lint-bro` with the class, model and markup (below), then measure on the bench
+5. Hang each frame on a sprung hinge, never a weld: the HT500 hinge above (`childRotation [0,90,0]`,
+   -5..5 deg, spring motor 1e7 / 1.1e7). Fix 2 raised the frame mass but kept the weld; that was
+   wrong (corrected 2026-10-13 after the owner's HT500 observation; Retail + Game).
+6. Match the retail contact feel: copy the donor's wheel friction tables (`frictionMaterialsList`,
+   with `default`, `asphalt` and `mud_sand`) and `softForceScale` (TC305 0.75; KGS's default 1.0 made
+   all 22 wheel contacts rigid), and keep wheel bodies near the donor's wheel-to-body mass ratio
+   (read_fields.md "Tracked contributors"; code analysis, static).
+7. Run `roadcraft lint-bro` with the class, model and markup (below), then measure on the bench
    before installing: roll in pivot turns, hull height, frame twist and the yaw achieved.
 
 ## A small crawler on the hull: WALL-E (2026-10-04)
@@ -148,7 +175,7 @@ read by default) runs `roadcraft.tracks`:
 | Code | Severity | Finds | Retail |
 |---|---|---|---|
 | RC046 | warning | a track whose ground wheels are all stop fakes, no real wheel at ground level (needs the model) | none |
-| RC047 | warning | a wheel-carrying body welded to its parent by a fixed constraint and under 10 % of the total body mass (KGS-25 frames: 6 %) | none |
+| RC047 | warning | a wheel-carrying body (track frame) welded to its parent by a fixed constraint at any mass share, or on a hinge/slide with no motor; the message names a frame under 10 % of the body mass and gives the HT500 hinge as the fix (widened 2026-10-13: fix 2's heavy but welded frames passed the old 10 % rule) | none |
 | RC048 | info | sprung wheels on a jointed body under 10 % of the total body mass: expect springs softer than the vehicle-mass formula (rationale superseded 2026-10-13, see below; the flag stays) | Aramatsu Forester Neo crane and forwarder |
 
 **RC048's rationale is now unsupported** (2026-10-13): it rested on the mass-scaling inference and

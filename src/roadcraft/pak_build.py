@@ -20,7 +20,8 @@ The Mod Editor's Build Mod (``ModEditorCommands.ExecuteBuildMod``, decompiled Mo
 * the raw package is normalized with :mod:`roadcraft.pak_determinism` (member timestamps are the only
   bytes that differ between rebuilds of the same input), so the same input gives the same bytes;
 * a receipt (``build.json``) records the input hashes, the packer's identity, the log findings, any
-  window the packer tree showed on the user's desktop, and the output hash.
+  window the packer tree showed on the user's desktop, and the output hash; it carries the package
+  receipt keys ``candidate``, ``packageSha256`` and ``accepted: false`` (a build never accepts).
 
 Scene export (``furnace scene``) and the editor's asset renaming are not part of this step: every
 released mod packs assets only (``scenes: []``).  A ``.mod`` that lists scenes is refused with a pointer
@@ -67,6 +68,7 @@ class BuildPlan:
     normalize: bool = True
     timeout: float = DEFAULT_TIMEOUT
     roots_source: str = "mod"
+    candidate: str = ""
     problems: list[str] = field(default_factory=list)
 
 
@@ -124,7 +126,7 @@ def roots_from_mod(mod: dict[str, Any]) -> list[str]:
 
 def plan(project: str | Path, mod_file: str | Path, output: str | Path, *, roots_file: str | Path | None = None,
          roots: Sequence[str] | None = None, work: str | Path | None = None, game_root: str | Path | None = None,
-         normalize: bool = True, timeout: float = DEFAULT_TIMEOUT) -> BuildPlan:
+         normalize: bool = True, timeout: float = DEFAULT_TIMEOUT, candidate: str | None = None) -> BuildPlan:
     """Check the inputs without running anything; ``problems`` lists every reason the build would be refused."""
     project, mod_file, output = Path(project).resolve(), Path(mod_file).resolve(), Path(output).resolve()
     game = Path(game_root).resolve() if game_root else _default_game_root()
@@ -166,14 +168,12 @@ def plan(project: str | Path, mod_file: str | Path, output: str | Path, *, roots
     if output.suffix.lower() != ".pak":
         problems.append(f"{output} is not a .pak path")
     return BuildPlan(project, mod_file, [t.strip() for t in tags], output, work_dir, packer, game, normalize,
-                     timeout, source, problems)
+                     timeout, source, candidate or output.stem, problems)
 
 
 def _default_game_root() -> Path:
-    env = os.environ.get("ROADCRAFT_ROOT")
-    if env:
-        return Path(env).resolve()
-    return Path(r"C:\Program Files (x86)\Steam\steamapps\common\RoadCraft")
+    from .project_context import game_root
+    return game_root()
 
 
 def scan_log(text: str) -> dict[str, Any]:
@@ -216,6 +216,8 @@ def build(p: BuildPlan) -> dict[str, Any]:
                    "leakedWindows": result.leaked_windows, "privateWindows": result.private_windows,
                    "orphansKilled": result.orphans_killed},
         "log": findings, "output": None, "ok": False,
+        # the package-receipt shape install/jobs-recover take: {candidate, packageSha256, accepted}
+        "candidate": p.candidate, "packageSha256": None, "accepted": False,
     }
     failures = []
     if result.timed_out:
@@ -235,6 +237,7 @@ def build(p: BuildPlan) -> dict[str, Any]:
             shutil.copyfile(raw, p.output)
         receipt["output"] = {"path": str(p.output), "sha256": _sha256(p.output), "bytes": p.output.stat().st_size,
                              "normalized": p.normalize}
+        receipt["packageSha256"] = receipt["output"]["sha256"]
     receipt["failures"] = failures
     receipt["ok"] = not failures
     (p.work / "build.json").write_text(json.dumps(receipt, indent=1, sort_keys=True), encoding="utf-8")
@@ -250,14 +253,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     roots.add_argument("--roots-file", help="one res:// tag per line (default: the .mod scenes + assets)")
     roots.add_argument("--root", action="append", help="a res:// root tag (repeatable)")
     parser.add_argument("--work", help="work folder for the log, scratch and receipt (default: <output>.build)")
-    parser.add_argument("--game-root", help="RoadCraft install with tools/bin (default: ROADCRAFT_ROOT or Steam)")
+    parser.add_argument("--game-root", help="RoadCraft install with tools/bin (default: ROADCRAFT_GAME_ROOT, ROADCRAFT_ROOT, machine.json sdkRoot, Steam)")
     parser.add_argument("--no-normalize", action="store_true", help="keep the packer's timestamps")
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
+    parser.add_argument("--candidate", help="candidate name recorded in the receipt (default: the output's stem)")
     parser.add_argument("--apply", action="store_true", help="run the packer (default: preflight only)")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     p = plan(args.project, args.mod_file, args.output, roots_file=args.roots_file, roots=args.root, work=args.work,
-             game_root=args.game_root, normalize=not args.no_normalize, timeout=args.timeout)
+             game_root=args.game_root, normalize=not args.no_normalize, timeout=args.timeout,
+             candidate=args.candidate)
     if not args.apply:
         report = {"preflight": True, "ready": not p.problems, "problems": p.problems, "roots": len(p.roots),
                   "rootsSource": p.roots_source, "output": str(p.output), "work": str(p.work),

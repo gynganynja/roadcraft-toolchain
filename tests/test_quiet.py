@@ -110,6 +110,39 @@ class ConsoleTests(unittest.TestCase):
             with open(path, "rb") as stream:
                 self.assertEqual(sorted(stream.read().split()), [b"a", b"b"])
 
+    def test_pipes_line_protocol_and_priority(self):
+        code = ("import sys, os\n"
+                "for line in sys.stdin:\n"
+                "    sys.stdout.write(line.upper()); sys.stdout.flush()\n"
+                "    if line.strip() == 'priority':\n"
+                "        import ctypes\n"
+                "        k = ctypes.WinDLL('kernel32') if os.name == 'nt' else None\n"
+                "        if k:\n"
+                "            k.GetCurrentProcess.restype = ctypes.c_void_p\n"
+                "            k.GetPriorityClass.argtypes = [ctypes.c_void_p]\n"
+                "        value = k.GetPriorityClass(k.GetCurrentProcess()) if k else os.nice(0)\n"
+                "        sys.stdout.write(f'{value}\\n'); sys.stdout.flush()\n")
+        process = quiet.start([PY, "-c", code], pipes=True, priority="below_normal")
+        try:
+            process.stdin.write(b"hello\npriority\n")
+            process.stdin.flush()
+            data = b""
+            while data.count(b"\n") < 3:
+                chunk = process.stdout.read(1)
+                if not chunk:
+                    break
+                data += chunk
+            lines = data.decode().split()
+            self.assertEqual(lines[:2], ["HELLO", "PRIORITY"])
+            if WINDOWS:  # the venv redirector's child inherits the class
+                self.assertEqual(int(lines[2]), quiet.PRIORITY_CLASSES["below_normal"])
+            process.stdin.close()
+            self.assertEqual(process.wait(20), 0)
+        finally:
+            process.close()
+        with self.assertRaises(ValueError):
+            quiet.start([PY, "-c", "pass"], priority="realtime")
+
     def test_start_handle_poll_wait_kill(self):
         process = quiet.start([PY, "-c", "import time; time.sleep(60)"])
         try:

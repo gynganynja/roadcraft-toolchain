@@ -20,6 +20,8 @@ before installing it. Read the subject articles when authoring:
 | [suspension-and-wheels.md](suspension-and-wheels.md) | Wheel slots, axle controller, steering racks, wheel models, suspension values and their measured stop geometry |
 | [tracked-vehicles.md](tracked-vehicles.md) | Crawlers: the retail track layouts, track-frame masses, the KGS-25 fix, checks RC046-RC048 |
 | [physics-bench.md](physics-bench.md) | Measuring a handling change in the Mod Editor before installing it (`roadcraft bench`) |
+| [physics-report.md](physics-report.md) | The physics values the engine will use and a side-by-side comparison against a retail donor (`roadcraft physics report`, `roadcraft compare`) |
+| [headless-bench.md](headless-bench.md) | The editor's engine without the editor: windowless runs, ConsoleTre hub, scenario bench and capture (`roadcraft.bench_headless`) |
 | [ik-visual-rigs.md](ik-visual-rigs.md) | Visual IK chains: wishbones, uprights, dampers, cylinders, linkages |
 | [truck-settings.md](truck-settings.md) | Truck BRO settings: steering, pedals, gearbox, controls, the SDK sample's gaps |
 | [cockpit-and-lamps.md](cockpit-and-lamps.md) | Steering wheel and gauges (`dataDashboard`), lamps that work in the campaign |

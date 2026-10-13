@@ -31,6 +31,8 @@ back to plain `subprocess`.
 | `S3D_FORCE_SILENT_CRASH_REPORT=1` always; `crash_dump_dir=` sets `S3D_TOOLS_CRASHDUMP_DIR` | Selects the engine's silent error handler instead of its assert/error dialog | **Inferred** (static analysis of ModEditor.exe, `C:\RC_RE\research\focus_dialogs_native.md`; not yet observed in a run). It is the only dialog-suppression variable the research found |
 | Explicit handle inheritance (PROC_THREAD_ATTRIBUTE_HANDLE_LIST); stdin is NUL | Concurrent launches do not inherit each other's pipes (a classic cause of reads that never end) | **SDK** |
 | Watchdog thread (every 0.2 s, and once more before a timeout kill) | Lists top-level windows of the job's processes on the `Default` desktop and on the private one. Read-only: InternalGetWindowText, never WM_GETTEXT; it never touches user windows | **Build** (positive control: an invisible window on the user's desktop is reported) |
+| `priority="below_normal"` (or `"idle"`, `"normal"`) | Priority class passed to CreateProcess; the engine and the ConsoleTre hub run below normal so the owner's work keeps the CPU | **Build** (`tests/test_quiet.py` reads the class back in the child) |
+| `pipes=True` | stdin and stdout become pipes the caller drives (`process.stdin`, `process.stdout`, binary, unbuffered) for line protocols such as the ConsoleTre hub helper; stderr goes to `log` or is captured; only the child's pipe ends are inheritable | **Build** (`tests/test_quiet.py`, `tests/test_engine.py`) |
 | `breakaway=True` | Tries CREATE_BREAKAWAY_FROM_JOB when the toolchain itself runs in a job; falls back if the parent job refuses | **SDK**; untested here |
 
 ## Engine arguments still needed
@@ -43,6 +45,8 @@ The launcher cannot switch off the engine's own windows and dialogs; pass these 
 `--set /Config/VideoDriverVersionWarning/Show false`, `--set /Config/Video/LowCpuMemoryWarning/Ignored true`,
 `--set /Config/Input/ClipCursorDisabled true`,
 `--set /Config/Asserts/IntegrationStudio/RunAutomaticallyOnError false`.
+`engine.build_command` passes this set (with `ErrorToConsoleOnly` rather than `AutomationMode`, the
+default in the earlier ExecSsl runs) and grades each entry; see [headless-bench.md](headless-bench.md).
 
 ## Limits
 

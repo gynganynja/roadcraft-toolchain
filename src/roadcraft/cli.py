@@ -552,7 +552,9 @@ PASSTHROUGH_HELP = """headless editor commands (each has its own --help):
   pak normalize|check   deterministic package bytes (library/deterministic-paks.md)
   pak manifest ...      which retail file or other mod each member overrides (library/install-manifest.md)
   validate <target>     runtime-failure checks for a source tree or .pak (library/validator.md)
-  schema dump|show|search  the engine's type schema (library/validator.md)"""
+  schema dump|show|search  the engine's type schema (library/validator.md)
+  physics report <target>  the physics values the engine will use, with their source (library/physics-report.md)
+  compare <mod> --donor <retail truck|pak>  effective physics side by side with outliers (library/physics-report.md)"""
 
 
 def _passthrough(argv: list[str]) -> int | None:
@@ -576,6 +578,12 @@ def _passthrough(argv: list[str]) -> int | None:
     if head == "schema":
         from . import schema
         return schema.main(rest)
+    if head == "physics" and rest[:1] == ["report"]:
+        from . import physics_report
+        return physics_report.main(rest)
+    if head == "compare":
+        from . import physics_report
+        return physics_report.main(argv)
     return None
 
 
