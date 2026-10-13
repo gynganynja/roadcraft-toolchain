@@ -60,6 +60,9 @@ directory is not the project.
   material per texture.
 - Renaming, adding or removing a controllable joint breaks vehicles already in a save: tell the
   owner to sell and buy the vehicle again.
+- Articulated steering and cranes: articulated-steering.md and cranes.md (retail crane IK chains, a slew-less
+  crane, multi-section telescopes, hook stow). Stroke the modelled cylinders over each joint range and sweep
+  the boom against the chassis before choosing limits (Kanga 25: +-30 lock, 60 deg luff).
 
 ## Checks before handing over a candidate
 

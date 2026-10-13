@@ -30,6 +30,8 @@ Each check comes from something that went wrong in a drive or a build (library/s
 * RC039  a timer-driven strobe hides the unlit lens: the lamp vanishes whenever its lit copy does not render
          ("the mesh disappears and reappears"); flash only a lit overlay (roadcraft.lamps.flasher).
 * RC045  explicit crane movement-sound subscriber bodies or joints missing from the selected model/markup.
+* RC049  gearbox `neutralGearSwitchingDelay` over 5 s: the box keeps its old gear that long after a stop, so the
+         next pedal first carries on in the old direction (Dump Twuck at 60 s; retail 0-3, Baikal 65206 0.5).
 * RC046-RC048  tracked vehicles (roadcraft.tracks, tracked-vehicles.md): a track carried only by fakes on
          their top stops; wheels on a welded (fixed-joint) track frame under 10 % of the body mass; sprung
          wheels on a light jointed body (springs scale like that body). RC046 needs the model, RC047/RC048
@@ -120,6 +122,9 @@ def slot_rides_moving_body(nodes: TplNodes | None, slot: str) -> bool | None:
     return False
 
 
+NEUTRAL_DELAY_MAX = 5.0  # seconds; retail 0-3 (truck-settings.md "Heavy hauler drive")
+
+
 def lint_truck(doc: dict[str, Any], *, compiled_class: str | None = None,
                model: TplNodes | Iterable[str] | None = None, beta: float = vehicle.SUSPENSION_BETA,
                weight_shares: dict[str, float] | None = None,
@@ -153,6 +158,13 @@ def lint_truck(doc: dict[str, Any], *, compiled_class: str | None = None,
             out.append(_finding("RC002", "warning",
                                 f"{key} unset: the SDK default is 1 (instant); retail scouts use "
                                 f"{vehicle.RETAIL_SCOUT_DRIVING[key]}", f"truckSettings.{key}", "truck-settings.md"))
+    neutral = ((settings.get("gearbox") or {}).get("params") or {}).get("neutralGearSwitchingDelay")
+    if isinstance(neutral, (int, float)) and neutral > NEUTRAL_DELAY_MAX:
+        out.append(_finding("RC049", "warning",
+                            f"neutralGearSwitchingDelay {neutral:g} s: the gearbox keeps the old gear that long after "
+                            "a stop and the truck first carries on in its old direction; retail uses 0-3 s "
+                            "(Baikal 65206 0.5) and the handbrake for slopes",
+                            "truckSettings.gearbox.params.neutralGearSwitchingDelay", "truck-settings.md"))
     for slot in slots:
         name = slot.get("geomName", "?")
         wheel = slot.get("editableWheel")

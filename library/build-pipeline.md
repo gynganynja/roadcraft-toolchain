@@ -70,7 +70,12 @@ A project for the tools is a relocatable SDK project folder (`.project` referenc
 
 | The SDK asset exporter hangs on meshes without a UV map (the EX5600 source had 614 such objects): the builds refuse a mesh without exactly one UV map, and drop colour attributes | Build |
 
-| Blender's "Cannot change old file (file saved with @)": a stale `<file>.blend@` blocked the rename after a save; delete it and save again, with retries | Build (Roamer 105) |
+| Blender's "Cannot change old file (file saved with @)": a stale `<file>.blend@` blocked the rename after a save; delete it and save again, with retries. An old `<file>.blend1` does it too (the save first renames the current file to `.blend1`; the Dump Twuck body was left only as `.blend@`): save with `preferences.filepaths.save_version = 0` | Build (Roamer 105, Dump Twuck v9) |
+| A step that succeeded fails the job with `WinError 32` renaming its `.<step>.log.partial` (Dump Twuck v9: after import, then after the compiled-class lint): a scanner briefly holds the just-closed log. `jobs._run_command` now retries that rename like `_atomic_json` (bounded, Windows sharing errors only) | Build (Dump Twuck v9) |
+| `jobs-recover` after a failed native step refuses with "Last successful install does not identify the live candidate bytes" when `local/machine.json` `transactionReceipts` lacks the newest install: `roadcraft install` does not append its receipt there. Add the new `local/transactions/<id>/receipt.json` after each install | Build (Dump Twuck v8/v9) |
+| `jobs-recover` with an installed review candidate (empty `accepted`) needs the registry candidate's `receipt` pin to be a package receipt naming the candidate (`{"candidate": <name>, "packageSha256": <sha>, "accepted": false}`, as `package/candidates/<name>/package_receipt.json` in the grader and buggy projects); a package *transaction* receipt pinned there fails with "Pinned candidate receipt does not identify the installed candidate". Every `<transactions root>/*/receipt.json` must also be listed in `transactionReceipts` ("An unlisted transaction receipt blocks candidate recovery"), and the chain of previous/candidate hashes must end at the live package. The Roamer registry was converted on 2026-10-13 (transaction receipts moved to `installReceipt`) | Build (Roamer 105 glass campaign; recovery receipt `jobs/20261012T231634Z-c93e35c53b46/job_recovery_*.json`) |
+| `mod_pak_builder` packs only resources reachable through `.resource` links from the roots: when a material instance stops linking a texture that no other instance links, that texture's `pct/<n>.pct.resource`, `pct/<n>_<i>.pct_mip`, `td/<n>.td` and `td/<n>.td.resource` members disappear from the pak. A member-level package audit must expect exactly those removals and check that every `res://pct/<n>.pct.resource` link in the packed `.mi.resource` files resolves to a packed mod texture; links to shipped game textures (`flat_nm`, `wipers_flow_01`, `wipers_noise_01` from the wiper/rain instances) are never packed and must be excluded | Build (Roamer 105 glass campaign attempts 001 and 002) |
+| Native steps and `jobs-recover` are blocked by any session's `mod_pak_builder.exe` / `furnace.exe` on the machine, not only this project's: with several mod sessions packaging concurrently, run them through a patient gate that re-enumerates until the consumers exit rather than retrying by hand | Build (Roamer 105, 2026-10-13: three furnace and two packager processes from other sessions) |
 
 | The editor's Documents folder may be OneDrive-redirected: its working copy and built mods live there, and sync is a suspect in file-lock failures | Build |
 
@@ -806,3 +811,170 @@ Patch the editor sources the same way in the same change: a project generator th
 the old values reverts the fix at its next build (KGS-25: Codex's `tools/prepare_mod.py` writes the
 suspension collection, wheel slots and hull mass). Install through the transaction workflow with
 the expected prior hash; keep the patched package's source hash in its report.
+
+## Detail pass on an existing body model (CAT 793D RC27, 2026-10-08)
+
+**Build, asset_importer:** the copied-project binding trap above also applies to
+`asset_importer.exe`. With an unedited copy of another mod's `project/`, the import
+read `-s` and wrote `--output` correctly, but its backup sandbox and mods-dir came
+from the original project's `.project` `documents-dir` and `config/*.cfg`
+(`ModsSourceLocal`, `ProjectPath`). Rewrite those paths to the copy before the first
+import and confirm the compile log names no other project. The original workspace's
+model files were unchanged (hash-verified); the clean recompile gave the same tpl hash.
+
+**Build:** adding detail as new `_lp_detail_<bone>_<material>_00` meshes keeps the
+existing objects, rig and markup intact. Each new mesh uses one existing material
+slot (so no new material instances or markup entries), an Armature modifier, a
+weight-1 group, `UVMap` and white corner `colorSet0` copied from the shipped
+meshes. All 16 compiled. A package audit against the previous candidate (only the
+`.tpl/.tpl_data/.geom_dbg/.lods_base` members change; every old node and
+transform retained) passed. Two meshes blend BoneBody_cdt -> BoneAxleRear along
+their length (brake hoses, rear shaft); they compiled, but how they deform in game
+is not yet observed.
+
+**Build:** when an earlier pass merged parts into shared meshes, remove parts by
+mesh island (connected components), filtered by bounds and topology (all-quad tube
+islands, excluding islands inside the cab or weighted to `ctrl_*` bones), never by
+deleting whole objects that also carry other parts.
+
+**Authoring:** when a mod's texture sets are near-uniform finishes (CAT 793D: std
+of about 2 per channel), new geometry can take any UVs; detail has to be modelled.
+Snapping parts to existing surfaces by raycast (BVH over the original rest-pose
+meshes) and taking each part's bone from the hit face's dominant vertex group gave
+correct placement and attachment without manual weighting. Blender Workbench
+shadows streak on open (non-manifold) meshes; this is a preview artifact, not an
+export problem. Close thin plates for clean review renders.
+
+Evidence: `RoadCraft/cat793d_detail/` (tools/detail_kit.py, tools/build_detail.py,
+reports/compile.log, reports/package_audit.json, reports/install_receipt.json).
+
+## Recovering an abandoned job with an installed review candidate (Dump Twuck, 2026-10-10)
+
+**Build:** `jobs-recover` must distinguish a verified installed candidate from
+acceptance. Dump Twuck retained a failed native compilation lock while its v5
+review candidate was installed through five successful transactions and its
+accepted registry remained empty. Requiring an accepted pin, treating historical
+successful installs as unresolved recovery, and requiring an explicitly listed
+transaction lock blocked safe job recovery. Do not promote observed bytes to
+accepted merely to release that lock.
+
+`roadcraft.jobs` now admits a uniquely pinned installed candidate only when its
+package and package-receipt bytes match, the receipt identifies that candidate,
+and the complete configured transaction history has terminal verified swap
+journals forming one continuous package chain ending at that exact candidate
+path and hash. It derives `package.lock` from each receipt's verified transaction
+root when needed, checks every root receipt is enumerated, and refuses pending
+transactions, staging files, unknown bytes or active authoring processes. Package,
+receipt, journal, directory, lock and process evidence is rechecked before release.
+The accepted-package path retains its previous requirements. The installed package,
+registry and failed job receipt remain unchanged; a separate recovery receipt
+records any release or failed attempt.
+
+Evidence: Dump Twuck failed candidate01 job `20261009T225841Z-52defd8a8fb5`,
+candidate `dtw-20261002-v5`, transaction `2a381207aa6c44079c3f8e9fe1d621c7`;
+`tests/test_jobs.py` and `tests/test_jobs_candidate_recovery.py`. This establishes
+safe job-journal recovery, not native visual or campaign acceptance. Candidate
+histories lacking exact package/receipt pins, a coherent final install or complete
+transaction enumeration remain blocked.
+
+
+## Serialize source saves and read-only mesh audits (Dump Twuck revision 006, 2026-10-10)
+
+**Build, offline diagnosis:** a read-only Blender library audit started before the four-model generator had fully exited. The reader held the front-wheel library while the writer attempted to replace it, and the save failed with `Cannot change old file (file saved with @)`. In this recorded case the holder was the overlapping owned reader. The message alone does not establish source-version incompatibility or justify changing the pinned Blender version. The final normalization and audits used Blender 5.0.1; an earlier 5.2 diagnostic was not adopted as the final source.
+
+Wait for successful completion and full process exit of every source save before loading those libraries for an independent audit. Do not mix partially saved body/wheel/physics identities. Hash all inputs before inspection, recheck them before reporting, and reject a changed input rather than assigning success to different bytes. Keep an overlapping diagnostic and its invalidation reason. Final evidence came from a serialized four-model save followed by independent read-only checks: 286 saved-asset checks and a 90-pose moving-whole-art sweep. Those are offline authoring results, not native candidate receipts.
+
+An earlier wheel-centre pose diagnostic also read a stale dependency graph: parent travel was not updated before child fitting, which could double or retain previous travel. It is explicitly invalidated; it cannot prove that steering basis unsafe. Update evaluated parent poses before deriving child transforms, and independently inspect actual deformed endpoint vertices. A frame-only target match is insufficient.
+
+Progressive overwrites of a JSON report collided with inspection reads under Windows file-sharing rules. This project's sweep prints pose progress to stdout and writes its complete final report once. The combined report is temporarily incomplete while the local-surface and whole-art stages execute, so seal it only after the owning recipe exits successfully and all nested scope/identity checks pass. Never promote an in-flight local deck/exhaust result to whole-art acceptance.
+
+Evidence: Dump Twuck reports/revision_006/front_moving_clearance_overlapping_diagnostic.json and front_moving_clearance_wheel_centre_diagnostic.json (explicitly invalidated), the completed front_authoring_evidence_20261010 snapshot and tools/offline_model_audit_v6.py. The valid separate sweep pins its body/front-wheel hashes and states finite coverage and nativeAcceptance OPEN. Official recipe/checkpoint receipts, native compilation, rendered articulation and driving acceptance remain distinct. See [ik-visual-rigs.md](ik-visual-rigs.md) for the measured front linkage and clearance scope.
+
+
+**Native failed Build, final bounded iteration:** a separate current-SDK private host muted only the two private-project ResourceDataBase and ClsDataBase watchers, used fresh generated directories/profile state, and reached generation after its initial drains and idle guards. Job `jobs/20261010T001958Z-94a2c0e7cdb2/receipt.json` records status failed and generate exit 1. The attempt logs `build/generation_attempts/attempt_1_20261010_102042/{bro.stdout.log,bro.stderr.log,batch.log}` record both selected watchers and restored notification states with result=False. Generation fails at `ModelWrapper.SetType` with `ModelTypeNotFoundException` for `auto_wheel_base_dumptwuck_front` in .cls. There is no IOException in this shorter attempt and no successful rescan marker; this is not proof that the earlier file-share race was eliminated. Generation stopped before a successful completion could be observed.
+
+**SDK / interpretation:** explicit document parsing and the generator's session document/type cache do not establish that every newly generated base is registered in the class/type database. The observed failure is consistent with that registration dependency; suppressing both notification streams is not a working general recipe. Do not discard the failed receipt, equate a changed error with success, or promote partial generated files to a deliverable. All three authorized candidate iterations are exhausted; native front articulation, compilation, packaging and retail acceptance remain open.
+
+**Untested next investigation, separate authorization required:** mute only the verified private-project ResourceDataBase watcher notifications while retaining private-project ClsDataBase registration events. Capture when the newly generated base class becomes visible before SetType, preserve exact queue/file-reader evidence, and require complete generation plus class/reference checks. Class callbacks may still cause the original reader race; this alternative has not run and is not a claimed fix. Evidence and hashes are in Dump Twuck reports/revision_006/native_watcher_gate_failure_evidence.json, with the failed job and logs above and the exact experimental plugin/private-runtime pins.
+
+
+## Recovering a stale native-job PID after Windows reuse (Dump Twuck, 2026-10-10)
+
+**Build / verified recovery:** Windows reused the terminated Dump Twuck job PID28468 for `svchost.exe`. The failed lock was created at2026-10-10T06:11:10Z; the new process was created at06:18:34Z. PID liveness alone falsely kept the failed job locked. The maintained jobs helper now reads the live process creation time and treats it as a different owner only when that timestamp is strictly later than the durable lock creation time. It records both timestamps and the PID-reuse proof. Unknown, malformed, naive, equal or earlier times retain the conservative live/unknown result. This never terminates the new process and leaves native-process, exact-file hash, transaction and installed-candidate checks in force.
+
+Evidence: Dump Twuck `jobs/20261010T061110Z-c7bc6c2eb773/receipt.json`, `reports/revision_007_tyres/pid_reuse_patch/{before_jobs.py,shared_patch_receipt.json}`, the same run's guarded recovery report, and `tests/test_jobs_pid_reuse.py`. All33 focused jobs/recovery tests passed against the staged and installed implementation. Recovery preserved installed v5 and the failed job receipt. This evidence grants no model or retail acceptance. Process creation/lock times must share a trustworthy clock; absent identity evidence never grants recovery.
+
+
+## Private watcher filters failed to finish Dump Twuck generation (2026-10-10 tyre phase)
+
+**Failed native Build, three bounded iterations:** After the owner requested corrected tyres and a test candidate, all seven assets imported and the offline tyre/saved-model/clearance checks passed. Native compilation still failed. ResourceDB private-watch suppression with ClassDB notifications retained failed on catalog `.sso.resource` sharing (build-048, run20261010T060547Z-0d116f8cd348, three internal retries). Restricting private ClassDB events to `*.cls` failed with missing `auto_wheel_base_dumptwuck_rear_outer` (build-049, run20261010T061110Z-c7bc6c2eb773). Including `*.cls.resource` did not fix registration: ClassDB parsed YAML descriptors as PS, reported `PsParseException`, and still failed on a missing generated wheel type (build-051, run20261010T062220Z-193f2503ae3f, three internal retries). Do not pass resource descriptors to the PS class parser. The last approach is invalid, not a successful build technique. `build-050` never executed because an unrecovered job lock remained.
+
+No new PAK or native tyre-mounting evidence resulted. Partial generated classes and a changed failure mode establish no acceptance. The stock SDK and installed v5 were preserved. Supporting exact private-host, plugin-source, SDK and recipe pins are in Dump Twuck `runtime/batch_v7_{resource_gate,class_filter,class_descriptors}/runtime_receipt.json`, the matching job receipts, `build/generation_attempts`, and `reports/revision_007_tyres/HANDOVER.md`. The next proposed investigation is synchronous class registration after the complete document save plus identification of the competing resource reader; this is **Open**, not a tested fix. An additional native round requires extending the owner's three-iteration limit.
+
+
+## Dump Twuck synchronous post-save registration experiment (2026-10-10)
+
+- **Scope / SDK:** Dump Twuck v7 private CURRENT SDK host, stock editor SHA
+  `fa435c397d15f87c6a37427d8c7faaca0110afa53e8bc7c0b56f88d543447388`.
+  Managed metadata and IL establish that `BaseDocumentWrapper.Save` calls
+  `IDocument.Save(true)` and returns its result. `ClassDocumentSource.Save`
+  writes the PS file and resource descriptor before returning. The public
+  `DocumentWrapperFactory.Get/Set<T>` key is the **wrapper type**
+  (`ClassDocumentWrapper`), not the document interface. `UpdateReason.FileChange`
+  has enum value2. This is supported API shape, not functional proof.
+- **Prepared / Open:** A separately pinned plugin replaces only that wrapper
+  factory while its batch task runs. A forwarding `IClassDocument` DispatchProxy
+  calls the original Save, then registers the completed `.cls` / `.sso` and
+  existing corresponding `.ssc` using the inspected ClassDB BuildFile method
+  and public drain. Both private project watcher sets are gated; SDK/default
+  watchers remain untouched. Factory, pauses and notification states restore
+  in `finally`. No SDK DLL patch, descriptor-as-PS parsing, worker termination
+  or work-flag mutation. Native class-cache and rendered-tire correctness remain
+  OPEN until real build and fixture receipts exist.
+- **Build gate evidence:** Run `20261010T113121Z-f4821e932895`, pinned recipe
+  `build-052-v7-save-gate`, passed checkpoint and source checks, then was blocked
+  **before native launch** by the owner's running `Roadcraft - Retail.exe`.
+  This is not a failed generation experiment. Preserve the process and wait
+  for closure; installation authorization does not justify bypassing the gate.
+- **References:** Dump Twuck `reports/revision_007_tyres/save_api/save_api.txt`,
+  `inspect_save_api.py`, `tools/RcBatchPlugin_v7_save_gate.cs`,
+  `runtime/batch_v7_save_gate/runtime_receipt.json` (plugin SHA
+  `1c72dd25f853134fa6cd14c1c10103d0aa2b8b3a68a89f96504b68e248589b20`),
+  `jobs/20261010T113121Z-f4821e932895/receipt.json`. Read-only local activation
+  inspection also confirmed `local:dumptwuck` enabled; it changed no settings.
+
+## Offline model compile and texture members without the editor (KGS-25 final, 2026-10-11)
+
+**Build:** `tplexp -p <project>` exits -1 with no message unless `<project>` holds a `.project` descriptor (and
+`config/editor.cfg`) pointing at it, as the editor's own project folders do (copy one and replace its paths).
+With that, the SDK USF exporter + `tplexp` + `create_tpl_resource` (then `tplAsset: true` in `tpl.tpl.resource`)
+reproduced the installed KGS-25 r4 model byte for byte from its .blend (USF tangents differ in the last float bit
+across machines; the compiled files do not).
+**Build:** new textures need no packer either: `TextureConverter.exe <tga> <pct> --usage MD|MNM|MSCRGHAO` with a
+`.td` copied from an existing texture of the same size, then package members = `pct/<n>_<i>.pct_mip` (slices of the
+.pct after its image offset, per the header's mip table), `pct/<n>.pct.resource` (packer flavour: `__configurations`
+etc. keys, `imageOffset: 0`, `mipMaps` list, `pct: ''`, `texType: spec` unquoted), `td/<n>.td`, `td/<n>.td.resource`,
+all CRLF. Reproduced three existing KGS-25 maps byte for byte (kgs25 final `tools/texture_pack.py`).
+
+**Blender "Cannot change old file (file saved with @)" (L275, 2026-10-11; Build).** Repeated headless saves over an
+existing large .blend (236 MB) failed while the old copy had just been read by another Blender run (likely still
+held by a scanner); saves to an absent path always worked. The L275 model stage now deletes the old copy and any stale
+`<file>@` before `save_as_mainfile` (`clear_target` in tools/create_models.py, retries, moves aside if undeletable).
+2026-10-12 (388 MB model, v23): it failed again after the clear, leaving the complete `@` temp and no target at all.
+`save_blend` now finishes a refused rename itself (os.replace with a 2-minute retry, then a size and header check) when
+Blender wrote the `@` file in full. The retried run happened to save normally, so the fallback is unexercised.
+
+## Replacing running gear inside an existing model (L275 v14, Claude, 2026-10-12)
+
+- Strip, don't rebuild: classify the source chassis mesh into loose parts by skin and bounds, keep the ones that stay
+  (radiator, gearbox, transfer case) by world boxes with explicit reject boxes for frame brackets that fall inside
+  them, delete the rest in the model stage (L275 `uc_strip.py` via `undercarriage.strip_chassis`). The source .blend
+  stays untouched, so the change is one hook and one report (`build/undercarriage_strip.json`).
+- Edit bones in the same armature edit block that builds the rig (remove, move, add; parents set after all bones
+  exist). Validation then reads the compiled tpl's `names` for every new bone and the absence of every removed one.
+- Booleans (web holes, unions) create vertices with no skin. The model stage refuses vertices without 1-4 weights
+  summing to 1, so normalise in the art build: copy the nearest weighted vertex's skin, keep the top four, renormalise
+  (`uc_build.normalise_skin`).
+- Shop card and icon store `bodyTriangles`; a geometry change needs `tools/render_preview.py` again or validation fails.
+- Raise the project's own body LOD0 guard deliberately and say so in the config comment (L275: 400k -> 480k for a
+  ~122k undercarriage replacing a 45k chassis).

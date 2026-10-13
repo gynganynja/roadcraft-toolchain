@@ -83,6 +83,13 @@ evidence of each step.
    along native +Z (Blender -Y): head spot 65 degrees, 38 m, intensity 20, shadows; tail point 1.3 m / 0.14;
    reverse spot 100 degrees, 8 m / 1.2; amber beacon point 7 m / 0.6. Not auto-started: the states restart
    and stop them.
+   **Head beam brightness (2026-10-13):** a player reported the Lada's headlights "far too bright" (Venk88, 6 Oct,
+   Unverified). The 38 m / 20 head preset was tuned in the editor by day, never compared at night; retail scouts
+   carry no beam emitter of their own (their `vehicleLightMaterials` Headlights entry drives the lighting), so there
+   is no retail number to copy. Lada v11 uses 32 m / 8, matching the Dump Twuck low beam (35 m / 8; high 60 m / 12).
+   Lens glow 80 / bloom 4 is within retail (Lynx headlamps 80, Crayfish 50 / bloom 20) and was kept. The kit's
+   `LIGHTS['head']` preset still holds 38 / 20 (KGS 25 and Kanga 25 use it); pass overrides until a drive confirms
+   the lower value.
 7. **Graph** (`lamps.lamp_states`, the Lada's): engine started, running when loaded (0.5 s schedule), shutdown,
    brake pull / release, reverse / released; init shows the unlit lenses and hides every lit copy.
    `lamps.flasher(prefix, [overlay], effects=..., pattern=SINGLE_FLASH | DOUBLE_FLASH)` returns one-shot
@@ -792,3 +799,68 @@ The official import completed; final build/test receipts pass with 1,275 package
 18 exported-graph event checks and zero shared-lint findings. RC26 was installed with an exact
 RC25 backup; no campaign acceptance is inferred. Existing helpers/checks cover this pattern;
 new universal lamp restrictions are not warranted by a request without a detailed drive report.
+
+
+## Three-place digital speed with stock BPN geometry visibility (Dump Twuck revision 006, 2026-10-10)
+
+**SDK / offline Build; native Open:** the supplied new-cab README calls the digital readouts Blender-only and exports a static `888`. This describes that source package, rather than proving the engine cannot drive digits. The installed SDK exposes signed m/s through `BlueprintNodeTruckVelocity.GetLinearVelocity`, stock float/int arithmetic and switches, a repeating schedule, and `BlueprintNodeShowHideGeomObjects`. A project graph can therefore select one of ten separately named glyph meshes at each of three positions without custom runtime code or Blender drivers.
+
+The authored `DtwDigitalDash` graph hides all 30 `lcd_speed_{h,t,u}_{0..9}` meshes at init and engine shutdown. Engine start and running-on-load refresh immediately and start a 0.1 s timer. Each refresh first hides all glyphs, snapshots `clamp(abs(velocity)*3.6+0.5,0,999)`, casts to int, and selects zero-padded hundreds/tens/units: `000` at rest, the same magnitude in reverse. The float snapshot is inspectable in private debug builds. Engine-off output is blank. Preserve individual mesh names and default-visible markup, and fit a static `km/h` legend to the actual display.
+
+**SDK analogue calibration:** a 0–60 km/h dial with a -270-degree sweep uses the existing speed scale formula `3.6*lastGearTargetKmh/60`, separate from engine performance. The installed `TruckEngineParams.rpmOnNeutralMax` default is 1500; a 0–3000 RPM dial therefore uses a -135-degree native sweep at that maximum, rather than changing mechanical RPM to suit its face. Fuel reads normalized current/max fuel with the authored -100-degree sweep. Bind `ctrl_dashboard_speed`, `ctrl_dashboard_rpm` and `ctrl_dashboard_fuel` to their measured exported frame: source-local Y is not sufficient proof of the native axis. Revision 006 reframes these bones so the exported native Y follows the source dial normal.
+
+**Visual (offline only):** the corrected driver-eye render shows all three central `000` glyphs unobscured. The measured central placeholder consists of `body_ci_darkpanel` components 109–129, 21 bars/756 vertices; guarded removal preserves the screen backing. The replacement is fitted to this face, and `lcd_speed_units` supplies converted `km/h` text. Geometry placement and a static diagnostic render are distinct from native speed updates or readable native pixels.
+
+Evidence: Dump Twuck `source/revision_006/manifest.json`, pinned `generated_authoring_inventory.json`, `tools/digital_dashboard.py`, `tools/digital_model.py`, `tools/model_v6.py`, and `tests/test_digital_dashboard.py`; five offline tests passed on 2026-10-10, including real SDK fields/link signatures, rounding carries, reverse, engine lifecycle and glyph geometry. SDK source: `blueprint_node_truck_velocity.ssc`, `blueprint_node_show_hide_geom_objects.ssc`, `blueprint_time_library.ssc`, `prop_cockpit_dashboard.ssc` and `truck_components.ssl`. These tests do not prove native compilation, rendered digits, axes/sweeps or cockpit usability. A matched native capture and live visibility/speed/frame telemetry remain required.
+
+## Water cut-off volume must stay inside the cab shell (Kanga 25 c7, 2026-10-10)
+
+**Owner report (c6):** "the left windows is dark and overhangs the cab (its not the right shape)". **Build:** the
+`cutoff_volume` was an axis-aligned box from the cab's extents; the cab's inboard rear corner is chamfered, so two box
+corners stood 0.25 m outside the shell and showed through that window as a dark pane. Retail cut-off volumes are
+meshes, not boxes. Fix: the convex hull of the cab shell scaled about its centroid (0.95 left only 1.2 cm at the
+tightest wall, 0.90 gives >= 2.5 cm), still containing the equipment cockpit camera (it is that camera's
+`boundingVolumeObjectName`); a rig-audit check measures it against the shell hull (kanga25_mod `audit_rig.py`).
+Also check supplied interiors against the shell: the MAC25 asset's rear seat leaned 0.2 m through the back wall in
+its own source.
+
+
+## Instruments hidden by their own dash; dial artwork must follow each gauge's zero (KGS-25, 2026-10-11)
+
+**Game (owner):** "Gauges are cut off by an intersection and the little ones arent straight." A binnacle tilted back
+toward the driver sank behind the dash body's vertical front face, hiding the top third of the big dials; an
+operator instrument plate sat half inside the console box below it. Neither shows in a straight-on render.
+**Build:** check every dial with rays from points on its face to the cockpit camera (`_cockpit_camera`,
+`_equipment_cockpit_camera`) and list what is hit first (kgs25 final `tools/interior/check_dials.py`); move the whole
+instrument group (panel, bezels, dials, lamps, needles) clear. Dial artwork: draw each scale from the gauge's
+modelled zero angle and sweep (KGS-25: big -135/270, small -60/120, load-moment -120/240), anchored on the needle
+modelled at zero; one shared sweep rotated every small scale.
+
+## Finishing a supplied cockpit (L275 v22, 2026-10-12; Build, pose-tested offline, not yet driven)
+
+Owner: "Can you make the interior fully polished and finalized". An audit of the supplied interior found:
+
+* **Wrong-hand drive.** The source cab was left-hand drive; the vehicle's camera and steering box were right-hand
+  drive, so first person sat in the passenger seat with no wheel. Check the steering wheel's x against the cockpit
+  camera's x before anything else. Fix: mirror the interior (x -> -x, reverse face winding, clear custom normals) and
+  re-bake.
+* **Camera in front of the wheel.** `_cockpit_camera` was 75 mm *ahead* of the wheel centre (y -0.75 vs -0.675), so the
+  view looked down onto the cluster hood. A seated eye is ~0.4-0.45 m behind the wheel and ~0.62 m above the cushion
+  (L275: y -0.26, z 1.56). Validate `eye.y > wheel.y + 0.3` (forward is -y).
+* **An opaque cluster lens over empty dials.** A smoked lens in the opaque interior material hid decimation-lumpy hubs
+  on a blank backplate. Remove the lens and internals by loose-part bounding boxes; author a cluster insert: a face
+  plate fitted to the backplate's plane (SVD) 3 mm proud, printed scales in its own atlas (6 px/mm), bezels, needles
+  modelled at their zero mark, hub caps on the needle bones.
+* **Controls the Lada way** (cockpit eye check above): bone head at the pivot, tail along the axis *away from the
+  driver* (column axis from the rim's SVD plane; dial axis = -plate normal; pedals (-1,0,0) at their top), parented to
+  the cab bone, BRO axis `Z`. Pose check offline: the game's negative native-Z angle equals a positive Blender pose
+  rotation about the bone's own Y (+135 degrees put a -270-degree 0-180 km/h needle at 90). Speed scale
+  `3.6*topGearKmh/dialKmh`; RPM maximum `-270*1500/dialRpm` (stock normalisation at 1500); fuel `-100` over E..F.
+* **Steering wheel pivot by a circle fit (v23).** The vertex mean of the wheel's outer verts is pulled by spokes and
+  by uneven mesh density (L275: 42 mm low), so the wheel orbits its column. Fit a least-squares circle to the outer
+  rim band in the rim's SVD plane and refit after dropping inner points (residual ~ the rim tube's thickness).
+* **Mesh-group movers.** Keep the steering wheel and pedals inside the interior mesh as vertex groups (`ctrl_*`),
+  assigned by loose-part bounding boxes after reduction; decimated LODs keep the groups.
+
+Project: `l275_minespec_mod/tools/interior_v20.py` (bones, groups), `ute_systems.py` (dataDashboard),
+`art/interior_v20/generator/{r10_interior,r50_gauges,r51_gauge_art,gauge_layout}.py`.

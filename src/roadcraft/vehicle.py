@@ -49,6 +49,27 @@ def child_rotation(axis_native: tuple[float, float, float]) -> list[float]:
     return [round(math.degrees(rx), 4), round(math.degrees(ry), 4), 0]
 
 
+def ragdoll_child_rotation(axis_native: tuple[float, float, float]) -> list[float]:
+    """Euler XYZ degrees for a markup ragdoll's ``childRotation`` so that its twist axis (the constraint
+    frame's X, Havok) is ``axis_native``; R = Rz @ Ry @ Rx with rx = 0. Up (0, 1, 0) gives [0, 0, 90], the
+    retail whip antenna's value (library/secondary-physics.md)."""
+    x, y, z = axis_native
+    n = math.sqrt(x * x + y * y + z * z)
+    x, y, z = x / n, y / n, z / n
+    ry = -math.asin(max(-1.0, min(1.0, z)))
+    rz = math.atan2(y, x) if abs(math.cos(ry)) > 1e-9 else 0.0
+    return [0, round(math.degrees(ry), 4) + 0.0, round(math.degrees(rz), 4) + 0.0]
+
+
+def euler_x_axis(rotation: list[float]) -> tuple[float, float, float]:
+    """The native axis that ``childRotation`` Euler XYZ degrees turn X onto (inverse of ragdoll_child_rotation)."""
+    rx, ry, rz = (math.radians(a) for a in rotation)
+    v = (1.0, 0.0, 0.0)
+    v = (v[0], v[1] * math.cos(rx) - v[2] * math.sin(rx), v[1] * math.sin(rx) + v[2] * math.cos(rx))
+    v = (v[0] * math.cos(ry) + v[2] * math.sin(ry), v[1], -v[0] * math.sin(ry) + v[2] * math.cos(ry))
+    return (v[0] * math.cos(rz) - v[1] * math.sin(rz), v[0] * math.sin(rz) + v[1] * math.cos(rz), v[2])
+
+
 def euler_axis(rotation: list[float]) -> tuple[float, float, float]:
     """The native axis that ``childRotation`` Euler XYZ degrees turn Z onto (inverse of child_rotation)."""
     rx, ry, rz = (math.radians(a) for a in rotation)

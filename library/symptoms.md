@@ -19,6 +19,7 @@ grader's dead controls were traced there (Game).
 | A crawler judders, a stick-slip lurch at about 1 Hz, in full-lock pivot turns | Not known: KGS-25 candidate 03 and fix 2 both do it at pedal 0.6 | None yet; bench a retail crawler with `--schedule harsh` to see whether the engine's own do it | Open | tracked-vehicles.md |
 | Suspension arms, springs, hubs do not move with the wheels at all | Wheel slot joints only move under `axleControllerSettings` (`independentAxleSettings` / `axleSettings`); chains pinned to an unmoved slot never move | Add the axle controller for every slot the rig pins to. `RC010`, `RC031` | Game (Warthog, buggy), Retail | suspension-and-wheels.md |
 | Brake discs / inner wheel faces show outward on one side | Asset handedness disagrees with the final native rim/object frame; slot orientation alone is insufficient | Measure native slot, actor and rim axes before mirroring. Lada left rim has an extra half-turn and needs the same right-facing master as the right | Game (buggy symptom; Lada frame measurement), Build (Lada remedy) | suspension-and-wheels.md |
+| Directional tread looks right on one side and backwards on the other | A mirrored tread variant on one side: the engine already mirrors left-slot wheels, so the variant reverses that side's rolling direction | Use one tread master on every slot; reflect it fore-aft (Y) only to reverse all six | Game (Dump Twuck v9 owner drive) | suspension-and-wheels.md |
 | Knuckles or arm ends thrown outside the wheels on one side | Parts parented under a wheel slot, or pinned to it with offsets, while no axle controller or steering rack drives it | Use the retail pattern: axle controller + steering rack; see the rig recipe | Game (buggy) | suspension-and-wheels.md, ik-visual-rigs.md |
 | Joint rotates the wrong way / about the wrong axis | Hinge axis from `childRotation` misunderstood: it turns the constraint's Z onto the hinge axis in the bone frame | `roadcraft.vehicle.child_rotation(axis)`; check with an export audit | Build, editor readouts | frames.md |
 | Links or rods gap at their pins as the suspension moves | A rigid link cannot close the loop that the wheel travel asks for | Let the link telescope (two halves with a `PRISMATIC` terminal) or reduce the travel; bones at the pins, X along base -> tip, slide range covering the stroke | Game (Roamer 105, editor play mode: 36 mm gaps, under 5 mm once telescoping) | ik-visual-rigs.md |
@@ -28,10 +29,26 @@ grader's dead controls were traced there (Game).
 | A flashing lamp's whole lens appears and disappears | v6/v7 L275 beacon: coincident unlit / lit dome objects swapped from two schedule nodes; the mechanism is not established | Never switch the unlit lens: flash only a lit shell over it from a tick-timer pair (CAT 793D strobes) | Game (symptom); fix Build | cockpit-and-lamps.md |
 | Brake / reverse lamps never light | Native `prop_vehicle_lights_material` brake/reverse path did not work in the campaign | Drive them with show/hide on brake / reverse events | Game (cause, CAT 793D RC20); the fix is Build (RC21, not yet confirmed) | cockpit-and-lamps.md |
 | Gauge needles rest at mid-scale | Needles modelled pointing up; the dashboard rotates from the modelled pose | Turn the needle meshes to the zero mark in the build | Build (buggy); direction awaits a drive | cockpit-and-lamps.md |
+| Garage "deploy" does nothing (you can leave the screen and then get in); afterwards the game will not save | A cargo bed (`prop_cargo_constraint`, CONSTRAINT_CARGO action, CargoConstraintSavablePropDesc) synced into a generated class without `TruckCargoConstraintUnit` in `auto_<truck>_replicated.sso`: the input controller's `cargoConstraint` is null and the HUD crashes in `PlayerInputTruckController.GetToggleableActionReactive(30)` from `HandleOnCurrentTruckChanged` (script dump) | Add `TruckCargoConstraintUnit = { }` to the replicated entity (retail: all 42 trucks with the class block carry it, none without); sync it wherever the cargo bed is synced | Game (L275 v10-v15 owner report, dump 2026-10-12); retail survey; fix Build | truck-settings.md "Cargo beds and tie-downs" |
+| Parts of an accessory reused from another mod are see-through from some angles | The source mod rendered open / inside-out shells with a two-sided material (`no_backface_culling = True`, `doubleSidedLighting = "normal"` in its `.mi`); the copy got a plain single-sided `vehicle_body`, so those faces are culled (Roamer ARB bar on the L275: 82 of 306 islands, ~3k faces, negative or open) | Carry the source's two-sided params into the new material instance, or fix the shells. Two-sided skinned materials crashed the Roamer with LOD crossfade or vertex compression on: keep both off | Game (L275 v18 owner screenshot); fix Build (v19) | textures-and-materials.md |
+| Interior "super blurry", low quality in the cockpit | Texel density far below the view distance (L275: 0.24 px/mm, UVs on 25% of a 2048) and a collapse-decimated interior (smeared shading) | Re-pack visibility-weighted UVs on a 4096, bake normals/AO from the full source, clean colour per part (not by colour clusters) | Game (owner report), fix Build (L275 v20) | textures-and-materials.md "Cockpit interiors" |
+| Stair-stepped / "pinching, aliasing" lines along curved edges of a re-textured part | Texels outside the UV islands were left black (albedo) or flat (normal) by a numpy compose step, discarding the bake margin: bilinear filtering and mips pull them into every diagonal seam | Pad every map outward from the islands (dilate, then push-pull fill) after composing; give islands a 6+ px margin at 4096; mask-normalise blurs used near seams | Game (L275 v20 owner screenshot); fix Build (v21) | textures-and-materials.md "Cockpit interiors" |
+| Mud / dust covers the cab interior while driving | In-cab materials on `vehicle_body` receive the vehicle mud `covering` | Put in-cab instances on the retail `vehicle_cabin` preset (covering forceDisable); cabin twins for textures shared with exterior parts | Game (owner report L275 v30), fix Build v31 | textures-and-materials.md "Cab presets and the mud covering" |
+| Mud on the instrument cluster / door-top paint after the cab fix | Lit cluster copy on `vehicle_lights` (covering on); in-cab painted body faces still on `vehicle_body` | `params.covering.forceDisable` on in-cab lit instances; in-cab body faces split to a `vehicle_cabin` twin object | Game (owner report L275 v31), fix Build v32 | textures-and-materials.md "Cab presets and the mud covering" |
+| Windows invisible from inside the cab | Every glass preset tried forces covering off and the cab-side sheet reads as clear (inner preset, inner + tint, outer culled) | Try `vehicle_interior_glass` on the cab-facing sheets (L275 v31; result open) | Game (owner, L275 v22-v30) | textures-and-materials.md |
+| Windscreen too dark to see through, "makes driving impossible" (player) | The source mod's constant glass maps were ported unchanged on both window sheets: a black colour map at alpha 0.92 is a 92 % opaque film here (alpha = opacity), on the outer instance and on the cab-facing `vehicle_glass_inner` twin the driver looks through; the half-metal spec darkens it further | Find the sheets' instances from the compiled model's object list (not from instance names), then author the retail clean-glass film (RGB about 0.2 at alpha 0.5 or below) and a glass spec (Lynx (8, 41, 216)) on both; filter [127, 155, 151] at density 1 on the outer instance only | Game (player report, Roamer 105, 2026-10-01); cause Build; fix installed 2026-10-13 (be7cb530), owner drive pending | textures-and-materials.md "Glass film convention" |
+| Black or grey square "camo" blotches over a cockpit (wheel, dash, roof lining) in game, faint in lit Blender renders | The `_spec` blue channel (AO) is broken: a coincident copy of the mesh (here the colour-bake source) left renderable occluded the AO bake in hard-edged facets; the world's default AO distance had also darkened it all (L275 v20-v23b) | Hide every other copy from render during the AO bake, use a contact distance (~6 cm), and render the raw AO channel unlit on the mesh before shipping | Game (owner screenshots v22, v23b), cause Build | textures-and-materials.md "Cockpit interiors that read blurry" |
+| Cockpit vent rims / panel seams look wavy or chewed, emblems melted | The interior was collapse-decimated (even within 0.2 mm of its source the shading is damaged) or the supplied source was already a reduction | Rebuild from the full-detail source: flat-region dissolve plus a collapse limited to faces hidden from the seats; compare solid-shaded close-ups with the source | Build (L275 v23) | textures-and-materials.md "Cockpit interiors that read blurry" |
+| First person sits in the passenger seat / looks down on the cluster hood | Source cab of the other hand of drive, and/or the cockpit camera locator placed ahead of the steering wheel | Compare wheel and camera x; mirror the interior to the vehicle's hand; put the eye ~0.4 m behind the wheel | Build (L275 v22 audit) | cockpit-and-lamps.md "Finishing a supplied cockpit" |
 | Vehicle bought under an older build is dead / controls do nothing | A controllable joint was added or renamed; saved vehicles keep the old joint set and the script crashes (`dict.Get("level")`, `SetConstraintTarget("blade_lift")` in the dumps) | Keep joint names stable; sell and buy again after such a change | Game (loader, grader) | truck-settings.md |
 | The truck does not move, or drives on one axle only | `torqueType` wrong: `full` wheels are driven only with all-wheel drive engaged, and `default` is not a value | `defaults` on the always-driven axle, `full` on the switchable one | Game (Roamer 105, editor play mode) | truck-settings.md |
 | Stays in first gear at a low top speed | Gear table from a vehicle with bigger wheels: a gear's road speed scales with the wheel radius | Scale every gear's `angularVelocity` by the radius ratio | Game (Roamer 105, editor play mode) | truck-settings.md |
+| Slows down hard mid-acceleration, "between gear changes" | Donor gear table not scaled for smaller wheels and a gap between gear bands (2nd to 20 km/h, 3rd from 22): 2nd topped out at 22, the box dropped 2 -> 1 at 21 km/h and lost 6 km/h | Scale every forward gear's `angularVelocity` by the radius ratio (and the speed stretch) and keep the bands continuous; check with a full-throttle trace of `GetGear()` | Game (Kanga 25, editor bench vs retail Baikal) | truck-settings.md |
 | Rolls back when the brake is released on a slope after a stop | `neutralGearSwitchingDelay` dropped the gearbox to neutral while stopped | Raise it (60 held the Roamer in gear) | Game (Roamer 105, editor play mode) | truck-settings.md |
+| After a full stop (even on the handbrake) the truck first carries on in its old direction; "it keeps driving backwards" | `neutralGearSwitchingDelay` 60 (the Roamer rollback fix above) keeps the old gear for a minute at a standstill; the Dump Twuck also reversed at 33 km/h at full pedal | Retail values: 0.5 s (Baikal 65206), 0-3 s elsewhere, with the handbrake for slopes; slow the reverse gear. `RC049` | Inferred (two public Dump Twuck reports on the 60 s build; retail values; v5 bench reverse trace); fix not yet driven | truck-settings.md "Heavy hauler drive" |
+| A big truck is "slow and gets stuck even in a little mud and on rocks" | Drive force per kg far below retail heavy trucks (Dump Twuck v5/v6: torque / (wheel radius x gross mass) = 1.9 against the retail Baikal 65206's 6.25 loaded), scout tyre friction (mud 2.5 vs the Baikal's 4), rear drive only | Scale torque from a retail heavy truck's force per kg; copy its tyre friction table; all-wheel drive | Inferred (public reports, retail data); fix not yet driven | truck-settings.md "Heavy hauler drive" |
+| The vehicle looks "like a toy from a shop": flat plastic colours | Flat-colour materials baked to single texels of a colour strip (Dump Twuck v6: 61% of the body area had no variation; the rest about 14 px/m) | Unwrap the large surfaces and bake AO, edge wear, dust and mud into the atlas (Dump Twuck `weather_v8.py`) | Build; public report | textures-and-materials.md "Weathering" |
+| Shallow puddles raise the high-water / engine warning | No `propUnderwaterSettings` position: `prop_truck_under_water_cheker.ssc` then tests the truck origin (ground level for a model built on the ground), so any water depth floods the "engine". It warns when the water is within `warningLevel` ("offset down from drowning point") of the point and floods after `floodTime` once the point is submerged | `chekerAttachBody` + `rootOffsetPosition` at the engine bay (Dump Twuck v9: 4.85 m up, ahead of the front axle; retail Baikal 1.2 m on its front body); `warningLevel` 0.75 | SDK script (cause); author report; fix not yet driven | truck-settings.md "Heavy hauler drive" |
 | Turn-signal lenses glow all the time | They were given a light role; the lights material groups follow the engine running | No light role for indicators | Game (Roamer 105, editor play mode) | cockpit-and-lamps.md |
 | Every session crashes at scene load after a model change | A material needs a shader permutation the game does not ship (LOD crossfade + vertex compression on a skinned, double-sided material); the editor cannot compile shaders | Turn LOD crossfade off (retail trucks have none) and drop the export compression block | Game (Roamer 105, editor play mode) | textures-and-materials.md |
 | The engine asserts at scene load right after class generation | The editor hot-reloads freshly generated classes | Start a run no sooner than about three minutes after generation | Build (Roamer 105) | build-pipeline.md |
@@ -564,3 +581,117 @@ frames and the hull centre of mass lowered held roll to 0.2 deg in the same turn
 values: [tracked-vehicles.md](tracked-vehicles.md); `lint-bro` flags the layout (RC046) and light
 welded frames (RC047), and [physics-bench.md](physics-bench.md) measures a change before it is
 installed.
+
+## Truck initially continues its old direction after switching (Dump Twuck public report, 2026-10-08)
+
+**Open / public user report:** Dmitriy311 reports incorrect forward/reverse
+switching even after a complete stop and handbrake application. Reproduce empty
+and loaded while recording requested direction, selected gear, pedal and brake
+states, and actual chassis velocity. Cause and remedy are unverified; increasing
+torque is not evidence of a fix. The comment does not identify an installed build,
+and the published Version 2 has not been matched to a local package.
+
+Evidence: Dump Twuck `reports/public_comments_2026-10-08/comments_page_000.json`,
+comment `861394e1-f92e-4d2e-8e93-bf3afedc4584`; source pins and classification in
+`audit.json`. See [case-studies.md](case-studies.md) for the complete feedback audit.
+No static rule or shared behavioral change is justified until reproduction.
+
+### Dump Twuck public reversal follow-up (2026-10-10)
+
+**Open:** a second public player reports continual backward travel; preserve
+this as a different symptom from the earlier stopped forward/reverse switch.
+Do not assume a common cause. Source: `reports/feedback_2026-10-10/assessment.json`
+and comment `e25505bf-cae1-4d4c-ade4-93a70c774b2f` in the pinned raw response.
+
+### High-water warning in shallow puddles (Dump Twuck author screenshot, 2026-10-10)
+
+**Open / author report:** zombie213 attributes a puddle-triggered water warning
+to engine placement in the axles. The screenshot is text feedback, not a capture
+of engine coordinates or warning state. Check the effective engine locator and
+water-warning/damage configuration on the affected package at measured depths;
+physical engine relocation is not yet a validated remedy. Evidence: Dump Twuck
+`reports/feedback_2026-10-10/author_feedback.png` and source-pinned assessment.
+No cause, fix or universal static check is established.
+
+
+
+## New cab remains at 888 or the replacement digits occupy the wrong panel (Dump Twuck revision 006, 2026-10-10)
+
+**Offline source inspection / SDK; native Open:** first separate an exported static placeholder from a controller failure. The new archive's `888` has no RoadCraft runtime driver; its README's Blender-only limitation is not an SDK limitation. Stock velocity/arithmetic/switch/show-hide nodes support three-place speed digits, as recorded in [cockpit-and-lamps.md](cockpit-and-lamps.md). Schema and synthetic-state tests passing do not establish correct display geometry or native rendering.
+
+**Failed authoring choice, offline visual review:** the first bounded removal selected two three-component red-glow groups near the speed/RPM dials, rather than the main central dark `888`. Matching component counts, coordinates and seven-segment-like shapes was insufficient to identify the intended panel. Keep legends/needle meshes, inspect the actual cockpit view, locate the central placeholder components, and align replacement glyphs plus `km/h` to that face. The corrected driver-eye Blender render now shows central `000` unobscured (Visual, offline only). Guarded removal identifies the actual central `body_ci_darkpanel` components 109–129 (21 bars/756 vertices), preserves the backing, and fits 30 independent glyphs plus authored `km/h`. Live updates, native pixels and usability remain Open.
+
+## New model loses procedural finishes or tiny cockpit lettering after baking
+
+**Build / Inferred; native Open:** a material-only colour atlas cannot preserve linked noise/wave/Voronoi/bump inputs even when the source has no image textures. Inspect the actual `.blend` rather than treating its “flat Principled” README as a factual material inventory. For verified uniform labels, centre-sample reserved uniform tiles while retaining actual text geometry; for procedural finishes bake the connected shader inputs. Tiny-island filtering is a suspected cause in revision 006, not confirmed by a preserved matched before/after. See [textures-and-materials.md](textures-and-materials.md).
+
+## Offline COM predictions look plausible but the truck still leans or bounces
+
+**Build / Open native:** verify whether the author's bone heads are absolute or parent-relative before summing body centres. Revision 006 uses absolute heads, so add only the selected head once; a double-counted bed/cap head corrupts load moments. Its new volume/mass/stop checks establish internal authoring consistency, not heavy-truck suspension beta, damping or a handling fix. Measure empty/full settled travel and roll/bounce in the final compiled candidate. See [frames.md](frames.md).
+
+Evidence for these revision 006 entries: Dump Twuck `source/revision_006/generated_authoring_inventory.json`, `tools/model_v6.py`, `tools/digital_dashboard.py`, `tests/test_digital_dashboard.py`, `build/physics.json` and `reports/gameplay_v6_audit.json`; all current authoring snapshot references, with native acceptance still open.
+
+## BRO generation fails during wheel-resource saves while a VFX warning precedes it
+
+**Build, native generation attempt; functional acceptance Open:** revision 006 candidate 01 attempts 1–2 fail with `System.IO.IOException` while `WheelGenerator`/`SaveTo` writes a `.sso.resource` already held by another process; attempt 2 reaches preview-wheel generation before the same failure. The fatal stack establishes a file-access failure, not a faulty speed-digit graph. Preserve logs and inspect the class database/resource lifecycle before changing unrelated graph nodes or rerunning without a bounded recovery. The holder was not identified by this evidence.
+
+A separate nonfatal warning says “Values size greater that array size” at `vfxSkeleton/vfxBones/item0/boneOffset`. **SDK:** `boneOffset` is `vec3` with fixedSize=3, and the authored value contains exactly three floats. The digital hide list instead uses dynamic `array<string>` with no fixedSize. The warning therefore does not justify deleting glyphs or truncating a supposed matrix; its source/model conversion remains Open. Evidence: Dump Twuck `build/generation_attempts/attempt_1_20261010_085925/{batch.log,bro.stderr.log}`, `attempt_2_20261010_090004/{batch.log,bro.stderr.log}`, current truck BRO and `build/schema/meta_desc*.json`. No compile or runtime pass follows from these failed attempts.
+
+
+### The carried load looks like a broad flat slab despite a crown (revision 006, 2026-10-10)
+
+**Owner report / offline arithmetic; native Open:** check the surface profile and sampling before raising the apex. A quadratic longitudinal fall of 0.012 m per square metre loses only 4.8 cm at 2 m from the crown, so a wide tray can look flat even when its hidden hull has a numerical maximum. A higher apex may exceed the native under-4 m height range. The shared load helper now has an optional pointed `elliptic_cone` profile with independent longitudinal slope, while preserving the default paraboloid.
+
+Sample the exact peak, fit the sides and real floor, and rerun the saved load-grid audit; changing the footprint can expose border/pivot cells. Recompute capacity, centroid and density-based payload. An offline preview must show the requested silhouette before its source is handed over, with native retained/tipped appearance still separate. Evidence: Dump Twuck owner feedback dated 2026-10-10 and `reports/revision_006/mound_refinement`, plus eight numeric tests in `tests/test_blender_load_heap_top.py`. See [truck-settings.md](truck-settings.md) for the profile API and limits.
+
+
+**Saved grid can pass shared findings while drawing below a raised rear floor.** A lowered 6.5 m rear border filled four cells outside the hull at x=+/-3.874375 m, y=6.801352/7.086921 m; the measured steel there was 6.667592-6.733335 m. Shared findings and pivot-cell counts were empty, but the direct saved-grid-versus-floor check found up to 0.233335 m below steel. Survey every emulated cell at the engine's nudged coordinates, comparing both heights with the real floor, especially border-only corners. A hull-only floor check cannot cover cells outside that hull. Preserve the failed report and require a new completed saved audit after restoring the measured rear ramp. Evidence: Dump Twuck `tools/audit_mound_v6.py` and `reports/revision_006/mound_refinement/failed_lowered_rear_border`. Native compilation/retention/discharge remain open and outside the exhausted three-iteration budget.
+
+## Articulated vehicle: steering ram rod leaves its barrel or pokes out of the back at full lock
+
+**Build (Kanga 25):** the articulation limit exceeds what the modelled cylinder pins allow. Compute the pin distance
+over the whole lock (with the oscillation roll) against barrel length plus the rod's hidden length, and lower the
+steering limit or remodel the cylinder. See [articulated-steering.md](articulated-steering.md).
+
+## Crane boom tail sinks into the chassis when luffed up
+
+**Build (Kanga 25):** the boom section behind the foot pin swings down as the boom rises. Sweep luff x articulation
+for mesh overlap at the model stage (kanga25_mod `tools/audit_rig.py`), limit the luff, and keep boom and chassis
+in one collision group so the physics cannot jam. See [cranes.md](cranes.md).
+
+## Crane mod: script crash dump on deploy in BlueprintNodeOnAnchorsStateChanged
+
+**Build (Kanga 25 c1, owner's crash dump 2026-10-10):** a donor crane graph (Baikal 5916 ForceFeedback and Addon)
+kept its outrigger listener on a crane without outriggers. The node asserts `PropTruckAnchorsController` in
+`HandleBlueprintInited`, so blueprint init stops at that graph. Remove `BlueprintNodeOnAnchorsStateChanged` nodes
+and their links when `isAnchorsEnabled` is False; check every donor node type for `TryGet<...>` asserts against the
+class's properties. See [cranes.md](cranes.md).
+
+## Crane shakes violently with the boom extended and raised
+
+**Owner report (Kanga 25 c1); cause Inferred, fix Build (c2), drive Open:** c1 drove three light telescope sections
+(350-700 kg) with 1.5 MN, damping 0.6 motors, hung the boom on a 1.5 t hidden slew body with a 0.05 m3 box, and let a
+250 kg hook pendulum load the tip. c2 uses the retail Baikal 5916 telescope motor (tau 0.8, damping 0.99, 0.8 MN),
+heavier sections (900/700/500 kg), a 2.2 t tower with a real-sized box, luff 6 MN, and the hook as secondary physics
+(`massFactor = 0` on its ball joint, 60 kg, as retail dangling parts). See [cranes.md](cranes.md).
+
+**Owner on c2: "still shakes but not as bad"; cause Measured (editor bench, kanga25_mod `tools/bench`), fix Build (c3):**
+the luff position motor (tau 0.8, damping 0.99, the Baikal value) self-excites against the suspension once the crane
+drives with the boom raised: pitch/roll of +-3 degrees and a 13 cm hop that persists after stopping (front body
+angular rate 1.2 rad/s in the settle window). Telescope, steering and suspension changes alone did not stop it; luff
+tau 0.4, damping 1.0 (6 MN) settled at 0.07-0.10 rad/s in every carry run. Bench a crane with a raised-boom carry (raise,
+drive, brake, full-lock turn, reverse), not only stationary crane moves: the rocking needs the wheels.
+
+## Crane boom oscillates with a load and keeps going until the boom is retracted
+
+**Owner report (Kanga 25 c4); cause Inferred, fix Build (c5), drive Open:** three telescope prismatics in the crane IK
+chain, one more than any retail crane. Reduce to one (Baikal) or two (Forester) IK telescopes and let extra sections
+follow visually. See [cranes.md](cranes.md).
+
+## Step treads or boxes float below a frame (Kanga 25 c4)
+
+**Owner report; cause Build (asset defect):** the supplied asset's rear-frame step column had treads but no stringers;
+the bottom tread and a light box hung free in both the source low poly and high poly. Render the area from the source
+collections before blaming the export (kanga25_mod `art/review/src_*_lstep.png`); fix with added geometry on the same
+body at one texel of an adjacent painted part (kanga25_mod `create_models.step_stringers`).
+

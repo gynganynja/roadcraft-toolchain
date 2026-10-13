@@ -971,6 +971,38 @@ Evidence: final package_audit.json, validation.json, winch_validation.json,
 hardware_fit.json, source_inventory.json, install_receipt.json and NOTES.md.
 
 
+### Roamer window glass lightening for owner testing (2026-10-13)
+
+**Player report / offline diagnosis / Build, 2026-10-13:** a saber.games comment
+(Venk88, 1 October 2026) reported the windscreen "too dark, makes driving
+impossible". Diagnosed from the frozen source of the installed winch-fit package
+`ed0cf96f...` without launching the editor or the game. The compiled model binds the window
+mesh `r105_mod_105_glass` (windscreen, side and rear glass) to
+`roamer105_glass_glass_2_mod` on the outer preset and its cab-facing twin
+`r105_cabin_glass_inner` to `roamer105_cabin_glass_inner_mod` on the inner preset;
+both still used the Expeditions masters' constant maps, which under RoadCraft
+semantics are a black film at alpha 0.92 (opacity) and a spec of metalness 0.5 /
+occlusion 0.5. The candidate `campaign/glass_20261013_01` adds two 32 x 32
+constants, `mod_roamer105_window_film` (51, 51, 51, 115) and
+`mod_roamer105_window_spec` (8, 41, 216); the outer instance gets them with the
+SDK Lynx filter [127, 155, 151] at density 1 on the unchanged `vehicle_glass_outer`
+preset, the inner instance gets them on the unchanged `vehicle_glass_inner` preset.
+The official packager's resource audit proves every other member is byte-identical
+to the installed package, nothing was dropped and no instance links a missing texture.
+
+Attempt 001 of the campaign changed `roamer105_glass2_glass_mod` as "the windscreen"
+from its name; the object list shows it is the lamp covers (`r105_mod_105_lightglass`).
+The packager then dropped the lamp spec texture nothing linked any more and the
+exact-resource audit refused the package; the failed native step's job lock was
+released with `jobs-recover` after the registry's candidate pins were converted to
+package receipts and the scout transaction receipt was enumerated (the other
+sessions' packager and furnace processes had to exit first). The player report
+establishes the symptom only; whether the retail film convention is light enough
+for this cab is open until the owner drives. Evidence: tools/glass_fit.py
+(`check_bindings`), package_audit.json, validation.json,
+history/attempt_001_lamp_glass_misassigned (and attempt_002: the audit first rejected links to shipped game textures), reports/glass_jobs_recover_applied_scoped.json. Installed 2026-10-13 as `be7cb530...` over `ed0cf96f...` with transaction receipt `transactions/a3d6bfdb623245519b2c48e3dea88469`.
+
+
 ### Dump Twuck: native behavior passes before camera review
 
 **Native private fixture, 2026-10-01:** build-010 passed 603 package checks,
@@ -1378,3 +1410,285 @@ layouts, the recipe, RC046-RC048 in `roadcraft.tracks`), [physics-bench.md](phys
 `roadcraft.pak_patch`. The bench's wheel positions also settled the suspension stop geometry
 (stops at `height + min` / `height + max`), which corrected the design formula, RC005 and the
 Lada sign reading (suspension-and-wheels.md "Stop geometry").
+
+## Dump Twuck public feedback audit (2026-10-08)
+
+**Public user reports / Open reproduction:** the Saber page for `<213> Industrial
+Dump Truck` contained five comments dated 5-7 October: four player posts and one
+author request for video. Two players independently wanted all-wheel drive; one
+reported the truck initially continuing its previous direction after stopping,
+applying the handbrake and switching forward/reverse. One requested more power,
+driving speed and tipping speed. Other remarks concern Xbox availability, price
+and route clearance. Counts refer to posts, not likes; these remain reports, not
+reproduced faults or validated fixes.
+
+Evidence: [public mod page](https://saber.games/games/roadcraft/mods/213-industrial-dump-truck?s=New+mods);
+Dump Twuck project `reports/public_comments_2026-10-08/audit.json`,
+`comments_page_000.json` and `mod_metadata.json` (source hashes in audit.json).
+The page's public comment endpoint returned total=5 and all five records. Its
+published PC release is named Version 2; no package hash or lineage comparison
+connects it to any historical local candidate. These comments do not establish
+whether the owner's earlier cargo geometry, camera or bounce issues persist.
+
+Integration: recorded here and in [symptoms.md](symptoms.md). Prioritize a
+repeatable direction-change test and clarify intended driven axles before tuning
+power. No validator was added: causes and reproducibility remain unverified.
+
+### Public comments and author screenshot follow-up (2026-10-10)
+
+**Open / user reports:** refresh returned all seven public comments (six players,
+one author), adding two since the October 8 audit. AWD now has three independent
+player posts; power/speed two. New reports describe poor mud/rock traction,
+cumbersome turning, continual backward travel, bright headlights, unspecified
+beacon errors and toy-like textures. Continual backward travel is not yet proven
+to share the earlier stop-and-reverse report's cause.
+
+The supplied zombie213 screenshot additionally requests interior camera, mass,
+sand capacity, diff lock and engine-location adjustments. It reports a puddle
+triggering a high-water warning; the claimed engine placement in the axles is
+an unverified diagnosis. The author claims a new interior, digital speedometer
+and fixed gauges; the pictured source archive was not supplied or inspected.
+Capacity/mass targets and calibrated dimensions are absent. Interior-camera
+feedback is distinct from the owner's earlier third-person camera report.
+
+Evidence: Dump Twuck `reports/feedback_2026-10-10/assessment.json`, raw comments,
+current page metadata and `author_feedback.png`, all source-pinned in the assessment.
+No public/local/archive package lineage was verified. These reports do not prove
+older cargo-geometry or bouncing problems fixed. Prioritize reversal/water/camera
+checks, set mass/payload/drivetrain targets, then measure performance, steering
+and dump time. No automatic rule is justified without reproduction. Documentation
+integration only; no native run, repair, install or feedback post occurred.
+
+
+
+### Dump Twuck revision 006: source admission and offline repair candidate (2026-10-10)
+
+**Build / SDK; offline visual only; native Open:** after the earlier feedback audit, the author supplied `DumpTwuck_ModEditor_v2.rar`. `source/revision_006/manifest.json` now pins the selected primary `.blend`/FBX, README and markup; `generated_authoring_inventory.json` pins inspection with embedded scripts disabled. This supersedes the earlier statement that the new-cab archive had not been supplied or inspected. It does not establish lineage to the published Version 2 or to an owner's earlier gameplay screenshot.
+
+The primary body source has 80 objects, 53 materials and zero images. Several new-cab material graphs are procedural, contradicting the README's flat-Principled claim. The offline route preserves source skin/control bones, makes fresh packed PBR/emission textures and fitted collisions/load hulls, retains tiny constant-finish labels by uniform-tile centre UVs, and corrects canonical absolute-head/local-COM conversion. The measured envelope is about 143.4133 m³; the agreed 1600 kg/m³ design gives about 229.46 t of material. The authoring design/audit covers 19 checks, including selected AWD/diff, direction-change state, fitted intake/camera/gauges, steering and empty/full suspension predictions; it explicitly states nativeTested=false and accepted=false.
+
+A stock `DtwDigitalDash` BPN controller selects 30 separately named glyphs for zero-padded absolute km/h at 10 Hz. Five offline SDK-schema/synthetic-graph tests passed; this replaces Blender property drivers but does not yet prove native compilation or rendering. The first model pass selected red-glow triples below the analogue dials and left the main central dark `888`, showing that a valid graph and counted geometry are insufficient for semantic placement. The corrected actual driver-eye Blender view now shows central `000` unobscured (Visual, offline only). The actual central dark-panel foreground is removed by its measured 21-bar/756-vertex component guard while preserving the backing; 30 independent glyphs and authored `km/h` are fitted there. This supersedes the first placement, without establishing live speed updates or native pixels. Tiny-font filtering is suspected; the uniform-strip remedy is authored, but matched before/after captures were not sealed.
+
+**Offline checkpoint / model-import Build:** `reports/revision_006/offline_checkpoint.json` records PASS_OFFLINE; checkpoint verification confirms 212 pinned files. `reports/blender_model_audit.json` passes 284/284 checks, and `reports/build_import.json` records four successful native CLI model imports. These establish saved-model and import artefacts, rather than BRO generation, a packaged mod or gameplay. Preserve the original `authoring_receipt.json`, which records an SDK log-directory permission failure at its first import step; subsequent explicit imports are separate evidence.
+
+**Candidate 01 failed native generation:** attempts 1–2 stop in wheel/preview-wheel `SaveTo` with an IOException on a held `.sso.resource`; no digital graph error is identified. A preceding nonfatal VFX `boneOffset` fixed-array warning is separate: the SDK requires three floats and the authored offset already has three, while the glyph names are a dynamic string array. Preserve this failed build and warning; holder/conversion causes and recovery remain Open. A successful later candidate must have its own receipt.
+
+Evidence: Dump Twuck manifest/inventory above, `build/physics.json`, `reports/gameplay_v6_audit.json`, `reports/preview_v6.json`, `tools/model_v6.py`, digital controller/model/probe and `tests/test_digital_dashboard.py`. Proposed shared integration: [cockpit-and-lamps.md](cockpit-and-lamps.md), [textures-and-materials.md](textures-and-materials.md), [frames.md](frames.md) and [symptoms.md](symptoms.md). Native compile, measured driving/reversal/AWD/diff/water behaviour, digits/needles, lighting, retained/unloaded sand, installation and owner acceptance require distinct final receipts. No complete BRO generation/package compile, runtime, campaign or public-release pass is asserted by this entry.
+
+
+### Dump Twuck revision 006: owner rejects the broad mound preview (2026-10-10)
+
+**Owner feedback / offline numeric Build; native Open:** after three failed native candidate generation iterations, the owner identified the prepared load as visually flat again. The pre-refinement authoring used the older broad paraboloid with a 4.8 cm longitudinal centreline drop over 2 m. Passing load-grid containment had not established the requested peaked silhouette. Preserve that source and the failed native receipts as the pre-refinement baseline; do not rewrite their outcome.
+
+The maintained `blender_load.heap_top` gained an opt-in elliptic cone and eight passing pure numeric tests. Its default profile remains unchanged; finite positive cone dimensions/slopes are checked. The project-specific saved mound, containment, volume/density mass, offline preview and checkpoint are separate root-owned steps. This entry does not assert that those steps or any new native run succeeded. Evidence: Dump Twuck `history/revision_006_candidate03` and `reports/revision_006/mound_refinement`. The three earlier native attempts remain exhausted; compiled appearance, stationary retention, discharge and retail acceptance are open. See [truck-settings.md](truck-settings.md) and [symptoms.md](symptoms.md).
+
+
+**Additional failed offline Build: border-only cells below a sloping floor.** The first pointed-load saved audit had no shared grid findings or pivot cells and an earlier hull-floor probe reported no under-floor hull. A direct audit of all 992 native grid sample positions against the measured steel nevertheless found four border-only rear-corner cells. At x=+/-3.874375 m and y=6.801352/7.086921 m, their lower/upper sheet height was 6.5 m while the steel was 6.667592-6.733335 m. The worst under-floor error was 0.233335 m. `grid_findings=[]` and a passing hull-only floor check cannot establish that the full drawn grid stays above the tray: cells outside the hull can use border heights.
+
+Keep a separate saved-grid-versus-steel test at the engine's nudged sample positions, including both border and hull cells and both lower/upper sheet heights. The project audit rejects more than 5 mm below steel, requires a surveyed floor population, keeps the sheet below 4 m and uses a conservative 0.35 m edge-step ceiling (stricter than the shared 0.5 m finding threshold). Root corrected the intended rear border top back to its measured 6.62/6.86 m ramp while retaining the other lower border tops; a corrected configuration is not a completed source pass. Require the final matching saved-model report and completed pinned inspection receipt before claiming this correction verified.
+
+Evidence: Dump Twuck `tools/audit_mound_v6.py` and preserved `reports/revision_006/mound_refinement/failed_lowered_rear_border/{mound_profile_saved.json,physics.json,receipt.json,inspect-041-v6-peaked-mound.json,saved-model-audit.log}`. The failed report/receipt stay failed. This is offline source geometry plus grid emulation; the newly pointed load has not completed native compilation or visual/retention/discharge acceptance. The three preceding candidate iterations remain exhausted; this refinement adds no fourth native attempt or implicit installation authority.
+
+## Kanga 25 pick-and-carry crane from a finished asset (Claude, 2026-10-10)
+
+Owner request: "make this into a fully polished roadcraft mod using the roadcraft toolchain", on a finished
+Franna MAC25-4 asset (v2 game mesh with a BakeLow per-part split, skeletal FBX weights, 10 Painter sets exported as
+RoadCraft TGAs). Owner choices: unbranded name "Kanga 25", **three real telescope joints**, **no engine runs**
+(build, offline audits, install; the owner drives). Project `RoadCraft/kanga25_mod` (`mod-init --kind vehicle`).
+
+* **Route (Build):** textures (supplied TGAs + badge overrides) -> Blender 5.0 model build from the BakeLow parts
+  (per-part objects for free: lens split, cockpit controls, LODs by dropping small parts, convex hulls per part
+  group) -> markup/BRO generator over a merged retail donor (Baikal 5916 crane + its chassis template + compiled class
+  graphs) -> asset_importer -> hidden batch generation (4 attempts, file-lock race) -> mod_pak_builder + retail export
+  (910 checks) -> test phase: shared vehicle check, rig audit (24), package audit (22). Recipes build-002 / test-002,
+  candidate `kanga25-20261010-c1` (sha 2f7bde37...), first install with `--expect-absent`.
+* **Articulation limited by the art (Build):** the modelled steering cylinders (barrel 0.54 m, rod 0.55 m behind its
+  eye, pins 0.84 m apart) stroke only 0.58-1.05 m: +-30 degrees, not the asset rig's +-40 (the rod would leave the
+  barrel at one lock and poke out of its back at the other). Measure cylinder strokes over the joint range before
+  choosing limits ([articulated-steering.md](articulated-steering.md)).
+* **Boom tail meets the rear deck (Build):** the art's tail sheave clears the rear module only up to 49 degrees luff
+  straight ahead and 17 degrees at full articulation one way. Luff limited to 60; boom-vs-rear collision is disabled
+  (shared collision group), so the remaining overlap is visual. Reported by `tools/audit_rig.py` as a known limit.
+* **Art defect fixed:** the right headlight lens was mapped onto window-film pixels (renders as dark glass); its UVs
+  now take the left lens's. Found by sampling the emissive map under every glass component.
+* **Badge repaint without Painter:** re-ran the asset's own decal and texprep scripts with only the text changed,
+  diffed the decal maps (only badge/plate/load-chart pixels changed: the projection is deterministic), inpainted the old
+  lettering out of colour and spec (OpenCV Telea) and laid the new decal over with the old wear carried as a smooth
+  multiplicative factor (`kanga25_mod/tools/badges.py`).
+* **Render review traps (Build):** pin empties parented to bones of the same armature as constrained bones form a
+  dependency cycle (cylinders froze); use helper bones. Blender 5.0 renamed the sky texture types (NISHITA silently
+  failed inside a try) and its sun cast a long second shadow.
+* **Toolchain job log rename (Build):** one test run failed with WinError 32 renaming `.rig-audit.log.partial`
+  right after the Blender step; an immediate rerun passed. Treat as a transient file lock (Open: retry in `jobs.py`).
+* Owner drive pending: articulation direction/feel, crane IK with the near-locked slew and three telescopes, hook
+  stow/hide, lamps and beacons, mirrors, driver pose, sounds, handling (unbenched).
+
+## Dump Twuck public and author feedback actioned (Claude, 2026-10-11)
+
+Inputs: the seven Saber page comments (reversal after a stop, "constantly drives backwards",
+no AWD x3, slow / stuck in a little mud and on rocks, slow tipping, too-bright headlamps,
+beacon "errors", "a toy from a shop" textures, Xbox) and zombie213's list (cameras, mass, speed,
+power, tipping, 362 t capacity, AWD, diff lock, puddle high-water warning). Codex's v6 (the
+author's new cab, digital dash, front steering IK, peaked mound, camera eye, water sampler,
+halved headlamps) and v7 (side-correct tyres) had been built but never installed.
+
+| Build | Change | Why |
+|---|---|---|
+| v8 `dtw-20261011-v8` | 362 t payload over the 129 m3 hull; tare 240 t; torque 6.14 M (80% of the retail Baikal 65206's loaded force per kg; v5/v6 had a third); gears by `angularVelocity`, `gearRatio` back to RPM duty; reverse 0.11; `neutralGearSwitchingDelay` 0.5; AWD always on, diff lock switch (retail Tayga); Baikal tyre friction; tipping 12 deg/s; steering 0.04 / 0.08 | truck-settings.md "Heavy hauler drive" |
+| v9 `dtw-20261011-v9` | Body re-unwrapped into a 4096 atlas (59 px/m, was 14) and wheels into 2048 atlases (~130 px/m) with baked AO, wear, dust and mud; beacon lit shell 1 -> 4 mm; store card and icon rendered from the new model; 86 MB package, 334 static checks | textures-and-materials.md "Weathering" |
+
+Not driven yet; no Mod Editor runs (owner rule). Owner should sell and rebuy the truck after
+installing (the rig changed since v5). Open: whether reverse lands near 13 km/h, whether the 362 t
+load settles inside the suspension's predicted reserve, what the beacon "errors" were.
+
+## L275 v10 tray cargo and tie-downs (2026-10-11)
+
+**Owner request** (photo of the real tray): a SMAC compressor between the toolboxes, tool bags and equipment, toolbox
+shelves, a tray vice and junk under a cargo net; mid-task "I want everything to look real" (sourcing allowed), then
+"clear the tray of all the clutter except for the smac and vice. Add the ability to tie loads down". Result: custom
+SMAC 40-D style compressor + hose reel, Poly Haven bench vice on a fabricated pedestal, shelves and scanned contents in
+both toolboxes (deck junk and the cloth-simulated net were built and then dropped), and a retail `CargoConstraint`
+cargo bed with a CONSTRAINT_CARGO toggle ("Cargo beds and tie-downs" in truck-settings.md). Body LOD0 298k -> 367k
+(project guard raised to 400k). The project patches its generated class, so the IK patch's "unrelated data" audit had
+to learn the cargo sync (first build-031 failed there). 352 static / 1,338 export checks; installed over the exact v9
+file. Not driven.
+
+## L275 v14 VDJ79 undercarriage (Claude, 2026-10-12)
+
+**Owner request:** upgrade chassis, suspension, steering and brakes of the L275 to a detailed VDJ79 layout (front
+coil live axle, rear leaf live axle) in headless Blender, keeping wheels, wheelbase, ride height, physics and the
+rest of the vehicle. Result: parametric generator (C:/RC/l275_chassis, pinned in the mod's art/undercarriage_v14):
+C-section ladder fitted to the owner's lowered cab/tray (body-drop rail line, rails notched over the rear seats),
+radius arms, panhard, coils, shocks, stabiliser and RHD recirculating-ball steering with damper; rear
+spring-under-axle 6+2 packs with shackles; 4-pot front / floating rear calipers, lines, hoses, ABS leads, park-brake
+cables, propshafts. LOD0 121.8k tris in two 4096 atlases (frame 24.8k / gear 97.0k) replacing a 45k chassis; body
+LOD0 447k (guard raised to 480k), LOD3 26.6k. Rig: kept chain names, moved bones, removed the Roamer rear four-link
+and rear panhard, added shackle, stabiliser and damper chains (ik-visual-rigs.md "Live-axle linkages"). Integration:
+`undercarriage.py` (strip source chassis, edit bones, author art), `undercarriage_rig.py` (BRO), `patch_compiled_uc.py`
+(class chains, audited), validate checks (build-pipeline.md "Replacing running gear"). Toyota AU spec (via a
+converter's PDF) confirmed vented discs front and rear; forum/vendor data say the stock rear is spring-under-axle.
+
+**What went wrong on the way:** the review scenes read the mod's built model as context while a build rewrote it
+(open failures; read it only after the build); a Blender save of a 300 MB review .blend failed its '@' rename
+(retry helper added in create_models.py); a research sub-agent overwrote the main reference record (restored from
+the copy pinned into the mod - pin early); pointiness-based edge wear blotched every low-poly plate
+(textures-and-materials.md). Not driven: native IK motion of the new chains is for the owner's drive.
+
+## L275 v15 physics accessories (2026-10-12; Build, not driven)
+
+Owner: mount the new extinguisher and hose reel on the toolbox, the reel "on a shaft so it turns", physics on the reel,
+mudflaps and mine flag. Result: swing-out reel bracket (rearward only: the compressor is 4 mm ahead; clearance sweep
+-110..+4 deg, hinge -95..+3), rear mudflap hinges, whip flag as two ragdoll pole segments plus two hinged flag panels,
+all as retail secondary bodies ([secondary-physics.md](secondary-physics.md)). Installed sha 7b4ecf18 over v14.
+Lessons: (1) the joined tray's v3 UV patch is fingerprinted, so the flaps are tagged with a face attribute before the
+join and split off after it; (2) editing a pinned toolchain source while a build runs fails the step ("changed pinned
+input"), so make toolchain edits between builds; (3) a library .blend whose objects live outside any scene (v10 cargo
+art) loses them when a script saves a copy: link them or set fake users first. Values unmeasured (owner: no editor runs).
+
+Follow-up (same day, Game): owner "when you go to spawn in it, nothing happens ... after it loads the game wont save". Script dump: HUD `HandleOnCurrentTruckChanged` -> `GetToggleableActionReactive(30 = CONSTRAINT_CARGO)` on a null `cargoConstraint`. Cause: the v10 tie-down sync never added `TruckCargoConstraintUnit` to the replicated entity (since v10, not the v15 physics). `cargo_bed.py` now inserts it; validate checks it.
+
+## L275 v17: reusing another mod's bullbar (2026-10-12; Build, not driven)
+
+The Roamer 105's ARB bar fitted to the L275 79: (1) fit by matching guard width (x 0.90), face depth and the owner's
+height cue ("just below the grill" = bumper-box top under the grille bottom); (2) re-bake instead of copying textures:
+each face samples its source material at the source UV and bakes to new packed UVs (emission for albedo/spec, tangent
+NORMAL bake for normals, DirectX <-> OpenGL flips), so 11 source materials become one atlas; (3) remove the factory
+bumper by connected mesh component (pieces fully below the valance, reaching the bumper line, inside the guards), not by
+a box (a box left the wrap-around ends; the owner also saw the end flares when the width limit stopped at .89 m);
+(4) convex hulls of a wrap-around bar must stop short of the wheels: wing hulls reaching back to the guards filled the
+space ahead of the tyres and failed the steering/travel clearance audit; (5) a transient PermissionError in the retail
+export (pct.resource write) failed one package step; the gameplay-only rerun passed.
+
+## L275 v24: radio handpiece and replacement tail lamps (Claude, 2026-10-12; Build, not driven)
+
+Request: fit two standalone props, an APX O3 control head (C:/RC/apx_o3) in the cab and a three-section LED combination
+tail lamp (C:/RC/combo_lamp) on the tray. Shipped inside the combined candidate l275-aocam-20261012-v23c (sha 03824384...,
+447 static checks). Mod files: tools/radio_lamps.py, art/radio_lamps_v24, config v24 block, validate v24 checks.
+
+- **Replacing lamps the light graph already switches** (grade: Build). Keep the graph's lamp objects (tail_lights,
+  tail_lights_on, brake_lights_on, reverse_lights, reverse_lights_on) and swap only their contents. At every LOD,
+  delete the old lens faces by material, join the new lens copy with the role's lit or unlit material, then drop the
+  empty material slots. The graph, sfx anchors and accessory lenses stay valid. Move the light anchors to just
+  outside the new lens fronts.
+- **Mount points by ray cast against the built model** (grade: Build). Read the panel face behind each lamp and the
+  dash patch on a 1 cm grid (a00_measure.py). Build the prop frame from the hit point plus a ±20 mm tangent and
+  normal. Check the clearance to overhanging parts from the raw vertices (the tray beam bottomed 2.5 mm above
+  the lamp).
+- **Body LOD3 budget** (validate.py caps body LOD3 at 30k): an interior prop drops hard past LOD1, because it can't
+  be seen from outside.
+- **Headless Blender 5.0 (factory startup, -b) pitfalls** (grade: Build):
+  - `bpy.ops.uv.smart_project` fails its poll. Use a per-part box projection instead.
+  - An EXACT boolean slot cut on a simple extruded profile returned an empty mesh. Build slotted plates as
+    outline prisms.
+  - After a glTF import, every vertex is selected, so setting `polygon.select` and calling `mesh.separate` takes the
+    whole mesh. Split by bmesh copies instead.
+- **Process: concurrent agents on one mod tree** (grade: Observed). Editing a file another session's recipe pins
+  (validate.py) fails that session's build ("Stale or missing input"). Two ship scripts that expect the same
+  installed sha can't both install. Before editing a mod tree, check recipes/, revisions/ and jobs/ for activity in
+  the last hour, and agree one combined build with the other session.
+
+## L275 v25/v26 polish pass: audits, then patched-class retail parity (Claude, 2026-10-12; Build, not driven)
+
+Owner request: "polish every little feature of this mod and make sure its not missing anything". Three read-only audits
+ran in parallel (feature parity against the Lynx, Lada and Roamer; project consistency; texture quality), followed by a
+headless render sweep. Shipped as v25 `b0422e64...` (463 checks) and v26 `f92b9953...` (472 checks). Mod tools:
+cab_leftovers.py, cab_fit.py, lod_trim.py, material_tidy.py, patch_compiled_features.py, gauge_glow.py; art polish_v25/26.
+
+- **Mirrored-interior leftovers** (grade: Build, renders). When an interior object is mirrored LHD -> RHD, interior bits
+  in the cab BODY mesh stay behind and float: wheel-hub emblem, cluster bezels, stalk glyphs. Rule that isolated 240
+  pieces without touching the shell: wholly inside the cabin box, < 12 cm, no mirror twin across x = 0, away from the
+  centre stack, behind the cowl.
+- **A patched (not regenerated) class misses BRO-only edits** (grade: Build). The v17 winch point existed in the BRO
+  only, and the class kept v1's for seven versions. Validate the class against the config, not the config against itself.
+- **Retail feature parity by copying the Lynx class verbatim** (grade: Build): shakers plus their Engine nodes, gear,
+  low-range and moving-handbrake sounds, steering-wheel sound, winch force feedback, wheel particles, water blocks, towing,
+  steering-wheel force feedback, effect list and class-resource links. A designer-wizard truck's graphs are subsets of
+  the Lynx's, so node ids match. The tracker locator is remapped when the target bone is missing.
+- **Idempotent patches against a persistent class** (grade: Build): every generate run re-patches the same class. An
+  audit that compares against a fixed baseline must normalise each later patch's own blocks, or the second build fails
+  (patch_compiled_ik "changed unrelated data"). Allow-lists must not be built from "what this run added", which is
+  empty on a re-run.
+- **Fuel station = four coordinated pieces** (grade: Build): prop_reserve_tank, the ReserveTank smart point,
+  ReserveTankSavablePropDesc, FuelStationUnit, plus its replicated-resource link. Every replicated unit needs its
+  linksDesc entry: all 42 retail trucks with TruckCargoConstraintUnit link truck_cargo_constraint_unit.sso.resource.
+- **Exhaust smoke needs a real outlet** (grade: Build): the stock smoke emits from a parent area, and an empty locator
+  has none. The Lada point-source override needs a modelled tailpipe, and the plume aims along the locator's local +Y
+  (native -Z, 'z-').
+- **Texture defects found by numbers, not looks** (grade: Build): unpadded black islands at 4096 outline every seam at
+  range; (0,255,0) normal padding is an invalid direction; tangent-space texels with z < 0 shade inverted. AO baked with
+  the LOD copies renderable gives medians of 3-40. All four are fixable at packing time (pad, flat refill, |z|, AO floor).
+- **v27 wipers from existing geometry** (grade: Build, `anim_list.json` holds both clips): when a source cab already has
+  static wiper arms (here inside the interior object), split them out by connected piece in a windscreen-base box. Put
+  the pivot at the arm end that is lower and further forward (the spindle); the blade is centred on the other end.
+  Remove the decimated copies from the LOD1-3 interior by distance (< 4 mm) to the LOD0 wiper surface. Add the pivot
+  bones after authoring (edit mode on the rig is fine there). Pick the sweep sign so that the tip rises. Add the new
+  bones to any fixed-baseline bone audit.
+- **v28 "mud comes all inside the car"** (grade: Game report; fix Build): wheel-spray particles pass through any part of
+  the cab that no collision hull covers. The L275's cab floor hull had been built from body-mesh points since v3, but
+  the floor lives in the interior object, so the hull was a 14 mm sliver and the footwells were open. Check every
+  region hull's volume: a volume near 0 means its source points were missing. The `cutoff_volume` the cockpit camera
+  shows in first person (its `boundingVolumeObjectName`) must sit inside the shell, and it must carry a UV set: a
+  hand-built hull without UVs crashed tplexp (return -1, no log).
+- **Read cab textures before adding fittings:** the "missing" sun visors were flat liner-coloured panels in the interior
+  mesh. A render reads them as headliner, so look at the source mesh pieces first.
+- **Stopping a background ship script** (TaskStop) can leave its game-wait loop running. That loop later wrote
+  recipes from a stale tree, and mod-recipe does not overwrite an existing output. Use a fresh recipe name for every
+  attempt, and check for orphan processes.
+
+## L275 v29-v30: a clean interior from the original part colours (Claude, 2026-10-13; Build, not driven)
+
+Owner: "All the textures are a bit of a mess ... I need a clean interior". Shipped as v29 `b456af66...` and v30 `b2754f58...`.
+
+- **Check what "the original" really is before re-baking** (grade: Build). The Sketchfab LC79 interior had no textures:
+  it was flat-coloured parts. Every later map was a bake of a bake at about 0.24 px/mm. Matching each face of the
+  game mesh to its source part by nearest surface (p99 0.8 mm, 0.06 % unmatched) lets the atlas be painted per part
+  from a palette. Draw it at 2x and box-filter it down, so part edges are anti-aliased and sharp at any texel
+  density. Use faint grain only. Per-part colour-family clean-ups (light / mid / dark) draw hard-edged blotches
+  wherever the source has soft stains.
+- **Labels live where the mesh put them** (grade: Build): tiny flat glyph pieces in a body mesh pick up the body
+  atlas's density and smear. Move them to their own object on a solid swatch, so the geometry draws them.
+- **Mirroring an interior LHD -> RHD** (grade: Build, renders) also mirrors any centre-stack controls whose labels
+  live elsewhere, and real RHD vehicles keep the LHD stack. Mirror the stack pieces back (positions, face winding, and
+  the custom corner normals with x negated), then check the knobs against their labels.
+- **Install guard vs another session's SDK work** (grade: Observed): `asset_importer.exe` from another mod's build
+  blocks the install (BLOCKED_PROCESS, nothing changed). Wait for every SDK tool to exit before the final install.
