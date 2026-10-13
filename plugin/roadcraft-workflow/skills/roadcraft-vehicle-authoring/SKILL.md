@@ -49,9 +49,10 @@ directory is not the project.
     linear 0), not 1.5 / 0.03.
   - Track wheels: copy a retail crawler's friction tables (frictionValue 0.5-1.0, every surface
     including `default`, `asphalt` and `mud_sand`) and softForceScale (TC305 0.75, HT500 0.55). The
-    default of 1 is rigid contact and was the "bouncy hull" cause.
+    default of 1 is rigid contact, a likely "bouncy hull" cause (code analysis; the owner's
+    "feels better" drive changed friction, softForceScale and wheel mass together).
   - Keep the steering curve's full-lock end at -1 like retail. -0.6 cut pivot yaw about 3x with no
-    measured judder benefit.
+    measured judder benefit (headless bench, single runs per build).
   - Strength has no mass scaling and the sag law is unknown, so calibrate per vehicle.
 - Measure a change to suspension, wheels, masses or joints before installing it, against the
   installed version. Use the windowless bench (`python -m roadcraft.bench_headless`,

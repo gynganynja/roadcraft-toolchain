@@ -684,7 +684,7 @@ class PakOverlayTests(unittest.TestCase):
         text = (out / "models/k.tpl.asset/k.tpl_markup").read_text(encoding="utf-8")
         self.assertIn("angularDamping = 0.05", text)
         self.assertIn("linearDamping = 0\n", text)
-        self.assertIn("C:/", (tmp / "out" / "config/editor.cfg").read_text(encoding="utf-8"))
+        self.assertNotIn("elsewhere", (tmp / "out" / "config/editor.cfg").read_text(encoding="utf-8"))   # any drive (desktop TEMP is E:)
         self.assertIn((tmp / "out" / "mods_source").resolve().as_posix(),
                       (tmp / "out" / "config/editor.cfg").read_text(encoding="utf-8"))
         written = {w["member"]: w for w in report["written"]}
