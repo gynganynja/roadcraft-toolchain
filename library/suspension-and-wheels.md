@@ -366,6 +366,11 @@ against 0.8-1.0 on the Lada's other surfaces. When a project scales excavation, 
 existing entries instead of replacing them. Not changed in v11: the owner accepted the v4-v7 handling with these
 values, so a correction waits for the owner's call.
 
+Owner decision 2026-10-13 ("correct everything you found"): Lada v12 (sha f2fedd23) writes full `ground` (1.0 / 0.3 / 1.5)
+and `mud` (0.8 / 0.3 / 2.5) entries and raises wheel mass to 70 kg. `compare` outliers fall from 8 to 5. The derived
+four-wheel mass, 280 kg, is still under the retail 340 because the lightest retail trucks carry more wheel mass than
+70 x 4. Unmeasured; owner drive pending.
+
 ## Stop geometry (measured, 2026-10-02)
 
 **Game (KGS-25 editor bench; the Lada trials fit it too):** a wheel sits `height + min + travel`
