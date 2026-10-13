@@ -1,0 +1,203 @@
+# Cranes: boom, telescopes, hook and crane controls
+
+How a RoadCraft mobile crane is put together, read from the retail cranes and built twice: the KGS-25
+crawler crane (Codex's kgs25_mod, 2026-10-02) and the Kanga 25 articulated pick-and-carry crane (kanga25_mod,
+2026-10-10, from a Franna MAC25-4 asset). Grades as in [README.md](README.md). Rig frames and hinge axes:
+[frames.md](frames.md); visual cylinders: [ik-visual-rigs.md](ik-visual-rigs.md); articulation:
+[articulated-steering.md](articulated-steering.md).
+
+## The pieces
+
+| Piece | Where | Grade |
+|---|---|---|
+| `craneSettings` (`CraneSettings`): `propCraneIK` (bodies the game moves to put the hook where the player steers it), `winchSettings` (`CraneWinchSettings`: `maxLenght` - the misspelling is the field name - `minWinchLength`, `strength`, `craneZoneRadius`, `winchSource` {bodyName, offsetInBodySpace}), `craneWinchMode`, `isMultiWinch`, `amountOfWinches`, `isAnchorsEnabled` | Truck BRO | Retail |
+| Slew, luff and telescope joints: `tpl_markup_constraint_hinge` / `_prismatic` with a `tpl_markup_position_motor` | Body model markup | Retail |
+| Controls: `axisControls` / `staticTruckAxisControls` with `CRANE_X`, `CRANE_Y`, `CRANE_Z`, `CRANE_ROTATE`, `CRANE_WINCH`; the action lists (`alternativeActions`, `legacyCraneActions`, `firstAction`..`sixthAction`); `equipmentCameraSettings` type `CRANE` | Truck BRO | Retail |
+| Shop and details: `uiType UID_TRUCKS_TYPE_CRANE`, `detailsInfo.craneDetails` {LiftWeight t, boomLength m} | Truck BRO | Retail |
+| Crane sounds: the Addon graph's `BlueprintNodeOnCraneArrowPositionChanged` (`rootBodyName`, `hookBodyName`, `xConstraintName` - the donor's names must be remapped, lint RC045), `BlueprintNodeOnCraneWinchChanged`, `BlueprintFunctionCraneAxisControlSoundNode` | Compiled class graphs | Retail, Build (KGS-25) |
+| The hook and rope are drawn by the game's crane winch; no retail crane has a modelled free hook body | - | Retail |
+
+## IK chains seen in retail
+
+| Vehicle | `propCraneIK.bodyNames` | Notes |
+|---|---|---|
+| Baikal 5916 crane | Body, Tower, ArmHinge, Arm1 | articulated wheeled crane, crane on the rear (root) body |
+| Aramatsu Forester Neo crane | **Front**, Tower, ArmHinge, **Arm_01, Arm** | articulated; the chain starts at the front (non-root) body; **two telescope prismatics** (0-3 m each, childRotation [180,0,0] on its bones) |
+| EPEC TC305, MAG240 | Chassis, Cabin, CraneSeg1, CraneSeg2 | tracked, `isAnchorsEnabled False` (no outriggers) |
+| ZiKZ 612C, HWC945 | Body/Chassis, Tower, segment 1, segment 2 | truck cranes |
+| truck loader cranes | Crane, RotationBase, ArmHinge, Arm1 | the chain starts at a crane-base body |
+
+**Rules (Retail):** every chain starts with the body the crane stands on, then a slew (`Tower`) hinge, then the
+luff hinge, then one or two telescope prismatics. The first body need not be the physics root (Forester: front
+frame; loader cranes: crane base). A crane without outriggers sets `isAnchorsEnabled = False` and uses the TC305
+action lists (no `UID_HUD_CRANE_ANCHORS` / `seventhAction`).
+
+## Kanga 25 build (2026-10-10, Build; owner drive Open)
+
+* Chain `[BoneFront_cdt, BoneTower_cdt, BoneBoom_cdt, BoneTele1_cdt, BoneTele2_cdt, BoneTele3_cdt]`:
+  **three telescope prismatics** (one more than any retail crane) at the owner's request, 0-3.9 m each, identity
+  `childRotation` on identity bones (slides along native +Z = Blender -Y, KGS-25 frames rule).
+* **Slew-less crane:** a pick-and-carry crane swings the load by articulating. A hidden 1.5 t tower body with a
+  +-1.5 degree slew hinge keeps the retail chain shape (every retail chain has a slew joint); `CRANE_ROTATE`
+  therefore barely moves anything. Whether the IK solver behaves well with a near-locked slew is **Open** until
+  driven; the fallback is a single telescope joint with the inner sections following.
+* Luff hinge `childRotation [0,-90,0]` (positive raises; KGS-25), limits 0..60 degrees (the art's boom tail meets the
+  rear deck above ~49 degrees straight ahead: visual only, boom and rear share a no-collision group), maxForce 9 MN.
+* Hook: the modelled hook block hangs from the boom head on a `tpl_markup_constraint_ball_and_socket` (250 kg,
+  angular damping 4); a `HookBlock` graph hides it (and its rope falls) on `OnAttached` of
+  `BlueprintNodeOnCraneWinchChanged` and shows it on `OnDetached` and at init (KGS-25 pattern plus an init node,
+  RC038). Winch source = the head sheave on the last telescope.
+* Donor for everything else: the retail Baikal 5916 crane BRO **merged over its chassis template**
+  (`designer_wizard/trucks/templates/chassis_baikal_5916.bro`; the retail BRO's `__type ChassisBaikal5916` is that
+  template), with the complete graphs taken from the compiled retail class (`prop_blueprints`), as the KGS-25 did
+  with the TC305. Every donor body/joint/locator name was mapped or dropped; the generator script fails the build
+  on any unmapped name.
+* Graph locators the Baikal class needs and a modelled crane may lack: `ctrl_switch_handbrake`, `ctrl_gear_stick`,
+  `ctrl_gear_stick_low`, `Bone_wiper_left_2`, `Bone_wiper_right_2` (sound emitters), the cockpit crane levers
+  `ctrl_grapple_tower|arm_tilt|arm_ext|hook` (rotated by `dataDashboard.equipmentChain` with `CRANE_X|Y|Z|WINCH`),
+  and three `cdt_*` collision names used as Addon sound positions.
+
+Evidence: kanga25_mod `tools/prepare_mod.py`, `tools/kanga_config.py`, `tools/audit_rig.py`; recipes build-002 /
+test-002 (all steps passed), candidate `kanga25-20261010-c1`, installed 2026-10-10; no engine run (owner's choice).
+
+## Kanga 25 c2 (2026-10-10): shaking and a deploy crash fixed (Build; drive Open)
+
+* Owner on c1: "When the boom is extended forward and up the crane shakes violently". Crane joint values now follow
+  the retail Baikal 5916 (motors with damping 0.99, telescope 0.8 MN; tower 2.2 t) rather than stiffer, lightly
+  damped motors on light bodies; the modelled hook is secondary physics (`massFactor 0`). Unbenched (owner: no
+  engine runs).
+* A crane without anchors must drop the donor's `BlueprintNodeOnAnchorsStateChanged` nodes (they assert the anchors
+  controller; c1's crash dump). See [symptoms.md](symptoms.md).
+* Toolchain note: a test phase that reads the built package needs it as a per-step input with its sha256 (a global
+  source pin makes the build's package step fail "changed pinned input"); kanga25_mod `tools/pin_test_inputs.py`
+  writes the current hash before `mod-recipe`.
+
+## Kanga 25 c3 (2026-10-10): benched shake, steering and slew fixes (Measured; drive Open)
+
+* First crane tuned on the editor bench (`kanga25_mod/tools/bench`: timed SSL commands on the sampler connection,
+  crane input through `PropIk.Update` in model space, plans `crane`, `carry`, `kdrive`). Luff motor tau 0.8 -> 0.4,
+  damping 1.0 removed the raised-boom rocking ([symptoms.md](symptoms.md)).
+* A slew-less crane still needs the tower body in the IK chain; lock it with `angleStart = angleEnd = 0` on the slew
+  hinge and drop the `CRANE_X` axis controls (and the `grapple_tower` dashboard lever) so the mouse cannot swing it.
+  Measured: sideways crane input leaves slew at 0.
+* Single bench runs are noisy (the same variant twice: launch angular rate 0.014 vs 0.10, slalom roll rate 6.6 vs
+  10.4 deg/s); trust only differences that repeat across variants. One carry run stalled at full lock from standstill
+  with a front wheel unloaded and did not repeat.
+
+## Telescope joints in the IK chain: retail survey and the visual follower (Kanga 25 c5, 2026-10-10)
+
+**Retail (compiled classes, default_other.pak):** every telescopic crane IK chain has one prismatic: Baikal 5916
+(Body, Tower, ArmHinge, Arm1), ZiKZ 612C (Body, Tower, Segment_1, Segment_2), EPEC HWC945, Vostok ETV89; the Aramatsu
+Forester Neo crane is the only one with two (Front, Tower, ArmHinge, Arm_01, Arm; 1 t each, tau 0.9, 0.3 MN,
+`constraintInertiaStabilizationAmount 0`). No retail crane slides inner sections that are not IK bodies.
+
+**Game (owner report, Kanga c4):** with three telescope prismatics the boom oscillated with the boom raised and a load
+on, kept going after the load was dropped and stopped once the boom was retracted. **Inferred cause:** the redundant
+chain lets the IK split one target among three joints in many ways; fully retracted, every joint sits on its stop.
+**Build (c5, owner's choice):** two joints as the Forester (tele1 0-3.9 m, tip 0-7.8 m) and the middle section as a
+visual follower: its meshes skinned 0.5 / 0.5 to the outer-section and tip bones. Prismatic joints keep the sections
+parallel, so linear blend skinning moves it exactly half way, undeformed, in every LOD (kanga25_mod `FOLLOWERS`,
+`create_models.bind`, rig-audit follower check). The follower has no collision hull. Drive: Open.
+
+
+## Outriggers (anchors): retail values and stowing them clear (KGS-25 final, 2026-10-11)
+
+**Owner report on the KGS-25 r4 legs:** "hit on everything in their current tucked up position, dont extend down far
+enough and look not good". r4 hung its jacks outboard of the tracks with the pads 0.33 m up and a 0.37 m lower stroke
+(chosen because a 0.40 m stroke stalled 2 cm short against the ground and the anchors never reported open).
+
+**Retail (truck BROs + markups, Retail):**
+
+| Vehicle | Beam / swing | Foot body | Foot motor | Foot stroke | Mass scalers |
+|---|---|---|---|---|---|
+| EPEC HWC945 | prismatic 2.3 m, 1500 kg, 0.8 MN | 850 kg | tau 0.73, 10 MN | 0.6 m | chassis x4, beams x4, feet x2 |
+| ZiKZ 612C | hinge -90 deg, 1000 kg | 600 kg | tau 0.73, 10 MN | 0.515 m | body x3, legs x4, feet x2 |
+| KGS-25 r4 (mod) | prismatic 1.15 m, 150 kg | 100 kg | tau 0.6, damping 0.8, 3.5 MN | 0.37 m | feet x3 |
+
+Retail stowed pads sit ~0.35-0.45 m up and the strokes reach 0.1-0.25 m below the ground line, so retail outriggers
+lift the vehicle. The anchors controller completes only when every constraint reaches its max (0.01 m tolerance).
+
+**Build (KGS-25 final, unmeasured, drive Open):** stations moved to the empty corner pockets beyond the track ends
+(under the bumper and the tail deck, inside the hull outline); beams retract into the hull body (their collision
+boxes stay inside the hull when stowed); 3-stage visual jacks (middle stage skinned 0.5/0.5 like the Kanga
+telescope follower); beam 1.6 m, foot 0.58 m from 0.46 m up; masses 400 / 300 kg taken off the hull with its COM
+offset lowered so hull + stowed legs keep their centre; retail foot motor and scalers. Find corner pockets and check
+the whole stroke with BVH overlaps (kgs25 final `tools/probe_voids.py`, `clash_detail.py`): the KGS front beams had
+to dodge cab-door boarding steps and the sloped nose underside. If anchors stall again, shorten the lower stroke.
+
+
+## Retail truck features a designer-wizard mod lacks (KGS-25 features pass, 2026-10-11)
+
+**Owner:** "its a bit slow ... it needs smoke, terrain deformation, and any other features that vanilla vehicles
+have". The r4 compiled class had an empty `vfx`, an empty `prop_wheel_particles_base`, no effects library or SFX graph,
+untextured trails, no winch sockets, towing, driver or cockpit dashboard.
+
+**Retail (compiled classes, Retail):** empty `{}` entries in a truck's `sfx.list` resolve to `ssl/sfx/<name>.sfx`
+through the class resource's `linksDescVisual`; the exhaust effects find their node by `nameParent = "sfx_exhaust_*"`,
+the haze by `"sfx_radiator_haze"`. The TC305 "SFX" blueprint (VfxRestart/VfxStop on engine starting / started /
+acceleration / reverse / shutdown) drives them. `vfx` bones may hang on physics bones with `boneOffset` (209 shipped
+vehicles do, incl. on `BoneChassis_cdt`); systems 26 + water/grass params give deformation, grass and splashes. Trail
+textures need `linksPct` in the WHEEL class resource. Copying a donor's resource links: leave out `linksTpl` and
+`parents` (the Baikal links its own `crane_truck_2_res` model).
+
+**Build (unmeasured, drive Open):** kgs25 final `tools/features_class.py` copies TC305 `sfx` list + SFX graph,
+`prop_wheel_particles_base`, `prop_water_*`, `prop_towing`, `prop_truck_steering_wheel`; writes the vfx boxes, winch
+sockets, driver offset and a 27-element dashboard (Baikal `EquipmentChainOrientationInputElementCockpit` for crane
+levers, TUZ 303 `SteerigElementCockpit` RL for steering levers) into both compiled classes, and a best-effort BRO
+mirror (`propVFX`, `effects`, `towing`, `winchSockets`, `dataDashboard`, wheel `propWheelTrail`). Speed: road speed
+~ angularVelocity x 4 x contact radius (m/s); the KGS's 0.2 m contacts made its 10 km/h gearbox ~4.6 km/h.
+**Trap repeated:** the first build skinned the emitter meshes at the model origin, so `tpl-nodes` showed both
+`sfx_*` nodes at [0,0,0] (smoke on the ground, frames.md). Bone-parent them with the origin at the effect and check
+the compiled node positions before install.
+
+
+## Player feedback on the published KGS-25: hook, controls, operator view (2026-10-13)
+
+**Player reports (saber.games, Unverified):** "the hook is decorative only and doesn't do its job"; "no view from the
+operator's cab"; animations criticised without detail.
+
+**Retail (compiled classes, Retail):**
+* All 21 shipped cranes carry `staticTruckAxisControls` in `prop_truck_view_actions_mapper` (Game.First/Second/Third
+  axes -> CRANE_Z, X, Y, ROTATE, WINCH) beside the mouse-button `axisControls`. Both mod cranes (KGS-25, Kanga 25)
+  declare them in the BRO, but their compiled classes lack them. Check the compiled class, not the BRO.
+  **Corrected cause (Kanga 25, 2026-10-13, Build):** the generator does emit the field; both projects' own `build.py`
+  generate stage removed it (`mapper.pop('staticTruckAxisControls', None)`, comment "no static axis duplicates",
+  first in the original kgs25_mod build and copied into kanga25_mod). Keep the generated block (Baikal: 6 mouse
+  `axisControls` + 5 stick/key `staticTruckAxisControls`, `isMainActionsMapped True`); kanga25_mod package audit
+  now checks CRANE_Y / CRANE_Z / CRANE_WINCH are bound.
+* A crane with a separate operator cab (Baikal 5916) has `equipment_cockpit` in `prop_game_camera_user` (joint
+  `_equipment_cockpit_camera`) plus `prop_truck_camera_equipment_cockpit_preset`; a model node alone gives no view.
+* No retail crane has a modelled hook or a show/hide graph for one; `crane_winch_controller` (7 m scanner, ground point,
+  `winch_trail` rope) does the work. A modelled hook at the boom head reads as decorative because it never follows
+  the winch length.
+* `BlueprintNodeOnAnchorsStateChanged` outputs: OnOpenStarted, OnOpenEnded, OnCloseStarted, OnCloseEnded. Retail
+  HWC945 and ZiKZ 612C use it with `prop_truck_anchors_no_collision_controller` alone (no `prop_truck_anchors_controller`).
+
+**Build (KGS-25 feedback pass, drive Open):** TC305 `staticTruckAxisControls` copied in; Baikal camera logic and a
+trimmed preset added, node moved to the operator eye the interior was built around; the modelled hook hides on
+OnOpenEnded and on attach, shows on OnCloseStarted; its 180 kg pendulum becomes a retail ragdoll (cone / plane /
+twist 25, spring 100 / damping 10, twist axis native up via childRotation [0,0,90], `massFactor 0`, body
+`no_collision`); IK caps raised to the Baikal's 0.9 m/s / 50 deg/s and `maxTargetPositionError` 0.5 (r4 had 0.65 / 15
+and 0.35) after the Kanga 25 c9 audit below (kgs25 final `tools/feedback_fixes.py`, `features_class.tune`). Markup
+joints are read at load: the compiled .tpl holds no constraint data, so a markup-only change needs no recompile.
+
+## Animation audit vs retail (Kanga 25 c9, 2026-10-13; player report "criticises its animations", nonspecific)
+
+Offline audit of every animated subsystem against the retail Baikal 5916 / Forester Neo classes and markup:
+
+| Subsystem | Kanga c8 | Retail | Action |
+|---|---|---|---|
+| Crane IK joint caps (`propCraneIK.ikSystem`) | prismatic 0.6 m/s, hinge 12 deg/s | 0.9 m/s, 50 deg/s (Baikal, Forester) | c9: retail caps; target speeds (1.2 / 0.8 m/s) kept |
+| Modelled hook block | unlimited ball-and-socket, collides | dangling parts: `tpl_markup_constraint_ragdoll` (Baikal lamp: coneAngle 30, twist -10..20, motors [{spring 100, damping 10}], massFactor 0) and body `collisionLayer "no_collision"` | c9: ragdoll 25 / +-25 (twist axis not established, so symmetric) + no_collision |
+| Stick / keyboard crane axes (`staticTruckAxisControls`) | popped by our build.py | present in 21 / 21 shipped cranes | c9: kept |
+| Cab levers, steering wheel, pedal | Baikal values (levers +-8 deg, speed 20; wheel +-360) | same | none |
+| Solid-axle followers (`dependentAxles` wheel IDs -1) | -1 | -1 in 53 retail classes | none |
+| Visual cylinder strokes | luff 0..1.20 m needed within -0.6..1.6; steer +-0.27 within +-0.45 | - | none |
+| Luff cylinder base `HINGE2` | two axes | Baikal tower piston: single `HINGE`; HINGE2 also retail for cylinders | kept (no in-game evidence of wobble) |
+| Skinned hoses at the limits (artic +-30, luff 60) | no collapse in renders | - | none |
+
+**Inferred, not driven:** with a 12 deg/s cap the luff cannot follow the IK target near the boom foot; the target
+stops at `maxTargetPositionError` and the boom moves stop-start. Grades: retail values **Retail**; effects **Inferred**
+(no Mod Editor runs, owner rule). Evidence: kanga25_mod `kanga_config.py` (CRANE_IK_CAPS, NO_COLLISION_BODIES, hook
+JOINTS entry), `prepare_mod.py` ragdoll branch.
+

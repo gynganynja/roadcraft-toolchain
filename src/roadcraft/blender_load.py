@@ -2,7 +2,7 @@
 
 * ``floor_sampler``  the tub's real floor under (x, y), ray-cast from the bed art (faces weighted to the dump
                      body), so the load follows the steel instead of a box under a sloping floor.
-* ``heap_top``       a heaped surface: crown paraboloid cut by front and rear slopes.
+* ``heap_top``       a heaped surface: crown paraboloid or pointed elliptic cone, cut by end slopes.
 * ``heap_hull``      the load volume: convex hull between floor + clearance and the heap, tapering to the
                      steel where the heap thins out (no thick open edge).
 * ``load_borders``   the four border meshes the native grid spans: sides and front under the dump body, the
@@ -67,12 +67,37 @@ def floor_sampler(obj: Any, *, group: str | None = None, faces: set[int] | None 
 
 
 def heap_top(*, side_x: float, crown_z: float, side_z: float, crown_y: float = 0.0, fall_y: float = 0.0,
-             front: Sequence[float] | None = None, rear: Sequence[float] | None = None) -> Callable[[float, float], float]:
-    """Heap surface ``top(x, y)``: ``crown_z`` on the centre line at ``crown_y``, ``side_z`` at ``|x| = side_x``,
-    falling ``fall_y`` per square metre along y; cut by ``front = (y, z, degrees)`` rising rearward from (y, z)
-    and ``rear = (y, z, degrees)`` rising forward from (y, z)."""
+             front: Sequence[float] | None = None, rear: Sequence[float] | None = None,
+             profile: str = "paraboloid", cone_slope_y: float | None = None) -> Callable[[float, float], float]:
+    """Heap surface ``top(x, y)``, optionally cut by unchanged front/rear slope planes.
+
+    The default paraboloid has ``crown_z`` at ``(0, crown_y)``, ``side_z`` at
+    ``(+/-side_x, crown_y)``, and loses ``fall_y`` metres per square metre along y.
+    ``elliptic_cone`` gives a pointed crown with linear centreline drops: transverse
+    slope ``(crown_z - side_z) / side_x`` and longitudinal ``cone_slope_y`` (m/m).
+    It ignores ``fall_y``. Cone dimensions and slopes must be finite and positive.
+    Front ``(y, z, degrees)`` rises rearward; rear ``(y, z, degrees)`` rises forward.
+    Include the exact crown coordinates in hull samples to retain the pointed peak.
+    """
+    if profile not in ("paraboloid", "elliptic_cone"):
+        raise ValueError(f"unknown heap profile: {profile!r}")
+    if profile == "elliptic_cone":
+        values = {"side_x": side_x, "crown_z": crown_z, "side_z": side_z,
+                  "crown_y": crown_y, "cone_slope_y": cone_slope_y}
+        for name, value in values.items():
+            if value is None or not math.isfinite(value):
+                raise ValueError(f"elliptic_cone requires finite {name}")
+        if side_x <= 0 or cone_slope_y <= 0 or crown_z <= side_z:
+            raise ValueError("elliptic_cone requires positive side_x, cone_slope_y and crown height above side_z")
+        slope_x = (crown_z - side_z) / side_x
+        if not math.isfinite(slope_x) or slope_x <= 0:
+            raise ValueError("elliptic_cone requires a finite positive transverse slope")
+
     def top(x: float, y: float) -> float:
-        z = crown_z - (crown_z - side_z) * (x / side_x) ** 2 - fall_y * (y - crown_y) ** 2
+        if profile == "elliptic_cone":
+            z = crown_z - math.hypot(slope_x * x, cone_slope_y * (y - crown_y))
+        else:
+            z = crown_z - (crown_z - side_z) * (x / side_x) ** 2 - fall_y * (y - crown_y) ** 2
         if front:
             z = min(z, front[1] + math.tan(math.radians(front[2])) * (y - front[0]))
         if rear:

@@ -196,6 +196,107 @@ def patch_wheel_fields(wheel_class_text: str, fields: dict[str, Any]) -> str:
     return wheel_class_text[:a] + "".join(lines) + wheel_class_text[b:]
 
 
+def patch_block_fields(text: str, block_key: str, fields: dict[str, Any]) -> str:
+    """Set top-level scalar fields of the first ``block_key = {...}`` block (e.g. ``prop_truck_rb`` of a
+    compiled truck class); absent fields are added before the first nested block."""
+    a, b = _block(text, block_key)
+    lines = text[a:b].splitlines(keepends=True)
+    depth, seen, insert_at, indent, eq = 0, set(), None, None, " = "
+    for i, line in enumerate(lines):
+        m = re.match(r"([ \t]*)(\w+)(\s*=\s*)([^\r\n]*)", line)
+        if depth == 0 and m:
+            indent = m.group(1) if indent is None else indent
+            eq = m.group(3)
+            if m.group(4).rstrip().endswith(("{", "[")):
+                insert_at = i if insert_at is None else insert_at
+            elif m.group(2) in fields:
+                lines[i] = line[:m.start(4)] + _literal(fields[m.group(2)]) + line[m.end(4):]
+                seen.add(m.group(2))
+        depth += sum(line.count(c) for c in "{[") - sum(line.count(c) for c in "}]")
+    nl = "\r\n" if "\r\n" in text else "\n"
+    extra = [f"{indent or '      '}{k}{eq}{_literal(v)}{nl}" for k, v in fields.items() if k not in seen]
+    if insert_at is None:
+        insert_at = len(lines) - 1 if lines and not lines[-1].strip() else len(lines)
+    lines[insert_at:insert_at] = extra
+    return text[:a] + "".join(lines) + text[b:]
+
+
+def _named_entry(text: str, key: str, name: str) -> tuple[int, int]:
+    """(start, end) of the innermost ``{...}`` containing ``key = "name"``."""
+    m = re.search(r"\b" + key + r"\s*=\s*\"" + re.escape(name) + r"\"", text)
+    if not m:
+        raise BenchError(f"no entry with {key} = {name}")
+    depth, i = 0, m.start()
+    while i >= 0:
+        if text[i] in "}]":
+            depth += 1
+        elif text[i] in "{[":
+            if depth == 0:
+                if text[i] == "[":
+                    raise BenchError(f"entry {name} is not inside a block")
+                return i, _close(text, i) + 1
+            depth -= 1
+        i -= 1
+    raise BenchError(f"entry {name} has no enclosing block")
+
+
+def _set_scalars(entry: str, fields: dict[str, Any]) -> str:
+    """Set scalar fields at the top level of ``entry`` (a ``{...}`` text); absent ones are added first."""
+    nl = "\r\n" if "\r\n" in entry else "\n"
+    m = re.search(r"\n([ \t]+)\S", entry)
+    indent = m.group(1) if m else "   "
+    m = re.search(r"\w(\s*=\s*)", entry)
+    eq = m.group(1) if m else " = "
+    out = entry
+    for key, value in fields.items():
+        depth, pos, found = 0, 1, None
+        pattern = re.compile(r"(?<![\w])" + re.escape(key) + r"(\s*=\s*)([^\r\n{\[]+)")
+        while pos < len(out) - 1:
+            c = out[pos]
+            if c in "{[":
+                depth += 1
+            elif c in "}]":
+                depth -= 1
+            elif depth == 0:
+                hit = pattern.match(out, pos)
+                if hit and not (out[pos - 1].isalnum() or out[pos - 1] == "_"):
+                    found = hit
+                    break
+            pos += 1
+        if found:
+            out = out[:found.start(2)] + _literal(value) + out[found.end(2):]
+        else:
+            out = out[:1] + f"{nl}{indent}{key}{eq}{_literal(value)}" + out[1:]
+    return out
+
+
+def patch_markup_constraint(markup_text: str, name: str, fields: dict[str, Any]) -> str:
+    """Fields of the markup constraint entity ``name`` (angleStart, angleEnd, minLimit, maxLimit,
+    massFactor ...); ``motor`` = {field: value} edits its motor block."""
+    s, e = _named_entry(markup_text, "name", name)
+    entry = markup_text[s:e]
+    motor = dict(fields.get("motor") or {})
+    scalars = {k: v for k, v in fields.items() if k != "motor"}
+    if motor:
+        hit = re.search(r"\bmotor\s*=\s*\{", entry)
+        if not hit:
+            raise BenchError(f"constraint {name} has no motor block")
+        m0 = hit.end() - 1
+        m1 = _close(entry, m0) + 1
+        entry = entry[:m0] + _set_scalars(entry[m0:m1], motor) + entry[m1:]
+    if scalars:
+        entry = _set_scalars(entry, scalars)
+    return markup_text[:s] + entry + markup_text[e:]
+
+
+def patch_steering(class_text: str, name: str, fields: dict[str, Any]) -> str:
+    """Fields of a ``controllableSteeringConstraints`` entry (angularSpeed, minAngle, maxAngle ...)."""
+    a, b = _block(class_text, "controllableSteeringConstraints")
+    s, e = _named_entry(class_text[a:b], "constraintName", name)
+    s, e = a + s, a + e
+    return class_text[:s] + _set_scalars(class_text[s:e], fields) + class_text[e:]
+
+
 def patch_markup_body(markup_text: str, bone: str, mass: float | None = None, com: list[float] | None = None) -> str:
     """Body mass and/or hkCenterOfMassOffset (engine axes, Y up) of one object in a ``.tpl_markup``;
     the offset is inserted when absent."""
@@ -298,13 +399,14 @@ def load_variant(path: str | Path) -> dict[str, Any]:
     return {"name": Path(path).stem, "variant": data}
 
 
-VARIANT_KEYS = {"axles", "tracks", "slotAxles", "wheels", "bodies", "spawn", "note"}
+VARIANT_KEYS = {"axles", "tracks", "slotAxles", "wheels", "bodies", "constraints", "truck", "steering", "spawn", "note"}
 
 
 def apply_variant(config: dict[str, Any], variant: dict[str, Any]) -> list[str]:
     """Restore pristine copies, then apply ``variant``: {"axles": {name: axle}, "tracks": [{"track",
     "wheelIds", "fakeWheelIds"}], "slotAxles": {geomName: index}, "wheels": {kind: fields}, "bodies":
-    {bone: {"mass", "com"}}, "spawn": [x, y, z]}.  An empty variant restores the pristine project.
+    {bone: {"mass", "com"}}, "constraints": {joint: {field: value, "motor": {...}}} (markup), "truck":
+    {prop_truck_rb scalar: value}, "steering": {constraintName: {field: value}}, "spawn": [x, y, z]}.  An empty variant restores the pristine project.
     Returns the files written (relative to mods_source)."""
     unknown = sorted(set(variant) - VARIANT_KEYS)
     if unknown:
@@ -330,6 +432,12 @@ def apply_variant(config: dict[str, Any], variant: dict[str, Any]) -> list[str]:
         if f"wheel:{kind}" not in text:
             raise BenchError(f"bench.json files.wheelClasses lacks {kind}")
         text[f"wheel:{kind}"] = patch_wheel_fields(text[f"wheel:{kind}"], fields)
+    for joint, fields in (variant.get("constraints") or {}).items():
+        text["markup"] = patch_markup_constraint(text["markup"], joint, fields)
+    if variant.get("truck"):
+        text["class"] = patch_block_fields(text["class"], "prop_truck_rb", variant["truck"])
+    for joint, fields in (variant.get("steering") or {}).items():
+        text["class"] = patch_steering(text["class"], joint, fields)
     for bone, change in (variant.get("bodies") or {}).items():
         text["markup"] = patch_markup_body(text["markup"], bone, change.get("mass"), change.get("com"))
     if variant.get("spawn"):

@@ -27,6 +27,10 @@ parent. `roadcraft.vehicle.child_rotation(axis_native)` gives the rotation, `eul
 (Grade: Build, derived on the SDK samples and the D11T with editor readouts; Game on the 16M3
 grader, whose joints turned about the intended axes.)
 
+A markup **ragdoll** (`tpl_markup_constraint_ragdoll`) twists about the constraint frame's **X** (Havok); the
+retail whip antenna's `childRotation [0,0,90]` on an identity bone points it up. Use
+`roadcraft.vehicle.ragdoll_child_rotation(axis_native)`. (Grade: Retail; Inferred, see secondary-physics.md.)
+
 ## Mass
 
 | Rule | Grade |
@@ -222,3 +226,45 @@ KGS25's existing recipe validator checks four synced anchors, prism directions,
 matching strokes, ground plate binding and stowed clearance. Completion and
 contact require the project's measured native test; no universal stroke is added.
 
+
+
+## Absolute canonical bone heads and local mass centres (Dump Twuck revision 006, 2026-10-10)
+
+**Build, offline rig convention:** revision 006 bone definitions store each rest head in absolute truck-space metres, even when the bone has a parent. For this convention, body-local centre equals fitted truck-space centre minus that body's own absolute head; reconstruct truck space by adding that head once. Do not add ancestor heads again. An exporter using parent-relative offsets would need a different conversion: verify the data convention before applying this rule.
+
+The sand-cap example has absolute head `[0,6.58,4.5]` and local centre `[0,0,0.05]`, giving truck centre `[0,6.58,4.55]`; adding the dump bed head again would move its centre away from the actual artwork. Revision 006 explicitly stores `bodyHeadTruckSpace`, `targetCentreLocal` and `truckSpaceCentre` in `build/physics.json`, and the gameplay authoring audit checks their round trip. Axle-load moments use these fitted body centres plus the measured payload hull centroid, with empty/full cases kept separate.
+
+Scope: this canonical rig and offline authoring output. The chosen mechanical-core mass distribution and suspension beta are design assumptions, not native measurements or proof that reported lean/bounce is cured. Evidence: Dump Twuck `tools/model_v6.py`, `tools/truck_bro.py`, `build/physics.json:massProperties`, and `reports/gameplay_v6_audit.json` (nativeTested=false).
+
+## Compiled node conventions vs retail (Kanga 25 model audit, 2026-10-10)
+
+Read with `roadcraft tpl-nodes` (pass known body parent pairs when it reports a tie). **Retail** (crane_truck_2_res and
+a 117-vehicle survey of default_tpl_*.pak):
+
+| Node | Retail | Toolchain mods before the fix |
+|---|---|---|
+| `cdt_*` collision pieces | child of their body bone, origin at the shape, the body's orientation (Baikal 81 of 81, Lada 3 of 3; a few retail trucks have some at the origin: Oshkosh M1070 21/42, Vostok TK53 7/26) | Kanga: all 27 at the model origin (vertices world-placed) |
+| `sfx_exhaust_*`, `sfx_radiator_haze` | under the body (Baikal: an `sfx` group under BoneCabin_cdt), origin at the effect | skinned meshes at the model origin |
+| wheel `_wheel` | native Z along the axle (+X in 139, -X in 2 of 142 shipped wheels), X = native -Z | identity (Kanga, Lada) |
+| body bones | identity frames, 0.5-1.9 m up at frame height (Vostok TK53: root at 0) | identity; Kanga root at ground (0,0,0) |
+| `cam_collision_shape*` | 87 of 117 vehicles | none (semantics Open) |
+| collision data file | `tpl.tpl.resource cdt: <name>.cdt` | SDK pipeline writes `cdt: ''` for every mod (Open) |
+
+**Why it matters (Retail, effect files):** `part_exhaust_big_cars_gas_mule_01` / `_neutral_01` emit from a
+`local__geomPrimitive` plane at position [0,0,0] of their node, so an `sfx_exhaust_01` node at the model origin puts
+that smoke on the ground; the face-based `local__parentArea` emitters were unaffected. The wheel BRO's VFX cylinders hang
+on `_wheel` (bone = "_wheel") and are authored for the retail frame. **Build:** kanga25_mod `create_models.anchor()`
+(origin at the shape, bone-parented, vertices unchanged) and `_wheel` rotated +90 deg about Blender Z (exports as the
+retail frame exactly; checked with tpl-nodes); rig-audit check "Collision and effect helpers ... origin at their shape".
+Drive effect of the collision origins: Open.
+
+
+## Frame under a lowered body on unchanged axles (L275 v14, Claude, 2026-10-12)
+
+**Build:** when a body is dropped over axles that keep their wheel centres (L275: cab -350 mm, tray -300 mm), a
+straight ladder passes through the cab floor and tray. Fit the rail line to measured body clearances instead: under
+the radiator, kick up over the front axle, drop under the cab floor, rise behind the cab to the tray bearers, and
+place the kick where the cab's rear lip is not (measure it; L275's hangs to z 0.54). A leaf rear may need
+spring-under-axle with notched rails when the tray leaves no room above the tube. Record these as adaptations, not
+as the real vehicle's layout. Clash-check every design pose (bump, droop, cross-axle, lock, lock + bump) against the
+installed body and wheels, not only the new parts (L275 `uc_check.py`).

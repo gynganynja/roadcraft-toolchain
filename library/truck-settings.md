@@ -34,11 +34,32 @@ a locator named `ctrl_switch_handbrake`: add one to the model.
 | **Do not scale `angularVelocity` up to keep a donor's road speeds on smaller wheels.** WALL-E (0.097 m rolling radius) with the Karelian's table x 4.9: the engine idled at 800 + pedal x 250 rpm and no wheel turned, at torque 950 and at 19,000; the unscaled table (2 / 5 / 8 / 14) drove at the same torque, and KGS-25's (0.8 / 1.6) did too. Keep stock-range angular velocities (no stock vehicle exceeds 23) and accept the smaller wheels' lower speeds; scale `targetSpeedRangeKmh` with the gears' real tops so the automatic box still shifts | Game (WALL-E editor bench, 2026-10-04: runs t20, gk1, xgearbox, xengine) |
 | A very light vehicle needs more mass than to scale: at 122 kg on 1.5 kg wheels every unloaded wheel spun to 110-190 rad/s, dug in and the robot rolled to 84 deg; at 1200 kg on 45 kg wheels (torque 10,000, `maxDeltaAngVel` 0.002) roll stayed under 3.3 deg. `maxDeltaAngVel` 0.002 instead of 0.01 evened the wheel spin and made the pivots symmetric | Game (WALL-E bench) |
 | A gear's top road speed grows with the wheel radius: the TUZ gear table on the Roamer 105's 0.458 m wheels (the TUZ's are 0.78 m) held it in first at 16 km/h, below its 18 km/h upshift; scaling every gear's `angularVelocity` by 0.78 / 0.458 fixed it | Game (Roamer 105, editor play mode) |
+| Confirmed on the Kanga 25 (2026-10-10): the Baikal 5916 table on 0.625 m wheels (Baikal front 0.86) topped 2nd out at 22 km/h; x 0.86/0.625 (and x 1.1 for 55 km/h) gave shifts at 17/26/31/42 km/h against the retail Baikal's 16/27/30/41 on the same bench run. Bands must be contiguous: a 20-22 km/h gap made the auto box hunt 2 -> 1 under full pedal. `PropTruck.GetGear()` and `GetCurrentEngineRpm()` read the live gear and rpm from SSL | Game (Kanga 25, editor bench) |
 | Low range: `lowRangeGear.angularVelocity` sets the crawl speed, and the pedal changes it little (Roamer 105: 0.25 -> 8.4 km/h, 0.05 -> 4.1, 0.025 -> 2.1); neither first gear's value nor `gearRatio` changed it | Game (Roamer 105, editor play mode) |
 | `neutralGearSwitchingDelay`: after this many seconds at a standstill the gearbox drops to neutral, and on a slope the vehicle rolls back when the brake is released (Roamer 105 at 3: 2.6 m back down a 30 degree ramp); 60 kept it in gear | Game (Roamer 105, editor play mode) |
 | Retail scouts: 5 gears, torque 65-85 kN m for 2-3 t (Armiger 65 k for 1.97 t) | Retail |
 | Scale torque from a retail vehicle by power-to-weight and wheel radius, never from an invented table: 215000 on the 2.9 t Roamer was "too much power" to its owner | Game (Roamer 105) |
 | Heavy machines built here: torque scaled from a similar retail machine, top speed from the real machine | Build |
+
+## Heavy hauler drive from retail data (Dump Twuck feedback round, 2026-10-11)
+
+Public players and the author found the Dump Twuck slow, stuck in a little mud, without
+all-wheel drive, carrying on in its old direction after a stop and too slow to tip. Every value
+below comes from the retail classes (`roadcraft retail bro <truck>`, the compiled `.cls`) or the
+game's script declarations; the v8 build applying them has not been driven yet.
+
+| Rule | Grade |
+|---|---|
+| `gearRatio` is "amount of full engine rotations per wheel rotation" (`ssl/trucks/truck_components.ssl`): it sets the reported RPM (gauges, engine sound), not road speed. A v6 attempt to slow the truck by raising `gearRatio` could not work | SDK (script declaration) |
+| Forward road speed follows `angularVelocity` x wheel radius: Dump Twuck v5 top gear 3.295 on 2.039 m wheels held 66.3 km/h on the bench (about 9.8 km/h per unit); the retail Baikal 65206's 4.5 on 0.957 m matches its 40 km/h band. Give each gear about 10% over its upshift speed | Game (v5 editor bench), Retail |
+| Reverse does not follow that rule: v5 reverse 0.2746 on 2.039 m reversed at 33 km/h at full pedal (engine at 1500 rpm, the `rpmOnNeutralMax` default). v8 scales it to 0.11 on the measurement (aiming at about 13 km/h); unverified | Game (v5 bench); fix Inferred |
+| `neutralGearSwitchingDelay` in retail: Baikal 65206 0.5, Tayga 6455B / Voron 3327 3, Bowhead / EPEC LT200 0. 60 (the Roamer rollback fix) keeps the previous gear for a minute at a standstill | Retail; symptom Inferred |
+| Drive force per kg = torque / (wheel radius x mass): retail Baikal 65206 13.4 empty, 6.25 loaded (450000, 0.957 m, 35.2 t + 40 t). Dump Twuck v5/v6 had 1.9 loaded; v8 uses 80% of the Baikal's loaded value (torque 6.14 M for 602 t on 2.04 m wheels) | Retail; v8 not driven |
+| Retail dump-truck drive selectors: Baikal 65206 AWD and diff lock `ALWAYS_ON`; Tayga 6455B AWD `ALWAYS_ON`, diff lock `CONTROLLED`; Voron 3327 both `CONTROLLED`. Fronts are `full`, the rest `defaults` | Retail |
+| Retail tipping speeds (`controllableConstraints` dump `angularSpeed`, deg/s): Baikal 65206 15 (to 75 deg), Bowhead 25, EPEC LT200 / Tayga / Voron 18. The Baikal's dump motor holds 1.5 MN for 5 t of body plus 40 t of sand | Retail |
+| Retail heavy tyre friction (Baikal 65206 wheel): base `substanceFriction` 2, `softForceScale` 0.4, `sidewaysFrictionMultiplier` 0.85; materials (frictionValue, substanceFriction): default 1.75/0.5, asphalt 1/1.7, sand and grass 0.9/3.5, ground 1.2/2.5, gravel 0.85/3.5, sub_mud, mud_grass and mud_sand 0.95/4. The TUZ sample wheel has mud 2.5 and gravel 1 | Retail |
+| `highGearAngularSpeedMultiplier` (2.9 in every retail class) multiplies only the high-range gear (`prop_truck_gearbox_controller.ssc`) | SDK script |
+| The engine's sand capacity follows the load hull, not `sandQuantity`; to carry an advertised tonnage set `volumeMass` and let density = mass / hull volume (Dump Twuck v8: 362 t over 129 m3) | Native fixture (builds 019/020), Build |
 
 ## Wheels and drive
 
@@ -494,3 +515,44 @@ The Dump Twuck v5 owner asked for at least 4,000 L and $1,150,000; it sells back
 A project export check that pins the store entry must read these values from the
 project's settings: the Dump Twuck's preflight still expected `buyCost == 1` and stopped
 build-027 in the package step.
+
+
+## A mathematically crowned heap can still look flat (Dump Twuck revision 006 correction, 2026-10-10)
+
+**Owner feedback / Build, pure numeric; native Open:** a broad paraboloid with a small longitudinal quadratic fall can satisfy load-grid checks yet read as a flat slab. Dump Twuck revision 006 retained `crownFallY=0.012`; its centreline loses only 4.8 cm over 2 m and has zero slope at the crown. The owner rejected the broad offline preview. Grid containment is necessary for avoiding hanging sand; it does not establish the intended mound silhouette.
+
+`blender_load.heap_top` now offers the opt-in `profile='elliptic_cone'` with finite positive `cone_slope_y` (m/m). It subtracts `hypot((crown_z-side_z)*x/side_x, cone_slope_y*(y-crown_y))`, retaining the existing front/rear minimum planes. The default paraboloid is unchanged. A 0.5 longitudinal slope gives a 1 m drop over 2 m and a 26.565-degree longitudinal flank; transverse slope is separately `(crown_z-side_z)/side_x`. Do not claim a uniform repose angle when tray width, rim height and the under-4 m height range constrain the transverse profile. Exact `x=0` and `crown_y` must appear in hull samples to retain the sharp peak.
+
+Keep the real floor and clearance fit, then independently audit the saved convex hull, border/grid footprint, parent composition, missed-hull cells, floor support and height range. A cone profile alone does not prevent a corner cell from falling to the pivot height. Recalculate the actual closed-hull volume and centroid after changing the profile; full payload is measured volume times the chosen density, never a reused historical volume. Inspect the resulting top and side silhouette before declaring the appearance corrected.
+
+Evidence: `src/roadcraft/blender_load.py`, eight pure numeric checks in `tests/test_blender_load_heap_top.py`, and Dump Twuck `reports/revision_006/mound_refinement/{blender_load.before.py,applied_receipt.json,tests_applied.json,mound_evidence.md}`. Pre-refinement source/checkpoint/native failures are retained under `history/revision_006_candidate03`. These helper tests prove profile arithmetic and backwards-compatible default values, not saved-hull containment, compiled sand pixels, retention, tipping or retail acceptance. See [symptoms.md](symptoms.md) for the flat-load symptom.
+
+
+**Additional failed offline Build: border-only cells below a sloping floor.** The first pointed-load saved audit had no shared grid findings or pivot cells and an earlier hull-floor probe reported no under-floor hull. A direct audit of all 992 native grid sample positions against the measured steel nevertheless found four border-only rear-corner cells. At x=+/-3.874375 m and y=6.801352/7.086921 m, their lower/upper sheet height was 6.5 m while the steel was 6.667592-6.733335 m. The worst under-floor error was 0.233335 m. `grid_findings=[]` and a passing hull-only floor check cannot establish that the full drawn grid stays above the tray: cells outside the hull can use border heights.
+
+Keep a separate saved-grid-versus-steel test at the engine's nudged sample positions, including both border and hull cells and both lower/upper sheet heights. The project audit rejects more than 5 mm below steel, requires a surveyed floor population, keeps the sheet below 4 m and uses a conservative 0.35 m edge-step ceiling (stricter than the shared 0.5 m finding threshold). Root corrected the intended rear border top back to its measured 6.62/6.86 m ramp while retaining the other lower border tops; a corrected configuration is not a completed source pass. Require the final matching saved-model report and completed pinned inspection receipt before claiming this correction verified.
+
+Evidence: Dump Twuck `tools/audit_mound_v6.py` and preserved `reports/revision_006/mound_refinement/failed_lowered_rear_border/{mound_profile_saved.json,physics.json,receipt.json,inspect-041-v6-peaked-mound.json,saved-model-audit.log}`. The failed report/receipt stay failed. This is offline source geometry plus grid emulation; the newly pointed load has not completed native compilation or visual/retention/discharge acceptance. The three preceding candidate iterations remain exhausted; this refinement adds no fourth native attempt or implicit installation authority.
+
+## Cargo beds and tie-downs: `CargoConstraint` (L275 v10, 2026-10-11)
+
+**Retail (parsed BROs and compiled classes).** A vehicle that can carry and strap down cargo packages (crane-loaded
+`cargo/*` items, `packageMass` 1-5 t) declares, in the BRO:
+
+| Field | What it does | Retail evidence |
+|---|---|---|
+| `cargoConstraint` (`CargoConstraint`) | belts over the bed: `constraintBone`, `beltZPositions` (native z of each cross belt), `downBorderOffset` / `upBorderOffset` (x = half bed width, y = deck height / board top: where belt ends sit on the boards), `internalBorderOffset`, `internalConstraintAreaOffset` + `Size` (the bed volume, min corner + size), `constraintAreaSize` (outer detection area, no offset on the scouts) | 23 retail trucks; the Karelian scout dozer (`root`, 7 belts 0.4 m apart, bed 1.718 x 2.463) and the Malamute scout trailer are the small-bed patterns |
+| `detailsInfo.cargoBedDetails` | catalog line, `capacity` = packages | Karelian 2, Malamute trailer 1, Mule T1 6 |
+| an action with `actionType CONSTRAINT_CARGO`, `isToggleable`, `UID_HUD_CARGO_CONSTRAINT_ATTACH` / `_DETACH` | the player's strap / unstrap toggle | Karelian `thirdAction` |
+| blueprint `Cargo` (`OnCargoAttachmentChanged` -> `vhc_body_cargo_pack` / `_unpack` sounds on a cloned emitter) | strap sounds; its tracker locator must exist in the model | Karelian, Malamute, Mule |
+| `cargoSettings.firstCargoSlotBone` | only on trucks with fixed cargo slots (station loading); scouts and flatbeds without it still strap cargo | Mule, Voron, Azov have it; Karelian, Malamute, ZiKZ 605E do not |
+
+The compiled class carries `prop_cargo_constraint` (BRO fields plus `beltBonesOffset 0.04` and empty `IactorDesc`s for
+belt/handle/hook visuals), the action in `prop_truck_view_actions_mapper.<n>Action`, and
+`CargoConstraintSavablePropDesc` in `prop_savable_object` (after `TruckConstraintsSavablePropDesc`); the catalog
+`*_truck_info.sso` fills `cargoBedDetails`. **Build:** projects that patch the generated class instead of regenerating
+it (L275) must sync all four; `l275_minespec_mod/tools/cargo_bed.py` does it with an "everything else identical"
+assertion. **Game: not yet driven** (belt drawing, capacity behaviour and how heavy packages load a light ute are
+open). Add collision along the bed sides (the L275 tray had none on its side rails) so strapped loads stay on the deck.
+
+**Replicated unit (Game, L275 2026-10-12; Retail survey):** a cargo bed also needs `TruckCargoConstraintUnit = { }` in the generated `auto_<truck>_replicated.sso` `unitDescs` (the Karelian has it after `TruckWinchUnit`). All 42 retail trucks with `prop_cargo_constraint` carry the unit and none without. The L275 v10 sync patched only the class and catalog: garage deploy silently failed (HUD script crash in `GetToggleableActionReactive(CONSTRAINT_CARGO)`, `cargoConstraint` null) and saves stopped working. When adding a feature to a generated class by hand, diff the retail donor's replicated entity as well as its class.

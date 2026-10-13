@@ -58,6 +58,9 @@ in `<bench>/pristine`, and every apply starts from them, so variants never stack
 | `wheels` | top-level `prop_truck_wheel` fields of a wheel class named by `--wheel` (mass, isSoftContactEnabled, softForceScale ...) |
 | `bodies` | markup body `mass` and `hkCenterOfMassOffset` (engine axes, Y up) |
 | `spawn` | the vehicle's position in the scene |
+| `constraints` | markup constraint fields by constraint `name` (angleStart, angleEnd, minLimit, maxLimit, massFactor ...); `motor` = {tau, damping, maxForce, ...} edits its motor block |
+| `steering` | a `controllableSteeringConstraints` entry by `constraintName` (angularSpeed, minAngle, maxAngle) |
+| `truck` | top-level `prop_truck_rb` scalars of the compiled class (maxSteerSpeed, pedalsResponsiveness ...) |
 
 An empty file (`{}`) leaves the copied project unchanged; when that is the installed version, run it as
 the baseline.
@@ -122,3 +125,16 @@ KGS-25 bench script on its ten variants and against its five recorded summaries)
 `integrations/physics-bench/` (`launch_editor.ps1`, `series_probe.ps1` - read-only through the
 editor's ExecSsl receiver, `input_override.ps1` from the Roamer 105 port). The KGS-25 bench and its
 runs are kept in that mod's drive-fix workspace (`drive_fix/editor`).
+
+## Vanilla reference and drive-feel plans (Kanga 25 project bench, 2026-10-10)
+
+`kanga25_mod/tools/bench/crane_bench.py` extends the shared bench: `BENCH_REF=baikal` swaps the scene vehicle for the
+retail prefab (`res://ssl/autogen_designer_wizard/trucks/auto_<truck>/<truck>_prefab.prefab.resource`, type
+`<truck>_prefab`, desc `auto_<truck>`) after the variant restore and maps body names, so every metric compares like for
+like; plans `kdrive` (launch, brake, slalom, reverse), `accel` (full throttle down a clear lane) and `cruise`; variant
+keys `x_gears` / `x_torque` patch the compiled gearbox; the sampler logs `GetGear()` and `GetCurrentEngineRpm()`
+(`trace.py` prints shifts and downshifts under pedal); `cmp.py` prints angular rate, angular jerk (sample-to-sample
+change of angular velocity) and wheel-travel step per window - jerk and wheel step separated the "glitchy" Kanga from
+the vanilla Baikal when plain angular rates did not. Single runs are noisy: repeat before trusting a difference. The
+retail Baikal articulates +-60 at 43 deg/s and leaves the 60 x 100 m pad in the kdrive slalom after ~21 s.
+

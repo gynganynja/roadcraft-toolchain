@@ -232,3 +232,96 @@ class AnalysisTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+MARKUP_JOINTS = """objectInfos = [
+   {
+      objectId = {
+         name = "BoneTower_cdt"
+      }
+      entities = [
+         {
+            name = "slew"
+            target = "BoneFront_cdt"
+            limited = True
+            angleStart = -1.5
+            angleEnd = 1.5
+            motor = {
+               tau = 0.5
+               maxForce = 2000000
+               __type = "tpl_markup_position_motor"
+            }
+            __type = "tpl_markup_constraint_hinge"
+         }
+      ]
+   },
+   {
+      objectId = {
+         name = "BoneHook_cdt"
+      }
+      entities = [
+         {
+            name = "hook"
+            target = "BoneTele3_cdt"
+            __type = "tpl_markup_constraint_ball_and_socket"
+         }
+      ]
+   }
+]
+"""
+
+CLASS_RB = """properties = {
+   prop_truck_rb = {
+      maxSteerSpeed = 0.02
+      engine = {
+         params = {
+            torque = 420000
+         }
+      }
+      controllableSteeringConstraints = [
+         {
+            constraintName = "steering"
+            angularSpeed = 30
+            minAngle = 30
+         }
+      ]
+   }
+}
+"""
+
+
+class JointPatcherTests(unittest.TestCase):
+    """Kanga 25 bench (2026-10-10): joint motors/limits, truck fields and steering speed as variant keys."""
+
+    def test_constraint_limits_and_motor(self):
+        out = pb.patch_markup_constraint(MARKUP_JOINTS, "slew", {"angleStart": 0, "angleEnd": 0,
+                                                                  "motor": {"tau": 0.4, "damping": 1.0}})
+        self.assertIn("angleStart = 0\n", out)
+        self.assertIn("angleEnd = 0\n", out)
+        self.assertIn("tau = 0.4", out)
+        self.assertIn("damping = 1.0", out)          # added inside the motor block
+        self.assertIn("maxForce = 2000000", out)     # untouched
+        motor = out[out.index("motor = {"):out.index("__type = \"tpl_markup_position_motor\"")]
+        self.assertIn("damping", motor)
+
+    def test_constraint_added_scalar(self):
+        out = pb.patch_markup_constraint(MARKUP_JOINTS, "hook", {"massFactor": 0})
+        hook = out[out.index('name = "hook"') - 40:]
+        self.assertIn("massFactor = 0", hook)
+        with self.assertRaises(pb.BenchError):
+            pb.patch_markup_constraint(MARKUP_JOINTS, "hook", {"motor": {"tau": 1}})
+        with self.assertRaises(pb.BenchError):
+            pb.patch_markup_constraint(MARKUP_JOINTS, "missing", {"limited": True})
+
+    def test_truck_fields_and_steering(self):
+        out = pb.patch_block_fields(CLASS_RB, "prop_truck_rb", {"maxSteerSpeed": 0.01, "pedalsResponsiveness": 0.2})
+        self.assertIn("maxSteerSpeed = 0.01", out)
+        self.assertIn("pedalsResponsiveness = 0.2", out)
+        self.assertIn("torque = 420000", out)
+        out = pb.patch_steering(out, "steering", {"angularSpeed": 18})
+        self.assertIn("angularSpeed = 18", out)
+        self.assertIn("minAngle = 30", out)
+
+    def test_variant_keys_accepted(self):
+        for key in ("constraints", "truck", "steering"):
+            self.assertIn(key, pb.VARIANT_KEYS)

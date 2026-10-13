@@ -2,7 +2,7 @@
 
 Shared workflows and findings for creating and modifying mods. Vehicle findings
 come from a CAT 793D, a D11T, a Hitachi EX5600, the
-Roamer 105, a 16M3 grader, a 994 loader, an M12 Warthog, an Apocalypse Buggy, a Lada Niva and a KGS-25 crawler crane: how the engine, the
+Roamer 105, a 16M3 grader, a 994 loader, an M12 Warthog, an Apocalypse Buggy, a Lada Niva, a KGS-25 crawler crane and a Kanga 25 pick-and-carry crane: how the engine, the
 SDK generator and the retail vehicles actually behave, and the code in this checkout that checks for
 it.
 
@@ -23,8 +23,12 @@ before installing it. Read the subject articles when authoring:
 | [physics-report.md](physics-report.md) | The physics values the engine will use and a side-by-side comparison against a retail donor (`roadcraft physics report`, `roadcraft compare`) |
 | [headless-bench.md](headless-bench.md) | The editor's engine without the editor: windowless runs, ConsoleTre hub, scenario bench and capture (`roadcraft.bench_headless`) |
 | [ik-visual-rigs.md](ik-visual-rigs.md) | Visual IK chains: wishbones, uprights, dampers, cylinders, linkages |
+| [cranes.md](cranes.md) | Mobile cranes: crane IK chains, telescopes, winch and hook, crane controls, slew-less cranes |
+| [articulated-steering.md](articulated-steering.md) | Centre-pivot steering: the steering hinge, oscillation body, frame-parented wheels, sign |
+| [secondary-physics.md](secondary-physics.md) | Swinging accessories: mudflaps, whip flags, antennas, swing-out brackets (retail no-collision, massFactor 0 pattern, ragdoll axes) |
 | [truck-settings.md](truck-settings.md) | Truck BRO settings: steering, pedals, gearbox, controls, the SDK sample's gaps |
 | [cockpit-and-lamps.md](cockpit-and-lamps.md) | Steering wheel and gauges (`dataDashboard`), lamps that work in the campaign |
+| [audio-assets.md](audio-assets.md) | Engine audio sources, licences, recording identity, approximation auditions and sound-bank limits |
 | [textures-and-materials.md](textures-and-materials.md) | Texture sets, channel packing, material instances, interface images |
 | [retail-data.md](retail-data.md) | Where the shipped vehicles' data lives and how to read it, including compiled models |
 | [build-pipeline.md](build-pipeline.md) | SDK tools, class generation, packaging, installation, process rules |

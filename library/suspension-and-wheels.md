@@ -345,6 +345,19 @@ still needs a comparison; 30% coefficients do not prove 70% shallower ruts.
 
 
 
+## Missing `default` / `asphalt` friction from the Lynx mod sample (Lada v11, 2026-10-13)
+
+The shipped sample `mods_source/bro/wheels/wheel_tuz_119lynx_mod.bro` lists only sand, grass, sub_mud, mud_grass,
+gravel and mud_sand. Every retail scout wheel also defines `default` and `asphalt`; the Lada and any project copying
+the sample inherit the gap:
+- retail Lynx res: `default` 5 / 0 / 0.5 (frictionValue / terrainDeformationFactor / substanceFriction), asphalt 1.2 / 0 / 0.5
+- Thunder, K350, Type A: `default` 1.75 / 0 / 0.5, asphalt 0.85 / 0 / 2
+
+Without them the wheel falls back to engine defaults on roads, rock and any unlisted surface. Lada v11 (sha 308a32d1)
+adds `default` 1.75 / 0 / 0.5 and `asphalt` 1.0 / 0 / 2, after a player report that the wheels "interact poorly with
+the ground" (Venk88, 6 Oct). Evidence grade: **Retail data** for the gap; the effect on the report is **Unverified**
+(no editor runs; owner drive pending). Check new wheel BROs for both entries.
+
 ## Stop geometry (measured, 2026-10-02)
 
 **Game (KGS-25 editor bench; the Lada trials fit it too):** a wheel sits `height + min + travel`
@@ -376,3 +389,66 @@ measured`).
 
 Moved to [tracked-vehicles.md](tracked-vehicles.md) (retail track layouts, the KGS-25 failure and
 its fix, springs on light bodies, RC046-RC048).
+
+## Independent front on a solid-rear truck (CAT 793D RC29, 2026-10-08)
+
+**Retail:** the Nota Allegro (`auto_nota_allegro_*`) is the shipped pattern for a solid rear axle
+with independently sprung, steered front wheels. Its class has `dependentAxles [{frame BoneAxleRear}]`
+plus `independentAxles [{frame BoneAxleLeft|Right, singleWheelID}]` and one
+`steeringRacks [{rightWheelFrame BoneRackRight, leftWheelFrame BoneRackLeft, rackHalfLength}]`
+with no rack `frame`. Its tpl hangs `BoneAxleLeft/Right` (identity) under the chassis next to the
+wheel, `BoneRackLeft/Right` (identity, the slots' `customSteeringJointObjName`) under them, and the
+knuckle IK under the racks; the wheel slots stay identity joints under the chassis with no children.
+
+**Build:** the 793D's front now copies that: identity `BoneAxleFront*` and `BoneRackFront*` at the
+wheel centres, `singleWheelID` 0/1 (the slot indices), `rackHalfLength` 2.504, spindle/hub meshes on
+the racks, strut and steering-cylinder chains (`HINGE2 [1,0,0]` + `PRISMATIC`) from the chassis pinned
+to the racks, and a tie-rod chain based on the left rack pinned to the right one. The class was
+patched directly; `lint-bro --class --tpl --markup` reports no findings. **Open:** whether the
+slots, racks and chains move in game.
+
+**Design note (Build):** physics wheels steer about their own centre, so the visual steering joint
+sits at the wheel centre even though the real 793D kingpin is ~0.75 m inboard (the strut line).
+The hub then stays centred in the rim and the IK strut tilts slightly at full lock instead.
+Evidence: `RoadCraft/cat793d_detail/tools/axles.py`, `reports/package_audit_rc29.json`.
+
+
+### Rim handedness and directional tread are separate checks (Dump Twuck preview, 2026-10-10)
+
+**Source / Inferred visual diagnosis:** Dump Twuck v6 authoring previews reuse each wheel master on both sides, with a left-side 180-degree yaw. That maps (X, Y, Z) to (-X, -Y, Z): it turns the rim face and also reverses fore-aft directional features. The owner flagged the screen-right tyres as backwards. Verify rim handedness and tread direction independently across all six final wheel poses; radius, width and clearance checks cannot close that finding. A separate tyre variant or reflection remains a possible remedy until measured native wheel-object frames and tyre-direction markers establish the required pose. Do not generalize one donor's handedness or alter drive controls based on this image.
+
+Evidence: Dump Twuck inspect-042-v6-peaked-mound, run 20261010T003736Z-3a344fc4bf44, and reports/revision_006/wheel_direction_review/{review.json,WHEEL_DIRECTION_ADDENDUM.md}, which pin the preview image/script, model_v6.py and final_status.json. No model or PAK was changed; native mounting remains open after three failed compilation attempts. The earlier source/evidence ZIPs retain their sealed bytes.
+
+## Donor wheel-pool overrides are lost with the donor wheel pool (Kanga 25, 2026-10-10)
+
+**Retail:** a truck BRO's `wheelPool` entry can override wheel fields (Baikal 5916: `truckWheel { softForceScale 0.4,
+substanceFriction 2.1, activateCriticalCollisionTypeOnInit False }` plus per-surface `frictionMaterials`); the compiled
+wheel class carries the override (0.4), not the wheel BRO's 0.19. A mod that replaces the donor wheel pool with its own
+wheels keeps only the wheel BRO values. **Game (editor bench):** against the retail Baikal on the same drive the Kanga
+showed about twice the rear-body angular jerk and wheel-travel step (slalom 2.3-2.6 vs 1.0-1.45 rad/s2, 0.014-0.019 vs
+0.006-0.008 m per sample). Restoring softForceScale 0.4 alone lowered slalom chatter but braked harder and ran slower
+(confounded by the c3 gear hunting). **Build (c5, owner's choice, unmeasured - no editor runs):** the full Baikal
+override (`truckWheel` fields + `frictionMaterials`) merged into each Kanga `wheelPool` entry's `wheel`.
+
+
+
+### Side-specific directional tyre geometry (Dump Twuck source fix, 2026-10-10)
+
+**Source / Build geometry checks:** The new Dump Twuck candidate retains the three supplied normalized wheel masters for right slots and adds three left templates. Only tyre-local Y is reflected, face winding is reversed and invalidated custom normals are cleared; the rims and wheel markers retain the master frame. Under the preview's left half-turn, the placed tread is an X reflection with matching fore-aft Y and vertical Z features. All 48 independent saved-geometry checks pass across three wheel kinds and four LODs, including vertex positions, face normals, unchanged rim geometry, UVs and materials. The saved main model and peaked mound retain their previous hashes. Truck slots select the side variants without changing physical wheel order or controls.
+
+**Correction, Game (owner's v9 drive, 2026-10-11):** "The tyres on the left are correct but on the right are
+wrong." With the original tread on the right slots and the Y-reflected copy on the left, the two sides looked
+different in the game. Under a half-turn of the left wheel (the preview's assumption) they would have matched,
+so the engine places left-slot wheels as a mirror of the master (X), which keeps the tread's rolling direction.
+For a directional tread, use the same tread on both sides: one master serves every slot (the rim face still
+comes out on the outside, as the Lada's did). Dump Twuck v10 gives every slot the Y-reflected tread the owner
+approved on the left (`TREAD_VARIANT` in dumptwuck_config.py). A rim-only observation (Lada) cannot tell a
+half-turn from a mirror; tread direction can.
+
+Evidence: Dump Twuck `reports/revision_007_tyres/{tyre_build.json,tyre_saved_audit.json}`, `tools/{tyre_sides_v7.py,audit_tyre_sides_v7.py}`, and `history/revision_007_before_tyres/preservation_receipt.json`. Decimal-rounded equality produced false failures at float boundaries; direct per-vertex and face-normal vector distances passed (maximum placed vertex error below one micrometre). This does not establish native mounting: measure the rendered **tire** object frame separately from the rim, then inspect both sides in a matching candidate run. The original tyre carries no verified manufacturer rotation arrow; the check establishes cross-side consistency. The local geometry validator is wired into the pinned inspection recipe and checkpoint. General shared enforcement is deferred until the native tire-frame evidence is complete.
+
+### Brake parts on a skinned body do not spin (L275 v14, 2026-10-12)
+
+**Build:** wheel slots carry the wheel tpls; nothing in the skinned body turns with the wheel. Skin rotors, hats and
+hubs to the steering joint (front) or axle frame (rear) and keep them rotationally symmetric (no drilled pattern or
+logo that should visibly turn). Calipers, splash shields and hoses on the same bone stay put while steering.

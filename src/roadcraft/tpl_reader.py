@@ -90,7 +90,9 @@ def _names_at(data: bytes, start: int) -> tuple[list[str], int] | None:
 def read_nodes(data: bytes, anchor: str | None = None) -> TplNodes:
     """Parse names, node indices and world matrices.  ``anchor`` (a node name) selects the right table
     when a file holds more than one name list."""
-    for match in re.finditer(rb"[\x02-\xff][\x00-\xc3]\x00\x00[\x00\x01][\x01-\xff]\x00\x00\x00[A-Za-z_]", data):
+    # The count is a little-endian uint32 whose low byte can be anything (512 or 513 names start 00/01);
+    # _names_at validates 2..50000. The old [\x02-\xff] missed a 513-node CAT 793D (2026-10-09).
+    for match in re.finditer(rb"[\x00-\xff][\x00-\xc3]\x00\x00[\x00\x01][\x01-\xff]\x00\x00\x00[A-Za-z_]", data):
         found = _names_at(data, match.start())
         if not found:
             continue

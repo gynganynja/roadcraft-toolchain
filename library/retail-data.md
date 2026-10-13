@@ -104,3 +104,75 @@ does not download PROS mods or grant game acceptance. Config codec 2 is distinct
 from legacy CompleteSave chunked compression: ordinary zlib at offset 53 and
 fixed-byte XOR attempts failed. Preserve those distinctions. Future codecs or
 seed changes must fail safely, not be guessed or written over.
+
+## Native binary and SSL research (2026-10-10)
+
+**Retail, static inspection:** `Roadcraft - Retail.exe` version
+`7.4.PATCH.763699 Art: 767189` is AMD64 PE32+ with no CLR directory.
+Readable ASCII names include `PropTerraformingBucket`, `TruckEngineParams`
+and `TruckEngine`. These are anchors for tracing references in a native
+reverse-engineering tool; names alone do not establish a callable mod API.
+The version and current SHA-256 snapshot are recorded in workspace receipt
+`binary_research_20261010/evidence.json`. Re-establish addresses against the
+matching executable before reusing any earlier crash offset or native probe.
+
+**SDK, extracted source:** existing Roamer evidence under
+`port_roamer105/reports/native_controls_sources/` contains readable `.ssc`
+SSL source. `prop_truck_axles_controller.ssc` declares a branded property,
+its imports and initialization body, then delegates to
+`native func InitNative(truck : PropTruck)`. That native implementation is
+absent from the SSL source. Read SSL bodies, metadata, resource links and
+retail classes first; decompile native functions where those sources end.
+
+**Open:** `port_roamer105/reports/custom_vehicle_ssl_feasibility.md`
+previously established an internal module resource structure but did not
+prove compiling, registering, packaging and normally loading a new custom
+vehicle property. This task did not revalidate that route on the current
+build. It also did not decompile code or test a new feature, retail startup
+or co-op behavior. Do not infer source recovery or loadable custom scripts
+from a readable PE or a resource descriptor. A shared validator is premature
+until a repeatable feature-specific compile/load experiment establishes the
+contract.
+
+### Forklift feature candidate (2026-10-10)
+
+**Build, source inspection:** Red Forklift 35's current BRO assigns manual
+`mast_lift`, `fork_lift` and `mast_tilt` actions. Its
+`tools/loader_config.py` specifies a fixed selectable crawl angular-velocity
+setting of `.05`; this is not a measured road speed. No automatic rule relating
+fork height to drive speed was found in this inspected vehicle configuration.
+This is not evidence that the engine lacks an undocumented existing controller.
+
+**Open, proposed experiment:** a vehicle-bound script could initially warn above
+a chosen measured fork height, then progressively restrict travel speed while
+the forks are raised. Prove normal mod script loading, actual height readout and
+supported drivetrain/input control separately. Sounding a warning would not
+establish speed control. Runtime behavior, save/reload and co-op remain untested.
+Evidence: workspace receipt `binary_research_20261010/forklift_feature.json`,
+with source snapshots of `forklift_red_mod/README.md`, its BRO and loader config.
+Automation is premature until those interfaces and the script lifecycle are
+established by an isolated experiment.
+
+### Advanced SSL feature candidates (2026-10-10)
+
+**Owner feedback:** forklift stacking assistance was declined; the owner asked
+for advanced applications on other existing mods. This is feature-selection
+feedback, not a runtime failure or evidence of an engine limitation.
+
+**Open, concepts:** Kanga 25 load-dependent crane behavior could use the existing
+boom/winch rig, but actual load measurement, a justified capacity model and
+script access to input/motor control remain unproved. CAT 793D payload monitoring
+and haul-cycle statistics require load/dump readouts, display integration and
+optional persistence. EX5600/994 loading a CAT 793D would need native material
+pickup, retained bucket contents and receiver load mutation with conserved
+material; SSL could coordinate those systems, but does not establish native
+terrain capabilities. Do not claim any of these is a buildable SSL-only feature.
+
+Evidence: source/document snapshots in workspace receipt
+`binary_research_20261010/feature_candidates.json`. The old `wl994_mod/README.md`
+explicitly directs continuation to the newer 994 vehicle project; its prior
+loading scope cannot establish the current project's behavior. No package was
+built or inspected for runtime acceptance in this review. Shared checks are
+premature until a feature's script interfaces and normal-load lifecycle are
+proven.
+

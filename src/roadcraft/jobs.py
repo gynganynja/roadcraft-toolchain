@@ -315,6 +315,31 @@ def _pid_alive(pid: int) -> bool | None:
     return True
 
 
+def _pid_created_utc(pid: int) -> datetime | None:
+    """Read Windows process identity without touching the process or trusting its name."""
+    if os.name != 'nt' or isinstance(pid,bool) or not isinstance(pid,int) or pid<=0:
+        return None
+    shell=Path(os.environ.get('SystemRoot','C:/Windows'))/'System32/WindowsPowerShell/v1.0/powershell.exe'
+    command=("$p=Get-CimInstance Win32_Process -Filter 'ProcessId = "+str(pid)+"'; "
+             "if($p -and $p.CreationDate){$p.CreationDate.ToUniversalTime().ToString('o')}")
+    try:
+        result=subprocess.run([str(shell),'-NoProfile','-Command',command],capture_output=True,text=True,
+                              timeout=10,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+        if result.returncode:return None
+        value=datetime.fromisoformat(result.stdout.strip())
+        return value if value.tzinfo is not None else None
+    except (OSError,ValueError,subprocess.TimeoutExpired):return None
+
+
+def _owner_pid_reused(lock: dict[str, Any], created: datetime | None) -> bool:
+    """A process born after the durable lock cannot be that lock's original owner."""
+    try:
+        locked=datetime.fromisoformat(lock['createdUtc'])
+        return (created is not None and created.tzinfo is not None and locked.tzinfo is not None
+                and created>locked)
+    except (KeyError,TypeError,ValueError):return False
+
+
 def inspect_jobs(jobs_root: str | Path) -> dict[str, Any]:
     """Read the lock and owner receipt; never clear an interrupted lock."""
     root = Path(jobs_root).expanduser().resolve()
@@ -330,6 +355,12 @@ def inspect_jobs(jobs_root: str | Path) -> dict[str, Any]:
         return result
     result["lock"] = lock
     result["ownerAlive"] = _pid_alive(lock.get("pid"))
+    if result['ownerAlive'] is True and os.name=='nt':
+        created=_pid_created_utc(lock.get('pid'))
+        if _owner_pid_reused(lock,created):
+            result['ownerAlive']=False
+            result['ownerIdentity']={'pidReused':True,'processCreatedUtc':created.isoformat(),
+                                     'lockCreatedUtc':lock['createdUtc']}
     run_id = lock.get("runId")
     if not isinstance(run_id, str) or not ID_PATTERN.fullmatch(run_id):
         result.update(recoveryRequired=True, lockError="Invalid runId in lock")
@@ -346,6 +377,110 @@ def inspect_jobs(jobs_root: str | Path) -> dict[str, Any]:
     else:
         result.update(receiptMissing=True, recoveryRequired=True)
     return result
+
+
+def _candidate_recovery_state(registry: dict[str, Any], config: dict[str, Any],
+                              installed_digest: str) -> dict[str, Any]:
+    """Verify an installed review candidate without granting acceptance.
+
+    Historical installs are admissible only as one complete, coherent journal
+    ending at these exact pinned candidate bytes. No unknown transaction state,
+    unlisted receipt, staging file or transaction lock is silently ignored.
+    """
+    candidates = [(name, row) for name, row in registry.get("candidates", {}).items()
+                  if row.get("package", {}).get("sha256") == installed_digest]
+    if len(candidates) != 1:
+        raise JobError("Installed package must match one exact reviewed candidate pin")
+    name, candidate = candidates[0]
+    evidence = []
+    for key in ("package", "receipt"):
+        pin = candidate.get(key) or {}
+        if not pin.get("path") or not pin.get("sha256"):
+            raise JobError("Candidate package and receipt require exact pins")
+        row = core.file_identity(pin["path"], pin["sha256"])
+        if row.get("matchesExpected") is not True or row.get("unchangedDuringRead") is not True:
+            raise JobError("Candidate package or receipt pin is stale or unstable")
+        evidence.append(row)
+    package_receipt = core.load_json(candidate["receipt"]["path"])
+    if (package_receipt.get("candidate") != name or
+            package_receipt.get("packageSha256") != installed_digest):
+        raise JobError("Pinned candidate receipt does not identify the installed candidate")
+    target = Path(config["installedPackage"]).resolve()
+    configured = {str(Path(p).resolve()) for p in config.get("transactionReceipts", [])}
+    if not configured:
+        raise JobError("Machine config must enumerate transaction receipts")
+    histories, roots = [], set()
+    for location in configured:
+        path = Path(location)
+        if path.is_symlink() or path.parent.is_symlink():
+            raise JobError("Candidate recovery refuses linked transaction evidence")
+        identity = core.file_identity(path)
+        if identity.get("exists") is not True or identity.get("unchangedDuringRead") is not True:
+            raise JobError("Candidate transaction receipt is missing or unstable")
+        data = core.load_json(path)
+        txroot = Path(data.get("transactionRoot", "")).resolve()
+        txid = data.get("transactionId")
+        if (data.get("schemaVersion") not in (1, 2) or not isinstance(txid, str) or
+                not ID_PATTERN.fullmatch(txid) or path.name != "receipt.json" or
+                path.parent.name != txid or path.parent.parent.resolve() != txroot or
+                txroot.is_symlink() or Path(data.get("installedPath", "")).resolve() != target):
+            raise JobError("Candidate transaction receipt target/root identity is invalid")
+        state = data.get("state")
+        if state not in ("INSTALLED", "ROLLED_BACK", "NOT_INSTALLED"):
+            raise JobError("Candidate transaction is pending or nonterminal")
+        events = data.get("events") or []
+        if not events or events[-1].get("state") != state:
+            raise JobError("Candidate transaction lacks a matching terminal event")
+        if state == "INSTALLED" and [e.get("state") for e in events[:5]] != [
+                "PREPARING", "BACKUP_VERIFIED", "STAGED_VERIFIED", "SWAP_READY", "INSTALLED"]:
+            raise JobError("Candidate install lacks the successful verified swap journal")
+        try:
+            when = datetime.fromisoformat(events[-1]["at"])
+            if when.tzinfo is None:
+                raise ValueError("timezone missing")
+        except (ValueError, TypeError, KeyError) as exc:
+            raise JobError("Candidate transaction terminal time is invalid") from exc
+        previous = data.get("previousSha256")
+        if previous is not None:
+            _digest(previous, "historical previous package SHA-256")
+        elif data.get("previousAbsent") is not True:
+            raise JobError("Candidate transaction previous package is unproven")
+        _digest(data.get("candidateSha256"), "historical candidate package SHA-256")
+        roots.add(txroot); evidence.append(identity)
+        histories.append((when, location, data))
+    histories.sort(key=lambda row: (row[0], row[1]))
+    current = None
+    for index, (when, location, data) in enumerate(histories):
+        if index and (when == histories[index-1][0] or data.get("previousSha256") != current):
+            raise JobError("Candidate transaction history is stale or discontinuous")
+        current = (data["candidateSha256"] if data["state"] == "INSTALLED"
+                   else data.get("previousSha256"))
+    last = histories[-1][2]
+    if (current != installed_digest or last["state"] != "INSTALLED" or
+            last["candidateSha256"] != installed_digest or
+            Path(last.get("candidatePath", "")).resolve() != Path(candidate["package"]["path"]).resolve()):
+        raise JobError("Last successful install does not identify the live candidate bytes")
+    snapshots = []
+    for txroot in sorted(roots):
+        files = sorted(str(p.resolve()) for p in txroot.glob("*/receipt.json"))
+        if any(p not in configured for p in files):
+            raise JobError("An unlisted transaction receipt blocks candidate recovery")
+        snapshots.append({"root": str(txroot), "receipts": files})
+        if list(txroot.glob("*/before.pak.pending")):
+            raise JobError("Candidate transaction backup staging files still exist")
+    locks = sorted(set(config.get("transactionLocks", [])) |
+                   {str(root / "package.lock") for root in roots})
+    lock_rows = [{"path": p, "present": Path(p).exists() or Path(p).is_symlink()} for p in locks]
+    if any(row["present"] for row in lock_rows):
+        raise JobError("A candidate transaction lock is still present")
+    staging = sorted(str(p) for p in target.parent.glob(f".{target.name}.roadcraft-*.pending"))
+    if staging:
+        raise JobError("Candidate package staging files still exist")
+    return {"candidateName": name, "candidateEvidence": evidence,
+            "transactionDirectorySnapshots": snapshots,
+            "pendingPattern": str(target.parent / f".{target.name}.roadcraft-*.pending"),
+            "transactionLocks": lock_rows,
+            "lastSuccessfulInstall": histories[-1][1]}
 
 
 def _recovery_preflight(jobs_root: Path, run_id: str, expected_lock_sha256: str,
@@ -393,23 +528,25 @@ def _recovery_preflight(jobs_root: Path, run_id: str, expected_lock_sha256: str,
     registry = core.read_registry(registry_path)
     config = core.read_config(config_path)
     accepted_pin = registry.get("accepted", {}).get("package") or {}
-    if accepted_pin.get("sha256") != installed_digest:
-        raise JobError("Expected installed SHA-256 must equal the accepted registry pin")
     if not config.get("installedPackage"):
         raise JobError("Machine config must identify the installed package")
-    if not config.get("transactionReceipts") or not config.get("transactionLocks"):
+    candidate_state = None
+    if accepted_pin.get("sha256") != installed_digest:
+        candidate_state = _candidate_recovery_state(registry, config, installed_digest)
+        config = {**config, "transactionLocks": [r["path"] for r in candidate_state["transactionLocks"]]}
+    elif not config.get("transactionReceipts") or not config.get("transactionLocks"):
         raise JobError("Machine config must enumerate transaction receipts and locks")
     project = core.status(registry, config)
     accepted = project.get("accepted") or {}
     installed = project.get("installed") or {}
-    if (accepted.get("matchesExpected") is not True or
-            accepted.get("unchangedDuringRead") is not True or
-            installed.get("sha256") != installed_digest or
+    if (installed.get("sha256") != installed_digest or
             installed.get("unchangedDuringRead") is not True or
-            project.get("installedRelation") != "accepted" or
-            project.get("recoveryRequired") is not False):
+            (candidate_state is None and (accepted.get("matchesExpected") is not True or
+             accepted.get("unchangedDuringRead") is not True or
+             project.get("installedRelation") != "accepted" or
+             project.get("recoveryRequired") is not False))):
         raise JobError("Accepted and installed package or transaction state is not verified")
-    if any(not row.get("exists") or row.get("needsReview") is not False
+    if any(not row.get("exists") or (candidate_state is None and row.get("needsReview") is not False)
            for row in project["transactionReceipts"]):
         raise JobError("A configured transaction receipt needs review")
     for row in project["transactionReceipts"]:
@@ -422,7 +559,7 @@ def _recovery_preflight(jobs_root: Path, run_id: str, expected_lock_sha256: str,
             if not terminal or row.get("rollbackVerifiedNow") is not True:
                 raise JobError("Legacy capture receipt lacks a verified terminal rollback")
         elif row.get("kind") == "package-transaction":
-            if row.get("state") not in ("ROLLED_BACK", "NOT_INSTALLED"):
+            if candidate_state is None and row.get("state") not in ("ROLLED_BACK", "NOT_INSTALLED"):
                 raise JobError("Package transaction receipt is not terminal at the accepted package")
         else:
             raise JobError("Unknown transaction receipt kind")
@@ -446,7 +583,8 @@ def _recovery_preflight(jobs_root: Path, run_id: str, expected_lock_sha256: str,
             "transactionReceipts": project["transactionReceipts"],
             "transactionReceiptIdentities": transaction_receipt_identities,
             "transactionLocks": project["transactionLocks"],
-            "activeAuthoringProcesses": active}
+            "activeAuthoringProcesses": active,
+            "candidateVerification": candidate_state}
 
 
 def recover_jobs(jobs_root: str | Path, run_id: str, expected_lock_sha256: str,
@@ -492,6 +630,15 @@ def recover_jobs(jobs_root: str | Path, run_id: str, expected_lock_sha256: str,
         config_now = core.file_identity(config, expected_config_sha256)
         transaction_receipts_now = [core.file_identity(row["path"], row["sha256"])
                                     for row in check["transactionReceiptIdentities"]]
+        candidate_check = check.get("candidateVerification") or {}
+        candidate_evidence_now = [core.file_identity(row["path"], row["sha256"])
+                                 for row in candidate_check.get("candidateEvidence", [])]
+        candidate_directories_changed = any(
+            sorted(str(p.resolve()) for p in Path(row["root"]).glob("*/receipt.json")) != row["receipts"] or
+            bool(list(Path(row["root"]).glob("*/before.pak.pending")))
+            for row in candidate_check.get("transactionDirectorySnapshots", []))
+        pending_pattern = candidate_check.get("pendingPattern")
+        staging_exists = bool(pending_pattern and list(Path(pending_pattern).parent.glob(Path(pending_pattern).name)))
         owner_now = core.load_json(lock_path).get("pid") if lock_now.get("matchesExpected") else None
         active_now, process_error = editor_processes()
         if (lock_path.is_symlink() or (root / run_id).is_symlink() or
@@ -509,9 +656,14 @@ def recover_jobs(jobs_root: str | Path, run_id: str, expected_lock_sha256: str,
                 any(row.get("matchesExpected") is not True or
                     row.get("unchangedDuringRead") is not True
                     for row in transaction_receipts_now) or
+                any(row.get("matchesExpected") is not True or
+                    row.get("unchangedDuringRead") is not True
+                    for row in candidate_evidence_now) or
+                candidate_directories_changed or staging_exists or
                 _pid_alive(owner_now) is not False or
                 process_error or active_now or
-                any(Path(row["path"]).exists() for row in check["transactionLocks"])):
+                any(Path(row["path"]).exists() or Path(row["path"]).is_symlink()
+                    for row in check["transactionLocks"])):
             raise JobError("External state or reviewed evidence changed before release")
         lock_path.unlink()
         recovery.update(status="released", releasedUtc=_utc())
@@ -551,7 +703,16 @@ def _run_command(step: dict[str, Any], log_path: Path) -> int:
                 os.fsync(log.fileno())
     finally:
         if partial.exists():
-            os.replace(partial, log_path)
+            # A scanner can briefly hold a just-closed log (WinError 32 seen on Dump Twuck v9 build and
+            # import steps after the command had succeeded). Same bounded retry as _atomic_json.
+            for attempt in range(8):
+                try:
+                    os.replace(partial, log_path)
+                    break
+                except OSError as exc:
+                    if getattr(exc, "winerror", None) not in (5, 32, 33) or attempt == 7:
+                        raise
+                    time.sleep(min(0.05 * 2 ** attempt, 0.5))
     return completed.returncode
 
 
