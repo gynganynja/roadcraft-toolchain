@@ -482,3 +482,16 @@ Evidence: Dump Twuck `reports/revision_007_tyres/{tyre_build.json,tyre_saved_aud
 **Build:** wheel slots carry the wheel tpls; nothing in the skinned body turns with the wheel. Skin rotors, hats and
 hubs to the steering joint (front) or axle frame (rear) and keep them rotationally symmetric (no drilled pattern or
 logo that should visibly turn). Calipers, splash shields and hoses on the same bone stay put while steering.
+
+## Load-adaptive suspension (code analysis, static, 2026-10-14)
+
+Full analysis: `C:\RC_RE\research\physics_semantics.md`, "Load-adaptive suspension".
+
+| Rule | Grade |
+|---|---|
+| `linearLimitsStiffness` / `linearLimitsDamping` are **not** bump/droop-stop softness. They soften the wheel's sideways and fore-aft location (Havok `lin1`/`lin2` tau/damping factors). The stops are always hard, so there is no progressive or second-stage spring in the wheel joint. Leave both at -1; no retail truck sets them | Code (reflection plus `FUN_140cac360`), Retail (0 of 124) |
+| `strength` / `damping` are the suspension atom's `tauFactor` / `dampingFactor`. Nothing changes them at runtime: there is no SSL setter, and the desc is read once at wheel init | Code |
+| Whether the wheel-joint sag grows with payload is **Unknown**. A two-launch Dump Twuck bench (empty vs `spawnFull`) settles it; the protocol is in the research file, section 2 | Open |
+| For a large payload swing, use the retail **physical series spring**: wheel joint near-rigid (strength 0.25, damping 1.0, min = max = 0, `height` = lift), wheels parented to axle/side bodies on a `tpl_markup_constraint_prismatic` with `tpl_markup_spring_motor{spring N/m, damping N·s/m}` sized `k = loaded axle load x g / loaded sag`. Retail precedents: Lynx scout / Mutt / trailer, 2e5-6e5 N/m on 500 kg axle bodies; ZiKZ 605E trailer, balancers 2.1e6 N·m/rad | Retail; sag proportional to load Inferred; not yet driven on a mod |
+| Retail dump trucks (Baikal 65206, Tayga, Voron, OFT96) use only soft wheel joints: strength 0.025-0.08, **damping 0.35-0.75**, 0.25-0.5 m of bump travel from neutral. Their spring-motor hinges are frame-roll articulations, not load springs | Retail |
+| A load volume's payload is its own rigid body, joined to `parentBody`. Its mass follows the fill (minimum 1 kg); its COM stays at the volume mesh's centroid | Code (`FUN_1405e2590`, `FUN_1405dc380`) |
