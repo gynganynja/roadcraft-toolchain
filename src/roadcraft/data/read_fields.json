@@ -1593,16 +1593,6 @@
      "notes": "+0x74; impulse fraction vs fixed non-terrain bodies"
     },
     {
-     "key": "sidewaysFrictionMultiplier",
-     "default": 1.0,
-     "notes": "+0x9c (native-bound; force law not located)"
-    },
-    {
-     "key": "sidewaysFrictionMaxVelocity",
-     "default": 1.0,
-     "notes": "+0xa0 (native-bound; force law not located)"
-    },
-    {
      "key": "isSoftContactEnabled",
      "default": true,
      "notes": "+0xc9; gates the soft-contact callback"
@@ -1668,6 +1658,16 @@
      "key": "terrainDeformationFactor",
      "why": "runtime field written by the friction updater (FrictionMaterial.terrainDeformationFactor)",
      "evidence": "prop_truck_wheel.ssc l.67; prop_truck_friction_updater.ssc l.85-89, 145-148"
+    },
+    {
+     "key": "sidewaysFrictionMultiplier",
+     "why": "stored at +0x9c but no code reads it (2026-10-14 tyre-slip analysis: lateral grip is the enableLateralForce side impulse, FUN_140caac40)",
+     "evidence": "physics_semantics.md 'Tyre slip and sideways friction' (C)"
+    },
+    {
+     "key": "sidewaysFrictionMaxVelocity",
+     "why": "stored at +0xa0 but no code reads it (2026-10-14 tyre-slip analysis: lateral grip is the enableLateralForce side impulse, FUN_140caac40)",
+     "evidence": "physics_semantics.md 'Tyre slip and sideways friction' (C)"
     }
    ],
    "address": "0x140dd1ad0",
