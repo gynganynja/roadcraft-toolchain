@@ -165,7 +165,7 @@ A 1 m tracked robot, every wheel on `BoneChassis_cdt` on one rigid axle (min = m
 | r5: the visible front and big wheels ARE the real wheels (KGS-25 idler class with `geom`), nose and top rollers visual, no hidden wheels | rests and drives with the belt clear of near-coincident circles |
 | r5 driving only the big wheel (a sprocket) | its wheels spun, he barely moved and did not pivot; all four driven: 3.2 m forward, pivots 51 / 67 deg |
 | r5 with soft contact (`isSoftContactEnabled`, the default) | the small front wheel sank about 5 cm more than the big one: rested 9 deg nose-down; 4x `softForceScale` launched him; soft contact off: level |
-| Hard contact with `sidewaysFrictionMaxVelocity` 1 (default) | ploughed ahead in pivots (10-28 deg); 0.1 m/s: 51-67 deg; 0.02: lopsided (70 / 5 deg) |
+| Hard contact, three runs that differ only in `sidewaysFrictionMaxVelocity` (1 default, 0.1, 0.02 m/s; r5c, r5e, r5g) | pivots 10-28 deg, 51-67 deg, and lopsided 70 / 5 deg. **Re-attributed 2026-10-14:** the engine never reads that field (physics_semantics.md "Tyre slip and sideways friction"; code analysis, static). The bench commands changed nothing else (the session transcript: only `WALLE_SIDE_V` differs, and the two script edits between the runs added switches that were unset). So this spread is the bench's run-to-run variation in pivot yaw, not an effect of the field. Repeat a pivot measurement several times before crediting a change |
 
 Model rule for a real wheel that carries its own model: unit radius, real proportions (X = width / radius,
 KGS-25 idler 1.513 units for 0.454 / 0.3), scaled by the class radius (`geomRadius` 1). A visual-only wheel's
@@ -212,6 +212,15 @@ next build ([build-pipeline.md](build-pipeline.md)).
   which needs a non-frozen bench with known per-wheel load and a damping sweep. The original plan:
   bench one frame-hung axle at two
   frame masses.
+- `enableLateralForce` on a crawler's wheel slots.
+  - What it does (code analysis, static): each flagged wheel on the ground gets a sideways impulse
+    `mu x (truck mass / wheel count) x g x min(slip angle / 6 deg, 1)` that opposes sliding above 0.5 m/s
+    (physics_semantics.md "Tyre slip and sideways friction").
+  - Retail sets it on wheeled trucks and on no crawler.
+  - On a crawler it should resist the scrub that a pivot needs (Inferred).
+  - WALL-E r2-r6 sets it on its 4 ground wheels.
+  - Settle it with a bench A/B: every slot off, several pivots per variant, because single pivots spread
+    widely (see the WALL-E table above).
 - Deformable terrain: spawning the crane on the acceptance scene's terrain crashed the editor
   engine for every variant, so terrain behaviour rests on the owner's drives.
 - The owner's drive of fix 2.
