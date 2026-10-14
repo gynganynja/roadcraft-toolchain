@@ -1048,3 +1048,24 @@ Blender wrote the `@` file in full. The retried run happened to save normally, s
 - **Scope and grade:** L275 cab doors, LOD0-3. The geometry is measured. The in-game result is not yet driven.
 - **Evidence:** `C:/RC/l275_doortop` (scan.py, door.py, islands.py, raygrid.py, renders*, shells*); L275 build-147 / test-148.
 - **Integration:** this note. The deferred automation is a generic "crossing shells" check for every vehicle: cross-island same-facing pairs closer than 1 mm.
+
+## Console portability (PS5/Xbox): what the pipeline does and does not do (Claude, 2026-10-14)
+
+- **No console target on the PC side.** The editor builds one `.pak` (`platform: ''` in `editor.prjenv`), uploads it once, and registers that single `FileId` for every platform the portal lists (`AddModVersion`, `Platforms = GetModParameters().Platforms`). The `.mod` has no platform key, and there is no "console" tag or field in the editor. (Code)
+- **The portal is per-platform on versions.** It has a `PlatformId` per version row, its own file record, a 4-state upload/processing status and a per-platform approval type. Whether it converts or re-packs per platform is unknown. (Code for the fields; Unknown for behaviour)
+- **The engine is multi-platform:**
+  - resource flags `pc/ps5/scarlett`
+  - shader platforms `prospero` (AGC) and `scarlett`
+  - sound descriptors with `blob_platform_x64/_ps5/_scarlett`
+
+  Built mod paks fill only `blob_platform_x64`. (Code/Retail)
+- **Rules for portable mods:**
+  - Keep paks inside the editor whitelist (`.cls .sso .prop .lwi .prefab .scn .pct .td .mi .tpl .tpl_markup .sound_*`): no SSL source, compiled SSL, shaders or video. (Code for the whitelist)
+  - Prefer retail sound events over custom Wwise banks, since a custom bank has no console blob. (Inferred runtime)
+  - Use `.mi` with retail templates and parameter sets.
+  - Use standard BC7/BC5/BC4 usages at retail resolution with full mips. (Inferred)
+- **Unknown without Saber:**
+  - whether consoles receive RoadCraft mods at all
+  - console behaviour on missing blobs or shader permutations
+  - console tiling and size limits
+- **Evidence:** `C:\RC_RE\research\console_semantics.md`.
