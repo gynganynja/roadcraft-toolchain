@@ -95,6 +95,62 @@ of a new custom bank. Inspect its codecs/plugins, event dependencies and runtime
 logs, then listen in the intended editor/game. A valid WAV audition cannot
 establish a usable RoadCraft bank.
 
+## Getting engine audio into a mod: routes and limits (static RE, 2026-10-14)
+
+Grades: C = code, binaries or SSL; R = retail data; I = inferred. Full evidence
+is in `C:\RC_RE\research\sound_semantics.md`. No game or editor run was made, so
+none of this has been heard.
+
+**Binding (R/C).** A class plays sounds by event name, from its blueprints
+(`PlaySoundOnEmitter.soundDesc.type.name`). Its `.cls.resource` `linksSound`
+must list every event the class plays. Events pull in their banks through
+resource links. An event missing from `linksSound` has no bank loaded, so it is
+silent. RPM, gear, speed and acceleration reach Wwise through
+`SetSoundEmitterParameter` nodes on `rtpc_vehicle_rpm` / `_gear` / `_speed` /
+`_acceleration`. The rpm is signed (negative in reverse) and is read every
+0.1 s. It comes from `gearRatio` × `finalDriveRatio` × wheel ω, which has no
+physics effect. The `Body` graph sets these switches:
+- `switch_vhc_type` from the class `truckType`;
+- `switch_vhc_condition` (old/new);
+- the horn `ssw_vhc_name` from `truckName`, which must be a retail state.
+
+**Without Wwise (R/C).**
+- Mix any retail events into the class graph, as the Goliath RC5 did. Rename the
+  family prefix, fix the switches, and regenerate `linksSound`.
+- Reshape the response by scaling or offsetting rpm in the graph, or by changing
+  `gearRatio`.
+- `mod_sounds_gen convert-external-sources` turns WAVs into PCM16 external
+  sources. Only three retail events accept an external source:
+  `vo_ext_talker_story_*`. Each is a 2D one-shot on a VO bus. That route can give
+  a cab-only beep, but not an engine (I, untested).
+
+**REV (R/C).**
+- 26 of the 49 truck families use Crankcase REV. Each REV source has a
+  212-byte parameter block, a model of about 2.6 MB, and its RTPC curves, all in
+  the bank. Its idle-to-full range is |rpm| 800–1500, and the note stops rising
+  above 1500.
+- Mods cannot change REV without Wwise and the Crankcase authoring plugin.
+- `Roadcraft ModEditor.exe` has no REV plugin registration, while the retail exe
+  and `wwise_wrapper_dll` do. Expect REV engines to be silent in editor play mode
+  and on the bench (I). This fits the 793D "missing CrankcaseAudioREVModelPlayer"
+  report. **Judge borrowed REV engines in retail only.**
+- The TK53 Krot, Warden, Kronenwerk and other families are sample-based Blend
+  containers, which play everywhere.
+
+**Your own engine needs Wwise 2019.2.15.7667 (C).** Use the SDK
+`mods_source/wwise/mod_snd` project and follow these rules:
+- Give the bank and its events unique names. The template defaults `mod_bank`
+  and `mod_event` collide across mods, because bank and event IDs are FNV-1
+  hashes of their names.
+- Ship no init bank. Post-generation strips it.
+- Route only to existing busses (`actors`).
+- Use the existing RTPC names.
+- Generate banks so that the pre- and post-generation `mod_sounds_gen` steps
+  write the `sounds/` resources.
+
+A hand-patched clone of a retail sample bank is possible in principle, but it
+is unbuilt and untested.
+
 Integration: this article is listed in [the library index](README.md) and is
 available through `roadcraft library audio-assets`. No shared code, native recipe
 or installation authority changed.

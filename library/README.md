@@ -14,6 +14,7 @@ before installing it. Read the subject articles when authoring:
 | Article | Subject |
 |---|---|
 | [new-mod-creation.md](new-mod-creation.md) | Practical creation checkpoints from supplied art through driving, effects, utilities and cockpit verification |
+| [snowrunner-ports.md](snowrunner-ports.md) | Porting a SnowRunner truck mod: what carries over (shading maps, XML hardpoints, skin weights, AutomaticIK), the importer's mirror and the parts-browser rigs, and add-ons as several configurations |
 | [mod-workflow.md](mod-workflow.md) | New mods, existing source/package edits, project selection, build and installation lifecycle |
 | [learning.md](learning.md) | Required integration of discoveries, failures, fixes and feedback into shared knowledge and tools |
 | [frames.md](frames.md) | Axes, units, bone frames, hinge axes, centre of mass, source-art conversion |
@@ -32,12 +33,14 @@ before installing it. Read the subject articles when authoring:
 | [cockpit-and-lamps.md](cockpit-and-lamps.md) | Steering wheel and gauges (`dataDashboard`), lamps that work in the campaign |
 | [audio-assets.md](audio-assets.md) | Engine audio sources, licences, recording identity, approximation auditions and sound-bank limits |
 | [textures-and-materials.md](textures-and-materials.md) | Texture sets, channel packing, material instances, interface images |
+| [bro-passthrough.md](bro-passthrough.md) | Which BRO fields the generator carries into the compiled class, renamed, transformed or drops (RC075) |
 | [retail-data.md](retail-data.md) | Where the shipped vehicles' data lives and how to read it, including compiled models |
 | [build-pipeline.md](build-pipeline.md) | SDK tools, class generation, packaging, installation, process rules |
 | [headless-build.md](headless-build.md) | Packing a mod without the Mod Editor, quietly and repeatably (`roadcraft pak build`) |
 | [quiet-launch.md](quiet-launch.md) | Running SDK tools and the engine without windows, focus theft or crash dialogs (`roadcraft.quiet`) |
 | [deterministic-paks.md](deterministic-paks.md) | Why rebuilds differ and how `roadcraft pak normalize`/`check` makes them byte-identical |
 | [install-manifest.md](install-manifest.md) | Which retail file or other mod each package member overrides (`roadcraft pak manifest`) |
+| [save-compatibility.md](save-compatibility.md) | What a save keeps of a truck, how it is matched, and how to update a mod without breaking saves (RC077) |
 | [validator.md](validator.md) | Runtime-failure checks for sources and packages, codes RC049-RC072 (`roadcraft validate`, `roadcraft schema`) |
 | [case-studies.md](case-studies.md) | Each mod built so far: what went wrong and what it taught |
 | [sources.md](sources.md) | Official documentation, the community guide, the unofficial route, support channels |

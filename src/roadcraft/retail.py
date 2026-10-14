@@ -66,6 +66,29 @@ def read_member(game_root: str | Path, member: str) -> bytes:
         return archive.read(member)
 
 
+MATERIAL_TEMPLATE_EXTENSIONS = (".mp", ".mm", ".mtl")
+_MATERIALS: dict[str, frozenset[str]] = {}
+
+
+def material_templates(game_root: str | Path) -> frozenset[str]:
+    """Names in the retail material library: the file stems of every material preset (``material_presets/*.mp``),
+    master material (``master_materials/*.mm``) and ``.mtl`` in the client paks, cached in-process per installation.
+
+    These are the res_desc_mtl templates the library singleton (FUN_1421508f0, created as "material"/".mtl")
+    registers by resource name; the ``.mi`` load job (FUN_14214f0f0) looks its ``__type`` up there
+    (C:/RC_RE/research/retail_crash_0x214f223.md).  Retail ships no ``.mi`` in its paks."""
+    key = str(Path(game_root).resolve())
+    if key not in _MATERIALS:
+        names = set()
+        for member in _index(Path(game_root)):
+            base = member.replace("\\", "/").rsplit("/", 1)[-1]
+            for ext in MATERIAL_TEMPLATE_EXTENSIONS:
+                if base.lower().endswith(ext) and len(base) > len(ext):
+                    names.add(base[: -len(ext)])
+        _MATERIALS[key] = frozenset(names)
+    return _MATERIALS[key]
+
+
 def retail_class_text(game_root: str | Path, truck: str) -> str:
     member = f"ssl/autogen_designer_wizard/trucks/auto_{truck}/auto_{truck}.cls"
     return read_member(game_root, member).decode("utf-8", "replace")

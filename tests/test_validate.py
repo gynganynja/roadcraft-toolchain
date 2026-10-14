@@ -214,6 +214,34 @@ class WheelFrameTests(Base):
         self.assertEqual(set(codes(found)), {"RC062"})
 
 
+class WheelTrailTests(Base):
+    TRAIL = ' prop_wheel_trail_rb = { isCaterpillar = True }\n'
+
+    def files(self, wheel_geom, trail_slot="FL", caterpillar=True):
+        slots, _ = four_wheels()
+        geom = f' geom = {{ nameTpl = "{wheel_geom}" }}\n' if wheel_geom is not None else ""
+        trail = self.TRAIL if caterpillar else ' prop_wheel_trail_rb = { }\n'
+        wheel = f'properties = {{\n prop_truck_wheel = {{ width = 0.5 }}\n{geom}{trail}}}\n__type = "truck_wheel_muted"\n'
+        rb = f"wheelsWithTrail = {{ {trail_slot} = {{ __type = \"WheelTrailDesc\" }} }}" if trail_slot else ""
+        return {"ssl/truck.cls": truck_cls(slots, extra_rb=rb), "ssl/w.cls": wheel}
+
+    def test_trail_on_modelless_caterpillar_wheel(self) -> None:
+        found = self.fixture(self.files(None)).run(rules=["wheel-trail"])
+        self.assertEqual(codes(found), ["RC079"])
+        self.assertEqual(found[0].severity, "warning")
+        self.assertEqual(found[0].key, "properties.prop_truck_rb.wheelsWithTrail.FL")
+
+    def test_retail_shapes_are_clean(self) -> None:
+        for files in (self.files("wm"),                       # trail wheel with a model (TC305 sprocket/idler)
+                      self.files(None, trail_slot=None),      # modelless fakes without a trail entry
+                      self.files("", trail_slot="NOPE"),      # trail entry naming no slot
+                      self.files(None, caterpillar=False)):   # non-caterpillar trail (N&S rail cranes)
+            self.assertEqual(self.fixture(files).run(rules=["wheel-trail"]), [])
+
+    def test_empty_name_tpl_counts_as_no_model(self) -> None:
+        self.assertEqual(codes(self.fixture(self.files("")).run(rules=["wheel-trail"])), ["RC079"])
+
+
 class SuspensionTests(Base):
     def test_missing_collection_and_bad_index(self) -> None:
         slots, nodes = four_wheels()
@@ -261,6 +289,57 @@ class JointTests(Base):
         fx = self.fixture({"models/mods/m.tpl.asset/m.tpl_markup": clean,
                            "models/mods/m.tpl.asset/tpl/m.tpl": tpl_bytes(nodes)})
         self.assertEqual(fx.run(rules=["joints"]), [])
+
+
+def spring_markup(child_mass, k, c, *, parent_mass=44000, target='target = "BoneChassis_cdt"',
+                  joint="tpl_markup_constraint_prismatic", density=""):
+    return (f'version = 1\nobjectInfos = [\n'
+            f' {{ objectId = {{ name = "BoneChassis_cdt" }} properties = [ {{ mass = {parent_mass} '
+            f'__type = "tpl_markup_object_property_physics" }} ] }}\n'
+            f' {{ objectId = {{ name = "BoneSuspRear_cdt" }} properties = [ {{ mass = {child_mass} {density} '
+            f'__type = "tpl_markup_object_property_physics" }} ]\n'
+            f'   entities = [ {{ __type = "{joint}" {target} isMinLimit = True minLimit = -0.27 isMaxLimit = True '
+            f'maxLimit = 0.22 motor = {{ spring = {k} damping = {c} __type = "tpl_markup_spring_motor" }} }} ] }}\n]\n')
+
+
+class SpringMotorTests(Base):
+    """RC076: per-step solver numbers k*dt^2/m_eff and c*dt/m_eff of load-bearing prismatic spring motors."""
+
+    def run_markup(self, markup, tpl=None):
+        nodes = {"BoneChassis_cdt": matrix(), "BoneSuspRear_cdt": matrix(0, 1, -2)}
+        fx = self.fixture({"models/mods/m.tpl.asset/m.tpl_markup": markup,
+                           "models/mods/m.tpl.asset/tpl/m.tpl": tpl or tpl_bytes(nodes)})
+        return fx.run(rules=["spring-motors"])
+
+    def test_mammoth_rc62_rear_heave_is_clamped(self) -> None:
+        found = self.run_markup(spring_markup(4000, 11300000, 880000))
+        self.assertEqual(codes(found), ["RC076"])
+        self.assertEqual(found[0].severity, "warning")
+        self.assertIn("damping is clamped to 1", found[0].message)
+        self.assertIn("2.2e+05", found[0].message)            # m_eff/dt = 3667 kg x 60
+        self.assertTrue(found[0].line)
+        self.assertIn("damping <=", found[0].fixHint)
+
+    def test_mammoth_rc62_front_is_beyond_retail_but_not_clamped(self) -> None:
+        found = self.run_markup(spring_markup(6000, 3510000, 271000))
+        self.assertEqual(codes(found), ["RC076"])
+        self.assertIn("not clamped", found[0].message)
+
+    def test_retail_lynx_frame_and_light_props_are_clean(self) -> None:
+        self.assertEqual(self.run_markup(spring_markup(500, 300000, 12000, parent_mass=1700)), [])
+        self.assertEqual(self.run_markup(spring_markup(30, 5000, 2500, parent_mass=1700)), [])     # Lynx balloon
+        self.assertEqual(self.run_markup(spring_markup(4000, 11300000, 880000, density="massFromDensity = True")), [])
+
+    def test_hinge_springs_are_not_checked(self) -> None:
+        self.assertEqual(self.run_markup(spring_markup(4000, 11300000, 880000, joint="tpl_markup_constraint_hinge")),
+                         [])
+
+    def test_parent_target_resolved_through_the_model_tree(self) -> None:
+        nodes = {"BoneChassis_cdt": matrix(), "BoneSuspRear_cdt": matrix(0, 1, -2), "cdt_rear": matrix(0, 1, -2)}
+        data = tpl_bytes(nodes)
+        tree = struct.pack("<3h", -1, 0, 1) + data[6:]        # parent array in the padding: root, chassis, susp
+        self.assertEqual(codes(self.run_markup(spring_markup(4000, 11300000, 880000, target=""), tree)), ["RC076"])
+        self.assertEqual(self.run_markup(spring_markup(4000, 11300000, 880000, target=""), data), [])  # no tree: skip
 
 
 LIGHTS = ('prop_vehicle_lights_material = { lights = { "0" = { defaultName = "default" lightName = "lights_emissive" '
@@ -351,6 +430,76 @@ class MaterialAndReferenceTests(Base):
         self.assertEqual(codes(found), ["RC070"] * 4)
         keys = sorted(f.key for f in found)
         self.assertEqual(keys, ["assets[0]", "links[1]", "materials.a.materialName", "texNM"])
+
+    def test_editor_build_materials_folder_resolves(self) -> None:
+        # the editor's Build Mod packs <name>_<guid>.mi under materials/, not material_instances/ (SuperHeavy Crane)
+        fx = self.fixture({
+            "models/m_g.tpl.asset/m_g.tpl_markup": 'materials = { a = { materialName = "paint_g" } }\n',
+            "materials/paint_g.mi": 'shaders = { glt_shader = { base = { params = { texDiff = "tex_g" } } } }\n',
+            "materials/paint_g.mi.resource": "__type: res_desc_mtl\nfile: paint_g.mi\nlinks:\n- res://pct/tex_g.pct.resource\n",
+            "pct/tex_g.pct.resource": "__type: res_desc_pct\n"})
+        self.assertEqual(codes(fx.run(rules=["references"])), [])
+
+
+MI_BODY = 'shaders = { glt_shader = { base = { params = { texDiff = "t" } } } }\n'
+
+
+class MaterialTypeTests(Base):
+    """RC078: a .mi without a known __type crashes retail at the main menu (retail_crash_0x214f223.md)."""
+
+    def run_mi(self, files, retail_presets=("vehicle_body", "vehicle_lights")):
+        fx = self.fixture(files)
+        if retail_presets is not None:
+            pak = fx.game / "root" / "paks" / "client" / "default" / "default_materials.pak"
+            pak.parent.mkdir(parents=True)
+            with zipfile.ZipFile(pak, "w") as archive:
+                archive.writestr("master_materials/glt_extended_material.mm", "")
+                for name in retail_presets:
+                    archive.writestr(f"material_presets/{name}.mp", '__type = "glt_extended_material"\n')
+        notes = []
+        return fx.run(rules=["material-type"], notes=notes), notes
+
+    def test_missing_empty_unknown_and_valid(self) -> None:
+        found, _ = self.run_mi({
+            "material_instances/none.mi": MI_BODY,
+            "material_instances/none.mi.resource": "__type: res_desc_mtl\nfile: none.mi\nparents:\n"
+                                                   "- res://material_presets/vehicle_lights.mp.resource\n",
+            "material_instances/empty.mi": MI_BODY + '__type = ""\n',
+            "material_instances/unknown.mi": MI_BODY + '__type = "vehicle_bodyy"\n',
+            "material_instances/ok.mi": MI_BODY + '__type = "vehicle_body"\n',
+            "material_instances/master.mi": MI_BODY + '__type = "glt_extended_material"\n',
+            "material_instances/own.mi": MI_BODY + '__type = "my_preset"\n',
+            "material_presets/my_preset.mp": '__type = "glt_extended_material"\n'})
+        by_file = {f.member.rsplit("/", 1)[-1]: f for f in found}
+        self.assertEqual(sorted(by_file), ["empty.mi", "none.mi", "unknown.mi"])
+        self.assertTrue(all(f.code == "RC078" and f.severity == "error" for f in found))
+        self.assertIn("no message", by_file["none.mi"].message)
+        self.assertIn('__type = "vehicle_lights"', by_file["none.mi"].fixHint)
+        self.assertIn('"vehicle_body"', by_file["unknown.mi"].fixHint)
+        self.assertEqual(by_file["empty.mi"].line, 2)
+
+    def test_unparsable_mi_falls_back_to_the_raw_line(self) -> None:
+        found, _ = self.run_mi({"material_instances/bad.mi": "shaders = {\n__type = \"vehicle_body\"\n",
+                                "material_instances/bad2.mi": "shaders = {\n"})
+        self.assertEqual([f.member.rsplit("/", 1)[-1] for f in found], ["bad2.mi"])
+
+    def test_without_retail_only_missing_type_is_checked(self) -> None:
+        found, notes = self.run_mi({"material_instances/a.mi": MI_BODY + '__type = "anything"\n',
+                                    "material_instances/b.mi": MI_BODY}, retail_presets=None)
+        self.assertEqual([f.member for f in found], ["material_instances/b.mi"])
+        self.assertTrue(any("RC078" in n for n in notes))
+
+    def test_pak_members(self) -> None:
+        fx = self.fixture({})
+        fx.game.joinpath("root", "paks", "client").mkdir(parents=True)
+        with zipfile.ZipFile(fx.game / "root" / "paks" / "client" / "m.pak", "w") as archive:
+            archive.writestr("material_presets/vehicle_body.mp", "")
+        pak = Path(fx.tmp.name) / "mod.pak"
+        with zipfile.ZipFile(pak, "w") as archive:
+            archive.writestr("material_instances/beacon.mi", MI_BODY)
+            archive.writestr("material_instances/body.mi", MI_BODY + '__type = "vehicle_body"\n')
+        found = validate.validate(pak, rules=["material-type"], game_root=fx.game)
+        self.assertEqual([(f.code, f.path) for f in found], [("RC078", "mod.pak!material_instances/beacon.mi")])
 
 
 class PakTests(Base):
@@ -753,6 +902,23 @@ class SdkSampleIntegrationTests(unittest.TestCase):
 
     def test_no_type_or_reference_errors_on_sdk_content(self) -> None:
         self.assertFalse([f for f in self.found if f.code in ("RC049", "RC054", "RC055", "RC070")])
+
+
+@unittest.skipUnless((SDK_ROOT / "root" / "paks" / "client").is_dir() and any(SAMPLE.glob("material_instances/*.mi")),
+                     "RoadCraft retail paks or the SDK's shipped material instances not installed")
+class RetailMaterialTypeTests(unittest.TestCase):
+    """Retail ships no .mi in its paks; the SDK's own material instances (root/mods_source, every retail preset)
+    must all pass RC078 against the retail material library."""
+
+    def test_sdk_material_instances_pass(self) -> None:
+        from roadcraft import retail
+        library = retail.material_templates(SDK_ROOT)
+        self.assertIn("vehicle_body", library)
+        self.assertIn("glt_extended_material", library)
+        notes = []
+        found = validate.validate(SAMPLE, rules=["material-type"], notes=notes)
+        self.assertEqual(found, [])
+        self.assertFalse([n for n in notes if "RC078" in n])
 
 
 if __name__ == "__main__":

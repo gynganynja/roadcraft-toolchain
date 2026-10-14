@@ -7,7 +7,8 @@ suspension formula and installed unmeasured; the owner reported "it does it wors
 compares it with the installed version.
 
 A windowless variant without IntegrationStudio, with a private mod folder per run, is described in
-[headless-bench.md](headless-bench.md) (not yet run against the real engine).
+[headless-bench.md](headless-bench.md) (run against the real engine since 2026-10-13; it benches built paks
+through `roadcraft.pak_overlay`, first used for the KGS-25 campaign).
 
 **Ask the owner first.** Each run starts the editor and its engine for about three and a half minutes and takes
 the GPU, the CPU and window focus. The launcher refuses to start while the game or another editor

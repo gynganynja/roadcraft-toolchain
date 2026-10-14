@@ -1,0 +1,132 @@
+{
+ "schemaVersion": 1,
+ "name": "mammoth-parked-empty-engine-off",
+ "note": "Mammoth (CAT 793D) series-spring bench, 2026-10-14: parked, empty, handbrake on, ENGINE OFF (no engine statement is sent: the Mammoth class plays shakers EngineStart/EngineShutdown its prop_truck_shaker_native_controller does not define, which crashed launch 1 at engine start), no pedal or steer, 40 s of 10 Hz probes after the scene is ready. roamer105_acceptance pad (flat_pad top y 60.0, x -30..30, z -50..50; terrain 42.5 below it), truck at the scene's own approved_roamer place (0, 61.2, -18), clear of the wheel steps (z 0..8), the water (x -12) and the ramps (x 12). Wheel depth is measured against the pad (analysis.groundHeight) and the terrain probe. Sprung-body modelled offsets assume the chassis body origin is the tpl origin (series_spring_rc61.py bone heads: front wheel centres +-2.504/1.682/3.387, rear heave and roll bodies 0/1.682/-2.33); constraint names are <child body>|<parent body> (Game, readback 2026-10-14). The chassis body GetForward is world-down, so hull pitch reads -90 at rest.",
+ "seed": 1,
+ "timestep": 0.0166667,
+ "durationSeconds": 40,
+ "wallClockSeconds": 1200,
+ "startupTimeoutSeconds": 300,
+ "scene": {
+  "file": "xscenes/mods/roamer105_acceptance/roamer105_acceptance.scn",
+  "settleSeconds": 1,
+  "readyTimeoutSeconds": 400
+ },
+ "vehicle": {
+  "tpl": "*",
+  "hull": "BoneChassis_cdt",
+  "wheelNames": [
+   "BoneWheelFrontRight",
+   "BoneWheelFrontLeft",
+   "BoneWheelRearRight",
+   "BoneWheelRearLeft"
+  ]
+ },
+ "spawn": {
+  "method": "scene",
+  "scene": "xscenes/mods/roamer105_acceptance/roamer105_acceptance.scn",
+  "vehicle": "approved_roamer",
+  "position": [
+   0,
+   61.2,
+   -18
+  ]
+ },
+ "inputs": {
+  "method": "Debug",
+  "schedule": [
+   {
+    "at": 0,
+    "phase": "parked",
+    "pedal": 0,
+    "steer": 0,
+    "handbrake": "On",
+    "engine": false
+   }
+  ]
+ },
+ "probes": {
+  "rateHz": 10,
+  "items": [
+   "engine",
+   "bodies",
+   "com",
+   "wheels",
+   "joints",
+   "terrain",
+   "linear"
+  ],
+  "readback": true
+ },
+ "capture": {
+  "cameras": [
+   {
+    "name": "side_low",
+    "offset": [
+     17,
+     1.2,
+     1.5
+    ],
+    "target": [
+     0,
+     0.5,
+     0
+    ]
+   }
+  ],
+  "settleSeconds": 0.5
+ },
+ "analysis": {
+  "pivotSteer": 0.5,
+  "settle": {
+   "rollDeg": 0.2,
+   "pitchDeg": 0.2,
+   "heightMm": 5
+  },
+  "stopToleranceM": 0.005,
+  "judderMinHz": 0.3,
+  "groundHeight": 60.0,
+  "sprung": {
+   "bodies": {
+    "BoneSuspFrontLeft_cdt": [
+     2.504,
+     1.682,
+     3.387
+    ],
+    "BoneSuspFrontRight_cdt": [
+     -2.504,
+     1.682,
+     3.387
+    ],
+    "BoneSuspRear_cdt": [
+     0,
+     1.682,
+     -2.33
+    ],
+    "BoneSuspRearRoll_cdt": [
+     0,
+     1.682,
+     -2.33
+    ]
+   },
+   "joints": {
+    "BoneSuspFrontLeft_cdt|BoneChassis_cdt": [
+     -0.23,
+     0.2
+    ],
+    "BoneSuspFrontRight_cdt|BoneChassis_cdt": [
+     -0.23,
+     0.2
+    ],
+    "BoneSuspRear_cdt|BoneChassis_cdt": [
+     -0.27,
+     0.22
+    ],
+    "BoneSuspRearRoll_cdt|BoneSuspRear_cdt": [
+     -4,
+     4
+    ]
+   }
+  }
+ }
+}

@@ -39,14 +39,38 @@ directory is not the project.
   or pins chains to; steered knuckles need a steering rack.
 - Do not infer wheel handedness from identity slots alone. Measure the native rim/object frame: Lada adds a left-side half-turn. Author each asset for its final frame; see suspension-and-wheels.md.
 - Do not copy the SDK TUZ Lynx sample's truck settings.
-- Crawlers: a track must not rest on stop fakes alone. Use a retail layout (EPEC TC305: rigid real
-  wheels at ground level at each track end beside near-zero fakes) and give wheel-carrying track
-  frames retail-like mass. The earlier claim that springs on a light frame come out far softer
-  (strength scaling with the parent mass) is superseded: no mass scaling in code, and the sag law is
-  unknown, so calibrate per vehicle (tracked-vehicles.md, RC046-RC048).
-- Measure a change to suspension, wheels, masses or joints on the physics bench (`roadcraft bench`,
-  physics-bench.md) against the installed version before installing it, with the owner's go-ahead:
-  a formula-designed KGS-25 fix made the crane worse.
+- Crawlers (tracked-vehicles.md, `python -m roadcraft retail tracks`; KGS-25 2026-10-13, bench and drives):
+  - A track must not rest on stop fakes alone. Use a retail layout (EPEC TC305: rigid real wheels at
+    ground level at each track end beside near-zero fakes). `fakeWheelIds` wheels are full physics
+    wheels; only the belt is visual. A track `section.height` of 0 silently turns track steering off.
+  - Hang each track frame on a sprung hinge, never a weld (RC047). The retail HT500 uses
+    childRotation [0,90,0], +-5 deg, tpl_markup_spring_motor 1e7/1.1e7. Softer (3e6, +-8 deg) let
+    the KGS idler conform to a step. Give the frame bodies retail damping (angular 0.05 /
+    linear 0), not 1.5 / 0.03.
+  - Track wheels: copy a retail crawler's friction tables (frictionValue 0.5-1.0, every surface
+    including `default`, `asphalt` and `mud_sand`) and softForceScale (TC305 0.75, HT500 0.55). The
+    default of 1 is rigid contact, a likely "bouncy hull" cause (code analysis; the owner's
+    "feels better" drive changed friction, softForceScale and wheel mass together).
+  - Keep the steering curve's full-lock end at -1 like retail. -0.6 cut pivot yaw about 3x with no
+    measured judder benefit (headless bench, single runs per build).
+  - Strength has no mass scaling and the sag law is unknown, so calibrate per vehicle.
+- Measure a change to suspension, wheels, masses or joints before installing it, against the
+  installed version. Use the windowless bench (`python -m roadcraft.bench_headless`,
+  headless-bench.md), which needs the owner's go-ahead per run. At minimum run `physics report` and
+  `compare --donor`. A formula-designed KGS-25 fix made the crane worse.
+- Engine facts that silently waste a fix (validator.md, RC072-RC074):
+  - markup objSettings per-object entries (visibility, collision, lighting) are ignored unless
+    objSettings.exportedVersion is set, and no mod sets it. Hide parts by name prefix (cdt_,
+    hidden_) or blueprint init.
+  - A position motor's `spring` is never read; use tpl_markup_spring_motor {spring, damping}
+    (N/m or N·m/rad). Position-motor tau is a relative stiffness: raise tau for loaded joints,
+    since maxForce alone does nothing.
+  - Wheel friction: a missing `default` entry gives 2.0, and a surface with no entry keeps the
+    previous surface's friction. prop_truck_wheel bodyFriction/substanceFriction are overwritten at
+    start; the real setting is frictionMaterialsList.<material>.frictionValue.
+  - A hook or dangling part should hang on a ball-and-socket joint (massFactor 0, no collision). A
+    ragdoll's twist axis can be the luff axis and hold the hook at the boom angle (Kanga c10,
+    KGS-25).
 - A dump truck's back load border hangs from the tail-lid body: the native sand grid spans the four
   borders and composes the back one with its parent's transform (RC036). Build the load and borders
   with `roadcraft.load_volume` / `blender_load` and run `grid_report` before export (truck-settings.md,
@@ -82,10 +106,13 @@ present; use its checkout for shared code and accumulated library knowledge.
 python -m roadcraft lint-bro <truck.bro> --class <auto_mod.cls> --tpl <body.tpl>
 python -m roadcraft suspension --geometry measured --axle '<SuspensionAxle JSON>' --share <one wheel's weight share>
 python -m roadcraft tpl-nodes <body.tpl> --pattern <bone regex>
-python -m roadcraft pak build --project <p> --mod-file <mod> --output <new.pak> --candidate <name> --apply
+python -m roadcraft pak build --project <p> --mod-file <mod> --output <new.pak> --stage-classes --suffix <s> --baseline <installed.pak> --candidate <name> --apply
 python -m roadcraft validate <new.pak> --baseline <installed.pak> --json
 python -m roadcraft physics report <new.pak> --json
 python -m roadcraft compare <new.pak> --donor <retail truck> --json
+python -m roadcraft schema show <Type.field>
+python -m roadcraft retail tracks <truck> --game <sdkRoot>
+python -m roadcraft.bench_headless run <scenario.json> --owner-approved "<who/when/why>"   # only after the owner says yes to this run
 ```
 
 Do not hand over a candidate with a NEW validate error against the installed package. For any

@@ -1,0 +1,108 @@
+{
+ "schemaVersion": 1,
+ "seed": 1,
+ "timestep": 0.0166667,
+ "wallClockSeconds": 1200,
+ "startupTimeoutSeconds": 300,
+ "scene": {
+  "file": "xscenes/mods/kgs25_acceptance/kgs25_acceptance.scn",
+  "settleSeconds": 5,
+  "readyTimeoutSeconds": 400
+ },
+ "vehicle": {
+  "tpl": "kgs25",
+  "hull": "BoneChassis_cdt",
+  "frames": [
+   "BoneTrackSusp_L_cdt",
+   "BoneTrackSusp_R_cdt"
+  ],
+  "suspensionTravel": {
+   "min": 0.0,
+   "max": 0.4
+  },
+  "wheelNames": [
+   "kgs_L_idler0",
+   "kgs_L_drive0",
+   "kgs_L_contact0",
+   "kgs_L_contact1",
+   "kgs_L_contact2",
+   "kgs_L_contact3",
+   "kgs_L_contact4",
+   "kgs_L_contact5",
+   "kgs_L_contact6",
+   "kgs_R_idler0",
+   "kgs_R_drive0",
+   "kgs_R_contact0",
+   "kgs_R_contact1",
+   "kgs_R_contact2",
+   "kgs_R_contact3",
+   "kgs_R_contact4",
+   "kgs_R_contact5",
+   "kgs_R_contact6",
+   "kgs_L_ramp0",
+   "kgs_L_ramp1",
+   "kgs_R_ramp0",
+   "kgs_R_ramp1"
+  ]
+ },
+ "probes": {
+  "rateHz": 10,
+  "items": [
+   "engine",
+   "bodies",
+   "com",
+   "wheels",
+   "joints",
+   "tracks"
+  ],
+  "readback": true
+ },
+ "name": "kgs25-flat-normal",
+ "note": "KGS-25 acceptance scene pad (top y 60.0), crane moved to a clear lane x=-22 z=-35 (the 2026-10-02 editor bench used (0, 60.12, -18), where the harsh fast run would reach the scene's 0.35 m wheel steps); editor bench 'normal' schedule; frame angles and hull-frame wheel travel; build readback",
+ "spawn": {
+  "method": "scene",
+  "scene": "xscenes/mods/kgs25_acceptance/kgs25_acceptance.scn",
+  "vehicle": "kgs25_test_vehicle",
+  "position": [
+   -22,
+   60.12,
+   -35
+  ]
+ },
+ "inputs": {
+  "method": "Debug",
+  "schedule": "normal"
+ },
+ "analysis": {
+  "pivotSteer": 0.5,
+  "settle": {
+   "rollDeg": 0.2,
+   "pitchDeg": 0.2,
+   "heightMm": 5
+  },
+  "stopToleranceM": 0.005,
+  "judderMinHz": 0.3,
+  "articulation": {
+   "frames": [
+    "BoneTrackSusp_L_cdt",
+    "BoneTrackSusp_R_cdt"
+   ],
+   "wheels": [
+    "kgs_L_drive0",
+    "kgs_L_idler0",
+    "kgs_L_ramp0",
+    "kgs_L_ramp1",
+    "kgs_L_contact0",
+    "kgs_L_contact3",
+    "kgs_L_contact6",
+    "kgs_R_drive0",
+    "kgs_R_idler0",
+    "kgs_R_contact3"
+   ],
+   "joints": [
+    "TrackSusp_L",
+    "TrackSusp_R"
+   ]
+  }
+ }
+}

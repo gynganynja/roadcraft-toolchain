@@ -11,7 +11,8 @@ prints a dry run. It also refuses while the game, the Mod Editor, an engine or a
 hub (port 20563) is running, and it never writes into the game folder, `root\mods`,
 `root\mods_source` or the owner's `Documents\Saber\IntegrationStudio\mods_source`.
 
-As of 2026-10-13 **nothing here has run against the real engine.** Everything below marked Build was
+Written before the first live runs (corrected 2026-10-13: see "First live runs" and the KGS-25 campaign,
+which ran it against the real engine). Everything below marked Build was
 exercised against the real SDK hub code and a fake engine (`tests/fake_engine.py`); the engine side is
 SDK (read in the decompile or the shipped config) or Inferred.
 
@@ -147,8 +148,109 @@ Confirmed: the engine runs without IntegrationStudio, without a window, on a pri
 answers ExecSsl through the helper hub. Since scene_001/run_001 also confirmed: loading a scene, entering play with a current truck,
 screenshots, and a full scripted drive with probes, all headless. Not possible as designed: mounting a
 candidate .pak through `ModDirs` (the editor engine reads no mods folder). To bench a built package,
-extract its members into the private `mods_source` copy (member paths are resource paths): proposed,
-not yet run. Still open: determinism across two identical runs.
+lay it over a project copy with `roadcraft.pak_overlay` ("Benching a built package" below; done for the
+KGS-25 campaign). Determinism across two identical runs: see the KGS-25 campaign's repeat run.
+
+## Benching a built package: the pak overlay (KGS-25 campaign, 2026-10-13)
+
+The editor engine mounts no pak (pakmount_001), so a built package is benched by laying it over a copy of an
+editor project that holds the bench scene:
+
+```text
+python -m roadcraft.pak_overlay --project <editor project> --pak <installed.pak> --out <new folder>
+    [--suffix kgs25] [--markup-body "BoneTrackSusp_L_cdt:angularDamping=0.05,linearDamping=0"]
+python -m roadcraft.bench_headless run <scenario> --strategy project-copy --project <overlay folder> --adapter-id 1 \
+    --prune-copy --owner-approved "..."
+```
+
+| Step | Why | Grade |
+|---|---|---|
+| copy the project (hard links; a changed file is unlinked and rewritten), point `documents-dir`, `ModsSourceLocal` and `ProjectPath` at the copy | the source project and pak are only read | Build |
+| write every pak member at its resource path (duplicate members must be identical); the pak's root `.mod` replaces `mods/<name>.mod` | the truck is the pak's bytes: classes, wheel classes, model, markup, textures | Build; checked back by sha256 in `overlay.json` |
+| remove the project's generated classes that the pak ships staged (`autogen_dw/.../auto_kgs25.cls` -> pak `ssl/auto_kgs25_kgs25.cls`) | the old classes cannot load by their old names | Build |
+| **write each removed generated `.sso` back at its project path with the pak's fields** (`.resource` keeps the project brand and `sso:` name) | the editor engine registers trucks and wheel sets by scanning `res://autogen_dw/trucks/auto_<t>/auto_<t>_truck_info.sso` / `_truck_wheel_info.sso` / `trucks/preview/`, key = folder minus `auto_` (retail `ssl/game/autogen_libraries_creator.ssc`, `GatherModEditorContentForAutoLibraries`); installed mods are keyed from their `.mod` instead. Without it: `SSL runtime error: key 'kgs25' is not found in dictionary` in `WheelsLibrary.Get` while loading the scene's prefab (launches 1-2) | Game (engine) |
+| keep `auto_truck_library.sso` / `auto_wheels_library.sso` / prefabs, retag them (class staging's own rules) and replace each library entry by the pak's `.sso` fields | an old project's library lacks a newer build's wheels (KGS: the ramp wheel) | Build |
+| retag every scene and prefab: `desc __type "auto_kgs25"` -> `"auto_kgs25_kgs25"`, prefab link -> `res://ssl/auto_kgs25_kgs25.cls.resource` | the spawned truck IS the pak's class | Game (readback below) |
+| optional `--markup-body` patches a body's physics scalars in the pak's markups | bench variants of a built package | Build |
+
+Bench changes made for this (all tested with the fake engine):
+
+- **Scene text from the private copy.** `LoadScenePlay` sends the scene text as `psOverrides`; `run` read it from the
+  source project, so `spawn.position` edits in the private copy were silently ignored. It now sends the private copy.
+- `spawn.boxes: [{name, position, scale, yaw}]` adds static collision boxes to the private scene copy
+  (`physics_bench.add_box`: the scene's own unit-cube `EditorMesh`, as the Goliath RC3 bench's ledges).
+- `probes.readback: true` runs read-only checks once at rest (`readback.json`, `summary.readback`): model name and
+  owner; per wheel `GetPhysicalRadius`, `GetMaxSpringTravelDistance` and **`wheel.softForceScale` (works, Game)**; per
+  constraint name, `IsAngular`, `HasMotor`, **`GetMotorSpring`/`GetMotorDamping` (work, Game)**.
+  `GetAngularLimits()` returns a type without `.x` (`error 2059: can't resolve identifier 'x'`); limits stay unread.
+  No body damping getter is known: markup damping is verified from the overlay's bytes only.
+- `analysis.articulation {frames, wheels, joints}` + `vehicle.wheelNames` (truck.GetWheels() order = the class's
+  wheel-slot order, confirmed on KGS-25 by positions): per phase the track frames' pitch against the hull, wheel
+  heights in the hull frame against rest (travel of rigid sprockets/idlers comes from the frame, of road wheels from
+  frame + spring), spring travel, the hull's signed roll/pitch extremes and joint angles.
+- `--prune-copy` deletes the run's private `mods_source` (1.4 GB for KGS-25) after the run; logs and CSVs stay.
+
+### KGS-25 campaign record (2026-10-13, laptop, owner-approved 18 runs; results in `C:\RC_RE\bench-headless\kgs25\results.md`)
+
+| Launch | Run | Result | Grade |
+|---|---|---|---|
+| 1 | v1 flat normal | engine crash loading the prefab: `SSL runtime error: key 'kgs25' is not found in dictionary` (`WheelsLibrary.Get`); the first overlay had removed every generated `.sso` | Game (engine) |
+| 2 | v1 flat normal | same with the libraries kept and synced: the editor engine does not read the library for project trucks, it scans `autogen_dw/trucks/auto_<t>/` (registration shims added) | Game (engine) |
+| 3-7 | v1 flat normal, v1 step, v2-v4 flat normal | complete: 10/10 (4/4) inputs, readback, about 9 Hz probes, 4-5 min each | Game (engine, headless play) |
+| 8 | v5 flat normal | the hub helper crashed in Saber `DriverTcpServer.NewClientsThreadProc`: WinSock 10055 (no buffer space), engine fine | Build (environment) |
+| 9-10 | v5, v6 flat normal | complete | Game (engine, headless play) |
+| - | (stop) | first session stopped: each run grew the system-managed pagefile by about 2.7 GB (34.5 -> 39.8 GB) while the owner's Substance Painter (15.8 GB committed) and Blender (10 GB) were open on the 15.7 GB laptop; free disk fell to 3.1 GB | - |
+| 11-21 | step v2-v6, harsh v1-v6 (resumed after the owner freed disk) | all complete, about 3 min each; 11.2 GB free at the end | Game (engine, headless play) |
+
+21 launches for 18 runs. **Course pitfalls found:** the harsh course's full-lock pivots and fast reverse carried
+four of six builds over the pad edge from a lane 8 m from it (two fell 15 m), so use a centred lane or a bigger pad
+for `harsh`. On a single-track step every build yawed about 15 deg toward the slab and drifted 2.1 m, so the slab
+must be wider than the drift (5 m or more). `GetCurrentAngle` of a hinge is in radians (it matched the body-derived
+frame angle to 0.1 deg).
+
+**Pitfall: memory and disk.** An engine run commits several GB; with other large applications open, Windows grows the
+pagefile into free disk and keeps it until reboot, and the hub can fail with WinSock 10055. Check free virtual memory
+and disk before each launch (the campaign's `run_queue.sh` stops below 6 GB / 5 GB) and use `--prune-copy`.
+
+Speed note (KGS-25, Game): `normal`'s pedal 0.35 in AUTO reaches 2 m/s in 1st gear and 2.9 m/s after the shift; for a
+slow climb use `gear: LOW_GEAR` (about 1.25 m/s at pedal 0.35).
+
+## Mammoth series-spring bench (2026-10-14, laptop, owner-approved 3 runs; results in `C:\RC_RE\bench-headless\mammoth\results.md`)
+
+Scenario `library/bench-scenarios/mammoth_parked_empty.json`:
+- the truck parked, empty, handbrake on, engine on, no pedal;
+- 40 s of 10 Hz probes on the roamer105_acceptance pad.
+
+Bench additions for this campaign (all tested with the fake engine):
+
+| Addition | What | Grade |
+|---|---|---|
+| probe `terrain` | `H <wheel> <GetTerrain().GetHeight(wheel centre)>`; `terrain.csv`; `summary.wheelGround` = wheel bottom (centre y - `GetPhysicalRadius`) vs the higher of terrain and `analysis.groundHeight` (a static scene mesh such as a pad is not in the terrain: on roamer105 the terrain reads 42.499 under the pad top 60.0) | Game (RC60 check) |
+| probe `linear` | `L <constraint> <GetCurrentPosition()>` for `IsPositional()` constraints; `linear.csv` | Inferred (RC60 has no prismatic; not yet run on one) |
+| checked items | `terrain` and `linear` are tried once at rest (`probe_checks.json`) and left out of the per-sample probe if the reply lacks their lines, so one rejected accessor cannot cost a run's probes | Build |
+| readback | `limits` now reads `FloatRange.min/.max` (the `.x` of the KGS campaign was the error); new `positional` (position, `GetLinearLimits`) and `layers` (`GetCollisionFilterInfo().GetLayer()`, system group per body) | limits and layers Game (RC60), positional Inferred |
+| `analysis.sprung {bodies, joints}` | each sprung body's offset (left/up/fwd) and roll/pitch against the hull, vs a modelled offset; each prismatic (m) / hinge (deg) series against its limits; `summary.stillness` = hull height/roll/pitch statistics, strongest oscillation, settle time over the whole run | Build |
+| `run` + `capture` section | a run's screenshots are taken after the last probe (the settled state) | Build |
+| `--link-copy` | the run's private `mods_source` copy is hard links (the spawn scene is unlinked before it is edited); `pak_overlay` keeps a pak member that matches the project's bytes as a hard link (`keptLinked`, 1231 of 1317 Mammoth members): a run costs ~0 disk instead of ~1.6 GB | Build; no kit file changed through the links in launch 1 |
+
+| Launch | Run | Result | Grade |
+|---|---|---|---|
+| 1 | RC60 (2adf6d7a) parked | Scene loaded and the truck became current (~117 s); readback and probe checks ran at rest. The first input step `state.isEngineOff.Set(false)` then crashed the engine: `ssl game crash` "Shaker hasn't been found. (EngineStart)" (`PropTruckShakerNativeController.StartShaker` from `BlueprintNodeTruckShaker.Play` on `OnEngineStarting`). The Mammoth class plays shakers "EngineStart" / "EngineShutdown" but its `prop_truck_shaker_native_controller` is empty. 0 probe samples | Game (engine headless) |
+| - | RC61, RC62 | not launched under the first approval (stop on a failed launch, no relaunch) | - |
+| 2-4 | RC60, RC61, RC62 parked, **engine off** (second approval, "3 runs engine-off") | All complete: 362/363/355 samples at about 9 Hz, about 2.5 min each. `terrain` and `linear` passed their checks on RC61 and RC62. Readback confirmed each build: layers, motors and prismatic limits. No kit file changed through the links. Results: `C:\RC_RE\bench-headless\mammoth\results.md` | Game (engine headless) |
+
+Mammoth facts for later benches (Game):
+- Markup constraint names are `<child body>|<parent body>`, e.g. `BoneSuspFrontLeft_cdt|BoneChassis_cdt`.
+- `GetCurrentPosition` of a prismatic with `childRotation [90,0,0]` is + = down (droop). It matched the body offset
+  to 1 mm.
+- The chassis body's `GetForward` is world-down. The bench's hull pitch therefore reads -90 at rest, and its
+  roll/pitch are in a rotated frame (positions, heights and joints are unaffected).
+- A truck that falls off the pad makes the pad-height depth meaningless: check the positions.
+
+**Pitfall: engine start can crash the editor engine.** A truck whose blueprint plays a shaker the class does not define
+dies on `isEngineOff.Set(false)`. Before an engine-on scenario, check the class: every
+`BlueprintNodeTruckShaker.shakerName` must exist in `prop_truck_shaker_native_controller`. Otherwise leave the
+engine off (`"engine": false` sends no engine statement).
 
 ## Scene, play mode, truck, screenshot (`scene` command; Build with the fake, not yet run live)
 
@@ -201,6 +303,7 @@ after. `session.json` holds the client snapshot (`clientsBeforeEditor`) and ever
 ## Code
 
 `src/roadcraft/engine.py` (command line, layouts, gates, hub client, `EngineSession`),
+`src/roadcraft/pak_overlay.py` (a built pak over an editor project copy),
 `src/roadcraft/bench_headless.py` (scenario, SSL, timetable, analysis, capture, CLI),
 `integrations/consoletre-hub/` (helper), `src/roadcraft/quiet.py` (`priority=`, `pipes=`),
 `tests/test_engine.py`, `tests/test_bench_headless.py`, `tests/fake_engine.py`.

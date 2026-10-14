@@ -1003,6 +1003,20 @@ for this cab is open until the owner drives. Evidence: tools/glass_fit.py
 history/attempt_001_lamp_glass_misassigned (and attempt_002: the audit first rejected links to shipped game textures), reports/glass_jobs_recover_applied_scoped.json. Installed 2026-10-13 as `be7cb530...` over `ed0cf96f...` with transaction receipt `transactions/a3d6bfdb623245519b2c48e3dea88469`.
 
 
+### Roamer cut-off proxies hidden from the class init (2026-10-13)
+
+**Build / installed, not driven:** a second candidate for the dark-windscreen report, on top of the glass
+fix. The maintained validator's RC074 (engine code analysis) shows markup `objSettings` visibility is applied
+only with `exportedVersion` >= 2; no Roamer or retail truck markup sets it, so the two cut-off volume proxies
+(`r105_mod_105_windshield`, 624 faces, a materialless copy of the window mesh; `r105_mod_105_cockpit`, a cab box)
+were probably rendered. `campaign/proxies_20261013_02` adds a `HideCutoffProxies` show/hide node fired from the
+existing `OnInit_1` to the source overlay and the eleven colour classes; only those eleven class members changed
+and `roadcraft validate --baseline` reported no new findings. Setting `exportedVersion` was rejected because it
+would also switch on 27 collision and the lighting entries. Installed as `1224b0f8...`, transaction
+`transactions/a3097eb54c4342bfb1ba8a3ae4ca5046`. Which of the two candidates (film or proxies) fixes the report,
+and whether the cut-off volume still works, is open until the owner drives.
+
+
 ### Dump Twuck: native behavior passes before camera review
 
 **Native private fixture, 2026-10-01:** build-010 passed 603 package checks,
@@ -1728,6 +1742,25 @@ Owner: "All the textures are a bit of a mess ... I need a clean interior". Shipp
   the custom corner normals with x negated), then check the knobs against their labels.
 - **Install guard vs another session's SDK work** (grade: Observed): `asset_importer.exe` from another mod's build
   blocks the install (BLOCKED_PROCESS, nothing changed). Wait for every SDK tool to exit before the final install.
+- **Long travel needs IK slide for the straight-line slot path** (grade: Build arithmetic; owner feedback Game). First
+  drive (forklift tilt screenshot): "I want it to be able to flex here": droop 0.28 / 0.32 m left the lifted side's wheels
+  hanging. v3 (`ccfb1d8c...`) droops 0.45 / 0.55 m. Independent axle frames move straight up and down, not on the
+  A-arm's arc, so an arm aimed at its slot gets ~0.30 m longer at 0.45 m droop (lower A-arm, 0.69 m long); the old
+  +-0.12 PRISMATIC range would have left the arm short of its upright. Compute each chain's length change over
+  -bump..+droop before choosing slide ranges, and skin such links with rigid ends and a stretching middle rather than
+  a hard split (a split opens a gap on extension).
+- **More droop does nothing without preload** (grade: Game owner report; cause confirmed from code by the laptop,
+  physics_semantics.md "Unloaded wheel rest", 2026-10-14). v3's droop 0.45 / 0.55 with height 0.153: owner "worse now ...
+  wheels still don't droop" in the same forklift tilt. An unloaded wheel settles at the spring neutral (position =
+  height), so a droop stop below the neutral is never reached. Retail scouts preload: Armiger height 0.275 / max -0.05,
+  Minuteman 0.33 / -0.08, Invictus 0.38-0.30 / 0 (neutral at or past the droop stop). v4 (`87f431d1...`): neutral 0.02 past
+  the droop stop (max -0.02), height 0.42 / 0.50, strength 0.0053 / 0.0050 for rest as modelled at beta 105, damping
+  0.10 / 0.11. It rests on its bump stops if beta is nearer 58. **Open** until the next tilt and drive.
+- **Softened for preload, re-balance the damping** (grade: Game owner report on v4; fix Build, Inferred). v4 fixed the flex
+  ("That fixed it"), but "wheels feel like they have no weight and follow the road too perfectly ... dont bounce".
+  Preloading cut strength ~2.7x while damping fell only 0.14 -> 0.10, so damping / strength rose to ~19 (retail Armiger
+  ~10, Apoc buggy chatter at ~6.7). v5 (`fbc12bd8...`): damping 0.06 (~11x) and wheel mass 95 -> 130 kg (Armiger 125).
+  When strength changes, scale damping with it; the ratio band 7-10 is an inference from three vehicles, not a law.
 
 ## WALL-E r2 stability investigation (2026-10-05)
 

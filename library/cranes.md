@@ -206,3 +206,49 @@ stops at `maxTargetPositionError` and the boom moves stop-start. Grades: retail 
 (no Mod Editor runs, owner rule). Evidence: kanga25_mod `kanga_config.py` (CRANE_IK_CAPS, NO_COLLISION_BODIES, hook
 JOINTS entry), `prepare_mod.py` ragdoll branch.
 
+## Reaching the operator-cab camera; hook show/hide (KGS-25 v8, 2026-10-14)
+
+**Owner (Game):** "Cant find operator cab view?" **How the game reaches it (Retail, code:
+`ssl/camera/game_camera_vehicle_switcher.ssc`, `ssl/game/truck/player_input_truck_controller.ssc`):** the vehicle
+camera has two independent states, first/third person and VEHICLE/EQUIPMENT. `game_camera_equipment_cockpit` is
+first person + EQUIPMENT, found by `prop_game_camera_user.additionalActivationLogics[*].info.cameraUid`. Two ways in:
+the named action `TOGGLE_EQUIPMENT_CAMERA` (HUD "UID_HUD_EQUIPMENT_MODE", `fourthAction` on the Baikal 5916 and the
+KGS) pressed while in the cockpit view, or entering crane controls (legacy mode) from the cockpit view. The HUD hint
+shows only when `CanSwitchEquipmentCamera` holds (first person needs both the cockpit and the equipment-cockpit
+logic). Tell owners: cockpit camera first, then Equipment mode / crane mode.
+
+**Hook block (Build, drive Open):** the modelled hook hides on OnAttached and shows on OnDetached, all seven meshes
+skinned to the hook bone listed; the pass-1 outrigger triggers are gone (owner: hook "never comes back"). See
+symptoms.md, "A hidden part leaves stray vertices behind".
+
+
+## SuperHeavy Crane audit (2026-10-14): joint axes taken from the wrong bone frame (Build; drive Open)
+
+A client's editor-built 12-axle crane (`SuperHeavy Crane.pak`, 17-section 213 m boom, swing-out outriggers) had
+every crane joint on the wrong axis. Its childRotations were the identity-bone values (`[90,-90,0]` vertical,
+`[0,0,0]` along the stowed boom) on bones that point **up** in Blender, so by the [frames.md](frames.md) bone rule
+(native Z = minus head -> tail) the compiled node table showed native Z straight down: the 17 telescope prismatics
+slid each section out of the bottom of the boom (the client's "sections fan apart"), slew turned about the fore-aft
+axis, the pod swing hinges about a horizontal axis, the inner beams slid vertically and the jacks fore-aft. Luff was
+right only because its bone pointed along the boom. **Rule (Build, compiled frames checked with `tpl-nodes`):** never
+copy a childRotation between rigs; compute it from the child bone's frame for the intended world axis
+(`zombie_crane/tools/fix_model.py` `rot_for`: native frame from the bone matrix, then `vehicle.child_rotation`).
+
+Fix (candidate c1, installed, not driven): 2 IK telescope bodies (sections 9 and 17, identity bones) and the other
+15 sections as linear-blend followers - section i skinned base/tele_9 at i/9 below 9, tele_9/tele_17 at (i-9)/8 above
+- which generalises the Kanga 25 half-way follower to any number of nested sections (posed check: every section 1.08 m
+inside its neighbour at full extension). Also: no suspension at all (RC063, strength 0), the lit material in every
+lamp state (RC067), a 0.5 m/s IK prismatic cap for 200 m of travel, an 80 m winch on a 213 m boom, and no visual IK
+on the luff cylinders. The editor's Build Mod packs material instances under `materials/<name>_<guid>.mi`; the
+validator now resolves that folder too (it reported 73 false RC070 errors).
+
+**Follow-up (c1 drive, owner: "All the controls are messed up and dont do the correct thing"):** the crane IK moves
+its target in the **first chain body's** frame: `prop_ik.ssc` `UpdateTargetPosition` builds the effector frame from
+`GetRootTransform()` (that body + `rootBodyLocalOffset`), uses its native Y as up and rotates the target about its
+position. The client's root `BoneChassis_cdt` pointed up in Blender (native Y along the truck, native Z into the
+ground), so crane "up" ran along the truck. Every retail crane chain body is identity (ZiKZ 612C Body, Tower,
+Segment_1, Segment_2; Kanga 25 too). **Rule (SSL source + compiled frames):** make the chain bodies identity, put
+`rootBodyLocalOffset` on the slew axis (at luff-pin height), and check the class's other offsets on those bodies
+(winch points, VFX boxes) were authored for that frame. Also missing in the client class: `equipmentCameraType CRANE`
+on `prop_camera_equipment_preset` (ZiKZ, Kanga), crane sound graph (`Addon`), effect emitter nodes
+(`sfx_exhaust_*`, `sfx_radiator_haze`) and the effect/sound links in the class `.resource`. c3 installed; drive Open.

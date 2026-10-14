@@ -76,6 +76,8 @@ A project for the tools is a relocatable SDK project folder (`.project` referenc
 | `mod-recipe` vehicle recipes have no `validate` step: run `roadcraft validate <candidate.pak> --baseline <installed or previous candidate>` by hand before installing, and keep its JSON with the candidate's evidence | Build (WALL-E r6 audit, 2026-10-13) |
 | `jobs-recover` with an installed review candidate (empty `accepted`) needs the registry candidate's `receipt` pin to be a package receipt naming the candidate (`{"candidate": <name>, "packageSha256": <sha>, "accepted": false}`, as `package/candidates/<name>/package_receipt.json` in the grader and buggy projects); a package *transaction* receipt pinned there fails with "Pinned candidate receipt does not identify the installed candidate". Every `<transactions root>/*/receipt.json` must also be listed in `transactionReceipts` ("An unlisted transaction receipt blocks candidate recovery"), and the chain of previous/candidate hashes must end at the live package. The Roamer registry was converted on 2026-10-13 (transaction receipts moved to `installReceipt`) | Build (Roamer 105 glass campaign; recovery receipt `jobs/20261012T231634Z-c93e35c53b46/job_recovery_*.json`) |
 | `mod_pak_builder` packs only resources reachable through `.resource` links from the roots: when a material instance stops linking a texture that no other instance links, that texture's `pct/<n>.pct.resource`, `pct/<n>_<i>.pct_mip`, `td/<n>.td` and `td/<n>.td.resource` members disappear from the pak. A member-level package audit must expect exactly those removals and check that every `res://pct/<n>.pct.resource` link in the packed `.mi.resource` files resolves to a packed mod texture; links to shipped game textures (`flat_nm`, `wipers_flow_01`, `wipers_noise_01` from the wiper/rain instances) are never packed and must be excluded | Build (Roamer 105 glass campaign attempts 001 and 002) |
+| A pinned recipe pins the shared toolchain's runtime files, so another session editing `src/roadcraft` invalidates it mid-run ("Stale or missing input ... cli.py", "changed pinned input ... pak_build.py"). For a campaign built while others change the toolchain, copy the runtime into the campaign (`toolchain-runtime/`, with `runtime_snapshot.json`) and pin with `ROADCRAFT_TOOLCHAIN` pointing at it | Build (Roamer 105 winch 2026-10-01 and proxy campaign 2026-10-13) |
+| `mod_pak_builder` writes `.cls` members with CRLF line endings while Python `read_text` normalises the source to LF: compare class text with line endings normalised (byte equality with the source file still holds) | Build (Roamer 105 proxy campaign) |
 | Native steps and `jobs-recover` are blocked by any session's `mod_pak_builder.exe` / `furnace.exe` on the machine, not only this project's: with several mod sessions packaging concurrently, run them through a patient gate that re-enumerates until the consumers exit rather than retrying by hand | Build (Roamer 105, 2026-10-13: three furnace and two packager processes from other sessions) |
 
 | The editor's Documents folder may be OneDrive-redirected: its working copy and built mods live there, and sync is a suspect in file-lock failures | Build |
@@ -1085,3 +1087,39 @@ identities. Global SDK settings were unchanged; no heading controller shipped.
 **SDK/Game, isolated native editor:** WheelsLibrary's live truckWheels is populated by AutogenLibrariesCreator scanning `res://autogen_dw/trucks/auto_<truck>/auto_<truck>_truck_wheel_info.sso.resource` and the corresponding truck_info descriptor. Editing an aggregate auto_wheels_library SSO or only placing a flat mod suffix file did not populate this source fixture. Canonical descriptor aliases referring to the exact production SSO bytes fixed fixture startup. Production packaged-mod entries retain their .mod suffix identities; do not ship fixture aliases or alter the stock global library. The editor fixture registration is a different path from packaged-mod registration.
 
 The Y61 ShowHideGeomObjects graph also required explicit class-resource imports for `ssl/game/truck/blueprint_node_show_hide_geom_objects.sso.resource` and `ssl/ssl/lib/blueprint/blueprint_time_library.ssolib.resource`. A graph present in class text can still fail because its native class is not imported. Shipped readable script sources are in `default_non_retail_resources.pak`; descriptors and compiled modules have separate storage. Evidence: WatcherY61_Final `native_tests/sdk_sources/autogen_libraries_creator.ssc`, `register_editor_entities.py`, `reports/lamp_dependency_fix.json`, failed jobs 20261005T181821Z-1ccb9e3c2f35 and 20261005T182203Z-3ed28c4d3af5, successful canonical job 20261005T182937Z-f6f617d26e50. Existing source-fixture checks remain project-specific because mod manifests use a distinct registration path.
+
+## One ship script per project at a time (L275 v42, Claude, 2026-10-14)
+
+- **Finding and action:** two copies of the same `ship.sh` (both waiting on "game closed", both released at 08:05:05)
+  ran `build.py models` together. Both saved the 649 MB zstd `l275_minespec.blend` in `mods_source` (08:07:18, 08:09:26).
+  The first copy's `render_preview.py` opened the blend while the second was mid-save and failed with
+  `File format is not supported`. Its `preview.log` was empty because `run_blender_art.py` writes Blender output to
+  `reports/art_<label>.log`. Before starting a ship, check that no other `ship.sh`, `build.py` or
+  `run_blender_art.py` is running for the project (`Get-CimInstance Win32_Process` command lines). Read
+  `reports/art_<label>.log` for preview failures.
+- **Scope and grade:** any project whose stages share `mods_source`; observed once, cause confirmed from process
+  start times and the blend mtimes.
+- **Evidence:** L275 `reports/dash_v42/ship.log` (models ok twice, 08:07:41 and 08:09:41; PREVIEW FAILED, then
+  preview ok 08:11:29), `reports/art_ui-preview-v42.log`. The surviving copy went on to build-143, test-144
+  (564 checks) and the validate gate (0 errors).
+- **Integration:** this note only. The deferred automation is a project lock file (`temp/ship.lock`, holding the
+  PID) taken at the start of the ship and released on exit.
+- **Limits:** a peer session's read-only Blender opening the same blend did not fail. Only a concurrent save did.
+
+## Crossing shells and coincident split copies: depth fight on the L275 door tops (L275 v44, Claude, 2026-10-14)
+
+- **Finding and action:**
+  - **Two shells crossing.** "Door-top paint flickers like 2 intersecting meshes": each source door is two body shells, the framed door and a lower shell. Along the door top and its rounded shoulder their surfaces cross, from 0.9 mm below to 0.7 mm above each other. The interior's door-top trim also carried coincident split copies (a face and its own triangles), which the exact vertex-set dedupe misses.
+  - **Why it showed now.** Both only became visible once the hifi layouts gave each face its own texels.
+  - **What fixed it.** `l275_minespec_mod/tools/door_shells.py` recesses the shell with the lower top into itself. It moves the vertices 2 mm along their own normals, at full depth within 15 mm of a crossing and tapering to zero at 40 mm. It runs on the source body before the cabin-paint split, and again per LOD. `tools/cab_coplanar.py` deletes faces fully hidden under a same-facing face.
+- **What did not work:**
+  - **Pushing single faces.** It drags their neighbours into new overlaps, and the passes never converge.
+  - **A straight -z drop of a whole shell top.** It opened crevices and dark slits on the curved shoulder (workbench renders), and repeated drops stacked a 5 mm step.
+- **Overlap test that works.** A sample point counts as covered only when it projects inside the other face, i.e. the closest point lies along the other face's own normal within 0.02 mm.
+  - Measuring against the sampling face's normal with a 0.15 mm tolerance flagged edge samples of small faces against their coplanar neighbours. That gave hundreds of false "coincident" hits.
+  - Use `BVHTree.find_nearest_range` (every face in range), not one ray cast. A ray started off the surface skips a coincident face.
+- **Holes and steps.** Check them with a ray grid (first-hit height before and after, misses = holes). Also render the actual view, because a vertical ray grid does not show slits seen at grazing angles.
+- **Side effect found.** cab_paint's in-cab ray test misclassifies faces whose ray hits the other crossing shell at once. That is why grey mud-covered streaks run through the blue no-mud door-top paint.
+- **Scope and grade:** L275 cab doors, LOD0-3. The geometry is measured. The in-game result is not yet driven.
+- **Evidence:** `C:/RC/l275_doortop` (scan.py, door.py, islands.py, raygrid.py, renders*, shells*); L275 build-147 / test-148.
+- **Integration:** this note. The deferred automation is a generic "crossing shells" check for every vehicle: cross-island same-facing pairs closer than 1 mm.

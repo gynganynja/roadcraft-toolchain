@@ -126,6 +126,33 @@ CODES: dict[str, tuple[str, str, str]] = {
               "code analysis, static; in-game check pending: consumer 0x1431e6c60 applies per-object objSettings only "
               "when exportedVersion >= 1 (collision), 2 (visibility), 3 (lighting, sorting, render); absent = 0 "
               "(list ctor 0x1435ca970); read_fields.json 'gated', read_fields.md 3a"),
+    "RC076": ("spring-motors", "load-bearing prismatic spring motor outside the retail regime",
+              "code analysis, static: hkpCalcMotorData (ME FUN_1442406f0) turns tpl_markup_spring_motor into "
+              "tau = k*dt^2/m_eff and damping = c*dt/m_eff, each clamped to [0, 1], m_eff = the row's virtual mass "
+              "from both bodies (FUN_14423aa80), maxForce = HK_REAL_MAX (FUN_141594b60); Retail: load-bearing "
+              "prismatic springs (lighter body >= 200 kg, TUZ Lynx family) reach 0.38 / 0.68 at most; Game: Mammoth "
+              "RC62 rear heave (0.86 / 4.0) shook and swung limit to limit parked (physics_semantics.md "
+              "'Spring-motor stability')"),
+    "RC077": ("save-compat", "saved vehicle state the baseline wrote and this version cannot restore",
+              "code analysis, static (C:/RC_RE/research/save_semantics.md): PropSavableObject.SetSavedProps matches "
+              "saved descs by type; TruckConstraintsSavablePropDesc.LoadData replaces the constraint state with the "
+              "saved one, then PropTruckConstraintView.RestoreFromSave does data.Get(chain.name) and the controller "
+              "indexes saved chains/stages/constraints by the current names ('key not found in dictionary', Retail "
+              "string); Game: L275 v35 'Toolboxes' chain hung old saves (library/save-compatibility.md)"),
+    "RC078": ("material-type", "material instance without a known __type: the game crashes at the main menu",
+              "code analysis, static: the retail .mi load job FUN_14214f0f0 runs for every .mi in a mod pak at "
+              "startup, linked or not, looks __type up in the material library (FUN_142979fa0) and reads +0x48 of "
+              "the result with no null check; the .mtl loader FUN_14214f880 falls back to 'mtl', the .mi loader "
+              "does not (C:/RC_RE/research/retail_crash_0x214f223.md); Game: Goliath RC7a's three beacon .mi "
+              "without __type crashed retail at the main menu with no message (AV exe+0x214f223, bisected)"),
+    "RC079": ("wheel-trail", "track trail on a wheel that has no model",
+              "code analysis, static: prop_truck_rb.ssc starts a caterpillar trail (PropWheelTrail.InitSFX, "
+              "propGeom transform) only for wheels named in wheelsWithTrail; the native trail update FUN_1404d56b0 "
+              "runs an extra branch only on deformable terrain (terrain +0x2940/+0x700) that reads the wheel geom's "
+              "bounds and a tracker (IsValid assert) (physics_semantics.md 'Terrain deformation under wheels'); "
+              "Retail: 144 of 144 caterpillar trail wheels have a model (sprocket/idler); Build/Game: every "
+              "KGS-25 variant puts its 4 trails on modelless contact wheels and crashed the editor engine on "
+              "deformable terrain only (cause not proven)"),
 }
 RULES = sorted({rule for rule, _, _ in CODES.values()} | {"bro-lint"})
 
@@ -793,6 +820,23 @@ class Context:
     def tpl_bytes(self, tpl_name: str | None) -> bytes | None:
         member = self.find_stem(tpl_name, ".tpl") if tpl_name else None
         return self.read(member) if member else None
+
+    def tree(self, tpl_name: str | None) -> TplNodes | None:
+        """Like :meth:`nodes`, with the parent array located (tpl_reader.find_parents); slower, so callers ask
+        for it only when they need the node tree.  None when the model or its parent array is not found."""
+        if not tpl_name:
+            return None
+        key = f"tree|{tpl_name.lower()}"
+        if key not in self._nodes:
+            data = self.tpl_bytes(tpl_name)
+            nodes = None
+            if data:
+                try:
+                    nodes = read_tpl_bytes(data, parents=True)
+                except (TplFormatError, ValueError, IndexError):
+                    nodes = None
+            self._nodes[key] = nodes if nodes is not None and nodes.parents is not None else None
+        return self._nodes[key]
 
     def markup(self, tpl_name: str | None) -> tuple[Any, str | None]:
         """Effective markup of a model: ``tpl/X.lods_base`` with ``X.tpl_markup`` merged on top (schema.md 4.1)."""
@@ -1488,6 +1532,35 @@ def rule_wheel_frames(ctx: Context, truck: Truck) -> None:
                 "inside out", key="properties.prop_truck_rb.wheelSlotWithDescs")
 
 
+def rule_wheel_trails(ctx: Context, truck: Truck) -> None:
+    """RC079: a slot named in ``wheelsWithTrail`` whose wheel class has a caterpillar trail but no model."""
+    trails = truck.rb.get("wheelsWithTrail")
+    if not isinstance(trails, dict) or not trails:
+        return
+    path = ctx.bundle.display(truck.name)
+    for index, slot in enumerate(truck.slots):
+        if not isinstance(slot, dict) or slot.get("geomName") not in trails:
+            continue
+        wheel = _wheel_class(ctx, truck, slot.get("editableWheel"))
+        wprops = (wheel or {}).get("properties")
+        if not isinstance(wprops, dict) or not isinstance(wprops.get("prop_truck_wheel"), dict):
+            continue
+        trail = wprops.get("prop_wheel_trail_rb") or wprops.get("prop_wheel_trail")
+        if not isinstance(trail, dict) or trail.get("isCaterpillar") is not True:
+            continue
+        geom = wprops.get("geom")
+        model = geom.get("nameTpl") if isinstance(geom, dict) else None
+        if isinstance(model, str) and model.strip():
+            continue
+        ctx.add("RC079", "warning", path,
+                f"wheelsWithTrail names slot {slot.get('geomName')!r}, whose wheel {slot.get('editableWheel')!r} has "
+                "a caterpillar trail but no model (no geom.nameTpl). No retail crawler does this: they put the "
+                "trails on the sprocket and idler (wheels with a model, e.g. EPEC TC305 roller_left0/12). Every "
+                "KGS-25 variant does it and crashed the editor engine on deformable terrain (cause not proven). "
+                "Name the end wheels that have a model in wheelsWithTrail instead",
+                key=f"properties.prop_truck_rb.wheelsWithTrail.{slot.get('geomName')}")
+
+
 def rule_suspension(ctx: Context, truck: Truck) -> None:
     path = ctx.bundle.display(truck.name)
     rb = truck.rb
@@ -1611,6 +1684,111 @@ def rule_joints(ctx: Context, markup: dict, markup_name: str, nodes: TplNodes | 
         if count > 1:
             ctx.add("RC065", "info", path, f"joint name {joint!r} is used {count} times (retail Junttan PM20 does this "
                     "too); controls that address joints by name reach only one", key="objectInfos")
+
+
+# ------------------------------------------------------------------------------------------------ spring motors
+
+SPRING_DT = 1.0 / 60.0                  # editor.cfg Physics.Substep.fixedFps (physics_semantics.md Q7)
+SPRING_RETAIL_TAU = 0.38                # retail load-bearing prismatic springs: TUZ Lynx trailer axle 0.375
+SPRING_RETAIL_DAMPING = 0.68            # TUZ Lynx trailer axles 0.675; frames 0.52
+SPRING_MIN_BODY_KG = 200.0              # lighter props (antennas, balloons, wires) run clamped in retail too
+
+
+def _body_masses(markup: dict) -> dict[str, float | None]:
+    """Markup physics body -> mass in kg (None when massFromDensity: the hull volume is not decoded)."""
+    out: dict[str, float | None] = {}
+    for info in markup.get("objectInfos") or []:
+        if not isinstance(info, dict):
+            continue
+        name = (info.get("objectId") or {}).get("name")
+        for prop in info.get("properties") or []:
+            if isinstance(prop, dict) and prop.get("__type") == "tpl_markup_object_property_physics" and name:
+                mass = prop.get("mass")
+                out[name] = None if prop.get("massFromDensity") is True or not isinstance(mass, (int, float)) \
+                    else float(mass)
+    return out
+
+
+def _body_above(nodes: TplNodes, name: str, bodies: dict[str, Any]) -> str | None:
+    """Nearest markup physics body above node ``name`` in the model tree (the '__parent' constraint target)."""
+    if nodes.parents is None or name not in nodes.index:
+        return None
+    by_index = {index: node for node, index in nodes.index.items()}
+    index = nodes.index[name]
+    for _ in range(len(nodes.parents)):
+        index = nodes.parents[index] if 0 <= index < len(nodes.parents) else -1
+        if index < 0:
+            return None
+        node = by_index.get(index)
+        if node in bodies:
+            return node
+    return None
+
+
+def rule_spring_motors(ctx: Context, markup: dict, markup_name: str, tpl_name: str | None) -> None:
+    """RC076: a prismatic ``tpl_markup_spring_motor`` between two bodies of >= 200 kg whose per-step solver numbers
+    leave the retail regime.  The engine turns spring k and damping c into k*dt^2/m_eff and c*dt/m_eff, each clamped
+    to [0, 1]; m_eff is the constraint row's virtual mass from the two connected bodies only, at most the reduced mass
+    m1*m2/(m1+m2), so the values here are lower bounds.  Hinge springs need the reduced inertia about the axis, which
+    is not decoded, and are not checked."""
+    if "spring-motors" not in ctx.rules:
+        return
+    path = ctx.bundle.display(markup_name)
+    masses = _body_masses(markup)
+    original = ctx.ps(markup_name)
+    original_infos = original.get("objectInfos") if isinstance(original, dict) else None
+    tree: TplNodes | None = None
+    tree_loaded = False
+    for oi_index, info in enumerate(markup.get("objectInfos") or []):
+        if not isinstance(info, dict):
+            continue
+        body = (info.get("objectId") or {}).get("name")
+        for e_index, entity in enumerate(info.get("entities") or []):
+            if not isinstance(entity, dict) or entity.get("__type") != "tpl_markup_constraint_prismatic":
+                continue
+            motor = entity.get("motor")
+            if not isinstance(motor, dict) or motor.get("__type") != "tpl_markup_spring_motor":
+                continue
+            k, c = motor.get("spring", 0), motor.get("damping", 0)
+            if not isinstance(k, (int, float)) or not isinstance(c, (int, float)):
+                continue
+            target = entity.get("target", "__parent")
+            if target == "__world":
+                continue
+            if target == "__parent":
+                if not tree_loaded:
+                    tree, tree_loaded = ctx.tree(tpl_name), True
+                target = _body_above(tree, body, masses) if tree is not None and body else None
+            m1, m2 = masses.get(body), masses.get(target) if target else None
+            if not m1 or not m2 or min(m1, m2) < SPRING_MIN_BODY_KG:
+                continue
+            m_red = m1 * m2 / (m1 + m2)
+            tau = k * SPRING_DT * SPRING_DT / m_red
+            damping = c * SPRING_DT / m_red
+            if tau <= SPRING_RETAIL_TAU and damping <= SPRING_RETAIL_DAMPING:
+                continue
+            notes = []
+            if damping > 1:
+                notes.append(f"damping is clamped to 1, so at most m_eff/dt = {m_red / SPRING_DT:.3g} N*s/m of the "
+                             f"{c:.3g} asked for is delivered ({100 * min(1.0, 1 / damping):.0f} %)")
+            if tau > 1:
+                notes.append(f"the rate is clamped to 1, so at most m_eff/dt^2 = {m_red / SPRING_DT ** 2:.3g} N/m of "
+                             f"the {k:.3g} asked for is delivered")
+            if not notes:
+                notes.append("not clamped, but beyond anything retail ships on a load-bearing prismatic")
+            try:
+                line = original_infos[oi_index]["entities"][e_index].line or None
+            except (TypeError, IndexError, KeyError, AttributeError):
+                line = None
+            ctx.add("RC076", "warning", path,
+                    f"spring motor on prismatic {body!r} against {target!r} ({m1:.0f} / {m2:.0f} kg): k*dt^2/m_eff "
+                    f">= {tau:.2f} and c*dt/m_eff >= {damping:.2f} at 60 Hz (m_eff <= {m_red:.0f} kg, the reduced mass; "
+                    f"the supported load is not in it); retail load-bearing prismatic springs stay at <= "
+                    f"{SPRING_RETAIL_TAU} / <= {SPRING_RETAIL_DAMPING}; " + "; ".join(notes),
+                    line=line, key=f"objectInfos[{oi_index}].entities[{e_index}].motor",
+                    fix=f"raise the lighter body's mass (take it from the heavier one) or keep spring <= "
+                        f"{SPRING_RETAIL_TAU * m_red / SPRING_DT ** 2:.3g} N/m and damping <= "
+                        f"{SPRING_RETAIL_DAMPING * m_red / SPRING_DT:.3g} N*s/m")
 
 
 def rule_ik_frames(ctx: Context, truck: Truck) -> None:
@@ -1814,12 +1992,26 @@ def rule_state_pairs(ctx: Context, lamp_states: set[str]) -> None:
                     key=f"materials.{slots[0]}.dynamicMaterials.{state}")
 
 
-def _mi_member(name: str) -> str:
-    return f"material_instances/{name.lower()}.mi"
+# Source projects and hand-packed mods keep material instances in material_instances/; the editor's Build Mod
+# renames every used asset to <name>_<guid> and packs them under materials/ (SuperHeavy Crane, 2026-10-14).
+MI_DIRS = ("material_instances", "materials")
+
+
+def _mi_member(name: str, folder: str = MI_DIRS[0]) -> str:
+    return f"{folder}/{name.lower()}.mi"
+
+
+def _mi_find(ctx: Context, name: str) -> str:
+    """The member holding material instance ``name`` (first folder that has it; the default folder otherwise)."""
+    for folder in MI_DIRS:
+        member = _mi_member(name, folder)
+        if ctx.source_of(member) is not None:
+            return member
+    return _mi_member(name)
 
 
 def _same_material(ctx: Context, a: str, b: str) -> bool:
-    da, db = ctx.ps(_mi_member(a)), ctx.ps(_mi_member(b))
+    da, db = ctx.ps(_mi_find(ctx, a)), ctx.ps(_mi_find(ctx, b))
     if not isinstance(da, dict) or not isinstance(db, dict):
         return False
     return json.dumps(da, sort_keys=True) == json.dumps(db, sort_keys=True)
@@ -1881,9 +2073,78 @@ def rule_materials(ctx: Context) -> None:
                     + (" and its lamp states" if states else "") + " is lost; give it its own object or texture", line=lines.get(slot), key=f"materials.{slot}")
 
 
+_MI_TYPE_LINE = re.compile(r'^[ \t]*__type[ \t]*=[ \t]*"?([^"\r\n]*?)"?[ \t]*$', re.M)
+_MP_PARENT = re.compile(r"res://material_presets/([^/\s]+?)\.mp\.resource", re.I)
+MI_CRASH = ("the retail game loads every .mi in the pak at startup, linked or not, and crashes at the main menu "
+            "(about 40-90 s after launch) with no message")
+
+
+def _mi_type(ctx: Context, name: str) -> tuple[bool, str, int | None]:
+    """(present, value, line) of a .mi's top-level ``__type``; a raw-text fallback when the editor cannot parse it."""
+    doc = ctx.ps(name)
+    if isinstance(doc, dict):
+        if "__type" not in doc:
+            return False, "", None
+        value = doc["__type"]
+        return True, value.strip() if isinstance(value, str) else "", getattr(doc, "lines", {}).get("__type")
+    text = (ctx.bundle.read(name) or b"").decode("utf-8-sig", errors="replace")
+    match = None
+    for match in _MI_TYPE_LINE.finditer(text):
+        pass                                          # the last top-level assignment wins in a flat document
+    if match is None:
+        return False, "", None
+    return True, match.group(1).strip(), text.count("\n", 0, match.start()) + 1
+
+
+def rule_material_type(ctx: Context, notes: list[str] | None = None) -> None:
+    """RC078: every .mi must have a non-empty ``__type`` naming a material template (retail material_presets /
+    master_materials, or the mod's own .mp/.mm/.mtl)."""
+    if "material-type" not in ctx.rules:
+        return
+    mis = [n for n in ctx.bundle.names() if n.lower().endswith(".mi")]
+    if not mis:
+        return
+    own = {n.rsplit("/", 1)[-1][: -len(ext)] for n in ctx.bundle.names()
+           for ext in retail.MATERIAL_TEMPLATE_EXTENSIONS if n.lower().endswith(ext)}
+    library = retail.material_templates(ctx.game_root) if ctx.retail is not None and ctx.game_root else frozenset()
+    known = set(library) | own if library else None
+    if known is None and notes is not None:
+        notes.append("RC078: no retail material library (material_presets/*.mp) found: only missing or empty "
+                     "__type checked, not unknown names")
+    typed: dict[str, list[str]] = {}
+    for name in mis:
+        present, value, _ = _mi_type(ctx, name)
+        if present and value:
+            typed.setdefault(value, []).append(name.rsplit("/", 1)[-1])
+    for name in mis:
+        present, value, line = _mi_type(ctx, name)
+        path = ctx.bundle.display(name)
+        resource = ctx.bundle.read(name + ".resource") if ctx.bundle.has(name + ".resource") else b""
+        parent = _MP_PARENT.search(resource.decode("utf-8", errors="replace"))
+        if parent:
+            fix = (f'add __type = "{parent.group(1)}" (the preset its .mi.resource parents names); copy __type from '
+                   "the matching retail MI or the mod's other MIs of the same preset")
+        else:
+            fix = "copy __type from the matching retail MI or the mod's other MIs of the same preset"
+            if typed:
+                fix += " (this mod uses " + ", ".join(sorted(typed)) + ")"
+        if not present:
+            ctx.add("RC078", "error", path, f"material instance has no __type line: {MI_CRASH} "
+                    "(null material template read at +0x48, exe+0x214f223)", key="__type", fix=fix)
+        elif not value:
+            ctx.add("RC078", "error", path, f"material instance has an empty __type: {MI_CRASH}", line=line,
+                    key="__type", fix=fix)
+        elif known is not None and value not in known:
+            close = [k for k in known if k.lower() == value.lower()] or difflib.get_close_matches(value, sorted(known), 1)
+            ctx.add("RC078", "error", path,
+                    f"__type {value!r} names no material in the retail material library (material_presets, "
+                    f"master_materials) or this mod: the lookup returns null and {MI_CRASH}", line=line,
+                    key="__type", fix=(f'did you mean __type = "{close[0]}"? ' if close else "") + fix)
+
+
 def _material_look(ctx: Context, entry: dict) -> tuple[str | None, str]:
     """(base texture, preset) of a markup material slot's instance."""
-    mi = ctx.ps(_mi_member(str(entry.get("materialName", ""))))
+    mi = ctx.ps(_mi_find(ctx, str(entry.get("materialName", ""))))
     if not isinstance(mi, dict):
         return None, ""
     texture = None
@@ -1962,8 +2223,8 @@ def rule_references(ctx: Context) -> None:
                 specs += [(f"dynamicMaterials.{state}.materialName", (s or {}).get("materialName"))
                           for state, s in (entry.get("dynamicMaterials") or {}).items() if isinstance(s, dict)]
                 for key, material in specs:
-                    if isinstance(material, str) and material and not present(_mi_member(material) + ".resource") \
-                            and not present(_mi_member(material)):
+                    if isinstance(material, str) and material and not any(
+                            present(_mi_member(material, folder) + ext) for folder in MI_DIRS for ext in (".resource", "")):
                         missing(path, f"materials.{slot}.{key}", material, "material instance",
                                 getattr(materials, "lines", {}).get(slot))
         elif lower.endswith(".mi"):
@@ -2025,6 +2286,225 @@ def rule_bro(ctx: Context) -> None:
                                         f"lint-bro {f['code']} ({f['library']})", f["code"], f["where"]))
 
 
+# ------------------------------------------------------------------------------------------------ save-compat
+
+CONSTRAINT_DESC = "TruckConstraintsSavablePropDesc"
+CARGO_DESC = "TruckStorageSavablePropDesc"
+OWNER = "OWNER"                     # PropTruckConstraintView.OWNER, the default addon of a chain constraint
+
+
+def _named(value: Any) -> list[tuple[str, Any]]:
+    """Entries of a ``[collection]`` field: a PS dict keyed by the ``[magic]`` name, or a list with ``name``."""
+    if isinstance(value, dict):
+        return [(str(k), v) for k, v in value.items() if not str(k).startswith("__")]
+    if isinstance(value, list):
+        return [(str(v.get("name", i)) if isinstance(v, dict) else str(i), v) for i, v in enumerate(value)]
+    return []
+
+
+def _list(value: Any) -> list:
+    if isinstance(value, list):
+        return value
+    if isinstance(value, dict):
+        return [v for k, v in value.items() if not str(k).startswith("__")]
+    return []
+
+
+@dataclass
+class SavableDescriptors:
+    """What restore looks up for one class (save_semantics.md): the savable desc types, and for the constraint
+    desc the powered constraints by index, the controllable ones by name, the sequential chains by name with each
+    stage's (addon, constraint) set by stage index, and the cargo slots."""
+    member: str
+    types: list[str]
+    powered: list[str]
+    controllable: list[str]
+    chain_refs: set[str]            # controllable constraints referenced by constraintChains links
+    sequential: dict[str, list[tuple[str, set[tuple[str, str]]]]]
+    cargo_slots: dict[str, bool]
+
+
+def savable_descriptors(ctx: Context) -> dict[str, SavableDescriptors]:
+    """Every class of the target with a ``prop_savable_object``, keyed by lower-case member path."""
+    out: dict[str, SavableDescriptors] = {}
+    for name in ctx.bundle.names():
+        if not name.lower().endswith(".cls"):
+            continue
+        data = ctx.bundle.read(name)
+        if b"prop_savable_object" not in data and b"__type" not in data:
+            continue
+        doc = _merged_class(ctx, name)
+        props = (doc or {}).get("properties") if isinstance(doc, dict) else None
+        holder = props.get("prop_savable_object") if isinstance(props, dict) else None
+        if not isinstance(holder, dict):
+            continue
+        types = []
+        for item in _list(holder.get("savablePropDescs")):
+            desc = item.get("desc") if isinstance(item, dict) else None
+            if isinstance(desc, dict) and isinstance(desc.get("__type"), str):
+                types.append(desc["__type"])
+        view = props.get("prop_truck_constraint_view")
+        view = view if isinstance(view, dict) else {}
+        powered = [c.get("constraintName", "") for c in _list(view.get("powerConstraints")) if isinstance(c, dict)]
+        controllable = [c.get("constraintName", "") for c in _list(view.get("controllableConstraints"))
+                        if isinstance(c, dict)]
+        refs = set()
+        for _, chain in _named(view.get("constraintChains")):
+            for link in _list(chain.get("links") if isinstance(chain, dict) else None):
+                if isinstance(link, dict) and link.get("constraint") in controllable \
+                        and link.get("addon", OWNER) == OWNER:
+                    refs.add(link["constraint"])
+        sequential: dict[str, list[tuple[str, set[tuple[str, str]]]]] = {}
+        for chain_name, chain in _named(view.get("constraintSequentialChains")):
+            stages = []
+            for stage_name, stage in _named(chain.get("links") if isinstance(chain, dict) else None):
+                pairs = {(str(c.get("addon", OWNER)), str(c.get("constraintName", "")))
+                         for c in _list(stage.get("constraints") if isinstance(stage, dict) else None)
+                         if isinstance(c, dict)}
+                stages.append((stage_name, pairs))
+            sequential[chain_name] = stages
+        cargo = props.get("prop_truck_cargo_controller")
+        cargo = cargo if isinstance(cargo, dict) else {}
+        slots = {k: isinstance(cargo.get(k), dict) for k in ("firstCargoSlot", "secondCargoSlot")}
+        out[name.lower()] = SavableDescriptors(name, types, powered, controllable, refs, sequential, slots)
+    return out
+
+
+_TRUCK_INFO = re.compile(r"^(?:.*/)?auto_(?!wheel_|preview_)(.+?)_truck_info_[^/]*\.sso\.resource$", re.I)
+
+
+def truck_identities(bundle: Bundle) -> dict[str, str]:
+    """Truck library names of a mod: ``auto_<name>_truck_info_<suffix>.sso.resource`` -> ``<name>``
+    (AutogenLibrariesCreator.ExtractModTagDirName / CreateKeyByDir); the save origin is truck_manager_rb_<name>."""
+    out = {}
+    for name in bundle.names():
+        match = _TRUCK_INFO.match(name)
+        if match:
+            out[match.group(1).lower()] = name
+    return out
+
+
+def rule_save_compat(ctx: Context, baseline: Context) -> None:
+    """RC077: compare the candidate's savable descriptors with the baseline's (the version existing saves were
+    written with).  error = restore or the first use of the restored state indexes a key or index the save lacks
+    (crash: the L275 v35 hang); warning = saved state dropped or applied to something else."""
+    if "save-compat" not in ctx.rules:
+        return
+    new = savable_descriptors(ctx)
+    old = savable_descriptors(baseline)
+    view_key = "properties.prop_truck_constraint_view"
+    old_ids, new_ids = truck_identities(baseline.bundle), truck_identities(ctx.bundle)
+    for ident, tag in sorted(old_ids.items()):
+        if ident not in new_ids:
+            ctx.add("RC077", "warning", ctx.bundle.display(tag),
+                    f"truck identity {ident!r} is gone (save origin 'truck_manager_rb_{ident}'): saved trucks of it are "
+                    "not recreated (ActorSaveManager.CreateActorFromSave finds no registered origin and returns null; "
+                    "the truck silently disappears from the save)", key=f"truck_info.{ident}",
+                    fix=f"keep 'auto_{ident}_truck_info_' in the .sso.resource name; a new identity is a new truck")
+    unmatched_new = [m for m in new if m not in old]
+    for member, base in sorted(old.items()):
+        cand = new.get(member)
+        if cand is None and len(unmatched_new) == 1 and len([m for m in old if m not in new]) == 1:
+            cand = new[unmatched_new[0]]          # the class file was renamed (e.g. a new suffix): compare anyway
+        if cand is None:
+            ctx.add("RC077", "warning", ctx.bundle.display(base.member),
+                    f"class {base.member} with saved state is gone from the candidate: saved actors of it are not "
+                    "restored against it", key="properties.prop_savable_object")
+            continue
+        path = ctx.bundle.display(cand.member)
+        removed = [t for t in dict.fromkeys(base.types) if t not in cand.types]
+        added = [t for t in dict.fromkeys(cand.types) if t not in base.types]
+        for t in removed:
+            ctx.add("RC077", "warning", path,
+                    f"savable desc {t} was removed: the state it saved is ignored on load (SetSavedProps only loads "
+                    "saved descs whose type the class still lists)", key=f"properties.prop_savable_object.{t}",
+                    fix="intended only as the defensive fix for an incompatible change (symptoms.md 'loads forever')")
+        for t in added:
+            ctx.add("RC077", "info", path,
+                    f"savable desc {t} is new: saves from the baseline restore its state from the class defaults"
+                    + ("; saves older than the baseline that still carry it are restored against this class"
+                       if t == CONSTRAINT_DESC else ""), key=f"properties.prop_savable_object.{t}")
+        if CARGO_DESC in base.types and CARGO_DESC in cand.types:
+            for slot, present in base.cargo_slots.items():
+                if present and not cand.cargo_slots.get(slot):
+                    ctx.add("RC077", "error", path,
+                            f"cargo slot {slot} was removed: a save with cargo in it calls ChangeCargo on a null slot "
+                            "(assert 'cargo slot is not setted' in PropTruckCargoController)",
+                            key=f"properties.prop_truck_cargo_controller.{slot}",
+                            fix="keep the slot, or drop TruckStorageSavablePropDesc")
+        if not (CONSTRAINT_DESC in base.types and CONSTRAINT_DESC in cand.types):
+            continue
+        # The saved TruckConstraintGlobalState replaces the one SetState built from the current class.
+        if len(cand.powered) != len(base.powered):
+            ctx.add("RC077", "error", path,
+                    f"powerConstraints count changed {len(base.powered)} -> {len(cand.powered)}: the save keeps the old "
+                    "array and the view/unit index it by the current positions (powerConstraints[i] / "
+                    "poweredConstrains[index] out of range)", key=f"{view_key}.powerConstraints",
+                    fix="keep the count; add new joints as controllable constraints, or drop "
+                        "TruckConstraintsSavablePropDesc")
+        else:
+            for i, (a, b) in enumerate(zip(base.powered, cand.powered)):
+                if a != b:
+                    ctx.add("RC077", "warning", path,
+                            f"powerConstraints[{i}] renamed {a!r} -> {b!r}: powered state is saved by index, so the "
+                            f"saved target of {a!r} drives {b!r}", key=f"{view_key}.powerConstraints[{i}]")
+        for name in cand.controllable:
+            if name in base.controllable:
+                continue
+            if name in cand.chain_refs:
+                ctx.add("RC077", "error", path,
+                        f"controllable constraint {name!r} is new and a constraintChains link uses it: the controller "
+                        "reads globalState.controlledConstrains.Get(name), which the old save lacks",
+                        key=f"{view_key}.controllableConstraints.{name}",
+                        fix="drop TruckConstraintsSavablePropDesc, or keep the joint out of constraintChains")
+            else:
+                ctx.add("RC077", "warning", path,
+                        f"controllable constraint {name!r} is new: an old save has no target for it (it stays at the "
+                        "model pose until moved); coop clients read controlledConstrains[name] when the host moves it",
+                        key=f"{view_key}.controllableConstraints.{name}")
+        for name in base.controllable:
+            if name not in cand.controllable:
+                ctx.add("RC077", "warning", path,
+                        f"controllable constraint {name!r} was removed or renamed: its saved target is still applied "
+                        "by name on load (SetConstraintTarget dereferences a null joint if the model lost it)",
+                        key=f"{view_key}.controllableConstraints.{name}",
+                        fix="keep the joint name in the model; renaming = removing plus adding")
+        for chain, stages in cand.sequential.items():
+            key = f"{view_key}.constraintSequentialChains.{chain}"
+            saved = base.sequential.get(chain)
+            if saved is None:
+                ctx.add("RC077", "error", path,
+                        f"sequential chain {chain!r} is new: PropTruckConstraintView.RestoreFromSave does "
+                        f"data.Get({chain!r}) on the old save's chains (key not found: the game hangs loading)",
+                        key=key, fix="drop TruckConstraintsSavablePropDesc from prop_savable_object (constraint state "
+                                     "is then not saved), or ship the chain as a new truck identity")
+                continue
+            if len(stages) != len(saved):
+                ctx.add("RC077", "error", path,
+                        f"sequential chain {chain!r} has {len(stages)} stages, the save {len(saved)}: the controller "
+                        "indexes the saved links by the current stage index (out of range when the chain runs, or at "
+                        "once if the save stopped past the new end)", key=f"{key}.links")
+            for i, (stage, pairs) in enumerate(stages[:len(saved)]):
+                saved_pairs = saved[i][1]
+                for addon, cname in sorted(pairs - saved_pairs):
+                    ctx.add("RC077", "error", path,
+                            f"sequential chain {chain!r} stage {i} ({stage}) gained {cname!r}"
+                            + (f" on addon {addon!r}" if addon != OWNER else "")
+                            + ": the controller reads links[i].addons[addon].constraints[name] from the saved chain "
+                              "(key not found when the chain runs)", key=f"{key}.links.{stage}.{cname}")
+                for addon, cname in sorted(saved_pairs - pairs):
+                    ctx.add("RC077", "warning", path,
+                            f"sequential chain {chain!r} stage {i} ({stage}) lost {cname!r}: the saved target is "
+                            "still applied by name on load (null joint if the model lost it)",
+                            key=f"{key}.links.{stage}.{cname}")
+        for chain in base.sequential:
+            if chain not in cand.sequential:
+                ctx.add("RC077", "warning", path,
+                        f"sequential chain {chain!r} was removed or renamed: the saved chain is kept in the state and "
+                        "its current stage targets are still applied by joint name (null joint if the model lost it)",
+                        key=f"{view_key}.constraintSequentialChains.{chain}")
+
+
 def count_retail_ignored(game_root: str | Path | None = None, out: str | Path | None = RETAIL_IGNORED_FILE) -> dict:
     """Count RC072 dead keys in retail content (every retail .cls, .prop and .tpl_markup) per (type key, key)
     with this module's walker and read-fields tables, and write data/retail_ignored_counts.json.  Takes about
@@ -2077,9 +2557,11 @@ def _read_fields_of(read_fields: Any) -> ReadFields:
 
 
 def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_root: str | Path | None = None,
-             read_fields: ReadFields | dict | None = None, notes: list[str] | None = None) -> list[Finding]:
+             read_fields: ReadFields | dict | None = None, notes: list[str] | None = None,
+             baseline: str | Path | None = None) -> list[Finding]:
     """Findings for a mod folder or a built .pak (see the module docstring).  ``rules`` limits the rule names
-    (``RULES``); ``read_fields`` is the RC072 reader table (:class:`ReadFields`, a read_fields.json-shaped dict, or a
+    (``RULES``); ``baseline`` is the installed/older pak or tree existing saves were written with (enables the
+    RC077 save-compat rule, which only runs then); ``read_fields`` is the RC072 reader table (:class:`ReadFields`, a read_fields.json-shaped dict, or a
     legacy ``{type key: [fields read]}``); None loads data/read_fields.json when present.  Every finding carries
     its ``member`` path and stable ``id`` (:func:`finding_id`)."""
     selected = set(rules) if rules else set(RULES)
@@ -2113,7 +2595,10 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
     rule_duplicates(ctx)
     rule_references(ctx)
     rule_materials(ctx)
+    rule_material_type(ctx, notes)
     rule_bro(ctx)
+    if baseline is not None and "save-compat" in selected:
+        rule_save_compat(ctx, Context(open_target(baseline), retail_view, schema, selected, fields))
     checked_markups = set()
     lamp_states: set[str] = set()
     for truck in trucks(ctx):
@@ -2124,12 +2609,14 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
                 lamp_states.update({light.get("lightName", "lights"), light.get("defaultName", "default_cc")})
         rule_suspension(ctx, truck)
         rule_wheel_frames(ctx, truck)
+        rule_wheel_trails(ctx, truck)
         rule_ik_frames(ctx, truck)
         rule_lamps(ctx, truck)
         markup, markup_name = ctx.markup(truck.tpl)
         if isinstance(markup, dict) and markup_name and ctx.bundle.has(markup_name):
             checked_markups.add(markup_name.lower())
             rule_joints(ctx, markup, markup_name, truck.nodes)
+            rule_spring_motors(ctx, markup, markup_name, truck.tpl)
     for name in ctx.bundle.names():
         if name.lower().endswith(".bro"):
             doc = ctx.ps(name)
@@ -2148,6 +2635,7 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
             markup, markup_name = ctx.markup(stem)
             if isinstance(markup, dict):
                 rule_joints(ctx, markup, name, ctx.nodes(stem))
+                rule_spring_motors(ctx, markup, name, stem)
     unique: dict[tuple, Finding] = {}
     for f in ctx.findings:
         unique.setdefault((f.code, f.path, f.line, f.key, f.message), f)
@@ -2305,7 +2793,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="exit 1 when a finding at or above this severity exists (default error); with "
                              "--baseline only NEW findings count")
     parser.add_argument("--baseline", default=None,
-                        help="an older .pak or tree: label findings new/fixed/unchanged by id")
+                        help="an older .pak or tree (the installed version): label findings new/fixed/unchanged by "
+                             "id, and run the RC077 save-compat rule against it")
     parser.add_argument("--expand", action="store_true", help="list every location of each group")
     parser.add_argument("--game-root", default=None)
     parser.add_argument("--read-fields", default=None,
@@ -2322,7 +2811,8 @@ def main(argv: list[str] | None = None) -> int:
                                             notes=[]))
         for target in args.target:
             notes: list[str] = []
-            findings = validate(target, rules=rules, game_root=args.game_root, read_fields=fields, notes=notes)
+            findings = validate(target, rules=rules, game_root=args.game_root, read_fields=fields, notes=notes,
+                                baseline=args.baseline)
             items.append(report(str(target), findings, notes, expand=args.expand, baseline=base))
     except Exception as exc:                                  # noqa: BLE001 - tool error -> exit 2
         print(f"error: {type(exc).__name__}: {exc}", file=sys.stderr)

@@ -49,7 +49,8 @@ and needs no entry (Retail: ZiKZ rear axles).
 | That joint hangs under the wheel slot (ZiKZ) or under a solid-axle frame (Armiger); `steeringRackSettings` names it as a rack wheel frame | Retail |
 | `rackHalfLength` = lateral distance from the rack centre to the steering joints (ZiKZ 0.928 = its kingpin x) | Retail |
 | Tie-rod chains pin to the steering joint (Armiger `SteeringRod` -> `BoneRackRight`); the ZiKZ bases its steering-rod chains on bones that move with the rack | Retail |
-| The rack has no per-side (Ackermann) settings, only its frames and `rackHalfLength`, and the wheel slot has none either: expect the outer knuckle and the outer wheel to disagree at full lock (Roamer 105: 30 against 24 degrees) | SDK (type description), Game (Roamer 105, editor play mode) |
+| The engine applies a fixed Ackermann: for each turn direction one wheel of a left/right pair gets 0.8 x the slot `steeringAngle`, and the other gets the full angle. The factor is hard-coded, so set `steeringAngle` to the inner-wheel lock you want. The rack and knuckles are visual only (symmetric), so at lock the outer knuckle is off its wheel by 0.2 x `steeringAngle` (Roamer 105: 30 against 24 degrees). There is no toe. Steer -1 held at rest gives the same 30/24 | Code (`FUN_14061d7a0`; research/physics_semantics.md "Steering geometry"), Game (Roamer 105, which shows the reduced wheel is the outer one) |
+| `steeringCastor` (wheel class, slider 0-45) has no engine consumer that could be found, and no retail wheel sets it. Treat it as inert | Code search (Unknown), Retail |
 | Without a steering rack, hubs hung under slots as steering joints ended up outside the wheels on one side | Game (buggy); cause not isolated (Open) |
 
 ## Suspension values
@@ -67,6 +68,7 @@ slot picks one with `suspensionCollectionItem`) or in `suspensionSet` (front / r
 | **beta is uncertain by a factor of about two.** The 4-wheel retail scouts under 6 t give a median of 58 *if they rest as modelled* (spread about +-40 %, log-sd 0.35). The one direct measurement gives about 105: the Roamer 105 (2.9 t) in the editor's play mode, front height 0.265 / strength 0.017 and rear 0.23 / 0.030, rested level 0.142 m above its modelled stance | Inferred (58, `roadcraft retail survey`), Game (105, `roadcraft suspension --calibrate`). **A single beta shared across vehicles is superseded 2026-10-13** (code analysis, static: `C:\RC_RE\research\physics_semantics.md`, T4/F3): beta is not a constant; calibrate per vehicle. The Roamer 105's beta of about 106 is the only valid measurement; the retail 58 rests on the unverified assumption that the scouts rest as modelled |
 | ~~Retail designs often rest topped out on the droop stop (e.g. Armiger: rest above its max of -0.05)~~ An artefact of reading min/max as stop positions: with the measured stops the Armiger rests between them | Superseded 2026-10-02 (was Inferred) |
 | `damping` 0.12-0.25 on scouts; rigid axles use min = max = 0 with strength 0.25-1 | Retail |
+| **An unloaded wheel hangs at the spring neutral (position = `height`), not at the droop stop.** There is no preload term: the wheel body is created at slot minus height, which is the soft constraint's pivot, and its own weight pulls it only ~0.16-0.22 m further. A droop stop beyond the neutral is never reached when the wheel lifts (forklift tilt, a wheel over a hole). For flex, put the neutral at or past the droop stop (`max <= 0`), as half the retail axles do (Armiger 0.275 / -0.05, Minuteman 0.33 / -0.08, Invictus 0.38 / 0), and lower `strength` so the loaded rest stays where wanted. Nothing else limits droop: the axle controller only moves bones and `fakeStrength` is fake-wheel mode only | Code (laptop, physics_semantics.md "Unloaded wheel rest"), Game (Trophy Truck v3: "wheels still don't droop") |
 
 ### Designing an axle
 
@@ -131,6 +133,15 @@ front wheel carries (1 - c / L) / 2 and each rear wheel (c / L) / 2.
   (`apb-axles-20260929`) and the Warthog (`wh12-axles-20260929`) were designed at 58; at 105 the buggy
   would rest about 0.13 m above its modelled stance instead of 0.06 and the Warthog about 0.07 m
   instead of 0, both stiffer than designed. Their next drives settle it (calibrate as above).
+- Watcher 61 drive 1 (2026-10-13, all five configurations designed at beta 58, sag 0.18, lifts 0-0.10): owner
+  "The suspension on all of them is way to high". Another vehicle on the beta ~105 side (at 105 the design rests
+  ~0.15 m higher, plus bigger tyres). Expedition pass 2 is designed at beta 105, rest as modelled, same strength
+  (height 0.0994, `C:/RC/watcher61/tools/w61_config.py` `suspension()`). If it now rests level with the model,
+  calibrate with `roadcraft suspension --calibrate` and consider making 105 the design default.
+  Result (owner drives 2-3): the beta-105 rest was close. The owner asked only for "a little bit more" lower (0.04 m, applied as a
+  -0.04 lift) after softening the springs x0.7 (strength 0.0179 / 0.0156 on 2.3-2.6 t) and damping to 0.12 / 0.13.
+  That shipped to all five configurations (v6). This is a second vehicle supporting beta ~105 over 58. **Game** (owner
+  feel, no measured rest).
 - The units of `strength` and `damping`, and whether `strength` really scales with the mass. Partly answered 2026-10-13 (code analysis, static: `C:\RC_RE\research\physics_semantics.md`, T4/F3): they are the Havok wheel constraint's dimensionless per-step soft tau and damping, with no Saber mass scaling; the static sag law that follows from them is still **Unknown**.
 - Whether the steering rack also turns joints hung under an identity-oriented slot correctly on the
   right side (the buggy's v3 rig; awaiting a drive).
@@ -372,6 +383,48 @@ against 0.8-1.0 on the Lada's other surfaces. When a project scales excavation, 
 existing entries instead of replacing them. Not changed in v11: the owner accepted the v4-v7 handling with these
 values, so a correction waits for the owner's call.
 
+Owner decision 2026-10-13 ("correct everything you found"): Lada v12 (sha f2fedd23) writes full `ground` (1.0 / 0.3 / 1.5)
+and `mud` (0.8 / 0.3 / 2.5) entries and raises wheel mass to 70 kg. `compare` outliers fall from 8 to 5. The derived
+four-wheel mass, 280 kg, is still under the retail 340 because the lightest retail trucks carry more wheel mass than
+70 x 4. Unmeasured; owner drive pending.
+
+## Wheel ruts: what deforms the terrain (code analysis, static, 2026-10-14)
+
+Source: `C:\RC_RE\research\physics_semantics.md`, "Terrain deformation under wheels".
+
+There are three separate channels. None of them is a terraforming brush; the dozer `TerraformingSystem` and its 1.5 m dig cap are a different path.
+
+| Channel | What drives it | Grade |
+|---|---|---|
+| Physical extrusion | A contact listener on every physical wheel body (fakes too). Per contact point it adds a depth to the terrain's per-cell map and writes it into the 2x2 cells around the point. It writes only on deformable-layer cells, more where the ground is wet. Gate: dbg var `physics/truck/enable wheel extrusion from wetness` | Code |
+| Visual mud push | `vfx.vfxSkeleton` cylinders on `_wheel` with `systems` bit 16 (mud; 2 water, 8 grass) | SDK flags; Game (Apoc body boxes) |
+| Rut decal | `prop_wheel_trail_rb` (`trailParams.width`, height map, parallax) | Retail/Code (SSL) |
+
+**Depth of one stamp (Code, `FUN_140dbcf50`):**
+
+```
+terrainDeformationFactor * (softForceScale/0.56 + 0.5) * min(1, (truck mass / wheel count - wheel mass) / 4000)
+   * ( 0.24 / ((clamp(width/0.52, 0.25, 4) + 1)/2) + 1.44 * max(0, |spin speed - ground speed| - 0.5) * clamp((speed - 1.2)/2.4, 0, 1) )
+```
+
+Inferred: the meanings of truck mass, wheel count, spin and ground speed. What follows from the law:
+- **Code:** `terrainDeformationFactor` (from the friction table entry for the current surface) scales only this depth. It does not scale sinkage (the separate soft-contact force), the mud push or any radius.
+- **Code:** `softForceScale` also scales ruts: 1.0 digs 2.3x deeper than 0.28.
+- **Code:** a wide wheel digs less in its static term.
+- **Code:** wheelspin above 0.5 m/s, at more than 1.2 m/s, digs much more.
+- **Code:** the stamp footprint is the terrain cell grid. No wheel or vfx size sets it.
+
+**An empty `vfx` is not "no ruts":**
+- **Inferred:** the wheel pushes no mud, bends no grass and makes no splash.
+- **Code:** the physical extrusion and the trail are unaffected.
+- **Retail:** the 5111B dragline ships empty `vfx` on its end wheels.
+
+**Rules (Retail unless graded):**
+- `terrainDeformationFactor`: 0 on asphalt, gravel and `default`; 0.25 on mud and sand; up to 2.5 on grass and ground (HT500).
+- Cylinder: radius 0.85-1.2 and height 0.5-1.5 in wheel-model units; `systems` 18 or 26. No retail cylinder has a zero or negative dimension.
+- **Code (SSL):** mirror `trailSfxDesc` into `defaultTrailSfxDesc`, or a mod wheel loses its trail (`ResetTrailDesc`).
+- Crawlers: [tracked-vehicles.md](tracked-vehicles.md), "Ruts, mud and trails under a crawler" (RC079).
+
 ## Stop geometry (measured, 2026-10-02)
 
 **Game (KGS-25 editor bench; the Lada trials fit it too):** a wheel sits `height + min + travel`
@@ -387,6 +440,14 @@ point, when that lies between them.
 | KGS-25 fix 1 fakes: min -0.13, max 0.13, height 0.06 | -0.07 to 0.19 | at -0.07 + travel |
 | Lada front, v2 limits -0.09 / +0.19 against the trial's -0.22 / +0.12, height 0.18 | 0.09 to 0.37 against -0.04 to 0.30 | v2 on its top stop (travel 0.0006); the trial rests at 0.053-0.057, between the stops |
 | Lada rear, same two axles | | rests at 0.103 and 0.104: one spring equilibrium in both |
+
+**Note 2026-10-14 (code analysis, static: `C:\RC_RE\research\physics_semantics.md`, "Unloaded
+wheel rest"):** the stop positions are confirmed from code. The spring neutral is also confirmed at
+`height`. One correction: an unloaded wheel does not hang exactly at `height`. Its own weight sags
+it further, by roughly as much as the loaded sag (about 0.15-0.2 m at strength ~0.015 and damping
+0.14; Inferred). It reaches the droop stop only when `height + max` lies within that reach. To make
+wheels hang on the droop stop, use `max <= 0` (neutral at or beyond the droop stop), as 15 of the
+30 retail survey axles do (Armiger, Minuteman, Invictus).
 
 **A negative `min` raises the top stop:** the wheel may be pushed above its modelled place. It does
 not extend the wheel down (this replaces the reading in "Native-limit sign correction" below).
@@ -443,6 +504,16 @@ showed about twice the rear-body angular jerk and wheel-travel step (slalom 2.3-
 0.006-0.008 m per sample). Restoring softForceScale 0.4 alone lowered slalom chatter but braked harder and ran slower
 (confounded by the c3 gear hunting). **Build (c5, owner's choice, unmeasured - no editor runs):** the full Baikal
 override (`truckWheel` fields + `frictionMaterials`) merged into each Kanga `wheelPool` entry's `wheel`.
+
+### Engine-side chatter sources (code analysis, static, 2026-10-14)
+
+| Rule | Grade |
+|---|---|
+| Soft contact is two-rate. Each wheel contact is scaled by `softForceScale` (terrain and dynamic bodies) or `softForceScaleStatic` (other fixed bodies). Past a penetration of physRadius/4 the scale ramps to fully rigid within a further small depth. A soft tyre (e.g. the Kanga's BRO 0.19 instead of the Baikal override's 0.4) sinks further and reaches the rigid band on every load peak, which reads as jerk. Restore the donor's override before tuning anything else | Code (`FUN_140ca86d0`); effect Inferred; Game ("0.4 alone lowered the chatter") |
+| `activateCriticalCollisionTypeOnInit` sets Havok quality CRITICAL: continuous (TOI) collision against dynamic bodies too. Against terrain it adds nothing over the default. It matters where a tyre touches a truck body, its own carrier included. All 515 retail wheel classes set True; the Baikal 5916 pool sets False. Test False as a single variable on a chattering wheel that touches its own hulls | Code (`FUN_140dc8e50`, `FUN_14155f340`, map at 0x1450c2a30); Retail; effect Inferred |
+| A wheel collides with its own carrier body's hulls, and a buggy's carrier is the chassis. Keep chassis, fender and stop-block cdt clear of each tyre across full bump, full droop and full steer: those contacts are scaled by `softForceScale`, get CRITICAL TOI, and are a prime suspect for the Apoc chatter | Code (filter); Inferred (Apoc) |
+| Tyre friction is mu = sqrt(wheel `bodyFriction` x the other surface's friction): static and terrain default 1.2, or the per-triangle mesh material. Dropping a donor's `frictionMaterials` changes mu on every surface | Code (`FUN_140ca8fd0`) |
+| `sidewaysFrictionMultiplier` / `sidewaysFrictionMaxVelocity` act (WALL-E pivots changed with them), but their engine reader could not be found. Keep retail values (multiplier 0.1-0.85, max velocity 1) | Game (tracked-vehicles.md); Code search (Unknown); Retail |
 
 
 
@@ -519,3 +590,58 @@ Evidence: [C:/Program Files (x86)/Steam/steamapps/common/RoadCraft/Roadcraft Dev
 
 **Game / Build:** default `deformEnable=True` requires the model object named `tire`. The recovered Jimny used `jimny_tire`, and native startup asserted in `truck_wheel_prop.cpp(527)` before the vehicle could be tested. Preserve the failure, rename the authored tyre object (all LODs) to `tire`, and verify the compiled TPL. `bro_lint.wheel_model_references` / `lint-bro <wheel.bro> --class <wheel.cls> --tpl <wheel.tpl>` now reports RC049 for the missing default object. Explicit supported custom object contracts may pass their name to the helper; the check does not establish deformation appearance. Evidence: Jimny native `baseline_normal` test in `J31TestC_20261006`, retained `native_assert_log.txt`; fixed wheel TPL names `_wheel, jimny_wheel, JIMNY, Armature, rim, tire`.
 
+## Load-adaptive suspension (code analysis, static, 2026-10-14)
+
+Full analysis: `C:\RC_RE\research\physics_semantics.md`, "Load-adaptive suspension".
+
+| Rule | Grade |
+|---|---|
+| `linearLimitsStiffness` / `linearLimitsDamping` are **not** bump/droop-stop softness. They soften the wheel's sideways and fore-aft location (Havok `lin1`/`lin2` tau/damping factors). The stops are always hard, so there is no progressive or second-stage spring in the wheel joint. Leave both at -1; no retail truck sets them | Code (reflection plus `FUN_140cac360`), Retail (0 of 124) |
+| `strength` / `damping` are the suspension atom's `tauFactor` / `dampingFactor`. Nothing changes them at runtime: there is no SSL setter, and the desc is read once at wheel init | Code |
+| Whether the wheel-joint sag grows with payload is **Unknown**. A two-launch Dump Twuck bench (empty vs `spawnFull`) settles it; the protocol is in the research file, section 2 | Open |
+| For a large payload swing, use the retail **physical series spring**: wheel joint near-rigid (strength 0.25, damping 1.0, min = max = 0, `height` = lift), wheels parented to axle/side bodies on a `tpl_markup_constraint_prismatic` with `tpl_markup_spring_motor{spring N/m, damping N·s/m}` sized `k = loaded axle load x g / loaded sag`. Retail precedents: Lynx scout / Mutt / trailer, 2e5-6e5 N/m on 500 kg axle bodies; ZiKZ 605E trailer, balancers 2.1e6 N·m/rad | Retail; sag proportional to load Inferred; not yet driven on a mod |
+| Retail dump trucks (Baikal 65206, Tayga, Voron, OFT96) use only soft wheel joints: strength 0.025-0.08, **damping 0.35-0.75**, 0.25-0.5 m of bump travel from neutral. Their spring-motor hinges are frame-roll articulations, not load springs | Retail |
+| A load volume's payload is its own rigid body, joined to `parentBody`. Its mass follows the fill (minimum 1 kg); its COM stays at the volume mesh's centroid | Code (`FUN_1405e2590`, `FUN_1405dc380`) |
+
+### Series spring as built: Mammoth (CAT 793D) RC61 (2026-10-14)
+
+Package `Mammoth_20261014_SeriesSpring_RC61.pak` (sha 8bf628da): built, `validate` 0 new against the installed
+package, `lint-bro` 0/0; **not installed, not benched, not driven** (Build).
+
+- **Front, per wheel:** a 6 t body on a prismatic, `childRotation [90,0,0]`, -0.23/+0.20, spring motor
+  3.51e6 N/m, c 2.71e5.
+- **Rear:** a 4 t heave body on a prismatic, -0.27/+0.22, 1.13e7 N/m, c 8.8e5. Under it, a 12 t axle-housing
+  body on a roll hinge (`childRotation [0,0,0]`, +-4 deg, 7.23e6 N·m/rad, c 5.6e5), carrying both duals.
+- **Wheel axles:** min 0 / max 0 / strength 0.45 / damping 1, height 0.15 (front) / 0.12 (rear).
+- **Chassis:** 72 -> 44 t, so the total mass and COM are unchanged.
+- **Design sag:** front 0.090 / 0.149 m, rear 0.046 / 0.199 m (empty / loaded with 218 t).
+
+| Rule | Grade |
+|---|---|
+| A wheel slot's parent body is the nearest physics bone above the wheel node in the tpl tree. Re-parenting the wheel bones in Blender is the whole hookup; there is no class field. `physics report` resolves `slot.parentBody` this way | Build |
+| Move the axles controller's visual frames (`BoneAxleFront*`, `BoneAxleRear`) under the sprung bodies too. With min = max = 0 the controller shows no wheel travel, so frames left on the chassis detach visually | Build |
+| A rigid rear axle needs two bodies to keep cross-axle articulation: heave on a prismatic, then roll on a hinge along the truck axis, with roll rate = heave rate x strut spacing^2 / 4. A single prismatic body removes articulation | Build (design) |
+| Keep wheel mass / sprung-body mass at or below about 1, the retail maximum. A 3 t front body under a 5.7 t wheel gave `slot.massRatio` 1.9 in `compare` | Build, Retail |
+| Identity-frame new bones (Blender head -> tail along +Y, roll 0) come out identity in the tpl (as `BoneDump_cdt` / `BoneAxleRear`), so prismatic-down is `childRotation [90,0,0]`. This confirms the Dump Twuck example's inferred axis at Build grade | Build |
+| A linear spring cannot serve a 4.3x axle-load swing (rear 53.5 -> 229.6 t) at both <= 0.10 m empty and <= 0.2 m loaded. Sizing for loaded leaves the empty rear at 0.046 m. This is why the two-payload bench, and a two-stage option, matter | Build (design) |
+| RC61 gave the four sprung bodies `collisionLayer = "no_collision"` (copied from secondary-physics props). At spawn every tyre sank ~0.7-1 m and the truck rested on its hulls. RC62 removes the four lines and is not yet driven | Game |
+| **A wheel takes its collision layer from its parent body at spawn.** Every spawned truck runs `SwitchPhantomState(false)`, which calls `PropTruckWheel.ResetCollisionFilterInfo` on each wheel and copies its parent body's layer onto it (an unset/`default` parent reads `constr_vhc`). A wheel carrier on `no_collision` therefore gives `no_collision` wheels, with no ground contact: that was RC61. The wheel class's own `collisionLayer` lasts only until then. Never put a wheel-carrying body on a non-colliding layer. No retail wheel carrier (251 resolved) sets `collisionLayer` | Code (`FUN_140dc8ff0`; research/physics_semantics.md "Jointed-body collision filtering"), Game (RC61 bench), Retail |
+| Inside one truck, only a body and its **direct** constraint parent are filtered (the markup's constraints set the sub-ids, child first; the layer matrix is not used). Siblings, grandparent pairs, a body against a body fixed to the chassis (e.g. a sprung body vs `BoneBody_cdt`), and a wheel against its own carrier body and sibling bodies all collide. A wheel is filtered only against its carrier's constraint parent. Markups with **31 or more constraints get no filtering at all**. The first-listed constraint's child (sub-id 0) is not filtered against its own children. A markup Collision Group stops its members colliding with each other but replaces their constraint filtering. So a sprung box overlapping the chassis's **own** hulls is safe only when the chassis is its direct parent; overlaps with the body, the dump, a sibling, a tyre, or the roll body against the chassis are not | Code (`FUN_14153cb90`, `FUN_1415abce0`, `FUN_141a27c00`); Retail (7 of 118 truck markups have 31 or more) |
+
+#### Headless bench of RC60/RC61/RC62 as built (laptop, 2026-10-14; `C:\RC_RE\bench-headless\mammoth\results.md`)
+
+| Rule | Grade |
+|---|---|
+| Engine start crashes the editor engine on all three builds. The class's blueprint plays truck shakers "EngineStart" / "EngineShutdown", but its `prop_truck_shaker_native_controller` is empty ("Shaker hasn't been found"; launch 1). The comparison below was run with the engine off | Game (engine headless) |
+| **RC60 (control)** stands on all four wheels (`isOnGround` 1), tyre bottoms 1.8 cm above the pad, with no motion at all over 40 s | Game (engine headless) |
+| **RC61 sinks because its sprung bodies are `no_collision`.** All four wheels sit 1.09-1.13 m below the pad from the first sample (0.08 s), then stay constant; `isOnGround` is 0 throughout. The chassis rests on its hulls, 1.05 m lower than RC60. The rig is intact: the joints sit at +0.023-0.028 m (droop under their hanging weight only, k-consistent), roll 0, never at a limit, and each wheel stays 0.14-0.15 m (= axle height) below its body. So the wheels simply have no ground contact. This overturned the first static reading; the mechanism is now traced (see the wheel-layer row above). Never put a wheel-carrying body on `no_collision` | Game (engine headless; A/B with RC62); mechanism Code (the wheel copies its parent's layer at spawn, row above) |
+| **RC62 is unstable from spawn, not a steady oscillation.** At the first sample (0.08 s) the truck is already thrown 4 m up and rolled about 80 deg, with the front prismatics at or through their -0.23 bump limit (-0.25). It tumbled for about 20 s, left the pad, fell 17 m and ended upside down. Limits were overrun: roll ±10.5 deg vs ±4, rear -0.279 vs -0.27. The roll hinge sat on a limit in 61% of samples. It never settled. This is the overlapping cdt (every tyre starts inside its own sprung body's hull) once the layer filter is gone | Game (engine headless); cause Inferred from the geometry |
+| Fix order for a series spring: keep the sprung bodies on a colliding layer **and** keep their cdt_ hulls clear of every wheel (README variant A). Then judge the motor regime (rear heave c·dt/m 3.7), which these parked runs could not load | Game + Build |
+| RC60 readback at rest: wheel physical radius 1.6223 (class radius 1.682), max spring travel 0.45 front / 0.75 rear, `softForceScale` 0.24, no prismatic constraints; chassis, body and dump on layer `constr_vhc` | Game (engine headless) |
+| The series-spring regime is outside retail per 60 Hz step. Rear heave: k·dt²/m 0.79, **c·dt/m 3.7** (4 t body between the 44 t chassis and 34.8 t of roll body plus duals). Front: 0.16 / 0.75. Retail: 0.11-0.33 / 0.4-0.6. A light link with c·dt/m > 2 is the leading candidate for RC62's limit-to-limit swing and a candidate for RC61's sinking (solver drift in the chain) | Build (arithmetic); mechanism Inferred, not benched |
+| The front sprung cdt (a 0.7 m cube at the wheel centre) lies wholly inside its 1.68 m tyre, and the rear roll box reaches ~0.4 m into the inner duals. With the layers removed (RC62), every tyre starts in deep contact with its own sprung body. That predicts a permanent shake | Build (geometry, `series_spring_rc61.py`); effect Inferred |
+| RC62 (RC61 minus the four `no_collision` lines; installed as `mammoth.pak` sha cc4c712b, then rolled back to the 2026-10-13 build 2adf6d7a at 12:08) no longer sinks. But the whole truck shakes and the suspension swings slowly from limit to limit, constantly, even parked and empty | Game (owner) |
+| Keep every sprung body's cdt_ hulls clear of its own wheels, and keep them clear over the whole steering sweep: rotate the wheel about the steering joint by +-`steeringAngle`. Also keep them clear of sibling sprung bodies and of the chassis. RC62 brought back these contacts, and the lead reports a 0.7 m front cube at each wheel centre (inside the 1.68 m tyre) and a rear roll box overlapping the inner duals by 0.4 m. Overlapping hulls in one vehicle are pushed apart every step, which fits a constant shake while parked. Do not hide an overlap with `no_collision`: that was RC61, which sank. No lint rule: per-hull extents are not decoded, and a node-origin test hits 12 retail trucks (roller forks, track rollers) | Code (filter); Game (RC61/RC62); Inferred (overlap and cause) |
+| A spring motor's per-step numbers use m_eff, the constraint row's virtual mass from the **two jointed bodies only**. m_eff is at most their reduced mass m1·m2/(m1+m2) and never includes the load carried below. The engine computes k·dt²/m_eff and c·dt/m_eff and **clamps each to 1**. So the most it can deliver is a rate of m_eff/dt² and a damping of m_eff/dt (at 60 Hz: 3,600·m_eff and 60·m_eff). Requests above that are silently capped, not unstable. maxForce is HK_REAL_MAX: there is no force clamp | Code (`FUN_1442406f0`, `FUN_14423aa80`, `FUN_141594b60`; physics_semantics.md 'Spring-motor stability') |
+| Keep load-bearing prismatic springs at k·dt²/m_eff ≤ ~0.4 and c·dt/m_eff ≤ ~0.7. That is the retail maximum: the TUZ Lynx frames run 0.14-0.22 / 0.52 and the Lynx trailer axles 0.28-0.38 / 0.53-0.68. RC62's front prismatic is at ≥ 0.18 / ≥ 0.86. The rear heave is at ≥ 0.86 / ≥ 4.0, so its damping is clamped and only ≤ 2.2e5 of the 8.8e5 N·s/m arrives (25 %). To deliver a damping c, m_eff must be ≥ c·dt. Lint RC076 flags this | Code (clamp), Retail (62 prismatic springs, 0 flagged), Inferred (that the shortfall causes the swing) |
+| Keep a prismatic sprung body at ≥ 1/2 of the mass hung below it and ≥ 1/8 of its parent's mass. Retail goes no further than 2.0 and 8 (Lynx). RC62's rear heave is a 4 t link between 44 t of chassis and 34.8 t below it (the 12 t roll body and two 11.4 t duals), so 8.7 and 11 | Retail; Inferred (that exceeding the ratios fails) |

@@ -72,15 +72,48 @@ and verified input/dependency/receipt/output bytes. Shared vehicle checks always
 run. Native-gated/capture steps cannot be cached. Pin a new recipe after source or
 shared-runtime changes. Use jobs-summary for observed timing; do not invent speedups.
 
-Build packages with `roadcraft pak build` (quiet, deterministic, fails on missing
-blobs; its build.json is the package receipt), not the editor's Build Mod. Run SDK
-tools only through roadcraft.quiet. See library/headless-build.md.
+## Headless editor (the default route; AGENTS.md "Headless editor commands")
+
+Every command below is non-interactive, opens no window or dialog, takes --json and
+exits 0 clean / 1 findings / 2 tool error. The game is found by --game-root,
+ROADCRAFT_GAME_ROOT, ROADCRAFT_ROOT, machine.json sdkRoot, then Steam.
+
+```text
+python -m roadcraft pak build --project P --mod-file M.mod --output NEW.pak --stage-classes --suffix S --baseline INSTALLED.pak --candidate NAME --apply --json
+python -m roadcraft pak stage --project P --mod-file M.mod --suffix S --out STAGED   # plan; --apply writes the copy
+python -m roadcraft validate NEW.pak --baseline INSTALLED.pak --json
+python -m roadcraft pak manifest NEW.pak --json
+python -m roadcraft physics report NEW.pak --json
+python -m roadcraft compare NEW.pak --donor RETAIL_TRUCK --json
+python -m roadcraft schema show Type.field | schema search TEXT
+python -m roadcraft pak normalize SRC.pak DST.pak | pak check PAK
+python -m roadcraft.bench_headless run SCENARIO.json --owner-approved "<who/when/why>"   # only after the owner says yes to this run
+```
+
+- Build with `pak build`, not the editor's Build Mod. It is quiet and deterministic,
+  fails on blobs the packer only logs, and writes <output>.build/build.json as the
+  package receipt (library/headless-build.md).
+- An ordinary editor project (classes in mods_source/autogen_dw/) needs
+  `--stage-classes --suffix S`. S is the suffix the installed pak already uses (its
+  ssl/auto_<truck>_S.cls names). Without it an unstaged project is refused.
+- Rebuilding an installed mod: add `--baseline <installed pak>` and explain every
+  changed or dropped member (narrow with --allow-change GLOB). An editor project can
+  be older than a package that was patched directly. On the KGS-25 a rebuild would
+  have dropped 125 members and reverted two passes.
+- `schema show|search` gives the engine's own type, default, range and units.
+  `physics report` shows the value the engine will use, and whether it is explicit
+  or a default. `compare --donor` diffs against a retail donor and the retail range.
+- The windowless engine bench (library/headless-bench.md, scenarios in
+  library/bench-scenarios/) only dry-runs without --owner-approved "<who/when/why>". Pass that only
+  after the owner says yes to that run in this conversation.
+- Run SDK tools only through roadcraft.quiet (library/quiet-launch.md).
 
 ## Installation and evidence
 
 Before every install, `roadcraft validate <candidate.pak> --baseline <installed pak>`
 must show no NEW errors, and `roadcraft pak manifest` must show no unintended
-overrides or mod conflicts. Before and after a handling change, record
+overrides or mod conflicts. A package patched directly (roadcraft.pak_patch) gets the
+same checks, and its editor sources must be changed the same way. Before and after a handling change, record
 `roadcraft physics report` and `roadcraft compare <mod> --donor <retail truck>`.
 The windowless engine bench needs the owner's explicit go-ahead for each run.
 

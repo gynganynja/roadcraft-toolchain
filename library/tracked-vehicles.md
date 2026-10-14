@@ -102,7 +102,56 @@ and the steering feel off, not tipping or grip):
 |---|---|---|---|
 | cf9dca20 | inner-track steering curve ends at -0.6 | "felt the same, maybe a bit smoother" | Game, one drive: weak positive |
 | 93c5e889 | TC305 wheel friction tables, `softForceScale` 0.75, drive/idler wheels 120 -> 450 kg | "feels better, still a bit janky when one wheel is climbing something" | Game, one drive: positive |
-| f841eb34 | track frames on the HT500 sprung hinge instead of a weld | not yet driven | Build |
+| f841eb34 | track frames on the HT500 sprung hinge instead of a weld | wants softer springiness; the idler should conform to what it climbs | Game, one drive |
+| 3cb0efda | softer frames: hinge +-8 deg, spring motor 3e6 / 3.3e6 (and hook ball-and-socket) | not yet driven | Build |
+
+### Headless bench of the five builds (2026-10-13, laptop)
+
+Grade **Game (engine, headless play)**: the windowless editor engine, each build's pak overlaid on the 2026-10-02 bench
+project (`roadcraft.pak_overlay`), checked in the engine by readback (softForceScale, frame-hinge motor spring and
+damping). All 18 runs completed (six variants x flat `normal`, `harsh` and a single-track step), in 21 launches.
+**One run per cell, so run-to-run noise is unknown.** Scenarios: `library/bench-scenarios/kgs25_*.json`. Results:
+`C:\RC_RE\bench-headless\kgs25\results.md`, copied to `\\192.168.0.129\Downloads\roadcraft_laptop_research\kgs25_bench\`.
+esults.md`, copied to `\192.168.0.129\Downloads
+oadcraft_laptop_research\kgs25_bench\`.
+
+**Step (left track onto a 0.3 m slab, low gear): the hinged frames conform; the welded ones do not.**
+
+| Build | Left frame pitch vs hull (deg) | Front sprocket / rear idler travel (mm) | Mid road-wheel spring (mm) | Hull roll / pitch peak (deg) | Hull jitter roll / pitch RMS (deg) | Residual pitch peak-to-peak (deg) | Settle after stop (s) |
+|---|---|---|---|---|---|---|---|
+| 5c4dd65d baseline (welded) | 0.11 | +13 / -11 | 170 | 6.4 / 4.35 | 0.47 / 0.33 | 2.67 | 1.09 |
+| cf9dca20 curve -0.6 (welded) | 0.08 | +15 / -14 | 173 | 6.9 / 4.26 | 0.45 / 0.32 | 2.51 | 0.55 |
+| 93c5e889 wheel feel (welded) | 0.09 | +11 / -8 | 203 | 6.3 / 5.28 | 0.48 / 0.32 | 2.44 | 0.98 |
+| f841eb34 hinge +-5, 1e7 | 1.42 | +73 / -74 | 164 | 7.1 / 4.31 | 0.43 / 0.22 | 1.47 | 0.44 |
+| 3cb0efda hinge +-8, 3e6 | 2.15 | +114 / -112 | 154 | 6.9 / 3.55 | 0.39 / 0.26 | 1.56 | 0.55 |
+| 3cb0efda + frame damping 0.05 / 0 (retail) | 2.28 | +118 / -115 | 151 | 6.5 / 3.55 | 0.34 / 0.22 | 1.65 | 0.22 |
+
+- On the sprung hinge the frame pivots over the step: the sprocket rises and the idler drops by the same amount.
+  Less of the step reaches the hull: pitch peak and residual pitch swing drop, roll jitter drops, and it settles
+  faster. The roll peak (6.5-7 deg) is the geometry of one track 0.3 m up on a 2.77 m gauge; the hinge pitches, it
+  does not roll. The softer 3e6 hinge conforms about 50 % more than 1e7. Retail frame damping is the steadiest
+  build on the step.
+- Every build yawed about 15 deg toward the slab while climbing (drift 2.1 m): a single-track climb steers the crane.
+
+**Flat pad:**
+
+| Build | Normal pivot (steer 0.8): roll peak / jitter RMS + - (deg) | Normal pivot yaw in 4 s (deg) | Harsh lock+ (steer 1): roll peak / jitter / yaw | Frame swing (deg) | Settle after pivots (s) |
+|---|---|---|---|---|---|
+| 5c4dd65d | 2.2 / 0.18 0.16 | 45 / 46 (nearly in place) | 2.3 / 0.18 / 63 | 0.04 | 0.4 / 1.2 |
+| cf9dca20 | 5.5 / 0.28 0.19 | 19 / 14 (sweeps 7-9 m) | 2.3 / 0.16 / 75 | 0.04 | 1.6 / 1.2 |
+| 93c5e889 | 4.0 / 0.19 0.14 | 14 / 9 | 2.3 / 0.18 / 54 | 0.03 | 0.7 / 1.3 |
+| f841eb34 | 3.1 / 0.11 0.16 | 11 / 21 | 2.3 / 0.17 / 66 | 0.5-0.6 | 1.4 / 1.6 |
+| 3cb0efda | 3.2 / 0.13 0.21 | 13 / 18 | 3.5 / 0.13 / 56 | 0.6-0.85 | 1.7 / 2.7 |
+| 3cb0efda + retail frame damping | 3.2 / 0.11 0.11 | 14 / 17 | 3.2 / 0.17 / 56 | 0.6-0.8 | 1.4 / 1.5 |
+
+- Straight driving is calm in every build (residual 0.02-0.05 deg RMS). No full-lock stick-slip judder showed in any
+  build at the bench's about 9 Hz sampling (lock jitter 0.06-0.18 deg RMS).
+- **The inner-track curve at -0.6 (cf9dca20) cost the part-steer pivot:** at steer 0.8 the crane sweeps forward
+  instead of turning in place. At full lock it turns more. Every later build keeps the curve.
+- **Retail frame body damping (0.05 / 0) is the best measured build** on the step and in pivots. The 1.5 / 0.03 body
+  damping does not steady the hull. Recommended for the next build, with the owner's drive as the acceptance.
+- Harsh course: four builds left the pad from the x = -22 lane (two fell). Only their earlier phases are used, and the
+  baseline has no lock- figure.
 
 ## Springs on a light body
 
@@ -175,6 +224,47 @@ wheels was radius + section (body speed / wheel spin 0.092-0.098 for 0.074 + 0.0
 Climbing: r5 has no hidden obstacle wheels; a step meets the front wheel (radius + section 0.098 m) and the
 belt between the wheels has no collision. **Open:** the owner's drive of r5, steps, slopes and mud.
 
+## Dozer blades: what resists a cut (2026-10-14)
+
+Source: `C:\RC_RE\research\physics_semantics.md`, "Dozer cutting resistance" (code analysis, static; the Goliath D11 RC6 against the Greenway HT500).
+
+**How the engine resists a blade cut.**
+- **Code:** `prop_terraforming_bucket` rewrites the blade's terrain contacts in diggable ground to point straight up, with `allowedPenetrationDistance` of slack. A cut face therefore never pushes back physically.
+- **Code:** each physics step, a scripted impulse is applied to the **chassis**. With the retail `TerraformingSystem` values it is `min(speed, 1 m/s) × (2500 × buried blade-hull volume + 2000 × volume cut that step) × (1 + downward tilt)`.
+- **Code:** an upward impulse, (buried fraction of the hull) × vehicle weight, goes to the **blade body**.
+- **Code:** the drag is not scaled by truck mass.
+- **Inferred:** a dozer stops when that drag beats track traction, or when the lift unloads the tracks. It is not a torque or engine-stall problem: rpm is cosmetic, and there is no stall logic.
+- **Retail (global, not per truck):** dig depth is capped at `defaultDepth` 1.5 m below the original terrain. Static and non-terraformable ground keeps hard contacts, so the blade becomes a wall.
+
+**Modding rules (Inferred until benched):**
+- Do not raise engine torque past the traction limit. At 1.3e6 the 111 t D11 already exceeds it; 3e6 only spins the tracks and enlarges the engagement kick.
+- Put the 1↔2 range boundary at the 1st/2nd torque crossover. With angularVelocity 1 / 2.5 this is about 3.5 km/h at a 0.43 m rolling radius. Then a loaded downshift costs no torque. With the HT500's 6 km/h boundary, 1st gives 35 % less torque than 2nd at the shift.
+- Low range is not stronger than 1st (both have gear factor 1). It only stops auto-shifting.
+- Per-pass depth is set by the lift joint's down stop and arm length. The HT500 stops at `Dump` +3° on a 4.2 m arm; the D11 at +5° on a 4.9 m arm, roughly twice the buried hull volume.
+- Drag grows with blade-hull thickness (front to back). Lift grows with the buried fraction of the hull's height.
+- Players: MANUAL mode, low range, 1-2 km/h, layers of 0.2-0.3 m, no steering in the cut.
+
+## Ruts, mud and trails under a crawler (2026-10-14)
+
+Source: `C:\RC_RE\research\physics_semantics.md`, "Terrain deformation under wheels" (code analysis, static; retail survey of 321 wheel and 124 truck classes).
+
+**Where the ruts come from.** There is no track-level terrain code: everything is per wheel.
+- **Code:** every physical wheel, fakes included, extrudes the deformable terrain at its contact points. `terrainDeformationFactor` scales the depth of that stamp ([suspension-and-wheels.md](suspension-and-wheels.md), "Wheel ruts").
+- **Retail:** the visual mud push comes only from the `vfx` cylinders on the sprocket and idler (TC305 and HT500: radius 1.05, height 1, `systems` 26). The contact fakes have no model and no `vfx`.
+- **Code (SSL):** the track rut decal starts only for the slots named in `prop_truck_rb.wheelsWithTrail`. Retail names the front and rear end wheels, with `isRear` on the rear one: TC305 `roller_left0/12`, HT500 `roller_front_l_0` / `roller_rear_l_9`. The trail width spans the track (TC305 2.25 m).
+
+**Modding rules:**
+- Name the sprocket and idler (the end wheels **with a model**) in `wheelsWithTrail`, never modelless contact fakes (validator **RC079**; Retail: 144 of 144 caterpillar trail wheels have a model).
+- Give the sprocket and idler a `vfx` cylinder like retail. An empty `vfx` is legal (the 5111B dragline ships it), but that wheel then pushes no mud.
+- Contact fakes need no model and no `vfx`. Their friction table sets their rut depth.
+
+**The KGS-25 crash on deformable terrain (Open).**
+- **Game:** every variant crashed the editor engine on the acceptance terrain. No log was kept.
+- **Inferred, first suspect:** all five KGS-25 paks put their 4 trails on modelless `contact` wheels. The native trail update runs an extra branch only on deformable terrain, and that branch reads the wheel geom and its tracker. Nothing else in the wheel classes differs from retail: empty or missing `vfx`, 22 wheels, width, mass and factors all have retail precedent.
+- **Workaround:** move `wheelsWithTrail` to `kgs_L/R_idler0` and `kgs_L/R_drive0` (`isRear` on the rear pair).
+- **Settle with a bench**, with the owner's go-ahead: baseline, trails moved, and baseline with `physics/truck/enable wheel extrusion from wetness` off.
+- The installed T-80BVM has the same layout (RC079 x4). Whether it survives deformable terrain is untested.
+
 ## Checks
 
 `roadcraft lint-bro TRUCK.bro --class auto_X.cls --tpl X.tpl` (the markup beside the model is
@@ -222,8 +312,11 @@ next build ([build-pipeline.md](build-pipeline.md)).
   - Settle it with a bench A/B: every slot off, several pivots per variant, because single pivots spread
     widely (see the WALL-E table above).
 - Deformable terrain: spawning the crane on the acceptance scene's terrain crashed the editor
-  engine for every variant, so terrain behaviour rests on the owner's drives.
+  engine for every variant, so terrain behaviour rests on the owner's drives. First suspect and
+  workaround: "Ruts, mud and trails under a crawler" above (Inferred; bench pending).
 - The owner's drive of fix 2.
+- KGS-25 headless bench: repeat runs for run-to-run noise; the harsh course on a centred lane for the baseline,
+  cf9dca20, f841eb34 and retail damping (they left the pad); a wider step slab.
 
 ## WALL-E r2 follow-up: idle belt and straightness (2026-10-05)
 
