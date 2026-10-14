@@ -1,0 +1,7035 @@
+{
+ "schemaVersion": 1,
+ "source": "bro_passthrough.py (passthrough.json); library/bro-passthrough.md",
+ "dropped": {
+  "ActorFadeSettings.params": "the generator never reads this C# field",
+  "AiRouteFollowingSettings.enableJobMarker": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "AiSettings.isEnabled": "inside .bro::ChassisVoron3327.aiSettings, which has no C# field, so the generator never sees the subtree",
+  "AnchorsSettings.massSclaers": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "AsphalterSettings.maxPowerPerSecond": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "AsphalterSettings.sandRemovingSpeed": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "AsphalterSettings.weightsChangingSpeed": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "BridgelayerSettings.isAnchorsEnabled": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "Building.aiTruckStorage": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "Building.buildingCdtPrefab": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "Building.exchangeIntermapResources": "the generator never reads this C# field",
+  "Building.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "Building.resourcePackerSettings": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "BuildingElectricitySettings.electricityConsumption": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "BuildingElectricitySettings.electricityNeedToFinishBuilding": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "BuildingElectricitySettings.electricityNeedToWork": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "BuildingElectricitySettings.generatedElectricity": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CardanShaftSettings.shaftDataBasedOnAllWheels": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CardanShaftSettings.shaftDataBasedOnCertainWheels": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CardanShaftSettings.usingAllWheels": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CargoConstraint.beltHandle": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CargoConstraint.beltsOffset": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CargoConstraint.constraintAreaOffset": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CargoConstraint.constraintLinearLimit": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisAlcesC400.constraintWithControllablePower": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisAlcesC400.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisAramatsuBowhead30t.cameraPreset": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisAramatsuCrayfish.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisAramatsuKite3.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisArlingRoadworks120Special.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisArlingRoadworks120Special.towingIsCaterpillars": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisArlingRoadworks120Special.towingPedalScale": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisArlingRoadworks120Special.towingSteeringTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisArlingRoadworks120Special.towingWinchLenghtToPull": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisArmigerThunder.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisArmigerThunderCivilian.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisArmigerThunderExp.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisAzov4317dl.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisAzov4317dl.rentSettings": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisBaikal5916.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisBaikal65206.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDerryLonghorn4520.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDon72malamute.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDon72malamute.towingPedalScale": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDon72malamute.towingPedalTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDon72malamute.towingSteeringTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDon72malamute.towingWinchLenghtToPull": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDs135bunker.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDs135bunker.towingIsCaterpillars": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDs135bunker.towingPedalScale": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDs135bunker.towingSteeringTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDs135bunker.towingWinchLenghtToPull": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDs55katok.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDs55katok.towingPedalTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisDs55katok.towingWinchLenghtToPull": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisEpecHwc945.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisEpecLt200.cameraPreset": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisEpecLt200.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisEpecLt200.wheelSoundType": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisGreenway740cross.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisGreenwayHt500.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisInvictusTypeA.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisKhanLoStrannik.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisKronenwerkL34.cameraPreset": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisKronenwerkL34.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisKronenwerkL34Fork.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisMinutemanK350.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisMinutemanK350Civilian.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisMtk100m.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisMtk2006.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisMtkMd76.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisMtkProseka200.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisMuleT1.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisMuleT1Trailblazer.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisNotaAllegro.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisStepPike.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTayga6455b.constraintWithControllablePower": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTayga6455b.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTayga6455b.towingPedalScale": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTayga6455b.towingSteeringTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTayga6455b.towingWinchLenghtToPull": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz119lynx.constraintWithControllablePower": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz119lynx.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz119lynx.rentSettings": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz119lynx.towingPedalScale": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz119lynx.towingPedalTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz119lynx.towingSteeringTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz119lynx.towingWinchLenghtToPull": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz303karelian.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz303karelian.towingIsCaterpillars": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz303karelian.towingPedalScale": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz303karelian.towingSteeringTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisTuz303karelian.towingWinchLenghtToPull": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVoron3327.aiSettings": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVoron3327.constraintWithControllablePower": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVoron3327.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVoron3327.rentSettings": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVoron3327.towingSteeringTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVoron3327.towingWinchLenghtToPull": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokAtm53pioneer.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokAtm53pioneer.towingIsCaterpillars": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokAtm53pioneer.towingPedalScale": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokAtm53pioneer.towingSteeringTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokEtv89.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokEtv89.rentSettings": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokMu97ant.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokMu97ant.rentSettings": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokTk53krot.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokTk53krot.towingIsCaterpillars": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokTk53krot.towingPedalScale": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokTk53krot.towingSteeringTreshold": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisVostokTk53krot.towingWinchLenghtToPull": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisWardenKochevnik.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisWayfarerOft96.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisWayfarerSt7050.constraintWithControllablePower": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisWayfarerSt7050.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisZikz605e.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisZikz605eAlt.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ChassisZikz612c.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CockpitDashboardSetting.elementsCockpit": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ConstraintWithControllablePower.constraintWithPowerControlled": "inside .bro::ChassisTuz119lynx.constraintWithControllablePower, which has no C# field, so the generator never sees the subtree",
+  "ConstraintWithControllablePower.isEnabled": "inside .bro::ChassisWayfarerSt7050.constraintWithControllablePower, which has no C# field, so the generator never sees the subtree",
+  "ConstraintsControllerSettings.isNewController": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ConstructionPart.pierAttachmentOffset": "the generator never reads this C# field",
+  "Converter.converters": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CraneSettings.amountOfWinches": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CraneSettings.isAnchorsEnabled": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CraneSettings.isMultiWinch": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "CraneWinchSettings.maxAngularMomentum": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "Damagable.demolitionSound": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "DebugIkSettings.propIK": "the generator never reads this C# field",
+  "DebugInfo.tintColor": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "EagleModeView.fresnelInEagleMode": "the generator never reads this C# field",
+  "EagleModeView.fresnelNotRenterd": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "EagleModeView.fresnelSelectedForRoadPlan": "the generator never reads this C# field",
+  "EagleModeView.outlineNotRenterd": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ElementsCockpit.elements": "inside .bro::CockpitDashboardSetting.elementsCockpit, which has no C# field, so the generator never sees the subtree",
+  "EquipmentCameraSettings.shouldIgnoreRotation": "the generator never reads this C# field",
+  "ExchangeIntermapResourcesSettings.type": "the generator never reads this C# field",
+  "ExtrusionScannerSettings.dotsSpline": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ExtrusionScannerSettings.frequency": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ExtrusionScannerSettings.ringSpline": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "FuelSettings.isEnabled": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "GraderBladesSettings.bladesWidth": "the generator never reads this C# field",
+  "GraderSettings.propGraderTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "HarvesterSawSettings.rollersRotateSpeed": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "HarvesterSettings.clawConstraints": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "HarvesterSettings.useEcsController": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "IkSlaveBranchSettings.ignoreUp": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "LevelHardModeSettings.objectiveRewardCoeff": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "LoadVolumeSettings.canBeUplifted": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "LoadVolumeSettings.density": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "LoadVolumeSettings.horizontAngleScalar": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "LoadVolumeSettings.sandQuantity": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "LoadVolumeSettings.upliftConstraintAllowedState": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "LoadVolumeSettings.volumeScale": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "LoadVolumeWarningSettings.locatorOffset": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "LogCraneSettings.isAnchorsEnabled": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "MagneticCraneSettings.magnetAreaSize": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "MagneticCraneSettings.magnetLocator": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "MaterialsSettings.possibleMaterials": "the generator never reads this C# field",
+  "MobileTruckStorageSettings.activationDelay": "the generator never reads this C# field",
+  "ObjectiveObjectHighlightSettings.isEnable": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "PhysPuzzle.addPhysPuzzleUnit": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "PhysPuzzle.staticParts": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "RentSettings.isEnabled": "inside .bro::ChassisAzov4317dl.rentSettings, which has no C# field, so the generator never sees the subtree",
+  "RentSettings.price": "inside .bro::ChassisAzov4317dl.rentSettings, which has no C# field, so the generator never sees the subtree",
+  "Resource.collectableType": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "Resource.useSpawnAndDestroySfx": "the generator never reads this C# field",
+  "ResourcePackRecipe.input": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ResourceRecyclingSettings.canPackBeforeBuildingFinished": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ResourceRecyclingSettings.resourceTeleportZoneSettings": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ResourceSubType.uniqueContactParticle": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ResourceSubType.uniqueContactParticles": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ResourceSubType.usageType": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ResourceSubType.useUniqueContactParticle": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "ResourceSubType.useUniqueSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "SpawnPoint.spawnPointBaseScale": "the generator never reads this C# field",
+  "SpawnPoint.spawnPointCheckHeight": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "SpawnPoint.spawnPointCheckRadius": "the generator never reads this C# field",
+  "SpawnPoint.spawnPointOffset": "the generator never reads this C# field",
+  "SpawnPoint.spawnPointScaleFactor": "the generator never reads this C# field",
+  "SubstanceSlicerSettings.slicerSfxWaterFalloffName": "the generator never reads this C# field",
+  "TaggedSettings.isEnabled": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.defaultDepth": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.dirChangeFactorDefault": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.dirChangeFactorMalleable": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.dispersionFactorDefault": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.dispersionFactorMalleable": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.extrusionDepthMalleableSoftDry": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.extrusionDepthMalleableSoftWet": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.heightChangeSpeedDefaultHardDry": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.heightChangeSpeedDefaultHardWet": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.heightChangeSpeedDefaultSoftDry": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.heightChangeSpeedDefaultSoftWet": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.heightChangeSpeedMalleableHardDry": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.heightChangeSpeedMalleableHardWet": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.heightChangeSpeedMalleableSoftDry": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.heightChangeSpeedMalleableSoftWet": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.heightPropagateAngleDefault": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.heightPropagateAngleMalleable": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.impulseMultiplierFromBladeDownDirection": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.impulseMultiplierFromIntersectedVolume": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.impulseMultiplierFromTerraformedVolume": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.impulseMultiplierFromTerrainCollision": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.impulseMultiplierHardDefault": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.impulseMultiplierHardMalleable": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.impulseMultiplierSoftDefault": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.impulseMultiplierSoftMalleable": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.maxExtrusionMap": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.physMudParticlesSpawnProbability": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.sandExtrusionBlendDistance": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.sandExtrusionDesired": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TerraformingSystem.sandExtrusionMaxChange": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrailSettings.albedoLevelsIn": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrailSettings.buildingTrailSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrailSettings.maxTrailLength": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrailSettings.normalLevelsIn": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrailSettings.segmentLifetime": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrailSettings.trailSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrailSettings.visualTexture": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrailSettings.voluemeHeight": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrailSettings.volumeYOffset": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrailSettings.width": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrenchDiggerSettings.diggerAngularVelocity": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrenchDiggerSettings.spoolAngularVelocityCoef": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrenchDiggerSettings.spoolRotatorBone": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TrenchDiggerSettings.timeToUpliftMs": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "Truck.cameraPreset": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "Truck.debugIkSettings": "the generator never reads this C# field",
+  "Truck.distanceSettings": "the generator never reads this C# field",
+  "Truck.haveRepair": "the generator never reads this C# field",
+  "Truck.propSfx": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "Truck.propWaterTarget": "the generator never reads this C# field",
+  "Truck.rentSettings": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TruckDetailsInfo.AwdType": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TruckDetailsInfo.truckFadePreset": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TruckRainSettings.raindropsSettings": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "TruckRaindropsSettings.raindropMaterial": "the generator never reads this C# field",
+  "TruckRaindropsSettings.windows": "the generator never reads this C# field",
+  "TruckWheel.trackOverlay": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "UiInfo.parkingSlotSize": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "UiInfo.price": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "UiInfo.uiMediumIcon": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "UiInfo.uiSmallIcon": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "UniversalAction.constraintName": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "UniversalAction.namedConstraintActionType": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "UniversalAction.stateName": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "UniversalAction.stateNameIfPressedAgain": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "UniversalAction.type": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "Wheel.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "Wheel.shouldCreateTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelFake.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelFake.shouldCreateTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelKhanLoStrannikFront.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelKhanLoStrannikMiddle.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelKhanLoStrannikMiddle.shouldCreateTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelKhanLoStrannikRear.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelKhanLoStrannikSmall.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelTuz303karelianOldFront.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelTuz303karelianOldMiddle.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelTuz303karelianOldMiddle.shouldCreateTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelTuz303karelianResFront.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelTuz303karelianResMiddle.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelTuz303karelianResMiddle.shouldCreateTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokAtm53pioneerOldFront.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokAtm53pioneerOldMiddle.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokAtm53pioneerOldMiddle.shouldCreateTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokAtm53pioneerOldRear.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokAtm53pioneerResFront.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokAtm53pioneerResMiddle.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokAtm53pioneerResMiddle.shouldCreateTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokAtm53pioneerResRear.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokMu97antOldFront.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokMu97antOldMiddle.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokMu97antOldMiddle.shouldCreateTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokMu97antOldRear.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokMu97antResFront.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokMu97antResMiddle.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokMu97antResMiddle.shouldCreateTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokMu97antResRear.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokTk53krotOldFront.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokTk53krotOldMiddle.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokTk53krotOldMiddle.shouldCreateTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokTk53krotOldRear.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokTk53krotResFront.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokTk53krotResMiddle.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokTk53krotResMiddle.shouldCreateTrail": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WheelVostokTk53krotResRear.isCaterpillarWheel": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "WinchSettings.modifyDamping": "no C# field in Bro.Compiled.dll: FieldsSerializer.LoadFields fills declared fields only, so the generator never sees the key (the BRO keeps it as an untyped NullModel)",
+  "XseqFileTemplateWithModel.isCinematic": "the generator never reads this C# field",
+  "XseqFileTemplateWithModel.model": "the generator never reads this C# field"
+ },
+ "engineIgnored": {
+  "CargoConstraint.leftMidpointBoardXOffset": "lands in auto_<truck>.cls:properties/prop_cargo_constraint/leftMidpointBoardXOffset, which the engine does not read (SSL var in game/truck/body/prop_cargo_constraint.ssc, never referenced outside its declaration)",
+  "CargoConstraint.rightMidpointBoardXOffset": "lands in auto_<truck>.cls:properties/prop_cargo_constraint/rightMidpointBoardXOffset, which the engine does not read (SSL var in game/truck/body/prop_cargo_constraint.ssc, never referenced outside its declaration)",
+  "DamageDispatcherSettings.truckCabinBone": "lands in auto_<truck>.cls:properties/prop_damage_dispatcher/truckCabinBone, which the engine does not read (SSL var in game/truck/damage/prop_damage_dispatcher.ssc, never referenced outside its declaration)",
+  "LoadVolumeHydraulicLidSettings.lidCloseState": "lands in auto_<truck>.cls:properties/prop_load_volume_controller/lidCloseState, which the engine does not read (SSL var in game/truck/prop_load_volume_controller.ssc, never referenced outside its declaration)",
+  "LoadVolumeHydraulicLidSettings.lidOpenState": "lands in auto_<truck>.cls:properties/prop_load_volume_controller/lidOpenState, which the engine does not read (SSL var in game/truck/prop_load_volume_controller.ssc, never referenced outside its declaration)",
+  "LoadVolumeSettings.maxHeightFromTerrain": "lands in auto_<truck>.cls:properties/prop_load_volume_controller/maxHeightFromTerrain, which the engine does not read (SSL var in game/truck/prop_load_volume_controller.ssc, never referenced outside its declaration)",
+  "LoadVolumeSettings.openingDelay": "lands in auto_<truck>.cls:properties/prop_load_volume_controller/openingDelay, which the engine does not read (SSL var in game/truck/prop_load_volume_controller.ssc, never referenced outside its declaration)"
+ },
+ "typeChains": {
+  "ActionMappingType": [
+   "ActionMappingType"
+  ],
+  "ActionsList": [
+   "ActionsList"
+  ],
+  "ActorFadeSettings": [
+   "ActorFadeSettings",
+   "Module"
+  ],
+  "AddonSocket": [
+   "AddonSocket"
+  ],
+  "AddonsSettings": [
+   "AddonsSettings",
+   "Module"
+  ],
+  "AiRouteFollowingSettings": [
+   "AiRouteFollowingSettings",
+   "Module"
+  ],
+  "AiSignalsSettings": [
+   "AiSignalsSettings"
+  ],
+  "AiSignalsSettingsGenerator": [
+   "AiSignalsSettingsGenerator"
+  ],
+  "AiSignalsSettingsResult": [
+   "AiSignalsSettingsResult"
+  ],
+  "AiSignalsTruckSettings": [
+   "AiSignalsTruckSettings"
+  ],
+  "AiTruckRouteMarkerSettings": [
+   "AiTruckRouteMarkerSettings"
+  ],
+  "AlcesC400CargoRes": [
+   "AlcesC400CargoRes",
+   "ChassisAlcesC400",
+   "Truck"
+  ],
+  "AlcesC400ConcreteMixerNew": [
+   "AlcesC400ConcreteMixerNew",
+   "ChassisAlcesC400",
+   "Truck"
+  ],
+  "AlcesPl30c": [
+   "AlcesPl30c",
+   "Truck"
+  ],
+  "AnchorsSettings": [
+   "AnchorsSettings",
+   "Module"
+  ],
+  "AramatsuBowheadHeavyDumptruckNew": [
+   "AramatsuBowheadHeavyDumptruckNew",
+   "ChassisAramatsuBowhead30t",
+   "Truck"
+  ],
+  "AramatsuCrayfishHarvesterNew": [
+   "AramatsuCrayfishHarvesterNew",
+   "ChassisAramatsuCrayfish",
+   "Truck"
+  ],
+  "AramatsuCrayfishWoodGrappleNew": [
+   "AramatsuCrayfishWoodGrappleNew",
+   "ChassisAramatsuCrayfish",
+   "Truck"
+  ],
+  "AramatsuForesterNeoCraneNew": [
+   "AramatsuForesterNeoCraneNew",
+   "ChassisAramatsuForesterNeo",
+   "Truck"
+  ],
+  "AramatsuForesterNeoForwarderNew": [
+   "AramatsuForesterNeoForwarderNew",
+   "ChassisAramatsuForesterNeo",
+   "Truck"
+  ],
+  "AramatsuKite3StumpMulcherNew": [
+   "AramatsuKite3StumpMulcherNew",
+   "ChassisAramatsuKite3",
+   "Truck"
+  ],
+  "AramatsuR1AsphaltRoller": [
+   "AramatsuR1AsphaltRoller",
+   "ChassisAramatsuR1",
+   "Truck"
+  ],
+  "Arling120specialPaverNew": [
+   "Arling120specialPaverNew",
+   "ChassisArlingRoadworks120Special",
+   "Truck"
+  ],
+  "Arling750rRollerNew": [
+   "Arling750rRollerNew",
+   "ChassisArling750r",
+   "Truck"
+  ],
+  "ArmigerThunderCivilianNew": [
+   "ArmigerThunderCivilianNew",
+   "ChassisArmigerThunderCivilian",
+   "Truck"
+  ],
+  "ArmigerThunderExpNew": [
+   "ArmigerThunderExpNew",
+   "ChassisArmigerThunderExp",
+   "Truck"
+  ],
+  "ArmigerThunderScoutNew": [
+   "ArmigerThunderScoutNew",
+   "ChassisArmigerThunder",
+   "Truck"
+  ],
+  "AsphaltRollerSettings": [
+   "AsphaltRollerSettings",
+   "Module"
+  ],
+  "AsphalterSettings": [
+   "AsphalterSettings",
+   "Module"
+  ],
+  "AttachPoint": [
+   "AttachPoint"
+  ],
+  "AuthorityAnalyzer": [
+   "AuthorityAnalyzer",
+   "SceneProblemsAnalyzer"
+  ],
+  "AuthorityTypemaskAnalyzer": [
+   "AuthorityTypemaskAnalyzer",
+   "GameObjectProblemsAnalyzer"
+  ],
+  "AxlesControllerSettings": [
+   "AxlesControllerSettings",
+   "Module"
+  ],
+  "Azov4317TentOld": [
+   "Azov4317TentOld",
+   "Cargo"
+  ],
+  "Azov4317TentRes": [
+   "Azov4317TentRes",
+   "Cargo"
+  ],
+  "Azov4317dlCargoOld": [
+   "Azov4317dlCargoOld",
+   "ChassisAzov4317dl",
+   "Truck"
+  ],
+  "Azov4317dlCargoRes": [
+   "Azov4317dlCargoRes",
+   "ChassisAzov4317dl",
+   "Truck"
+  ],
+  "Baikal5916CraneOld": [
+   "Baikal5916CraneOld",
+   "ChassisBaikal5916",
+   "Truck"
+  ],
+  "Baikal5916CraneRes": [
+   "Baikal5916CraneRes",
+   "ChassisBaikal5916",
+   "Truck"
+  ],
+  "Baikal65206HeavyDumptruckOld": [
+   "Baikal65206HeavyDumptruckOld",
+   "ChassisBaikal65206",
+   "Truck"
+  ],
+  "Baikal65206HeavyDumptruckRes": [
+   "Baikal65206HeavyDumptruckRes",
+   "ChassisBaikal65206",
+   "Truck"
+  ],
+  "BaseMtkProseka200": [
+   "BaseMtkProseka200",
+   "Truck"
+  ],
+  "BaseWheel": [
+   "BaseWheel",
+   "Wheel"
+  ],
+  "BlockControlPanel": [
+   "BlockControlPanel",
+   "Cargo"
+  ],
+  "BlueprintsCounterAnalyzer": [
+   "BlueprintsCounterAnalyzer",
+   "SceneStatisticsAnalyzer"
+  ],
+  "BodyLoadVolumeSettings": [
+   "BodyLoadVolumeSettings"
+  ],
+  "BoneLocatorData": [
+   "BoneLocatorData"
+  ],
+  "BoneLocatorDataSettings": [
+   "BoneLocatorDataSettings"
+  ],
+  "BoneLocatorSettings": [
+   "BoneLocatorSettings",
+   "Module"
+  ],
+  "Bricks": [
+   "Bricks",
+   "Cargo"
+  ],
+  "BridgelayerSettings": [
+   "BridgelayerSettings",
+   "Module"
+  ],
+  "BroFilterByClass": [
+   "BroFilterByClass",
+   "CustomOutlinerFilter"
+  ],
+  "BroFilterByCustomField": [
+   "BroFilterByCustomField",
+   "CustomOutlinerFilter"
+  ],
+  "BroFilterByCustomFieldType": [
+   "BroFilterByCustomFieldType"
+  ],
+  "BroFilterByPrefab": [
+   "BroFilterByPrefab",
+   "CustomOutlinerFilter"
+  ],
+  "BroFilterByTag": [
+   "BroFilterByTag",
+   "CustomOutlinerFilter"
+  ],
+  "BroFilterByTemplateName": [
+   "BroFilterByTemplateName",
+   "CustomOutlinerFilter"
+  ],
+  "BroFilterByVisualizer": [
+   "BroFilterByVisualizer",
+   "CustomOutlinerFilter"
+  ],
+  "BroGeneratorUtils": [
+   "BroGeneratorUtils"
+  ],
+  "BroGeneratorUtilsProject": [
+   "BroGeneratorUtilsProject",
+   "BroGeneratorUtils"
+  ],
+  "BroOnlyTruckOnRouteMarkerSettings": [
+   "BroOnlyTruckOnRouteMarkerSettings"
+  ],
+  "BrokenModelsAnalyzer": [
+   "BrokenModelsAnalyzer",
+   "GameObjectProblemsAnalyzer"
+  ],
+  "BucketBones": [
+   "BucketBones",
+   "Module"
+  ],
+  "Building": [
+   "Building"
+  ],
+  "BuildingAnimTest": [
+   "BuildingAnimTest",
+   "Building"
+  ],
+  "BuildingBrokenWarehouse01": [
+   "BuildingBrokenWarehouse01",
+   "Building"
+  ],
+  "BuildingBrokenWarehouse02": [
+   "BuildingBrokenWarehouse02",
+   "Building"
+  ],
+  "BuildingCargoConverterRecipeLibrary": [
+   "BuildingCargoConverterRecipeLibrary"
+  ],
+  "BuildingCargoConverterRecipeLibraryResult": [
+   "BuildingCargoConverterRecipeLibraryResult"
+  ],
+  "BuildingCargoCoverterRecipeLibraryGenerator": [
+   "BuildingCargoCoverterRecipeLibraryGenerator"
+  ],
+  "BuildingCementContainer": [
+   "BuildingCementContainer",
+   "Building"
+  ],
+  "BuildingDrillingRig01": [
+   "BuildingDrillingRig01",
+   "Building"
+  ],
+  "BuildingElectricGenerator": [
+   "BuildingElectricGenerator",
+   "Building"
+  ],
+  "BuildingElectricPole": [
+   "BuildingElectricPole",
+   "Building"
+  ],
+  "BuildingElectricitySettings": [
+   "BuildingElectricitySettings",
+   "Module"
+  ],
+  "BuildingEnableDisable": [
+   "BuildingEnableDisable",
+   "Module"
+  ],
+  "BuildingFactory": [
+   "BuildingFactory",
+   "Building"
+  ],
+  "BuildingFactoryConcrete": [
+   "BuildingFactoryConcrete",
+   "Building"
+  ],
+  "BuildingFactoryRecycling": [
+   "BuildingFactoryRecycling",
+   "Building"
+  ],
+  "BuildingFactorySteel": [
+   "BuildingFactorySteel",
+   "Building"
+  ],
+  "BuildingFob": [
+   "BuildingFob",
+   "Building"
+  ],
+  "BuildingFob2": [
+   "BuildingFob2",
+   "Building"
+  ],
+  "BuildingFob3": [
+   "BuildingFob3",
+   "Building"
+  ],
+  "BuildingFob4": [
+   "BuildingFob4",
+   "Building"
+  ],
+  "BuildingFobSettings": [
+   "BuildingFobSettings",
+   "Module"
+  ],
+  "BuildingFuelStation": [
+   "BuildingFuelStation",
+   "Building"
+  ],
+  "BuildingGarage": [
+   "BuildingGarage",
+   "Building"
+  ],
+  "BuildingGenerator": [
+   "BuildingGenerator"
+  ],
+  "BuildingGeneratorResult": [
+   "BuildingGeneratorResult"
+  ],
+  "BuildingGenericBuilding": [
+   "BuildingGenericBuilding",
+   "Building"
+  ],
+  "BuildingGenericElectricity": [
+   "BuildingGenericElectricity",
+   "Building"
+  ],
+  "BuildingGenericGasstation": [
+   "BuildingGenericGasstation",
+   "Building"
+  ],
+  "BuildingGenericQuarry": [
+   "BuildingGenericQuarry",
+   "Building"
+  ],
+  "BuildingGeodesicStation": [
+   "BuildingGeodesicStation",
+   "Building"
+  ],
+  "BuildingLogs": [
+   "BuildingLogs",
+   "Building"
+  ],
+  "BuildingMenuSettings": [
+   "BuildingMenuSettings",
+   "Module"
+  ],
+  "BuildingPipe": [
+   "BuildingPipe",
+   "Building"
+  ],
+  "BuildingPowerLine": [
+   "BuildingPowerLine",
+   "Building"
+  ],
+  "BuildingPowerStation": [
+   "BuildingPowerStation",
+   "Building"
+  ],
+  "BuildingPowerStation02Construction": [
+   "BuildingPowerStation02Construction",
+   "Building"
+  ],
+  "BuildingPowerStation02ConstructionWoUi": [
+   "BuildingPowerStation02ConstructionWoUi",
+   "Building"
+  ],
+  "BuildingPowerSubstation": [
+   "BuildingPowerSubstation",
+   "Building"
+  ],
+  "BuildingQuarry": [
+   "BuildingQuarry",
+   "Building"
+  ],
+  "BuildingRecoveryLoactor": [
+   "BuildingRecoveryLoactor",
+   "Module"
+  ],
+  "BuildingRecycling": [
+   "BuildingRecycling",
+   "Building"
+  ],
+  "BuildingRecycling2": [
+   "BuildingRecycling2",
+   "Building"
+  ],
+  "BuildingRecycling3": [
+   "BuildingRecycling3",
+   "Building"
+  ],
+  "BuildingRecyclingPipesWoUi": [
+   "BuildingRecyclingPipesWoUi",
+   "Building"
+  ],
+  "BuildingResourceConverter": [
+   "BuildingResourceConverter"
+  ],
+  "BuildingResourceCrafter": [
+   "BuildingResourceCrafter",
+   "Building"
+  ],
+  "BuildingResourceForBuild": [
+   "BuildingResourceForBuild"
+  ],
+  "BuildingResourcePackerRecipeLibrary": [
+   "BuildingResourcePackerRecipeLibrary"
+  ],
+  "BuildingResourcePackerRecipeLibraryGenerator": [
+   "BuildingResourcePackerRecipeLibraryGenerator"
+  ],
+  "BuildingResourcePackerRecipeLibraryResult": [
+   "BuildingResourcePackerRecipeLibraryResult"
+  ],
+  "BuildingResourceShop": [
+   "BuildingResourceShop"
+  ],
+  "BuildingResourceStorage": [
+   "BuildingResourceStorage"
+  ],
+  "BuildingSandStorage": [
+   "BuildingSandStorage",
+   "Module"
+  ],
+  "BuildingSawmill": [
+   "BuildingSawmill",
+   "Building"
+  ],
+  "BuildingSettings": [
+   "BuildingSettings"
+  ],
+  "BuildingSettingsGenerator": [
+   "BuildingSettingsGenerator"
+  ],
+  "BuildingSettingsGeneratorResult": [
+   "BuildingSettingsGeneratorResult"
+  ],
+  "BuildingSpaceComplex": [
+   "BuildingSpaceComplex",
+   "Building"
+  ],
+  "BuildingSpaceComplexAdditional": [
+   "BuildingSpaceComplexAdditional",
+   "Building"
+  ],
+  "BuildingStorageSettings": [
+   "BuildingStorageSettings"
+  ],
+  "BuildingStore": [
+   "BuildingStore",
+   "Building"
+  ],
+  "BuildingTransitionAir": [
+   "BuildingTransitionAir",
+   "Building"
+  ],
+  "BuildingTransitionPort": [
+   "BuildingTransitionPort",
+   "Building"
+  ],
+  "BuildingTransitionRailway": [
+   "BuildingTransitionRailway",
+   "Building"
+  ],
+  "BuildingTruckAi": [
+   "BuildingTruckAi"
+  ],
+  "BuildingTruckSpawn02_09": [
+   "BuildingTruckSpawn02_09",
+   "EstablishRouteZone"
+  ],
+  "BuildingUiInfo": [
+   "BuildingUiInfo"
+  ],
+  "BuildingWarehouse": [
+   "BuildingWarehouse",
+   "Building"
+  ],
+  "BuildingWarehouse03": [
+   "BuildingWarehouse03",
+   "Building"
+  ],
+  "BuildingWarehouse04": [
+   "BuildingWarehouse04",
+   "Building"
+  ],
+  "BuildingWarehouse05": [
+   "BuildingWarehouse05",
+   "Building"
+  ],
+  "BuildingWarehouse06": [
+   "BuildingWarehouse06",
+   "Building"
+  ],
+  "BuildingWarehouse07": [
+   "BuildingWarehouse07",
+   "Building"
+  ],
+  "BuildingWarehouse08": [
+   "BuildingWarehouse08",
+   "Building"
+  ],
+  "BuildingWarehouse09": [
+   "BuildingWarehouse09",
+   "Building"
+  ],
+  "BuildingWarehouse10": [
+   "BuildingWarehouse10",
+   "Building"
+  ],
+  "BuildingWarehouse11": [
+   "BuildingWarehouse11",
+   "Building"
+  ],
+  "BuildingWarehouse12": [
+   "BuildingWarehouse12",
+   "Building"
+  ],
+  "BuildingWarehouse2": [
+   "BuildingWarehouse2",
+   "Building"
+  ],
+  "BuildingWaterStation": [
+   "BuildingWaterStation",
+   "Building"
+  ],
+  "BuildingWeatherStation": [
+   "BuildingWeatherStation",
+   "Building"
+  ],
+  "BuildingWeatherStation2": [
+   "BuildingWeatherStation2",
+   "Building"
+  ],
+  "BuildingWoodenBridge": [
+   "BuildingWoodenBridge",
+   "Building"
+  ],
+  "BuildingWoodenRoad": [
+   "BuildingWoodenRoad",
+   "Building"
+  ],
+  "CameraTransitionResult": [
+   "CameraTransitionResult"
+  ],
+  "CardanShaftSettings": [
+   "CardanShaftSettings",
+   "Module"
+  ],
+  "Cargo": [
+   "Cargo"
+  ],
+  "CargoConstraint": [
+   "CargoConstraint",
+   "Module"
+  ],
+  "CargoConverterRecipe": [
+   "CargoConverterRecipe"
+  ],
+  "CargoGenerator": [
+   "CargoGenerator"
+  ],
+  "CargoGeneratorResult": [
+   "CargoGeneratorResult"
+  ],
+  "CargoNameAmount": [
+   "CargoNameAmount"
+  ],
+  "CargoRecipeEntity": [
+   "CargoRecipeEntity"
+  ],
+  "CargoSettings": [
+   "CargoSettings",
+   "Module"
+  ],
+  "CargoUiSettings": [
+   "CargoUiSettings"
+  ],
+  "CellTower01": [
+   "CellTower01",
+   "Building"
+  ],
+  "Cement": [
+   "Cement",
+   "Cargo"
+  ],
+  "ChainContraintAction": [
+   "ChainContraintAction"
+  ],
+  "Chassis5111bDragline": [
+   "Chassis5111bDragline",
+   "Truck"
+  ],
+  "ChassisAlcesC400": [
+   "ChassisAlcesC400",
+   "Truck"
+  ],
+  "ChassisAramatsuBowhead30t": [
+   "ChassisAramatsuBowhead30t",
+   "Truck"
+  ],
+  "ChassisAramatsuCrayfish": [
+   "ChassisAramatsuCrayfish",
+   "Truck"
+  ],
+  "ChassisAramatsuForesterNeo": [
+   "ChassisAramatsuForesterNeo",
+   "Truck"
+  ],
+  "ChassisAramatsuKite3": [
+   "ChassisAramatsuKite3",
+   "Truck"
+  ],
+  "ChassisAramatsuR1": [
+   "ChassisAramatsuR1",
+   "Truck"
+  ],
+  "ChassisArling750r": [
+   "ChassisArling750r",
+   "Truck"
+  ],
+  "ChassisArlingRoadworks120Special": [
+   "ChassisArlingRoadworks120Special",
+   "Truck"
+  ],
+  "ChassisArmigerThunder": [
+   "ChassisArmigerThunder",
+   "Truck"
+  ],
+  "ChassisArmigerThunderCivilian": [
+   "ChassisArmigerThunderCivilian",
+   "Truck"
+  ],
+  "ChassisArmigerThunderExp": [
+   "ChassisArmigerThunderExp",
+   "Truck"
+  ],
+  "ChassisAzov4317dl": [
+   "ChassisAzov4317dl",
+   "Truck"
+  ],
+  "ChassisBaikal5916": [
+   "ChassisBaikal5916",
+   "Truck"
+  ],
+  "ChassisBaikal65206": [
+   "ChassisBaikal65206",
+   "Truck"
+  ],
+  "ChassisDerryLonghorn4520": [
+   "ChassisDerryLonghorn4520",
+   "Truck"
+  ],
+  "ChassisDon72malamute": [
+   "ChassisDon72malamute",
+   "Truck"
+  ],
+  "ChassisDs135bunker": [
+   "ChassisDs135bunker",
+   "Truck"
+  ],
+  "ChassisDs55katok": [
+   "ChassisDs55katok",
+   "Truck"
+  ],
+  "ChassisEpecHwc945": [
+   "ChassisEpecHwc945",
+   "Truck"
+  ],
+  "ChassisEpecLt200": [
+   "ChassisEpecLt200",
+   "Truck"
+  ],
+  "ChassisEpecTc305": [
+   "ChassisEpecTc305",
+   "Truck"
+  ],
+  "ChassisGreenway740cross": [
+   "ChassisGreenway740cross",
+   "Truck"
+  ],
+  "ChassisGreenwayHt500": [
+   "ChassisGreenwayHt500",
+   "Truck"
+  ],
+  "ChassisInfo": [
+   "ChassisInfo"
+  ],
+  "ChassisInvictusTypeA": [
+   "ChassisInvictusTypeA",
+   "Truck"
+  ],
+  "ChassisKhanLoStrannik": [
+   "ChassisKhanLoStrannik",
+   "Truck"
+  ],
+  "ChassisKronenwerkL34": [
+   "ChassisKronenwerkL34",
+   "Truck"
+  ],
+  "ChassisKronenwerkL34Fork": [
+   "ChassisKronenwerkL34Fork",
+   "Truck"
+  ],
+  "ChassisMinutemanK350": [
+   "ChassisMinutemanK350",
+   "Truck"
+  ],
+  "ChassisMinutemanK350Civilian": [
+   "ChassisMinutemanK350Civilian",
+   "Truck"
+  ],
+  "ChassisMtk100m": [
+   "ChassisMtk100m",
+   "Truck"
+  ],
+  "ChassisMtk2006": [
+   "ChassisMtk2006",
+   "Truck"
+  ],
+  "ChassisMtkMd76": [
+   "ChassisMtkMd76",
+   "Truck"
+  ],
+  "ChassisMtkProseka200": [
+   "ChassisMtkProseka200",
+   "Truck"
+  ],
+  "ChassisMuleT1": [
+   "ChassisMuleT1",
+   "Truck"
+  ],
+  "ChassisMuleT1Trailblazer": [
+   "ChassisMuleT1Trailblazer",
+   "Truck"
+  ],
+  "ChassisNAndS260gantry": [
+   "ChassisNAndS260gantry",
+   "Truck"
+  ],
+  "ChassisNAndS700": [
+   "ChassisNAndS700",
+   "Truck"
+  ],
+  "ChassisNAndSLoader20g": [
+   "ChassisNAndSLoader20g",
+   "Truck"
+  ],
+  "ChassisNotaAllegro": [
+   "ChassisNotaAllegro",
+   "Truck"
+  ],
+  "ChassisStepPike": [
+   "ChassisStepPike",
+   "Truck"
+  ],
+  "ChassisTayga6455b": [
+   "ChassisTayga6455b",
+   "Truck"
+  ],
+  "ChassisTuz119lynx": [
+   "ChassisTuz119lynx",
+   "Truck"
+  ],
+  "ChassisTuz119lynxMutt": [
+   "ChassisTuz119lynxMutt",
+   "Truck"
+  ],
+  "ChassisTuz303karelian": [
+   "ChassisTuz303karelian",
+   "Truck"
+  ],
+  "ChassisUnmannedScoutDrone": [
+   "ChassisUnmannedScoutDrone",
+   "Truck"
+  ],
+  "ChassisVoltrackMx": [
+   "ChassisVoltrackMx",
+   "Truck"
+  ],
+  "ChassisVoron3327": [
+   "ChassisVoron3327",
+   "Truck"
+  ],
+  "ChassisVostokAtm53pioneer": [
+   "ChassisVostokAtm53pioneer",
+   "Truck"
+  ],
+  "ChassisVostokEtv89": [
+   "ChassisVostokEtv89",
+   "Truck"
+  ],
+  "ChassisVostokMu97ant": [
+   "ChassisVostokMu97ant",
+   "Truck"
+  ],
+  "ChassisVostokTk53krot": [
+   "ChassisVostokTk53krot",
+   "Truck"
+  ],
+  "ChassisWardenKochevnik": [
+   "ChassisWardenKochevnik",
+   "Truck"
+  ],
+  "ChassisWayfarerOft96": [
+   "ChassisWayfarerOft96",
+   "Truck"
+  ],
+  "ChassisWayfarerSt7050": [
+   "ChassisWayfarerSt7050",
+   "Truck"
+  ],
+  "ChassisZikz605e": [
+   "ChassisZikz605e",
+   "Truck"
+  ],
+  "ChassisZikz605eAlt": [
+   "ChassisZikz605eAlt",
+   "Truck"
+  ],
+  "ChassisZikz612c": [
+   "ChassisZikz612c",
+   "Truck"
+  ],
+  "CinematicFileTemplate": [
+   "CinematicFileTemplate",
+   "XseqFileTemplateWithModel",
+   "CustomFileTemplate"
+  ],
+  "ClassDocument": [
+   "ClassDocument",
+   "Document"
+  ],
+  "ClearAreaTaskObjectsScanner": [
+   "ClearAreaTaskObjectsScanner",
+   "Module"
+  ],
+  "ClientType": [
+   "ClientType"
+  ],
+  "CockpitCameraSettings": [
+   "CockpitCameraSettings",
+   "Module"
+  ],
+  "CockpitDashboardSetting": [
+   "CockpitDashboardSetting",
+   "Module"
+  ],
+  "CollisionArea": [
+   "CollisionArea"
+  ],
+  "CollisionQuality": [
+   "CollisionQuality",
+   "Module"
+  ],
+  "ColorPair": [
+   "ColorPair"
+  ],
+  "Concrete": [
+   "Concrete",
+   "Cargo"
+  ],
+  "ConcreteBlocks": [
+   "ConcreteBlocks",
+   "Cargo"
+  ],
+  "ConcreteFormwork": [
+   "ConcreteFormwork",
+   "Module"
+  ],
+  "ConcretePaverSettings": [
+   "ConcretePaverSettings",
+   "Module"
+  ],
+  "ConcretePile": [
+   "ConcretePile",
+   "PhysPuzzle"
+  ],
+  "ConcretePipes": [
+   "ConcretePipes",
+   "Cargo"
+  ],
+  "ConcreteRecycling": [
+   "ConcreteRecycling",
+   "Resource"
+  ],
+  "ConstraintActionTypes": [
+   "ConstraintActionTypes"
+  ],
+  "ConstraintChain": [
+   "ConstraintChain"
+  ],
+  "ConstraintChainLink": [
+   "ConstraintChainLink"
+  ],
+  "ConstraintChainLinkCondition": [
+   "ConstraintChainLinkCondition"
+  ],
+  "ConstraintChains": [
+   "ConstraintChains"
+  ],
+  "ConstraintSequentialChain": [
+   "ConstraintSequentialChain"
+  ],
+  "ConstraintSequentialChainLink": [
+   "ConstraintSequentialChainLink"
+  ],
+  "ConstraintSolvingMethodSettings": [
+   "ConstraintSolvingMethodSettings"
+  ],
+  "ConstraintsControllerSettings": [
+   "ConstraintsControllerSettings",
+   "Module"
+  ],
+  "Construction": [
+   "Construction"
+  ],
+  "ConstructionConcreteBridge": [
+   "ConstructionConcreteBridge",
+   "Construction"
+  ],
+  "ConstructionConcreteBridgeWide": [
+   "ConstructionConcreteBridgeWide",
+   "Construction"
+  ],
+  "ConstructionFiles": [
+   "ConstructionFiles"
+  ],
+  "ConstructionGenerator": [
+   "ConstructionGenerator"
+  ],
+  "ConstructionGeneratorResult": [
+   "ConstructionGeneratorResult"
+  ],
+  "ConstructionMetalBridge": [
+   "ConstructionMetalBridge",
+   "Construction"
+  ],
+  "ConstructionPart": [
+   "ConstructionPart"
+  ],
+  "ConstructionResourceNameAmount": [
+   "ConstructionResourceNameAmount"
+  ],
+  "ConstructionWoodenBridge": [
+   "ConstructionWoodenBridge",
+   "Construction"
+  ],
+  "ConstructionWoodenBridgeScout": [
+   "ConstructionWoodenBridgeScout",
+   "Construction"
+  ],
+  "ConstructionWoodenBridgeWide": [
+   "ConstructionWoodenBridgeWide",
+   "Construction"
+  ],
+  "ControllableConstraint": [
+   "ControllableConstraint"
+  ],
+  "Converter": [
+   "Converter",
+   "Module"
+  ],
+  "CraneLaserSettings": [
+   "CraneLaserSettings",
+   "Module"
+  ],
+  "CraneSettings": [
+   "CraneSettings",
+   "Module"
+  ],
+  "CraneWinchSettings": [
+   "CraneWinchSettings"
+  ],
+  "Credits": [
+   "Credits"
+  ],
+  "CreditsFinal": [
+   "CreditsFinal",
+   "Credits"
+  ],
+  "CreditsGenerator": [
+   "CreditsGenerator"
+  ],
+  "CreditsGeneratorResult": [
+   "CreditsGeneratorResult"
+  ],
+  "CursorInteraction": [
+   "CursorInteraction",
+   "Module"
+  ],
+  "CustomFileTemplate": [
+   "CustomFileTemplate"
+  ],
+  "CustomOutlinerFilter": [
+   "CustomOutlinerFilter"
+  ],
+  "CustomizableTrucks": [
+   "CustomizableTrucks"
+  ],
+  "CustomizableTrucksGenerator": [
+   "CustomizableTrucksGenerator"
+  ],
+  "CustomizationMaterial00": [
+   "CustomizationMaterial00",
+   "Materials"
+  ],
+  "CustomizationMaterial01": [
+   "CustomizationMaterial01",
+   "Materials"
+  ],
+  "CustomizationMaterial02": [
+   "CustomizationMaterial02",
+   "Materials"
+  ],
+  "CustomizationMaterial03": [
+   "CustomizationMaterial03",
+   "Materials"
+  ],
+  "CustomizationMaterial04": [
+   "CustomizationMaterial04",
+   "Materials"
+  ],
+  "CustomizationMaterial05": [
+   "CustomizationMaterial05",
+   "Materials"
+  ],
+  "CustomizationMaterial06": [
+   "CustomizationMaterial06",
+   "Materials"
+  ],
+  "CustomizationMaterial07": [
+   "CustomizationMaterial07",
+   "Materials"
+  ],
+  "CustomizationMaterial08": [
+   "CustomizationMaterial08",
+   "Materials"
+  ],
+  "CustomizationMaterial09": [
+   "CustomizationMaterial09",
+   "Materials"
+  ],
+  "CustomizationMaterial10": [
+   "CustomizationMaterial10",
+   "Materials"
+  ],
+  "CustomizationMaterial11": [
+   "CustomizationMaterial11",
+   "Materials"
+  ],
+  "CustomizationMaterial12": [
+   "CustomizationMaterial12",
+   "Materials"
+  ],
+  "CustomizationMaterial13": [
+   "CustomizationMaterial13",
+   "Materials"
+  ],
+  "CustomizationMaterial14": [
+   "CustomizationMaterial14",
+   "Materials"
+  ],
+  "CustomizationMaterial15": [
+   "CustomizationMaterial15",
+   "Materials"
+  ],
+  "CustomizationMaterial16": [
+   "CustomizationMaterial16",
+   "Materials"
+  ],
+  "CustomizationMaterial17": [
+   "CustomizationMaterial17",
+   "Materials"
+  ],
+  "CustomizationMaterial18": [
+   "CustomizationMaterial18",
+   "Materials"
+  ],
+  "CustomizationMaterial19": [
+   "CustomizationMaterial19",
+   "Materials"
+  ],
+  "CustomizationMaterial20": [
+   "CustomizationMaterial20",
+   "Materials"
+  ],
+  "CustomizationMaterial21": [
+   "CustomizationMaterial21",
+   "Materials"
+  ],
+  "CustomizationMaterial22": [
+   "CustomizationMaterial22",
+   "Materials"
+  ],
+  "CustomizationMaterial23": [
+   "CustomizationMaterial23",
+   "Materials"
+  ],
+  "CustomizationMaterial24": [
+   "CustomizationMaterial24",
+   "Materials"
+  ],
+  "CustomizationMaterial25": [
+   "CustomizationMaterial25",
+   "Materials"
+  ],
+  "CustomizationMaterial26": [
+   "CustomizationMaterial26",
+   "Materials"
+  ],
+  "CustomizationMaterial27": [
+   "CustomizationMaterial27",
+   "Materials"
+  ],
+  "CustomizationMaterial28": [
+   "CustomizationMaterial28",
+   "Materials"
+  ],
+  "CustomizationMaterial29": [
+   "CustomizationMaterial29",
+   "Materials"
+  ],
+  "CustomizationMaterial30": [
+   "CustomizationMaterial30",
+   "Materials"
+  ],
+  "CustomizationMaterial31": [
+   "CustomizationMaterial31",
+   "Materials"
+  ],
+  "CustomizationMaterial32": [
+   "CustomizationMaterial32",
+   "Materials"
+  ],
+  "CustomizationMaterial33": [
+   "CustomizationMaterial33",
+   "Materials"
+  ],
+  "CustomizationMaterial34": [
+   "CustomizationMaterial34",
+   "Materials"
+  ],
+  "CustomizationMaterial35": [
+   "CustomizationMaterial35",
+   "Materials"
+  ],
+  "CustomizationMaterial36": [
+   "CustomizationMaterial36",
+   "Materials"
+  ],
+  "CustomizationMaterial37": [
+   "CustomizationMaterial37",
+   "Materials"
+  ],
+  "CustomizationMaterial38": [
+   "CustomizationMaterial38",
+   "Materials"
+  ],
+  "CustomizationMaterial39": [
+   "CustomizationMaterial39",
+   "Materials"
+  ],
+  "CustomizationMaterial40": [
+   "CustomizationMaterial40",
+   "Materials"
+  ],
+  "CustomizationMaterial41": [
+   "CustomizationMaterial41",
+   "Materials"
+  ],
+  "CustomizationMaterial42": [
+   "CustomizationMaterial42",
+   "Materials"
+  ],
+  "CustomizationMaterial43": [
+   "CustomizationMaterial43",
+   "Materials"
+  ],
+  "CustomizationMaterial44": [
+   "CustomizationMaterial44",
+   "Materials"
+  ],
+  "CustomizationMaterial45": [
+   "CustomizationMaterial45",
+   "Materials"
+  ],
+  "CustomizationMaterial46": [
+   "CustomizationMaterial46",
+   "Materials"
+  ],
+  "CustomizationMaterial47": [
+   "CustomizationMaterial47",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo00": [
+   "CustomizationMaterialLogo00",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo01": [
+   "CustomizationMaterialLogo01",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo02": [
+   "CustomizationMaterialLogo02",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo03": [
+   "CustomizationMaterialLogo03",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo04": [
+   "CustomizationMaterialLogo04",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo05": [
+   "CustomizationMaterialLogo05",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo06": [
+   "CustomizationMaterialLogo06",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo07": [
+   "CustomizationMaterialLogo07",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo08": [
+   "CustomizationMaterialLogo08",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo09": [
+   "CustomizationMaterialLogo09",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo10": [
+   "CustomizationMaterialLogo10",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo11": [
+   "CustomizationMaterialLogo11",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo12": [
+   "CustomizationMaterialLogo12",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo13": [
+   "CustomizationMaterialLogo13",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo14": [
+   "CustomizationMaterialLogo14",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo15": [
+   "CustomizationMaterialLogo15",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo16": [
+   "CustomizationMaterialLogo16",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo17": [
+   "CustomizationMaterialLogo17",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo18": [
+   "CustomizationMaterialLogo18",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo19": [
+   "CustomizationMaterialLogo19",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo20": [
+   "CustomizationMaterialLogo20",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo21": [
+   "CustomizationMaterialLogo21",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo22": [
+   "CustomizationMaterialLogo22",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo23": [
+   "CustomizationMaterialLogo23",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo24": [
+   "CustomizationMaterialLogo24",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo25": [
+   "CustomizationMaterialLogo25",
+   "Materials"
+  ],
+  "CustomizationMaterialLogo26": [
+   "CustomizationMaterialLogo26",
+   "Materials"
+  ],
+  "CustomizationPresets": [
+   "CustomizationPresets"
+  ],
+  "CustomizationPresetsGenerator": [
+   "CustomizationPresetsGenerator"
+  ],
+  "CustomizationPresetsGeneratorResult": [
+   "CustomizationPresetsGeneratorResult"
+  ],
+  "CutZoneObjectMatPair": [
+   "CutZoneObjectMatPair"
+  ],
+  "CutZoneSettings": [
+   "CutZoneSettings"
+  ],
+  "Damagable": [
+   "Damagable",
+   "Module"
+  ],
+  "DamagableObjectSettings": [
+   "DamagableObjectSettings",
+   "Module"
+  ],
+  "DamageDispatcherSettings": [
+   "DamageDispatcherSettings",
+   "Module"
+  ],
+  "Deactivatable": [
+   "Deactivatable",
+   "Module"
+  ],
+  "DebugIkSettings": [
+   "DebugIkSettings",
+   "Module"
+  ],
+  "DebugInfo": [
+   "DebugInfo"
+  ],
+  "Demolished": [
+   "Demolished",
+   "Module"
+  ],
+  "DemolitionResources": [
+   "DemolitionResources"
+  ],
+  "DependentAxleSettings": [
+   "DependentAxleSettings"
+  ],
+  "DeprecatedSceneObjectOverridesAnalyzer": [
+   "DeprecatedSceneObjectOverridesAnalyzer",
+   "GameObjectProblemsAnalyzer"
+  ],
+  "DerryLonghorn4520Res": [
+   "DerryLonghorn4520Res",
+   "ChassisDerryLonghorn4520",
+   "Truck"
+  ],
+  "Discoverable": [
+   "Discoverable",
+   "Module"
+  ],
+  "DistanceToBuildingSettings": [
+   "DistanceToBuildingSettings"
+  ],
+  "Disturbers": [
+   "Disturbers",
+   "Module"
+  ],
+  "Dlc1MetalRecycling": [
+   "Dlc1MetalRecycling",
+   "Resource"
+  ],
+  "Dlc1MoneyRecycling": [
+   "Dlc1MoneyRecycling",
+   "Resource"
+  ],
+  "Dlc2MoneyRecycling": [
+   "Dlc2MoneyRecycling",
+   "Resource"
+  ],
+  "Document": [
+   "Document"
+  ],
+  "Don71": [
+   "Don71",
+   "ChassisDon72malamute",
+   "Truck"
+  ],
+  "Don72malamuteScoutNew": [
+   "Don72malamuteScoutNew",
+   "ChassisDon72malamute",
+   "Truck"
+  ],
+  "Don72malamuteScoutTrailerNew": [
+   "Don72malamuteScoutTrailerNew",
+   "ChassisDon72malamute",
+   "Truck"
+  ],
+  "Dragline5111bBuildingDemolisherOld": [
+   "Dragline5111bBuildingDemolisherOld",
+   "Chassis5111bDragline",
+   "Truck"
+  ],
+  "DraglineBuildingDemolisher5111b": [
+   "DraglineBuildingDemolisher5111b",
+   "Chassis5111bDragline",
+   "Truck"
+  ],
+  "Ds135bunkerPaverOld": [
+   "Ds135bunkerPaverOld",
+   "ChassisDs135bunker",
+   "Truck"
+  ],
+  "Ds135bunkerPaverRes": [
+   "Ds135bunkerPaverRes",
+   "ChassisDs135bunker",
+   "Truck"
+  ],
+  "Ds55katokRollerOld": [
+   "Ds55katokRollerOld",
+   "ChassisDs55katok",
+   "Truck"
+  ],
+  "Ds55katokRollerRes": [
+   "Ds55katokRollerRes",
+   "ChassisDs55katok",
+   "Truck"
+  ],
+  "DumpConstraintSettings": [
+   "DumpConstraintSettings",
+   "Module"
+  ],
+  "EagleCameraScrollPoint": [
+   "EagleCameraScrollPoint"
+  ],
+  "EagleCameraSettings": [
+   "EagleCameraSettings"
+  ],
+  "EagleCameraSettingsGenerator": [
+   "EagleCameraSettingsGenerator"
+  ],
+  "EagleCameraSettingsGeneratorResult": [
+   "EagleCameraSettingsGeneratorResult"
+  ],
+  "EagleModeView": [
+   "EagleModeView"
+  ],
+  "EditableWheel": [
+   "EditableWheel"
+  ],
+  "EditorMeshAnalyzer": [
+   "EditorMeshAnalyzer",
+   "GameObjectProblemsAnalyzer"
+  ],
+  "EditorMeshCollisionFixer": [
+   "EditorMeshCollisionFixer",
+   "ProblemsGameObjectFixer"
+  ],
+  "EffectsSettings": [
+   "EffectsSettings"
+  ],
+  "EpecHwc945HeavyCraneNew": [
+   "EpecHwc945HeavyCraneNew",
+   "ChassisEpecHwc945",
+   "Truck"
+  ],
+  "EpecLt200CraneCargoNew": [
+   "EpecLt200CraneCargoNew",
+   "ChassisEpecLt200",
+   "Truck"
+  ],
+  "EpecLt200DumptruckNew": [
+   "EpecLt200DumptruckNew",
+   "ChassisEpecLt200",
+   "Truck"
+  ],
+  "EpecMag240MagneticCrane": [
+   "EpecMag240MagneticCrane",
+   "ChassisEpecTc305",
+   "Truck"
+  ],
+  "EpecTc305HeavyCraneGrabberNew": [
+   "EpecTc305HeavyCraneGrabberNew",
+   "ChassisEpecTc305",
+   "Truck"
+  ],
+  "EpecTc305HeavyCraneNew": [
+   "EpecTc305HeavyCraneNew",
+   "ChassisEpecTc305",
+   "Truck"
+  ],
+  "EquipmentCameraSettings": [
+   "EquipmentCameraSettings",
+   "Module"
+  ],
+  "EquipmentCockpitCameraSettings": [
+   "EquipmentCockpitCameraSettings",
+   "Module"
+  ],
+  "EstablishRouteZone": [
+   "EstablishRouteZone"
+  ],
+  "EstablishRouteZoneGenerator": [
+   "EstablishRouteZoneGenerator"
+  ],
+  "EstablishRouteZoneGeneratorResult": [
+   "EstablishRouteZoneGeneratorResult"
+  ],
+  "Exception": [
+   "Exception"
+  ],
+  "ExchangeIntermapResourcesSettings": [
+   "ExchangeIntermapResourcesSettings",
+   "Module"
+  ],
+  "ExplorerSettings": [
+   "ExplorerSettings",
+   "Module"
+  ],
+  "ExtrusionScannerSettings": [
+   "ExtrusionScannerSettings",
+   "Module"
+  ],
+  "FbtBuildingDhCellTowerRuinV2": [
+   "FbtBuildingDhCellTowerRuinV2",
+   "Building"
+  ],
+  "FbtBuildingDhCountry05_03": [
+   "FbtBuildingDhCountry05_03",
+   "Building"
+  ],
+  "FbtBuildingDhGarageXl02": [
+   "FbtBuildingDhGarageXl02",
+   "Building"
+  ],
+  "FbtBuildingDhHardwareStore02": [
+   "FbtBuildingDhHardwareStore02",
+   "Building"
+  ],
+  "FbtBuildingDhPlant16_04": [
+   "FbtBuildingDhPlant16_04",
+   "Building"
+  ],
+  "FbtBuildingDhUs06_06_03": [
+   "FbtBuildingDhUs06_06_03",
+   "Building"
+  ],
+  "FbtBuildingDhUs06_15_04": [
+   "FbtBuildingDhUs06_15_04",
+   "Building"
+  ],
+  "FbtBuildingDmCountry01A03": [
+   "FbtBuildingDmCountry01A03",
+   "Building"
+  ],
+  "FbtBuildingDmCountry01B04": [
+   "FbtBuildingDmCountry01B04",
+   "Building"
+  ],
+  "FbtBuildingDmDesert05": [
+   "FbtBuildingDmDesert05",
+   "Building"
+  ],
+  "FbtBuildingDmDesert08": [
+   "FbtBuildingDmDesert08",
+   "Building"
+  ],
+  "FbtBuildingDmDesert08V2": [
+   "FbtBuildingDmDesert08V2",
+   "Building"
+  ],
+  "FbtBuildingDmDesert08V3": [
+   "FbtBuildingDmDesert08V3",
+   "Building"
+  ],
+  "FbtBuildingDmPlant14": [
+   "FbtBuildingDmPlant14",
+   "Building"
+  ],
+  "FbtBuildingDmUs06_16_01V2": [
+   "FbtBuildingDmUs06_16_01V2",
+   "Building"
+  ],
+  "FbtBuildingFormworkTestHstore": [
+   "FbtBuildingFormworkTestHstore",
+   "Building"
+  ],
+  "FbtBuildingGarageXl02Pouring": [
+   "FbtBuildingGarageXl02Pouring",
+   "Building"
+  ],
+  "FbtBuildingGhBuildingEurCity03": [
+   "FbtBuildingGhBuildingEurCity03",
+   "Building"
+  ],
+  "FbtBuildingGhBuildingPlant06": [
+   "FbtBuildingGhBuildingPlant06",
+   "Building"
+  ],
+  "FbtBuildingGhBuildingPlant19": [
+   "FbtBuildingGhBuildingPlant19",
+   "Building"
+  ],
+  "FbtBuildingGhCellTower01Ruined": [
+   "FbtBuildingGhCellTower01Ruined",
+   "Building"
+  ],
+  "FbtBuildingGhCountry01B03": [
+   "FbtBuildingGhCountry01B03",
+   "Building"
+  ],
+  "FbtBuildingGhCountry01C04": [
+   "FbtBuildingGhCountry01C04",
+   "Building"
+  ],
+  "FbtBuildingGhCountry01C10": [
+   "FbtBuildingGhCountry01C10",
+   "Building"
+  ],
+  "FbtBuildingGhEurCity04": [
+   "FbtBuildingGhEurCity04",
+   "Building"
+  ],
+  "FbtBuildingGhFuelStorageCan02": [
+   "FbtBuildingGhFuelStorageCan02",
+   "Building"
+  ],
+  "FbtBuildingGhLighthouse01": [
+   "FbtBuildingGhLighthouse01",
+   "Building"
+  ],
+  "FbtBuildingGhLumberMill01": [
+   "FbtBuildingGhLumberMill01",
+   "Building"
+  ],
+  "FbtBuildingGhMetallPlant04": [
+   "FbtBuildingGhMetallPlant04",
+   "Building"
+  ],
+  "FbtBuildingGhOilDerrick": [
+   "FbtBuildingGhOilDerrick",
+   "Building"
+  ],
+  "FbtBuildingGhOilPump01": [
+   "FbtBuildingGhOilPump01",
+   "Building"
+  ],
+  "FbtBuildingGhPlant08": [
+   "FbtBuildingGhPlant08",
+   "Building"
+  ],
+  "FbtBuildingGhPlantAfrica04": [
+   "FbtBuildingGhPlantAfrica04",
+   "Building"
+  ],
+  "FbtBuildingGhWarehouse03": [
+   "FbtBuildingGhWarehouse03",
+   "Building"
+  ],
+  "FbtBuildingGhostTestbooth": [
+   "FbtBuildingGhostTestbooth",
+   "Building"
+  ],
+  "FbtBuildingTestbooth": [
+   "FbtBuildingTestbooth",
+   "Building"
+  ],
+  "FbtBuildingTestboothDemolitionPlan": [
+   "FbtBuildingTestboothDemolitionPlan",
+   "Building"
+  ],
+  "FbtPileBuildingTestbooth": [
+   "FbtPileBuildingTestbooth",
+   "Building"
+  ],
+  "FbtPuzzleDmCastleTower": [
+   "FbtPuzzleDmCastleTower",
+   "Building"
+  ],
+  "FinisherClsTemplateBase": [
+   "FinisherClsTemplateBase"
+  ],
+  "FinisherClsTemplateGenerator": [
+   "FinisherClsTemplateGenerator"
+  ],
+  "FloatingSettings": [
+   "FloatingSettings",
+   "Module"
+  ],
+  "FobResourcePipesTier01": [
+   "FobResourcePipesTier01",
+   "QuestObject"
+  ],
+  "FobResourcePipesTier02": [
+   "FobResourcePipesTier02",
+   "QuestObject"
+  ],
+  "FobResourcePipesTier03": [
+   "FobResourcePipesTier03",
+   "QuestObject"
+  ],
+  "FobResourcesBeamsTier01": [
+   "FobResourcesBeamsTier01",
+   "QuestObject"
+  ],
+  "FobResourcesBeamsTier02": [
+   "FobResourcesBeamsTier02",
+   "QuestObject"
+  ],
+  "FobResourcesBeamsTier03": [
+   "FobResourcesBeamsTier03",
+   "QuestObject"
+  ],
+  "FobResourcesLogsTier01": [
+   "FobResourcesLogsTier01",
+   "QuestObject"
+  ],
+  "FobResourcesLogsTier02": [
+   "FobResourcesLogsTier02",
+   "QuestObject"
+  ],
+  "FobResourcesLogsTier03": [
+   "FobResourcesLogsTier03",
+   "QuestObject"
+  ],
+  "FobResourcesSlabsTier01": [
+   "FobResourcesSlabsTier01",
+   "QuestObject"
+  ],
+  "FobResourcesSlabsTier02": [
+   "FobResourcesSlabsTier02",
+   "QuestObject"
+  ],
+  "FobResourcesSlabsTier03": [
+   "FobResourcesSlabsTier03",
+   "QuestObject"
+  ],
+  "ForceFeedbackPresetAnchors": [
+   "ForceFeedbackPresetAnchors",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetBase": [
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetBridgeArm": [
+   "ForceFeedbackPresetBridgeArm",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetClaws": [
+   "ForceFeedbackPresetClaws",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetClawsRotation": [
+   "ForceFeedbackPresetClawsRotation",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetCraneArmChanged": [
+   "ForceFeedbackPresetCraneArmChanged",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetEngineShutdown": [
+   "ForceFeedbackPresetEngineShutdown",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetEngineStart": [
+   "ForceFeedbackPresetEngineStart",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetGearUpdate": [
+   "ForceFeedbackPresetGearUpdate",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetGenerator": [
+   "ForceFeedbackPresetGenerator"
+  ],
+  "ForceFeedbackPresetHighMed": [
+   "ForceFeedbackPresetHighMed",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetHit": [
+   "ForceFeedbackPresetHit",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetLightLow1sec": [
+   "ForceFeedbackPresetLightLow1sec",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetMulcherGrind": [
+   "ForceFeedbackPresetMulcherGrind",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetPaverOpen": [
+   "ForceFeedbackPresetPaverOpen",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetPourSand": [
+   "ForceFeedbackPresetPourSand",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetPourSand2": [
+   "ForceFeedbackPresetPourSand2",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetResult": [
+   "ForceFeedbackPresetResult"
+  ],
+  "ForceFeedbackPresetTest": [
+   "ForceFeedbackPresetTest",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetTreeCutting": [
+   "ForceFeedbackPresetTreeCutting",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetTreeRolling": [
+   "ForceFeedbackPresetTreeRolling",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetTrenchDigging": [
+   "ForceFeedbackPresetTrenchDigging",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetWarningMessage": [
+   "ForceFeedbackPresetWarningMessage",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetWinch": [
+   "ForceFeedbackPresetWinch",
+   "ForceFeedbackPresetBase"
+  ],
+  "ForceFeedbackPresetWinchPulling": [
+   "ForceFeedbackPresetWinchPulling",
+   "ForceFeedbackPresetBase"
+  ],
+  "Foundation": [
+   "Foundation",
+   "Module"
+  ],
+  "FrictionMaterial": [
+   "FrictionMaterial"
+  ],
+  "FuelMarkerInHudSettings": [
+   "FuelMarkerInHudSettings",
+   "Module"
+  ],
+  "FuelMarkerSettings": [
+   "FuelMarkerSettings",
+   "Module"
+  ],
+  "FuelResource": [
+   "FuelResource",
+   "Resource"
+  ],
+  "FuelSettings": [
+   "FuelSettings"
+  ],
+  "FuelStation": [
+   "FuelStation",
+   "Module"
+  ],
+  "FuelStationSettings": [
+   "FuelStationSettings",
+   "Module"
+  ],
+  "FuelTank": [
+   "FuelTank",
+   "Cargo"
+  ],
+  "GameCameraBase": [
+   "GameCameraBase"
+  ],
+  "GameCameraBaseGenerator": [
+   "GameCameraBaseGenerator"
+  ],
+  "GameCameraBaseResult": [
+   "GameCameraBaseResult"
+  ],
+  "GameCameraCinematic": [
+   "GameCameraCinematic",
+   "GameCameraBase"
+  ],
+  "GameCameraEagleMode": [
+   "GameCameraEagleMode",
+   "GameCameraBase"
+  ],
+  "GameCameraEquipmentCockpit": [
+   "GameCameraEquipmentCockpit",
+   "GameCameraBase"
+  ],
+  "GameCameraShake": [
+   "GameCameraShake"
+  ],
+  "GameCameraShakeAfkPause": [
+   "GameCameraShakeAfkPause",
+   "GameCameraShake"
+  ],
+  "GameCameraShakeEternalMod": [
+   "GameCameraShakeEternalMod",
+   "GameCameraShake"
+  ],
+  "GameCameraShakeGenerator": [
+   "GameCameraShakeGenerator"
+  ],
+  "GameCameraShakeResult": [
+   "GameCameraShakeResult"
+  ],
+  "GameCameraShakeTest": [
+   "GameCameraShakeTest",
+   "GameCameraShake"
+  ],
+  "GameCameraShakeWaterFlooding": [
+   "GameCameraShakeWaterFlooding",
+   "GameCameraShake"
+  ],
+  "GameCameraStratosphericMode": [
+   "GameCameraStratosphericMode",
+   "GameCameraBase"
+  ],
+  "GameCameraTransition": [
+   "GameCameraTransition",
+   "GameCameraBase"
+  ],
+  "GameCameraVehicle": [
+   "GameCameraVehicle",
+   "GameCameraBase"
+  ],
+  "GameCameraVehicleCockpit": [
+   "GameCameraVehicleCockpit",
+   "GameCameraBase"
+  ],
+  "GameCameraVehicleEquipment": [
+   "GameCameraVehicleEquipment",
+   "GameCameraBase"
+  ],
+  "GameCameraVehicleNew": [
+   "GameCameraVehicleNew",
+   "GameCameraBase"
+  ],
+  "GameGameraShakeDemolition": [
+   "GameGameraShakeDemolition",
+   "GameCameraShake"
+  ],
+  "GameObjectProblemsAnalyzer": [
+   "GameObjectProblemsAnalyzer"
+  ],
+  "GameObjectStatisticsAnalyzer": [
+   "GameObjectStatisticsAnalyzer"
+  ],
+  "GameSequenceFileTemplate": [
+   "GameSequenceFileTemplate",
+   "XseqFileTemplateWithModel",
+   "CustomFileTemplate"
+  ],
+  "Garage01Africa": [
+   "Garage01Africa",
+   "EstablishRouteZone"
+  ],
+  "Garage01_01": [
+   "Garage01_01",
+   "EstablishRouteZone"
+  ],
+  "Garage01_02Africa": [
+   "Garage01_02Africa",
+   "EstablishRouteZone"
+  ],
+  "Garage02Africa": [
+   "Garage02Africa",
+   "EstablishRouteZone"
+  ],
+  "Garage02_02": [
+   "Garage02_02",
+   "EstablishRouteZone"
+  ],
+  "Garage02_03Africa": [
+   "Garage02_03Africa",
+   "EstablishRouteZone"
+  ],
+  "Garage02_07": [
+   "Garage02_07",
+   "EstablishRouteZone"
+  ],
+  "Garage03Africa": [
+   "Garage03Africa",
+   "EstablishRouteZone"
+  ],
+  "Garage04Africa": [
+   "Garage04Africa",
+   "EstablishRouteZone"
+  ],
+  "Garage05Africa": [
+   "Garage05Africa",
+   "EstablishRouteZone"
+  ],
+  "Garage05_01Africa": [
+   "Garage05_01Africa",
+   "EstablishRouteZone"
+  ],
+  "Garage06Africa": [
+   "Garage06Africa",
+   "EstablishRouteZone"
+  ],
+  "Garage07Africa": [
+   "Garage07Africa",
+   "EstablishRouteZone"
+  ],
+  "Garage09": [
+   "Garage09",
+   "EstablishRouteZone"
+  ],
+  "GarageHermitTruck01": [
+   "GarageHermitTruck01",
+   "EstablishRouteZone"
+  ],
+  "GearboxAwdDifflockSettings": [
+   "GearboxAwdDifflockSettings"
+  ],
+  "GenaTemplate": [],
+  "Generator": [
+   "Generator",
+   "Cargo"
+  ],
+  "GeomCheckerAnalyzer": [
+   "GeomCheckerAnalyzer",
+   "GameObjectProblemsAnalyzer"
+  ],
+  "GeomVisibleSavable": [
+   "GeomVisibleSavable",
+   "Module"
+  ],
+  "GhostBuilding": [
+   "GhostBuilding",
+   "Module"
+  ],
+  "GhostResource": [
+   "GhostResource"
+  ],
+  "Glass": [
+   "Glass",
+   "Cargo"
+  ],
+  "GraderBladesSettings": [
+   "GraderBladesSettings"
+  ],
+  "GraderChainsSettings": [
+   "GraderChainsSettings"
+  ],
+  "GraderConstraintsSettings": [
+   "GraderConstraintsSettings"
+  ],
+  "GraderSettings": [
+   "GraderSettings",
+   "Module"
+  ],
+  "GraderTrailSettings": [
+   "GraderTrailSettings"
+  ],
+  "Greenway740crossCargoNew": [
+   "Greenway740crossCargoNew",
+   "ChassisGreenway740cross",
+   "Truck"
+  ],
+  "Greenway740crossForwarderNew": [
+   "Greenway740crossForwarderNew",
+   "ChassisGreenway740cross",
+   "Truck"
+  ],
+  "GreenwayHt500DozerNew": [
+   "GreenwayHt500DozerNew",
+   "ChassisGreenwayHt500",
+   "Truck"
+  ],
+  "GrindableSettings": [
+   "GrindableSettings"
+  ],
+  "HardModeSettings": [
+   "HardModeSettings"
+  ],
+  "HardModeSettingsGenerator": [
+   "HardModeSettingsGenerator"
+  ],
+  "HarvesterFindTreeSettings": [
+   "HarvesterFindTreeSettings"
+  ],
+  "HarvesterSawSettings": [
+   "HarvesterSawSettings"
+  ],
+  "HarvesterSettings": [
+   "HarvesterSettings",
+   "Module"
+  ],
+  "HarvesterSfxSettings": [
+   "HarvesterSfxSettings"
+  ],
+  "HeatPump": [
+   "HeatPump",
+   "Cargo"
+  ],
+  "HelicopterCameraSettings": [
+   "HelicopterCameraSettings"
+  ],
+  "HelicopterCameraSettingsGenerator": [
+   "HelicopterCameraSettingsGenerator"
+  ],
+  "Hidden": [
+   "Hidden",
+   "Module"
+  ],
+  "HintLifeTime": [
+   "HintLifeTime"
+  ],
+  "HollanderMk11ConcretePumper": [
+   "HollanderMk11ConcretePumper",
+   "Truck"
+  ],
+  "IkMasterBranchSettings": [
+   "IkMasterBranchSettings"
+  ],
+  "IkSettings": [
+   "IkSettings"
+  ],
+  "IkSlaveBranchSettings": [
+   "IkSlaveBranchSettings"
+  ],
+  "IkVisualSettings": [
+   "IkVisualSettings"
+  ],
+  "ImpactEffect": [
+   "ImpactEffect"
+  ],
+  "InPlaceConstraintSettings": [
+   "InPlaceConstraintSettings",
+   "Module"
+  ],
+  "IndependentAxleSettings": [
+   "IndependentAxleSettings"
+  ],
+  "IndustrialPump": [
+   "IndustrialPump",
+   "Cargo"
+  ],
+  "IntermapResourcesPrices": [
+   "IntermapResourcesPrices"
+  ],
+  "IntermapResourcesPricesGenerator": [
+   "IntermapResourcesPricesGenerator"
+  ],
+  "IntermapResourcesPricesResult": [
+   "IntermapResourcesPricesResult"
+  ],
+  "Inverter": [
+   "Inverter",
+   "Cargo"
+  ],
+  "InvictusTypeaScoutNew": [
+   "InvictusTypeaScoutNew",
+   "ChassisInvictusTypeA",
+   "Truck"
+  ],
+  "KhanLoStrannikMobOld": [
+   "KhanLoStrannikMobOld",
+   "ChassisKhanLoStrannik",
+   "Truck"
+  ],
+  "KronenwerkL34CargoDozerRes": [
+   "KronenwerkL34CargoDozerRes",
+   "ChassisKronenwerkL34",
+   "Truck"
+  ],
+  "KronenwerkL34DozerOld": [
+   "KronenwerkL34DozerOld",
+   "ChassisKronenwerkL34",
+   "Truck"
+  ],
+  "KronenwerkL34DozerRes": [
+   "KronenwerkL34DozerRes",
+   "ChassisKronenwerkL34",
+   "Truck"
+  ],
+  "KronenwerkL34ForwarderRes": [
+   "KronenwerkL34ForwarderRes",
+   "ChassisKronenwerkL34",
+   "Truck"
+  ],
+  "KronenwerkL34TrenchDiggerRes": [
+   "KronenwerkL34TrenchDiggerRes",
+   "ChassisKronenwerkL34Fork",
+   "Truck"
+  ],
+  "KronenwerkL34WoodGrabberRes": [
+   "KronenwerkL34WoodGrabberRes",
+   "ChassisKronenwerkL34",
+   "Truck"
+  ],
+  "Level": [
+   "Level"
+  ],
+  "LevelCargoPriceSettings": [
+   "LevelCargoPriceSettings"
+  ],
+  "LevelCommunicationsSettings": [
+   "LevelCommunicationsSettings"
+  ],
+  "LevelCompleteUiSettings": [
+   "LevelCompleteUiSettings"
+  ],
+  "LevelDefaultsSettings": [
+   "LevelDefaultsSettings"
+  ],
+  "LevelGenerator": [
+   "LevelGenerator"
+  ],
+  "LevelGeneratorResult": [
+   "LevelGeneratorResult"
+  ],
+  "LevelHardModeSettings": [
+   "LevelHardModeSettings"
+  ],
+  "LevelMalfunctionSettings": [
+   "LevelMalfunctionSettings"
+  ],
+  "LoadVolumeHydraulicLidSettings": [
+   "LoadVolumeHydraulicLidSettings"
+  ],
+  "LoadVolumeSettings": [
+   "LoadVolumeSettings",
+   "Module"
+  ],
+  "LoadVolumeWarningSettings": [
+   "LoadVolumeWarningSettings"
+  ],
+  "LodSettings": [
+   "LodSettings"
+  ],
+  "LogCraneSettings": [
+   "LogCraneSettings",
+   "Module"
+  ],
+  "LogsResource": [
+   "LogsResource",
+   "Resource"
+  ],
+  "LwiActorPoiSettings": [
+   "LwiActorPoiSettings"
+  ],
+  "LwiInteractionParams": [
+   "LwiInteractionParams"
+  ],
+  "Machine01": [
+   "Machine01",
+   "Cargo"
+  ],
+  "Machine02": [
+   "Machine02",
+   "Cargo"
+  ],
+  "Machine03": [
+   "Machine03",
+   "Cargo"
+  ],
+  "Machine04": [
+   "Machine04",
+   "Cargo"
+  ],
+  "Machine05": [
+   "Machine05",
+   "Cargo"
+  ],
+  "MagneticCraneSettings": [
+   "MagneticCraneSettings",
+   "Module"
+  ],
+  "MainMenuScenes": [
+   "MainMenuScenes"
+  ],
+  "MainMenuScnenesGenerator": [
+   "MainMenuScnenesGenerator"
+  ],
+  "Map01BuildingCraneAnim": [
+   "Map01BuildingCraneAnim",
+   "Building"
+  ],
+  "Map01BuildingFacility2": [
+   "Map01BuildingFacility2",
+   "Building"
+  ],
+  "Map01BuildingFob": [
+   "Map01BuildingFob",
+   "Building"
+  ],
+  "Map01BuildingFuelStation": [
+   "Map01BuildingFuelStation",
+   "Building"
+  ],
+  "Map01BuildingLogs": [
+   "Map01BuildingLogs",
+   "Building"
+  ],
+  "Map01BuildingPowerStation": [
+   "Map01BuildingPowerStation",
+   "Building"
+  ],
+  "Map01BuildingPowerSubstation": [
+   "Map01BuildingPowerSubstation",
+   "Building"
+  ],
+  "Map01BuildingQuarry": [
+   "Map01BuildingQuarry",
+   "Building"
+  ],
+  "Map01BuildingRecycling": [
+   "Map01BuildingRecycling",
+   "Building"
+  ],
+  "Map01BuildingRecycling2": [
+   "Map01BuildingRecycling2",
+   "Building"
+  ],
+  "Map01BuildingRecycling3": [
+   "Map01BuildingRecycling3",
+   "Building"
+  ],
+  "Map01BuildingSawmill": [
+   "Map01BuildingSawmill",
+   "Building"
+  ],
+  "Map01BuildingStore": [
+   "Map01BuildingStore",
+   "Building"
+  ],
+  "Map01BuildingTransitionPort": [
+   "Map01BuildingTransitionPort",
+   "Building"
+  ],
+  "Map01BuildingWarehouse01": [
+   "Map01BuildingWarehouse01",
+   "Building"
+  ],
+  "Map01BuildingWarehouse03": [
+   "Map01BuildingWarehouse03",
+   "Building"
+  ],
+  "Map01BuildingWarehouse04": [
+   "Map01BuildingWarehouse04",
+   "Building"
+  ],
+  "Map02BuildingAbandonedCity": [
+   "Map02BuildingAbandonedCity",
+   "Building"
+  ],
+  "Map02BuildingCity": [
+   "Map02BuildingCity",
+   "Building"
+  ],
+  "Map02BuildingFob": [
+   "Map02BuildingFob",
+   "Building"
+  ],
+  "Map02BuildingFobHarbor": [
+   "Map02BuildingFobHarbor",
+   "Building"
+  ],
+  "Map02BuildingFuelStation": [
+   "Map02BuildingFuelStation",
+   "Building"
+  ],
+  "Map02BuildingGasDistr": [
+   "Map02BuildingGasDistr",
+   "Building"
+  ],
+  "Map02BuildingLogs": [
+   "Map02BuildingLogs",
+   "Building"
+  ],
+  "Map02BuildingPier": [
+   "Map02BuildingPier",
+   "Building"
+  ],
+  "Map02BuildingPowerStation": [
+   "Map02BuildingPowerStation",
+   "Building"
+  ],
+  "Map02BuildingPowerSubstation": [
+   "Map02BuildingPowerSubstation",
+   "Building"
+  ],
+  "Map02BuildingPumpingStation": [
+   "Map02BuildingPumpingStation",
+   "Building"
+  ],
+  "Map02BuildingQuarry": [
+   "Map02BuildingQuarry",
+   "Building"
+  ],
+  "Map02BuildingRecycling": [
+   "Map02BuildingRecycling",
+   "Building"
+  ],
+  "Map02BuildingRecycling2": [
+   "Map02BuildingRecycling2",
+   "Building"
+  ],
+  "Map02BuildingRecycling3": [
+   "Map02BuildingRecycling3",
+   "Building"
+  ],
+  "Map02BuildingRescuePoint": [
+   "Map02BuildingRescuePoint",
+   "Building"
+  ],
+  "Map02BuildingSawmill": [
+   "Map02BuildingSawmill",
+   "Building"
+  ],
+  "Map02BuildingStore": [
+   "Map02BuildingStore",
+   "Building"
+  ],
+  "Map02BuildingSubstation": [
+   "Map02BuildingSubstation",
+   "Building"
+  ],
+  "Map02BuildingTransitionPort": [
+   "Map02BuildingTransitionPort",
+   "Building"
+  ],
+  "Map02BuildingWarehouse03": [
+   "Map02BuildingWarehouse03",
+   "Building"
+  ],
+  "Map02BuildingWarehouse04": [
+   "Map02BuildingWarehouse04",
+   "Building"
+  ],
+  "Map03BuildingFob": [
+   "Map03BuildingFob",
+   "Building"
+  ],
+  "Map03BuildingFob2nd": [
+   "Map03BuildingFob2nd",
+   "Building"
+  ],
+  "Map03BuildingFob3rd": [
+   "Map03BuildingFob3rd",
+   "Building"
+  ],
+  "Map03BuildingGasStationBig": [
+   "Map03BuildingGasStationBig",
+   "Building"
+  ],
+  "Map03BuildingGasStationSmall": [
+   "Map03BuildingGasStationSmall",
+   "Building"
+  ],
+  "Map03BuildingLogs": [
+   "Map03BuildingLogs",
+   "Building"
+  ],
+  "Map03BuildingPolePower01": [
+   "Map03BuildingPolePower01",
+   "Building"
+  ],
+  "Map03BuildingPowerStation": [
+   "Map03BuildingPowerStation",
+   "Building"
+  ],
+  "Map03BuildingPowerSubstation": [
+   "Map03BuildingPowerSubstation",
+   "Building"
+  ],
+  "Map03BuildingPowerstationFake": [
+   "Map03BuildingPowerstationFake",
+   "Building"
+  ],
+  "Map03BuildingQuarry": [
+   "Map03BuildingQuarry",
+   "Building"
+  ],
+  "Map03BuildingRadioTower01": [
+   "Map03BuildingRadioTower01",
+   "Building"
+  ],
+  "Map03BuildingRadioTower02": [
+   "Map03BuildingRadioTower02",
+   "Building"
+  ],
+  "Map03BuildingRadioTower03": [
+   "Map03BuildingRadioTower03",
+   "Building"
+  ],
+  "Map03BuildingRadioTower04": [
+   "Map03BuildingRadioTower04",
+   "Building"
+  ],
+  "Map03BuildingRecycling": [
+   "Map03BuildingRecycling",
+   "Building"
+  ],
+  "Map03BuildingRecycling2": [
+   "Map03BuildingRecycling2",
+   "Building"
+  ],
+  "Map03BuildingRecycling3": [
+   "Map03BuildingRecycling3",
+   "Building"
+  ],
+  "Map03BuildingRecycling3Demo": [
+   "Map03BuildingRecycling3Demo",
+   "Building"
+  ],
+  "Map03BuildingRelay": [
+   "Map03BuildingRelay",
+   "Building"
+  ],
+  "Map03BuildingSawmill": [
+   "Map03BuildingSawmill",
+   "Building"
+  ],
+  "Map03BuildingStore": [
+   "Map03BuildingStore",
+   "Building"
+  ],
+  "Map03BuildingStoreDemo": [
+   "Map03BuildingStoreDemo",
+   "Building"
+  ],
+  "Map03BuildingTransitionPort": [
+   "Map03BuildingTransitionPort",
+   "Building"
+  ],
+  "Map03BuildingWarehouse03": [
+   "Map03BuildingWarehouse03",
+   "Building"
+  ],
+  "Map03BuildingWarehouse04": [
+   "Map03BuildingWarehouse04",
+   "Building"
+  ],
+  "Map03BuildingWorkshop": [
+   "Map03BuildingWorkshop",
+   "Building"
+  ],
+  "Map03BuildingWorkshopWarehouse": [
+   "Map03BuildingWorkshopWarehouse",
+   "Building"
+  ],
+  "Map03CoastilleCity": [
+   "Map03CoastilleCity",
+   "Building"
+  ],
+  "Map03EastTunnel": [
+   "Map03EastTunnel",
+   "Building"
+  ],
+  "Map03NorthTunnel": [
+   "Map03NorthTunnel",
+   "Building"
+  ],
+  "Map03PortService": [
+   "Map03PortService",
+   "Building"
+  ],
+  "Map03RedwoodBayCity": [
+   "Map03RedwoodBayCity",
+   "Building"
+  ],
+  "Map04BuildingFob": [
+   "Map04BuildingFob",
+   "Building"
+  ],
+  "Map04BuildingFob2": [
+   "Map04BuildingFob2",
+   "Building"
+  ],
+  "Map04BuildingFob3": [
+   "Map04BuildingFob3",
+   "Building"
+  ],
+  "Map04BuildingFob4": [
+   "Map04BuildingFob4",
+   "Building"
+  ],
+  "Map04BuildingFuelStation": [
+   "Map04BuildingFuelStation",
+   "Building"
+  ],
+  "Map04BuildingLogs": [
+   "Map04BuildingLogs",
+   "Building"
+  ],
+  "Map04BuildingPipesWoUi": [
+   "Map04BuildingPipesWoUi",
+   "Building"
+  ],
+  "Map04BuildingPowerStation": [
+   "Map04BuildingPowerStation",
+   "Building"
+  ],
+  "Map04BuildingPowerSubstation": [
+   "Map04BuildingPowerSubstation",
+   "Building"
+  ],
+  "Map04BuildingPumpStation01": [
+   "Map04BuildingPumpStation01",
+   "Building"
+  ],
+  "Map04BuildingQuarry": [
+   "Map04BuildingQuarry",
+   "Building"
+  ],
+  "Map04BuildingRecycling": [
+   "Map04BuildingRecycling",
+   "Building"
+  ],
+  "Map04BuildingRecycling2": [
+   "Map04BuildingRecycling2",
+   "Building"
+  ],
+  "Map04BuildingRecycling3": [
+   "Map04BuildingRecycling3",
+   "Building"
+  ],
+  "Map04BuildingRecyclingBeams1": [
+   "Map04BuildingRecyclingBeams1",
+   "Building"
+  ],
+  "Map04BuildingRecyclingConcrete": [
+   "Map04BuildingRecyclingConcrete",
+   "Building"
+  ],
+  "Map04BuildingRecyclingPipe1": [
+   "Map04BuildingRecyclingPipe1",
+   "Building"
+  ],
+  "Map04BuildingRecyclingPipeRail": [
+   "Map04BuildingRecyclingPipeRail",
+   "Building"
+  ],
+  "Map04BuildingSawmill": [
+   "Map04BuildingSawmill",
+   "Building"
+  ],
+  "Map04BuildingStore": [
+   "Map04BuildingStore",
+   "Building"
+  ],
+  "Map04BuildingTown01": [
+   "Map04BuildingTown01",
+   "Building"
+  ],
+  "Map04BuildingTown02": [
+   "Map04BuildingTown02",
+   "Building"
+  ],
+  "Map04BuildingTransitionPort": [
+   "Map04BuildingTransitionPort",
+   "Building"
+  ],
+  "Map04BuildingWarehouse01": [
+   "Map04BuildingWarehouse01",
+   "Building"
+  ],
+  "Map04BuildingWarehouse02": [
+   "Map04BuildingWarehouse02",
+   "Building"
+  ],
+  "Map04BuildingWarehouse03": [
+   "Map04BuildingWarehouse03",
+   "Building"
+  ],
+  "Map04BuildingWarehouse04": [
+   "Map04BuildingWarehouse04",
+   "Building"
+  ],
+  "Map04BuildingWarehouse05": [
+   "Map04BuildingWarehouse05",
+   "Building"
+  ],
+  "Map04BuildingWarehouse06": [
+   "Map04BuildingWarehouse06",
+   "Building"
+  ],
+  "Map04BuildingWarehouse07": [
+   "Map04BuildingWarehouse07",
+   "Building"
+  ],
+  "Map04BuildingWarehouse08": [
+   "Map04BuildingWarehouse08",
+   "Building"
+  ],
+  "Map04BuildingWarehouse09": [
+   "Map04BuildingWarehouse09",
+   "Building"
+  ],
+  "Map04BuildingWarehouse10": [
+   "Map04BuildingWarehouse10",
+   "Building"
+  ],
+  "Map04BuildingWarehouse11": [
+   "Map04BuildingWarehouse11",
+   "Building"
+  ],
+  "Map04BuildingWarehouse12": [
+   "Map04BuildingWarehouse12",
+   "Building"
+  ],
+  "Map05BuildingDamOld": [
+   "Map05BuildingDamOld",
+   "Building"
+  ],
+  "Map05BuildingFishingIsland": [
+   "Map05BuildingFishingIsland",
+   "Building"
+  ],
+  "Map05BuildingFob": [
+   "Map05BuildingFob",
+   "Building"
+  ],
+  "Map05BuildingFob2": [
+   "Map05BuildingFob2",
+   "Building"
+  ],
+  "Map05BuildingFob3": [
+   "Map05BuildingFob3",
+   "Building"
+  ],
+  "Map05BuildingHermitDam": [
+   "Map05BuildingHermitDam",
+   "Building"
+  ],
+  "Map05BuildingLogs": [
+   "Map05BuildingLogs",
+   "Building"
+  ],
+  "Map05BuildingMachinard": [
+   "Map05BuildingMachinard",
+   "Building"
+  ],
+  "Map05BuildingNorthwestTunnel": [
+   "Map05BuildingNorthwestTunnel",
+   "Building"
+  ],
+  "Map05BuildingPolePower": [
+   "Map05BuildingPolePower",
+   "Building"
+  ],
+  "Map05BuildingPoleSub": [
+   "Map05BuildingPoleSub",
+   "Building"
+  ],
+  "Map05BuildingPool": [
+   "Map05BuildingPool",
+   "Building"
+  ],
+  "Map05BuildingPowerRailway": [
+   "Map05BuildingPowerRailway",
+   "Building"
+  ],
+  "Map05BuildingPowerStation": [
+   "Map05BuildingPowerStation",
+   "Building"
+  ],
+  "Map05BuildingPowerSubstation": [
+   "Map05BuildingPowerSubstation",
+   "Building"
+  ],
+  "Map05BuildingPowerSubstation1": [
+   "Map05BuildingPowerSubstation1",
+   "Building"
+  ],
+  "Map05BuildingPowerSubstation2": [
+   "Map05BuildingPowerSubstation2",
+   "Building"
+  ],
+  "Map05BuildingPowerSubstation3": [
+   "Map05BuildingPowerSubstation3",
+   "Building"
+  ],
+  "Map05BuildingProdwarehouse": [
+   "Map05BuildingProdwarehouse",
+   "Building"
+  ],
+  "Map05BuildingPumpBackup": [
+   "Map05BuildingPumpBackup",
+   "Building"
+  ],
+  "Map05BuildingPumpingStation": [
+   "Map05BuildingPumpingStation",
+   "Building"
+  ],
+  "Map05BuildingQuarry": [
+   "Map05BuildingQuarry",
+   "Building"
+  ],
+  "Map05BuildingQuarrySmall": [
+   "Map05BuildingQuarrySmall",
+   "Building"
+  ],
+  "Map05BuildingRailway": [
+   "Map05BuildingRailway",
+   "Building"
+  ],
+  "Map05BuildingRecycling": [
+   "Map05BuildingRecycling",
+   "Building"
+  ],
+  "Map05BuildingRecycling2": [
+   "Map05BuildingRecycling2",
+   "Building"
+  ],
+  "Map05BuildingRecycling3": [
+   "Map05BuildingRecycling3",
+   "Building"
+  ],
+  "Map05BuildingSawmill": [
+   "Map05BuildingSawmill",
+   "Building"
+  ],
+  "Map05BuildingSawmill2": [
+   "Map05BuildingSawmill2",
+   "Building"
+  ],
+  "Map05BuildingSawwarehouse": [
+   "Map05BuildingSawwarehouse",
+   "Building"
+  ],
+  "Map05BuildingSoutheastTunnel": [
+   "Map05BuildingSoutheastTunnel",
+   "Building"
+  ],
+  "Map05BuildingStore": [
+   "Map05BuildingStore",
+   "Building"
+  ],
+  "Map05BuildingTransitionPort": [
+   "Map05BuildingTransitionPort",
+   "Building"
+  ],
+  "Map05BuildingWarehouse": [
+   "Map05BuildingWarehouse",
+   "Building"
+  ],
+  "Map05BuildingWarehouse03": [
+   "Map05BuildingWarehouse03",
+   "Building"
+  ],
+  "Map05BuildingWarehouseConcrete": [
+   "Map05BuildingWarehouseConcrete",
+   "Building"
+  ],
+  "Map05BuildingWarehouseDam": [
+   "Map05BuildingWarehouseDam",
+   "Building"
+  ],
+  "Map05BuildingWater": [
+   "Map05BuildingWater",
+   "Building"
+  ],
+  "Map05BuildingWater2": [
+   "Map05BuildingWater2",
+   "Building"
+  ],
+  "Map05BuildingWater3": [
+   "Map05BuildingWater3",
+   "Building"
+  ],
+  "Map05BuildingWater4": [
+   "Map05BuildingWater4",
+   "Building"
+  ],
+  "Map06BuildingCanal": [
+   "Map06BuildingCanal",
+   "Building"
+  ],
+  "Map06BuildingCanalWall": [
+   "Map06BuildingCanalWall",
+   "Building"
+  ],
+  "Map06BuildingFarmFacility": [
+   "Map06BuildingFarmFacility",
+   "Building"
+  ],
+  "Map06BuildingFob": [
+   "Map06BuildingFob",
+   "Building"
+  ],
+  "Map06BuildingFob2": [
+   "Map06BuildingFob2",
+   "Building"
+  ],
+  "Map06BuildingFob3": [
+   "Map06BuildingFob3",
+   "Building"
+  ],
+  "Map06BuildingFuelStation": [
+   "Map06BuildingFuelStation",
+   "Building"
+  ],
+  "Map06BuildingHotel": [
+   "Map06BuildingHotel",
+   "Building"
+  ],
+  "Map06BuildingLogs": [
+   "Map06BuildingLogs",
+   "Building"
+  ],
+  "Map06BuildingOilPumpStation": [
+   "Map06BuildingOilPumpStation",
+   "Building"
+  ],
+  "Map06BuildingOilStation": [
+   "Map06BuildingOilStation",
+   "Building"
+  ],
+  "Map06BuildingOilStation2": [
+   "Map06BuildingOilStation2",
+   "Building"
+  ],
+  "Map06BuildingOilStation3": [
+   "Map06BuildingOilStation3",
+   "Building"
+  ],
+  "Map06BuildingOilStation4": [
+   "Map06BuildingOilStation4",
+   "Building"
+  ],
+  "Map06BuildingOilStationPort": [
+   "Map06BuildingOilStationPort",
+   "Building"
+  ],
+  "Map06BuildingPort": [
+   "Map06BuildingPort",
+   "Building"
+  ],
+  "Map06BuildingPortOilTerminal": [
+   "Map06BuildingPortOilTerminal",
+   "Building"
+  ],
+  "Map06BuildingPowerStation": [
+   "Map06BuildingPowerStation",
+   "Building"
+  ],
+  "Map06BuildingPowerStationBeam": [
+   "Map06BuildingPowerStationBeam",
+   "Building"
+  ],
+  "Map06BuildingPowerStationPort": [
+   "Map06BuildingPowerStationPort",
+   "Building"
+  ],
+  "Map06BuildingPowerSubstation": [
+   "Map06BuildingPowerSubstation",
+   "Building"
+  ],
+  "Map06BuildingQuarry": [
+   "Map06BuildingQuarry",
+   "Building"
+  ],
+  "Map06BuildingQuarryPit": [
+   "Map06BuildingQuarryPit",
+   "Building"
+  ],
+  "Map06BuildingRadioTower": [
+   "Map06BuildingRadioTower",
+   "Building"
+  ],
+  "Map06BuildingRecycling": [
+   "Map06BuildingRecycling",
+   "Building"
+  ],
+  "Map06BuildingRecycling2": [
+   "Map06BuildingRecycling2",
+   "Building"
+  ],
+  "Map06BuildingRecycling3": [
+   "Map06BuildingRecycling3",
+   "Building"
+  ],
+  "Map06BuildingRecyclingBeam": [
+   "Map06BuildingRecyclingBeam",
+   "Building"
+  ],
+  "Map06BuildingRecyclingConcrete": [
+   "Map06BuildingRecyclingConcrete",
+   "Building"
+  ],
+  "Map06BuildingRecyclingPipe": [
+   "Map06BuildingRecyclingPipe",
+   "Building"
+  ],
+  "Map06BuildingSawmill": [
+   "Map06BuildingSawmill",
+   "Building"
+  ],
+  "Map06BuildingStore": [
+   "Map06BuildingStore",
+   "Building"
+  ],
+  "Map06BuildingTransitionPort": [
+   "Map06BuildingTransitionPort",
+   "Building"
+  ],
+  "Map06BuildingTunnel1": [
+   "Map06BuildingTunnel1",
+   "Building"
+  ],
+  "Map06BuildingTunnel2": [
+   "Map06BuildingTunnel2",
+   "Building"
+  ],
+  "Map06BuildingWarehouse01": [
+   "Map06BuildingWarehouse01",
+   "Building"
+  ],
+  "Map06BuildingWarehouse03": [
+   "Map06BuildingWarehouse03",
+   "Building"
+  ],
+  "Map06BuildingWarehouse04": [
+   "Map06BuildingWarehouse04",
+   "Building"
+  ],
+  "Map07BuildingChemicalWarehouse": [
+   "Map07BuildingChemicalWarehouse",
+   "Building"
+  ],
+  "Map07BuildingFishWarehouse": [
+   "Map07BuildingFishWarehouse",
+   "Building"
+  ],
+  "Map07BuildingFob": [
+   "Map07BuildingFob",
+   "Building"
+  ],
+  "Map07BuildingFob2": [
+   "Map07BuildingFob2",
+   "Building"
+  ],
+  "Map07BuildingFob3": [
+   "Map07BuildingFob3",
+   "Building"
+  ],
+  "Map07BuildingFuelStation": [
+   "Map07BuildingFuelStation",
+   "Building"
+  ],
+  "Map07BuildingLogs": [
+   "Map07BuildingLogs",
+   "Building"
+  ],
+  "Map07BuildingMachinard": [
+   "Map07BuildingMachinard",
+   "Building"
+  ],
+  "Map07BuildingNortheastT": [
+   "Map07BuildingNortheastT",
+   "Building"
+  ],
+  "Map07BuildingNorthernT": [
+   "Map07BuildingNorthernT",
+   "Building"
+  ],
+  "Map07BuildingParagraph": [
+   "Map07BuildingParagraph",
+   "Building"
+  ],
+  "Map07BuildingPoleNewBuild": [
+   "Map07BuildingPoleNewBuild",
+   "Building"
+  ],
+  "Map07BuildingPolePower": [
+   "Map07BuildingPolePower",
+   "Building"
+  ],
+  "Map07BuildingPoleSub": [
+   "Map07BuildingPoleSub",
+   "Building"
+  ],
+  "Map07BuildingPort": [
+   "Map07BuildingPort",
+   "Building"
+  ],
+  "Map07BuildingPowerStation": [
+   "Map07BuildingPowerStation",
+   "Building"
+  ],
+  "Map07BuildingPowerStation2": [
+   "Map07BuildingPowerStation2",
+   "Building"
+  ],
+  "Map07BuildingPowerSubstation": [
+   "Map07BuildingPowerSubstation",
+   "Building"
+  ],
+  "Map07BuildingPumpingSt1": [
+   "Map07BuildingPumpingSt1",
+   "Building"
+  ],
+  "Map07BuildingPumpingSt2": [
+   "Map07BuildingPumpingSt2",
+   "Building"
+  ],
+  "Map07BuildingPumpingSt3": [
+   "Map07BuildingPumpingSt3",
+   "Building"
+  ],
+  "Map07BuildingQuarry": [
+   "Map07BuildingQuarry",
+   "Building"
+  ],
+  "Map07BuildingRailwayDep": [
+   "Map07BuildingRailwayDep",
+   "Building"
+  ],
+  "Map07BuildingRailwayTrees": [
+   "Map07BuildingRailwayTrees",
+   "Building"
+  ],
+  "Map07BuildingRecycling": [
+   "Map07BuildingRecycling",
+   "Building"
+  ],
+  "Map07BuildingRecycling2": [
+   "Map07BuildingRecycling2",
+   "Building"
+  ],
+  "Map07BuildingRecycling3": [
+   "Map07BuildingRecycling3",
+   "Building"
+  ],
+  "Map07BuildingSawmill": [
+   "Map07BuildingSawmill",
+   "Building"
+  ],
+  "Map07BuildingSouthwestT": [
+   "Map07BuildingSouthwestT",
+   "Building"
+  ],
+  "Map07BuildingStore": [
+   "Map07BuildingStore",
+   "Building"
+  ],
+  "Map07BuildingTransitionPort": [
+   "Map07BuildingTransitionPort",
+   "Building"
+  ],
+  "Map07BuildingUnloading": [
+   "Map07BuildingUnloading",
+   "Building"
+  ],
+  "Map07BuildingVillage1": [
+   "Map07BuildingVillage1",
+   "Building"
+  ],
+  "Map07BuildingVillage2": [
+   "Map07BuildingVillage2",
+   "Building"
+  ],
+  "Map07BuildingWarehouse03": [
+   "Map07BuildingWarehouse03",
+   "Building"
+  ],
+  "Map07BuildingWarehouse04": [
+   "Map07BuildingWarehouse04",
+   "Building"
+  ],
+  "Map08BuildingCraneAnim": [
+   "Map08BuildingCraneAnim",
+   "Building"
+  ],
+  "Map08BuildingDrillingRig": [
+   "Map08BuildingDrillingRig",
+   "Building"
+  ],
+  "Map08BuildingFob": [
+   "Map08BuildingFob",
+   "Building"
+  ],
+  "Map08BuildingFob2": [
+   "Map08BuildingFob2",
+   "Building"
+  ],
+  "Map08BuildingFob3": [
+   "Map08BuildingFob3",
+   "Building"
+  ],
+  "Map08BuildingFuelStation": [
+   "Map08BuildingFuelStation",
+   "Building"
+  ],
+  "Map08BuildingIotp": [
+   "Map08BuildingIotp",
+   "Building"
+  ],
+  "Map08BuildingLogs": [
+   "Map08BuildingLogs",
+   "Building"
+  ],
+  "Map08BuildingMachinery": [
+   "Map08BuildingMachinery",
+   "Building"
+  ],
+  "Map08BuildingOilPumpNew": [
+   "Map08BuildingOilPumpNew",
+   "Building"
+  ],
+  "Map08BuildingOilPumpOld": [
+   "Map08BuildingOilPumpOld",
+   "Building"
+  ],
+  "Map08BuildingPowerStation": [
+   "Map08BuildingPowerStation",
+   "Building"
+  ],
+  "Map08BuildingPowerStation2": [
+   "Map08BuildingPowerStation2",
+   "Building"
+  ],
+  "Map08BuildingPowerStation3": [
+   "Map08BuildingPowerStation3",
+   "Building"
+  ],
+  "Map08BuildingPowerSubstation": [
+   "Map08BuildingPowerSubstation",
+   "Building"
+  ],
+  "Map08BuildingPumpStation": [
+   "Map08BuildingPumpStation",
+   "Building"
+  ],
+  "Map08BuildingPumpStation2": [
+   "Map08BuildingPumpStation2",
+   "Building"
+  ],
+  "Map08BuildingQuarry": [
+   "Map08BuildingQuarry",
+   "Building"
+  ],
+  "Map08BuildingQuarry2": [
+   "Map08BuildingQuarry2",
+   "Building"
+  ],
+  "Map08BuildingQuarry3": [
+   "Map08BuildingQuarry3",
+   "Building"
+  ],
+  "Map08BuildingQuarry4": [
+   "Map08BuildingQuarry4",
+   "Building"
+  ],
+  "Map08BuildingQuarry5": [
+   "Map08BuildingQuarry5",
+   "Building"
+  ],
+  "Map08BuildingQuarry6": [
+   "Map08BuildingQuarry6",
+   "Building"
+  ],
+  "Map08BuildingQuarry7": [
+   "Map08BuildingQuarry7",
+   "Building"
+  ],
+  "Map08BuildingRadioTower02": [
+   "Map08BuildingRadioTower02",
+   "Building"
+  ],
+  "Map08BuildingRailway": [
+   "Map08BuildingRailway",
+   "Building"
+  ],
+  "Map08BuildingRecycling": [
+   "Map08BuildingRecycling",
+   "Building"
+  ],
+  "Map08BuildingRecycling2": [
+   "Map08BuildingRecycling2",
+   "Building"
+  ],
+  "Map08BuildingRecycling3": [
+   "Map08BuildingRecycling3",
+   "Building"
+  ],
+  "Map08BuildingSawmill": [
+   "Map08BuildingSawmill",
+   "Building"
+  ],
+  "Map08BuildingSteel": [
+   "Map08BuildingSteel",
+   "Building"
+  ],
+  "Map08BuildingSteelFactory": [
+   "Map08BuildingSteelFactory",
+   "Building"
+  ],
+  "Map08BuildingStore": [
+   "Map08BuildingStore",
+   "Building"
+  ],
+  "Map08BuildingTransitionPort": [
+   "Map08BuildingTransitionPort",
+   "Building"
+  ],
+  "Map08BuildingTunnel1": [
+   "Map08BuildingTunnel1",
+   "Building"
+  ],
+  "Map08BuildingTunnel3": [
+   "Map08BuildingTunnel3",
+   "Building"
+  ],
+  "Map08BuildingTunnel4": [
+   "Map08BuildingTunnel4",
+   "Building"
+  ],
+  "Map08BuildingTunnel5": [
+   "Map08BuildingTunnel5",
+   "Building"
+  ],
+  "Map08BuildingTunnel6": [
+   "Map08BuildingTunnel6",
+   "Building"
+  ],
+  "Map08BuildingTunnel7": [
+   "Map08BuildingTunnel7",
+   "Building"
+  ],
+  "Map08BuildingVillageWarehouse": [
+   "Map08BuildingVillageWarehouse",
+   "Building"
+  ],
+  "Map08BuildingWarehouse02": [
+   "Map08BuildingWarehouse02",
+   "Building"
+  ],
+  "Map08BuildingWarehouse03": [
+   "Map08BuildingWarehouse03",
+   "Building"
+  ],
+  "Map08BuildingWarehouse04": [
+   "Map08BuildingWarehouse04",
+   "Building"
+  ],
+  "Map08BuildingWarehouse05": [
+   "Map08BuildingWarehouse05",
+   "Building"
+  ],
+  "Map09BuildingDistribSubstation": [
+   "Map09BuildingDistribSubstation",
+   "Building"
+  ],
+  "Map09BuildingFob": [
+   "Map09BuildingFob",
+   "Building"
+  ],
+  "Map09BuildingFob2": [
+   "Map09BuildingFob2",
+   "Building"
+  ],
+  "Map09BuildingFobDemo": [
+   "Map09BuildingFobDemo",
+   "Building"
+  ],
+  "Map09BuildingFuelStation": [
+   "Map09BuildingFuelStation",
+   "Building"
+  ],
+  "Map09BuildingLogs": [
+   "Map09BuildingLogs",
+   "Building"
+  ],
+  "Map09BuildingMainTown": [
+   "Map09BuildingMainTown",
+   "Building"
+  ],
+  "Map09BuildingMaintenanceStation": [
+   "Map09BuildingMaintenanceStation",
+   "Building"
+  ],
+  "Map09BuildingPowerPole": [
+   "Map09BuildingPowerPole",
+   "Building"
+  ],
+  "Map09BuildingPowerPoleWoUi": [
+   "Map09BuildingPowerPoleWoUi",
+   "Building"
+  ],
+  "Map09BuildingPowerStation": [
+   "Map09BuildingPowerStation",
+   "Building"
+  ],
+  "Map09BuildingPowerSubstation": [
+   "Map09BuildingPowerSubstation",
+   "Building"
+  ],
+  "Map09BuildingPowerSubstation2": [
+   "Map09BuildingPowerSubstation2",
+   "Building"
+  ],
+  "Map09BuildingPumpStation1": [
+   "Map09BuildingPumpStation1",
+   "Building"
+  ],
+  "Map09BuildingQuarry": [
+   "Map09BuildingQuarry",
+   "Building"
+  ],
+  "Map09BuildingRadioTower": [
+   "Map09BuildingRadioTower",
+   "Building"
+  ],
+  "Map09BuildingRecycling": [
+   "Map09BuildingRecycling",
+   "Building"
+  ],
+  "Map09BuildingRecycling2": [
+   "Map09BuildingRecycling2",
+   "Building"
+  ],
+  "Map09BuildingRecycling3": [
+   "Map09BuildingRecycling3",
+   "Building"
+  ],
+  "Map09BuildingRecycling3Demo": [
+   "Map09BuildingRecycling3Demo",
+   "Building"
+  ],
+  "Map09BuildingSawmill": [
+   "Map09BuildingSawmill",
+   "Building"
+  ],
+  "Map09BuildingSmallTown": [
+   "Map09BuildingSmallTown",
+   "Building"
+  ],
+  "Map09BuildingSolarPanelSand": [
+   "Map09BuildingSolarPanelSand",
+   "Building"
+  ],
+  "Map09BuildingSolarPanelSand2": [
+   "Map09BuildingSolarPanelSand2",
+   "Building"
+  ],
+  "Map09BuildingStore": [
+   "Map09BuildingStore",
+   "Building"
+  ],
+  "Map09BuildingSttf": [
+   "Map09BuildingSttf",
+   "Building"
+  ],
+  "Map09BuildingSubstationWoUi": [
+   "Map09BuildingSubstationWoUi",
+   "Building"
+  ],
+  "Map09BuildingTransitionPort": [
+   "Map09BuildingTransitionPort",
+   "Building"
+  ],
+  "Map09BuildingWarehouse01": [
+   "Map09BuildingWarehouse01",
+   "Building"
+  ],
+  "Map09BuildingWarehouse03": [
+   "Map09BuildingWarehouse03",
+   "Building"
+  ],
+  "Map09BuildingWarehouse04": [
+   "Map09BuildingWarehouse04",
+   "Building"
+  ],
+  "Map09BuildingWaterTower": [
+   "Map09BuildingWaterTower",
+   "Building"
+  ],
+  "Map09EastTunnel": [
+   "Map09EastTunnel",
+   "Building"
+  ],
+  "Map09NorthTunnel": [
+   "Map09NorthTunnel",
+   "Building"
+  ],
+  "Map09WestTunnel": [
+   "Map09WestTunnel",
+   "Building"
+  ],
+  "Map10BuildingConnection": [
+   "Map10BuildingConnection",
+   "Building"
+  ],
+  "Map10BuildingFob": [
+   "Map10BuildingFob",
+   "Building"
+  ],
+  "Map10BuildingFob2": [
+   "Map10BuildingFob2",
+   "Building"
+  ],
+  "Map10BuildingFob3": [
+   "Map10BuildingFob3",
+   "Building"
+  ],
+  "Map10BuildingFob4": [
+   "Map10BuildingFob4",
+   "Building"
+  ],
+  "Map10BuildingFobDemo": [
+   "Map10BuildingFobDemo",
+   "Building"
+  ],
+  "Map10BuildingFuelStation": [
+   "Map10BuildingFuelStation",
+   "Building"
+  ],
+  "Map10BuildingGeodesic01": [
+   "Map10BuildingGeodesic01",
+   "Building"
+  ],
+  "Map10BuildingGeodesic02": [
+   "Map10BuildingGeodesic02",
+   "Building"
+  ],
+  "Map10BuildingLogs": [
+   "Map10BuildingLogs",
+   "Building"
+  ],
+  "Map10BuildingMachinyard": [
+   "Map10BuildingMachinyard",
+   "Building"
+  ],
+  "Map10BuildingNorthwastTunnel": [
+   "Map10BuildingNorthwastTunnel",
+   "Building"
+  ],
+  "Map10BuildingOutpost": [
+   "Map10BuildingOutpost",
+   "Building"
+  ],
+  "Map10BuildingOutpostDemo": [
+   "Map10BuildingOutpostDemo",
+   "Building"
+  ],
+  "Map10BuildingPierWarehouse": [
+   "Map10BuildingPierWarehouse",
+   "Building"
+  ],
+  "Map10BuildingPowerStation": [
+   "Map10BuildingPowerStation",
+   "Building"
+  ],
+  "Map10BuildingPowerSubstation": [
+   "Map10BuildingPowerSubstation",
+   "Building"
+  ],
+  "Map10BuildingQuarry": [
+   "Map10BuildingQuarry",
+   "Building"
+  ],
+  "Map10BuildingQuarrySmall": [
+   "Map10BuildingQuarrySmall",
+   "Building"
+  ],
+  "Map10BuildingRadio01": [
+   "Map10BuildingRadio01",
+   "Building"
+  ],
+  "Map10BuildingRecycling": [
+   "Map10BuildingRecycling",
+   "Building"
+  ],
+  "Map10BuildingRecycling2": [
+   "Map10BuildingRecycling2",
+   "Building"
+  ],
+  "Map10BuildingRecycling3": [
+   "Map10BuildingRecycling3",
+   "Building"
+  ],
+  "Map10BuildingResearchBase": [
+   "Map10BuildingResearchBase",
+   "Building"
+  ],
+  "Map10BuildingReservoir": [
+   "Map10BuildingReservoir",
+   "Building"
+  ],
+  "Map10BuildingReservoir2": [
+   "Map10BuildingReservoir2",
+   "Building"
+  ],
+  "Map10BuildingSawWarehouse": [
+   "Map10BuildingSawWarehouse",
+   "Building"
+  ],
+  "Map10BuildingSawmill": [
+   "Map10BuildingSawmill",
+   "Building"
+  ],
+  "Map10BuildingSetWarehouse": [
+   "Map10BuildingSetWarehouse",
+   "Building"
+  ],
+  "Map10BuildingSouthTunnel": [
+   "Map10BuildingSouthTunnel",
+   "Building"
+  ],
+  "Map10BuildingSoutheastTunnel": [
+   "Map10BuildingSoutheastTunnel",
+   "Building"
+  ],
+  "Map10BuildingSpring": [
+   "Map10BuildingSpring",
+   "Building"
+  ],
+  "Map10BuildingStore": [
+   "Map10BuildingStore",
+   "Building"
+  ],
+  "Map10BuildingTransitionPort": [
+   "Map10BuildingTransitionPort",
+   "Building"
+  ],
+  "Map10BuildingVillage": [
+   "Map10BuildingVillage",
+   "Building"
+  ],
+  "Map10BuildingWarehouse": [
+   "Map10BuildingWarehouse",
+   "Building"
+  ],
+  "Map10BuildingWarehouse03": [
+   "Map10BuildingWarehouse03",
+   "Building"
+  ],
+  "Map10BuildingWarehouse04": [
+   "Map10BuildingWarehouse04",
+   "Building"
+  ],
+  "Map10BuildingWater": [
+   "Map10BuildingWater",
+   "Building"
+  ],
+  "Map11BuildingFob1": [
+   "Map11BuildingFob1",
+   "Building"
+  ],
+  "Map11BuildingFob2": [
+   "Map11BuildingFob2",
+   "Building"
+  ],
+  "Map11BuildingFob3": [
+   "Map11BuildingFob3",
+   "Building"
+  ],
+  "Map11BuildingPowerPlant": [
+   "Map11BuildingPowerPlant",
+   "Building"
+  ],
+  "Map11BuildingQuarry1": [
+   "Map11BuildingQuarry1",
+   "Building"
+  ],
+  "Map11BuildingRail": [
+   "Map11BuildingRail",
+   "Building"
+  ],
+  "Map11BuildingRecyclingBeam": [
+   "Map11BuildingRecyclingBeam",
+   "Building"
+  ],
+  "Map11BuildingRecyclingConcrete": [
+   "Map11BuildingRecyclingConcrete",
+   "Building"
+  ],
+  "Map11BuildingRecyclingPipe": [
+   "Map11BuildingRecyclingPipe",
+   "Building"
+  ],
+  "Map11BuildingStore": [
+   "Map11BuildingStore",
+   "Building"
+  ],
+  "Map11BuildingWaterPump": [
+   "Map11BuildingWaterPump",
+   "Building"
+  ],
+  "Map12BuildingDam": [
+   "Map12BuildingDam",
+   "Building"
+  ],
+  "Map12BuildingFob2Prefab": [
+   "Map12BuildingFob2Prefab",
+   "Building"
+  ],
+  "Map12BuildingFob3Prefab": [
+   "Map12BuildingFob3Prefab",
+   "Building"
+  ],
+  "Map12BuildingGenericgas": [
+   "Map12BuildingGenericgas",
+   "Building"
+  ],
+  "Map12BuildingLighthouse": [
+   "Map12BuildingLighthouse",
+   "Building"
+  ],
+  "Map12BuildingRecyclingBeam": [
+   "Map12BuildingRecyclingBeam",
+   "Building"
+  ],
+  "Map12BuildingRecyclingConcrete": [
+   "Map12BuildingRecyclingConcrete",
+   "Building"
+  ],
+  "Map12BuildingRecyclingPipe": [
+   "Map12BuildingRecyclingPipe",
+   "Building"
+  ],
+  "Map12BuildingStore": [
+   "Map12BuildingStore",
+   "Building"
+  ],
+  "Map12BuildingSubstation": [
+   "Map12BuildingSubstation",
+   "Building"
+  ],
+  "Map12BuildingTransitionPort": [
+   "Map12BuildingTransitionPort",
+   "Building"
+  ],
+  "Map12BuildingTunnel": [
+   "Map12BuildingTunnel",
+   "Building"
+  ],
+  "Map12BuldingMainFobPrefab": [
+   "Map12BuldingMainFobPrefab",
+   "Building"
+  ],
+  "Map12RadioTower": [
+   "Map12RadioTower",
+   "Building"
+  ],
+  "Map13BuildingFob1": [
+   "Map13BuildingFob1",
+   "Building"
+  ],
+  "Map13BuildingFob2": [
+   "Map13BuildingFob2",
+   "Building"
+  ],
+  "Map13BuildingFob3": [
+   "Map13BuildingFob3",
+   "Building"
+  ],
+  "Map13BuildingPowerPlant": [
+   "Map13BuildingPowerPlant",
+   "Building"
+  ],
+  "Map13BuildingRecyclingBeam": [
+   "Map13BuildingRecyclingBeam",
+   "Building"
+  ],
+  "Map13BuildingRecyclingConcrete": [
+   "Map13BuildingRecyclingConcrete",
+   "Building"
+  ],
+  "Map13BuildingRecyclingPipe": [
+   "Map13BuildingRecyclingPipe",
+   "Building"
+  ],
+  "Map13BuildingStore": [
+   "Map13BuildingStore",
+   "Building"
+  ],
+  "Map13BuildingSubstation1": [
+   "Map13BuildingSubstation1",
+   "Building"
+  ],
+  "Map13BuildingTown": [
+   "Map13BuildingTown",
+   "Building"
+  ],
+  "Map13BuildingTunnel1": [
+   "Map13BuildingTunnel1",
+   "Building"
+  ],
+  "Map13BuildingWaterPump": [
+   "Map13BuildingWaterPump",
+   "Building"
+  ],
+  "Map14BuildingFob01": [
+   "Map14BuildingFob01",
+   "Building"
+  ],
+  "Map14BuildingFob02": [
+   "Map14BuildingFob02",
+   "Building"
+  ],
+  "Map14BuildingFob03": [
+   "Map14BuildingFob03",
+   "Building"
+  ],
+  "Map14BuildingRecyclingBeam": [
+   "Map14BuildingRecyclingBeam",
+   "Building"
+  ],
+  "Map14BuildingRecyclingConcrete": [
+   "Map14BuildingRecyclingConcrete",
+   "Building"
+  ],
+  "Map14BuildingRecyclingPipe": [
+   "Map14BuildingRecyclingPipe",
+   "Building"
+  ],
+  "Map14BuildingStore": [
+   "Map14BuildingStore",
+   "Building"
+  ],
+  "MapCornerBuildingCellTower01": [
+   "MapCornerBuildingCellTower01",
+   "Building"
+  ],
+  "MapCornerCellTower01": [
+   "MapCornerCellTower01",
+   "Building"
+  ],
+  "Materials": [
+   "Materials"
+  ],
+  "MaterialsGenerator": [
+   "MaterialsGenerator"
+  ],
+  "MaterialsGeneratorResult": [
+   "MaterialsGeneratorResult"
+  ],
+  "MaterialsSettings": [
+   "MaterialsSettings",
+   "Module"
+  ],
+  "MenziA91StumpMulcher": [
+   "MenziA91StumpMulcher",
+   "Truck"
+  ],
+  "MetalBeams": [
+   "MetalBeams",
+   "Cargo"
+  ],
+  "MetalBeamsResource": [
+   "MetalBeamsResource",
+   "Resource"
+  ],
+  "MetalPipesResource": [
+   "MetalPipesResource",
+   "Resource"
+  ],
+  "MetalRecycling": [
+   "MetalRecycling",
+   "Resource"
+  ],
+  "MetalRecyclingTruck": [
+   "MetalRecyclingTruck",
+   "Resource"
+  ],
+  "MineralWool": [
+   "MineralWool",
+   "Cargo"
+  ],
+  "MiningDrillPacked": [
+   "MiningDrillPacked",
+   "Cargo"
+  ],
+  "MinutemanK350CivilianNew": [
+   "MinutemanK350CivilianNew",
+   "ChassisMinutemanK350Civilian",
+   "Truck"
+  ],
+  "MinutemanK350ScoutNew": [
+   "MinutemanK350ScoutNew",
+   "ChassisMinutemanK350",
+   "Truck"
+  ],
+  "MinutemanK370ExplorerRes": [
+   "MinutemanK370ExplorerRes",
+   "ChassisMinutemanK350",
+   "Truck"
+  ],
+  "MobileRecoverTargetSettings": [
+   "MobileRecoverTargetSettings",
+   "Module"
+  ],
+  "MobileResourceStorageSettings": [
+   "MobileResourceStorageSettings",
+   "Module"
+  ],
+  "MobileTruckStorageSettings": [
+   "MobileTruckStorageSettings",
+   "Module"
+  ],
+  "ModBuildingFob": [
+   "ModBuildingFob",
+   "Building"
+  ],
+  "ModBuildingPowerStation": [
+   "ModBuildingPowerStation",
+   "Building"
+  ],
+  "ModBuildingPowerSubstation2": [
+   "ModBuildingPowerSubstation2",
+   "Building"
+  ],
+  "ModBuildingQuarry": [
+   "ModBuildingQuarry",
+   "Building"
+  ],
+  "ModBuildingRecycling01": [
+   "ModBuildingRecycling01",
+   "Building"
+  ],
+  "ModBuildingRecycling02": [
+   "ModBuildingRecycling02",
+   "Building"
+  ],
+  "ModBuildingRecycling03": [
+   "ModBuildingRecycling03",
+   "Building"
+  ],
+  "ModBuildingStore": [
+   "ModBuildingStore",
+   "Building"
+  ],
+  "Model": [
+   "Model"
+  ],
+  "ModelIterator": [
+   "ModelIterator"
+  ],
+  "ModelVisitor": [
+   "ModelVisitor"
+  ],
+  "Module": [
+   "Module"
+  ],
+  "MoneyRecycling": [
+   "MoneyRecycling",
+   "Resource"
+  ],
+  "MoneyRecyclingSettings": [
+   "MoneyRecyclingSettings",
+   "Module"
+  ],
+  "Mtk100mStumpMulcherOld": [
+   "Mtk100mStumpMulcherOld",
+   "ChassisMtk100m",
+   "Truck"
+  ],
+  "Mtk100mStumpMulcherRes": [
+   "Mtk100mStumpMulcherRes",
+   "ChassisMtk100m",
+   "Truck"
+  ],
+  "Mtk2006HarvesterNew": [
+   "Mtk2006HarvesterNew",
+   "ChassisMtk2006",
+   "Truck"
+  ],
+  "MtkMd76HarvesterOld": [
+   "MtkMd76HarvesterOld",
+   "ChassisMtkMd76",
+   "Truck"
+  ],
+  "MtkMd76HarvesterRes": [
+   "MtkMd76HarvesterRes",
+   "ChassisMtkMd76",
+   "Truck"
+  ],
+  "MtkMd76WoodGrappleRes": [
+   "MtkMd76WoodGrappleRes",
+   "ChassisMtkMd76",
+   "Truck"
+  ],
+  "MtkProseka200CargoRes": [
+   "MtkProseka200CargoRes",
+   "ChassisMtkProseka200",
+   "Truck"
+  ],
+  "MtkProseka200ForwarderOld": [
+   "MtkProseka200ForwarderOld",
+   "ChassisMtkProseka200",
+   "Truck"
+  ],
+  "MtkProseka200ForwarderRes": [
+   "MtkProseka200ForwarderRes",
+   "ChassisMtkProseka200",
+   "Truck"
+  ],
+  "MuleT1CargoOld": [
+   "MuleT1CargoOld",
+   "ChassisMuleT1",
+   "Truck"
+  ],
+  "MuleT1CargoRes": [
+   "MuleT1CargoRes",
+   "ChassisMuleT1",
+   "Truck"
+  ],
+  "MuleT1CraneCargoRes": [
+   "MuleT1CraneCargoRes",
+   "ChassisMuleT1",
+   "Truck"
+  ],
+  "MuleT1Trailblazer": [
+   "MuleT1Trailblazer",
+   "ChassisMuleT1Trailblazer",
+   "Truck"
+  ],
+  "MuleT1UtilityNew": [
+   "MuleT1UtilityNew",
+   "ChassisMuleT1",
+   "Truck"
+  ],
+  "MuleT1Vagrant": [
+   "MuleT1Vagrant",
+   "ChassisMuleT1",
+   "Truck"
+  ],
+  "MultipleActorsTemplate": [
+   "MultipleActorsTemplate",
+   "CustomFileTemplate"
+  ],
+  "NAndS260gantryCraneRailroad": [
+   "NAndS260gantryCraneRailroad",
+   "ChassisNAndS260gantry",
+   "Truck"
+  ],
+  "NAndS260gantryCraneRailroad80m": [
+   "NAndS260gantryCraneRailroad80m",
+   "ChassisNAndS260gantry",
+   "Truck"
+  ],
+  "NAndS700rTowerCraneRailed": [
+   "NAndS700rTowerCraneRailed",
+   "ChassisNAndS700",
+   "Truck"
+  ],
+  "NAndS700sTowerCrane": [
+   "NAndS700sTowerCrane",
+   "ChassisNAndS700",
+   "Truck"
+  ],
+  "NAndSLoader20gCraneGrabber": [
+   "NAndSLoader20gCraneGrabber",
+   "ChassisNAndSLoader20g",
+   "Truck"
+  ],
+  "NeedPlanPrefab": [
+   "NeedPlanPrefab",
+   "Module"
+  ],
+  "NewResourcesShopSettings": [
+   "NewResourcesShopSettings",
+   "Module"
+  ],
+  "NoFarmingObjectsAnalyzer": [
+   "NoFarmingObjectsAnalyzer",
+   "SceneStatisticsAnalyzer"
+  ],
+  "NotaAllegroCargoNew": [
+   "NotaAllegroCargoNew",
+   "ChassisNotaAllegro",
+   "Truck"
+  ],
+  "NotaAllegroPersonnelNew": [
+   "NotaAllegroPersonnelNew",
+   "ChassisNotaAllegro",
+   "Truck"
+  ],
+  "NotaAllegroSlim": [
+   "NotaAllegroSlim",
+   "ChassisNotaAllegro",
+   "Truck"
+  ],
+  "ObjectiveObjectHighlightSettings": [
+   "ObjectiveObjectHighlightSettings",
+   "Module"
+  ],
+  "ObjectivePuzzleHighlightSettings": [
+   "ObjectivePuzzleHighlightSettings",
+   "Module"
+  ],
+  "ObjectiveScanner": [
+   "ObjectiveScanner",
+   "Module"
+  ],
+  "OilTank": [
+   "OilTank",
+   "Cargo"
+  ],
+  "OverlayPointsFixer": [
+   "OverlayPointsFixer",
+   "ProblemsGameObjectFixer"
+  ],
+  "OverlaysAnalyzer": [
+   "OverlaysAnalyzer",
+   "GameObjectProblemsAnalyzer"
+  ],
+  "PackedCargo": [
+   "PackedCargo"
+  ],
+  "PackedResource": [
+   "PackedResource"
+  ],
+  "ParticleLoadVolumeSettings": [
+   "ParticleLoadVolumeSettings"
+  ],
+  "PhantomSettings": [
+   "PhantomSettings",
+   "Module"
+  ],
+  "PhysPuzzle": [
+   "PhysPuzzle"
+  ],
+  "PhysPuzzleGenerator": [
+   "PhysPuzzleGenerator"
+  ],
+  "PhysPuzzleGeneratorResult": [
+   "PhysPuzzleGeneratorResult"
+  ],
+  "PileDriverSettings": [
+   "PileDriverSettings",
+   "Module"
+  ],
+  "PileFoundation": [
+   "PileFoundation",
+   "Module"
+  ],
+  "PileSettings": [
+   "PileSettings",
+   "Module"
+  ],
+  "PlatesResource": [
+   "PlatesResource",
+   "Resource"
+  ],
+  "PlatformPart": [
+   "PlatformPart",
+   "ConstructionPart"
+  ],
+  "PlayerLandmarkDescription": [
+   "PlayerLandmarkDescription"
+  ],
+  "PlayerLandmarkDescriptionGenerator": [
+   "PlayerLandmarkDescriptionGenerator"
+  ],
+  "PlayerLandmarkDescriptionResult": [
+   "PlayerLandmarkDescriptionResult"
+  ],
+  "PlayerRanks": [
+   "PlayerRanks"
+  ],
+  "PlayerRanksGenerator": [
+   "PlayerRanksGenerator"
+  ],
+  "Plywood": [
+   "Plywood",
+   "Cargo"
+  ],
+  "PoweredConstraint": [
+   "PoweredConstraint"
+  ],
+  "PoweredConstraintState": [
+   "PoweredConstraintState"
+  ],
+  "PoweredContraintAction": [
+   "PoweredContraintAction"
+  ],
+  "PrerenderCinematicFileTemplate": [
+   "PrerenderCinematicFileTemplate",
+   "CinematicFileTemplate",
+   "XseqFileTemplateWithModel",
+   "CustomFileTemplate"
+  ],
+  "PreviewConstraintMotorValueChangerSettings": [
+   "PreviewConstraintMotorValueChangerSettings",
+   "Module"
+  ],
+  "PreviewGeomHidingSettings": [
+   "PreviewGeomHidingSettings",
+   "Module"
+  ],
+  "PriceEntity": [
+   "PriceEntity"
+  ],
+  "ProblemsGameObjectFixer": [
+   "ProblemsGameObjectFixer"
+  ],
+  "ProblemsResults": [
+   "ProblemsResults"
+  ],
+  "PropUsableSettings": [
+   "PropUsableSettings",
+   "Module"
+  ],
+  "PropWheelMassChangerSettings": [
+   "PropWheelMassChangerSettings",
+   "Module"
+  ],
+  "PumpBig": [
+   "PumpBig",
+   "Cargo"
+  ],
+  "PuzzleBridgeTurnable": [
+   "PuzzleBridgeTurnable",
+   "PhysPuzzle"
+  ],
+  "PuzzleBridgeTurnableLeft": [
+   "PuzzleBridgeTurnableLeft",
+   "PhysPuzzle"
+  ],
+  "PuzzleBridgeTurnableRight": [
+   "PuzzleBridgeTurnableRight",
+   "PhysPuzzle"
+  ],
+  "PuzzleCellarGate01": [
+   "PuzzleCellarGate01",
+   "PhysPuzzle"
+  ],
+  "PuzzleDesertFenceGate02": [
+   "PuzzleDesertFenceGate02",
+   "PhysPuzzle"
+  ],
+  "PuzzleGateMetal3x3Closed": [
+   "PuzzleGateMetal3x3Closed",
+   "PhysPuzzle"
+  ],
+  "PuzzleGateMetal3x3_5EchoPhysPuzzle": [
+   "PuzzleGateMetal3x3_5EchoPhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleGateMetal3x3_5PhysPuzzle": [
+   "PuzzleGateMetal3x3_5PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleGateMetal3x7Close": [
+   "PuzzleGateMetal3x7Close",
+   "PhysPuzzle"
+  ],
+  "PuzzleGateMetal3x7PhysPuzzle": [
+   "PuzzleGateMetal3x7PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleHookStatic01": [
+   "PuzzleHookStatic01",
+   "PhysPuzzle"
+  ],
+  "PuzzleHookStatic02": [
+   "PuzzleHookStatic02",
+   "PhysPuzzle"
+  ],
+  "PuzzleHookStatic03": [
+   "PuzzleHookStatic03",
+   "PhysPuzzle"
+  ],
+  "PuzzleHookStatic04": [
+   "PuzzleHookStatic04",
+   "PhysPuzzle"
+  ],
+  "PuzzleModuleActiveBox": [
+   "PuzzleModuleActiveBox",
+   "PhysPuzzle"
+  ],
+  "PuzzleModuleMetalRampRef": [
+   "PuzzleModuleMetalRampRef",
+   "PhysPuzzle"
+  ],
+  "PuzzleModuleRoofDest1": [
+   "PuzzleModuleRoofDest1",
+   "PhysPuzzle"
+  ],
+  "PuzzleModuleRoofDest2": [
+   "PuzzleModuleRoofDest2",
+   "PhysPuzzle"
+  ],
+  "PuzzleModuleRoofDest3": [
+   "PuzzleModuleRoofDest3",
+   "PhysPuzzle"
+  ],
+  "PuzzleModuleRoofDest4": [
+   "PuzzleModuleRoofDest4",
+   "PhysPuzzle"
+  ],
+  "PuzzleModuleRoofDest5": [
+   "PuzzleModuleRoofDest5",
+   "PhysPuzzle"
+  ],
+  "PuzzlePipeConcrete5x1_5PhysPuzzle": [
+   "PuzzlePipeConcrete5x1_5PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleRailwayCarriage01PhysPuzzle": [
+   "PuzzleRailwayCarriage01PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleRailwayCarriage02PhysPuzzle": [
+   "PuzzleRailwayCarriage02PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleRailwayCarriage03": [
+   "PuzzleRailwayCarriage03",
+   "PhysPuzzle"
+  ],
+  "PuzzleRailwayCarriage06": [
+   "PuzzleRailwayCarriage06",
+   "PhysPuzzle"
+  ],
+  "PuzzleRailwayCarriage07": [
+   "PuzzleRailwayCarriage07",
+   "PhysPuzzle"
+  ],
+  "PuzzleRampMetal14x18PhysPuzzle": [
+   "PuzzleRampMetal14x18PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleRampMetal5x18PhysPuzzle": [
+   "PuzzleRampMetal5x18PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleRampWood14x18PhysPuzzle": [
+   "PuzzleRampWood14x18PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleRampWood5x18PhysPuzzle": [
+   "PuzzleRampWood5x18PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleSlabConcrete10x6PhysPuzzle": [
+   "PuzzleSlabConcrete10x6PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleSlabConcrete5x4PhysPuzzle": [
+   "PuzzleSlabConcrete5x4PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleSlabConcrete5x8PhysPuzzle": [
+   "PuzzleSlabConcrete5x8PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleSlabConcrete7x4PhysPuzzl": [
+   "PuzzleSlabConcrete7x4PhysPuzzl",
+   "PhysPuzzle"
+  ],
+  "PuzzleSlabWood10x6PhysPuzzle": [
+   "PuzzleSlabWood10x6PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleSlabWood5x4PhysPuzzle": [
+   "PuzzleSlabWood5x4PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleSlabWood5x8PhysPuzzle": [
+   "PuzzleSlabWood5x8PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleSlabWood7x4PhysPuzzle": [
+   "PuzzleSlabWood7x4PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWalMet5x8HinWin": [
+   "PuzzleWalMet5x8HinWin",
+   "PhysPuzzle"
+  ],
+  "PuzzleWalMet5x8Hinge": [
+   "PuzzleWalMet5x8Hinge",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallCon5x4HinWin": [
+   "PuzzleWallCon5x4HinWin",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallCon5x8HinWin": [
+   "PuzzleWallCon5x8HinWin",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallCon7x4HinWin": [
+   "PuzzleWallCon7x4HinWin",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallCon7x8HinWin": [
+   "PuzzleWallCon7x8HinWin",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete5x4CrackedPhysPuzzle": [
+   "PuzzleWallConcrete5x4CrackedPhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete5x4HingePhysPuzzle": [
+   "PuzzleWallConcrete5x4HingePhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete5x4PhysPuzzle": [
+   "PuzzleWallConcrete5x4PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete5x8CrackedPhysPuzzle": [
+   "PuzzleWallConcrete5x8CrackedPhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete5x8HingePhysPuzzle": [
+   "PuzzleWallConcrete5x8HingePhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete5x8PhysPuzzle": [
+   "PuzzleWallConcrete5x8PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete7x4CrackedPhysPuzzle": [
+   "PuzzleWallConcrete7x4CrackedPhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete7x4HingePhysPuzzle": [
+   "PuzzleWallConcrete7x4HingePhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete7x4PhysPuzzle": [
+   "PuzzleWallConcrete7x4PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete7x8CrackedPhysPuzzle": [
+   "PuzzleWallConcrete7x8CrackedPhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete7x8HingePhysPuzzle": [
+   "PuzzleWallConcrete7x8HingePhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallConcrete7x8PhysPuzzle": [
+   "PuzzleWallConcrete7x8PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallMet5x4Crk": [
+   "PuzzleWallMet5x4Crk",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallMet5x8Crk": [
+   "PuzzleWallMet5x8Crk",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallMet7x4Crk": [
+   "PuzzleWallMet7x4Crk",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallMet7x4HinWin": [
+   "PuzzleWallMet7x4HinWin",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallMet7x4Hinge": [
+   "PuzzleWallMet7x4Hinge",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallMet7x8Crk": [
+   "PuzzleWallMet7x8Crk",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallMet7x8HinWin": [
+   "PuzzleWallMet7x8HinWin",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallMet7x8Hinge": [
+   "PuzzleWallMet7x8Hinge",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallMetal5x4Hinge": [
+   "PuzzleWallMetal5x4Hinge",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallMetal5x4HingeWinchPhysPuzzle": [
+   "PuzzleWallMetal5x4HingeWinchPhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood5x4CrackedPhysPuzzle": [
+   "PuzzleWallWood5x4CrackedPhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood5x4HingePhysPuzzle": [
+   "PuzzleWallWood5x4HingePhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood5x4PhysPuzzle": [
+   "PuzzleWallWood5x4PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood5x8CrackedPhysPuzzle": [
+   "PuzzleWallWood5x8CrackedPhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood5x8HingePhysPuzzle": [
+   "PuzzleWallWood5x8HingePhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood5x8PhysPuzzle": [
+   "PuzzleWallWood5x8PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood6x8Hinge": [
+   "PuzzleWallWood6x8Hinge",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood6x8Winch": [
+   "PuzzleWallWood6x8Winch",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood7x4CrackedPhysPuzzle": [
+   "PuzzleWallWood7x4CrackedPhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood7x4HingePhysPuzzle": [
+   "PuzzleWallWood7x4HingePhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood7x4PhysPuzzle": [
+   "PuzzleWallWood7x4PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood7x8CrackedPhysPuzzle": [
+   "PuzzleWallWood7x8CrackedPhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood7x8HingePhysPuzzle": [
+   "PuzzleWallWood7x8HingePhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWallWood7x8PhysPuzzle": [
+   "PuzzleWallWood7x8PhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "PuzzleWaterStationTank01": [
+   "PuzzleWaterStationTank01",
+   "PhysPuzzle"
+  ],
+  "PuzzleWaterStationTank02": [
+   "PuzzleWaterStationTank02",
+   "PhysPuzzle"
+  ],
+  "QaDon": [
+   "QaDon",
+   "Truck"
+  ],
+  "QteMinigame": [
+   "QteMinigame"
+  ],
+  "QteMinigameEngine": [
+   "QteMinigameEngine",
+   "QteMinigame"
+  ],
+  "QteMinigameGenerator": [
+   "QteMinigameGenerator"
+  ],
+  "QteMinigameLiquids": [
+   "QteMinigameLiquids",
+   "QteMinigame"
+  ],
+  "QteMinigameResult": [
+   "QteMinigameResult"
+  ],
+  "QuartzSand": [
+   "QuartzSand",
+   "Cargo"
+  ],
+  "QuestAncientPlate01": [
+   "QuestAncientPlate01",
+   "QuestObject"
+  ],
+  "QuestAncientPlate02": [
+   "QuestAncientPlate02",
+   "QuestObject"
+  ],
+  "QuestBargeEmpty": [
+   "QuestBargeEmpty",
+   "QuestObject"
+  ],
+  "QuestBigEngine01": [
+   "QuestBigEngine01",
+   "QuestObject"
+  ],
+  "QuestBoat01": [
+   "QuestBoat01",
+   "QuestObject"
+  ],
+  "QuestBoatEngine": [
+   "QuestBoatEngine",
+   "QuestObject"
+  ],
+  "QuestCargoBox": [
+   "QuestCargoBox",
+   "QuestObject"
+  ],
+  "QuestCargoBoxEcho": [
+   "QuestCargoBoxEcho",
+   "QuestObject"
+  ],
+  "QuestCellTower01": [
+   "QuestCellTower01",
+   "QuestObject"
+  ],
+  "QuestCellTower02": [
+   "QuestCellTower02",
+   "QuestObject"
+  ],
+  "QuestConcreteSlab01": [
+   "QuestConcreteSlab01",
+   "QuestObject"
+  ],
+  "QuestConstraintSettings": [
+   "QuestConstraintSettings",
+   "Module"
+  ],
+  "QuestContainer01": [
+   "QuestContainer01",
+   "QuestObject"
+  ],
+  "QuestContainer20ft": [
+   "QuestContainer20ft",
+   "QuestObject"
+  ],
+  "QuestContainer40ft": [
+   "QuestContainer40ft",
+   "QuestObject"
+  ],
+  "QuestControlPanel01": [
+   "QuestControlPanel01",
+   "QuestObject"
+  ],
+  "QuestCraneRails": [
+   "QuestCraneRails",
+   "QuestObject"
+  ],
+  "QuestDesertGate01": [
+   "QuestDesertGate01",
+   "QuestObject"
+  ],
+  "QuestElecTransformer01": [
+   "QuestElecTransformer01",
+   "QuestObject"
+  ],
+  "QuestExplosiveBox": [
+   "QuestExplosiveBox",
+   "QuestObject"
+  ],
+  "QuestFerryGarage": [
+   "QuestFerryGarage",
+   "QuestObject"
+  ],
+  "QuestFlareCap": [
+   "QuestFlareCap",
+   "QuestObject"
+  ],
+  "QuestFormwork01": [
+   "QuestFormwork01",
+   "QuestObject"
+  ],
+  "QuestFormwork02": [
+   "QuestFormwork02",
+   "QuestObject"
+  ],
+  "QuestFountainFitting": [
+   "QuestFountainFitting",
+   "QuestObject"
+  ],
+  "QuestGeneratorSBP": [
+   "QuestGeneratorSBP",
+   "QuestObject"
+  ],
+  "QuestGeneratorSPack": [
+   "QuestGeneratorSPack",
+   "QuestObject"
+  ],
+  "QuestGeneratorSmall": [
+   "QuestGeneratorSmall",
+   "QuestObject"
+  ],
+  "QuestHeatPump01": [
+   "QuestHeatPump01",
+   "QuestObject"
+  ],
+  "QuestInformationCase": [
+   "QuestInformationCase",
+   "QuestObject"
+  ],
+  "QuestInverter01": [
+   "QuestInverter01",
+   "QuestObject"
+  ],
+  "QuestLarsenSlab01": [
+   "QuestLarsenSlab01",
+   "QuestObject"
+  ],
+  "QuestMetalContainer01": [
+   "QuestMetalContainer01",
+   "QuestObject"
+  ],
+  "QuestMiningDrill01": [
+   "QuestMiningDrill01",
+   "QuestObject"
+  ],
+  "QuestMiningDrill2": [
+   "QuestMiningDrill2",
+   "QuestObject"
+  ],
+  "QuestMobRuined01": [
+   "QuestMobRuined01",
+   "QuestObject"
+  ],
+  "QuestObject": [
+   "QuestObject"
+  ],
+  "QuestObjectGenerator": [
+   "QuestObjectGenerator"
+  ],
+  "QuestObjectGeneratorResult": [
+   "QuestObjectGeneratorResult"
+  ],
+  "QuestObjectUiSettings": [
+   "QuestObjectUiSettings"
+  ],
+  "QuestPipelineManifold": [
+   "QuestPipelineManifold",
+   "QuestObject"
+  ],
+  "QuestPump01": [
+   "QuestPump01",
+   "QuestObject"
+  ],
+  "QuestPump02Big": [
+   "QuestPump02Big",
+   "QuestObject"
+  ],
+  "QuestPuzzleColumnA": [
+   "QuestPuzzleColumnA",
+   "QuestObject"
+  ],
+  "QuestPuzzleColumnB": [
+   "QuestPuzzleColumnB",
+   "QuestObject"
+  ],
+  "QuestPuzzleColumnD": [
+   "QuestPuzzleColumnD",
+   "QuestObject"
+  ],
+  "QuestRail01": [
+   "QuestRail01",
+   "QuestObject"
+  ],
+  "QuestRail02_01Ruined": [
+   "QuestRail02_01Ruined",
+   "QuestObject"
+  ],
+  "QuestRail02_02Ruined": [
+   "QuestRail02_02Ruined",
+   "QuestObject"
+  ],
+  "QuestRailCarriadge01": [
+   "QuestRailCarriadge01",
+   "QuestObject"
+  ],
+  "QuestRailCarriadge02": [
+   "QuestRailCarriadge02",
+   "QuestObject"
+  ],
+  "QuestRailCarriadge03": [
+   "QuestRailCarriadge03",
+   "QuestObject"
+  ],
+  "QuestRockAfricaBig01": [
+   "QuestRockAfricaBig01",
+   "QuestObject"
+  ],
+  "QuestRockAfricaBig02": [
+   "QuestRockAfricaBig02",
+   "QuestObject"
+  ],
+  "QuestRockAfricaMedium01": [
+   "QuestRockAfricaMedium01",
+   "QuestObject"
+  ],
+  "QuestRockAfricaMedium02": [
+   "QuestRockAfricaMedium02",
+   "QuestObject"
+  ],
+  "QuestRockAfricaSmall01": [
+   "QuestRockAfricaSmall01",
+   "QuestObject"
+  ],
+  "QuestRockAfricaSmall02": [
+   "QuestRockAfricaSmall02",
+   "QuestObject"
+  ],
+  "QuestRockBig": [
+   "QuestRockBig",
+   "QuestObject"
+  ],
+  "QuestRockMedium": [
+   "QuestRockMedium",
+   "QuestObject"
+  ],
+  "QuestRockSmall": [
+   "QuestRockSmall",
+   "QuestObject"
+  ],
+  "QuestSafe": [
+   "QuestSafe",
+   "QuestObject"
+  ],
+  "QuestSolarPanel01": [
+   "QuestSolarPanel01",
+   "QuestObject"
+  ],
+  "QuestStation02": [
+   "QuestStation02",
+   "QuestObject"
+  ],
+  "QuestStockade01": [
+   "QuestStockade01",
+   "QuestObject"
+  ],
+  "QuestTank02": [
+   "QuestTank02",
+   "QuestObject"
+  ],
+  "QuestToxicBarrel01": [
+   "QuestToxicBarrel01",
+   "QuestObject"
+  ],
+  "QuestToxicBarrel02": [
+   "QuestToxicBarrel02",
+   "QuestObject"
+  ],
+  "QuestToxicBarrel03": [
+   "QuestToxicBarrel03",
+   "QuestObject"
+  ],
+  "QuestToxicBarrel04": [
+   "QuestToxicBarrel04",
+   "QuestObject"
+  ],
+  "QuestTurbineGenerator": [
+   "QuestTurbineGenerator",
+   "QuestObject"
+  ],
+  "QuestWaterSystem": [
+   "QuestWaterSystem",
+   "QuestObject"
+  ],
+  "QuestWaterUnit": [
+   "QuestWaterUnit",
+   "QuestObject"
+  ],
+  "QuestWaterValve01": [
+   "QuestWaterValve01",
+   "QuestObject"
+  ],
+  "QuestWindTurbineMotor": [
+   "QuestWindTurbineMotor",
+   "QuestObject"
+  ],
+  "QuestWindTurbineWing": [
+   "QuestWindTurbineWing",
+   "QuestObject"
+  ],
+  "QuestWoodenContainer01": [
+   "QuestWoodenContainer01",
+   "QuestObject"
+  ],
+  "QuestWoodenCrate01": [
+   "QuestWoodenCrate01",
+   "QuestObject"
+  ],
+  "QuestWoodenSlab01": [
+   "QuestWoodenSlab01",
+   "QuestObject"
+  ],
+  "RailCarriagePhysPuzzle": [
+   "RailCarriagePhysPuzzle",
+   "PhysPuzzle"
+  ],
+  "Rank": [
+   "Rank"
+  ],
+  "RbFbtCellTower01View": [
+   "RbFbtCellTower01View",
+   "Building"
+  ],
+  "RbMap01StormPreparation": [
+   "RbMap01StormPreparation",
+   "Level"
+  ],
+  "RbMap02StormAftermath": [
+   "RbMap02StormAftermath",
+   "Level"
+  ],
+  "RbMap03Incommunicado": [
+   "RbMap03Incommunicado",
+   "Level"
+  ],
+  "RbMap04SaltMines": [
+   "RbMap04SaltMines",
+   "Level"
+  ],
+  "RbMap05DamBreak": [
+   "RbMap05DamBreak",
+   "Level"
+  ],
+  "RbMap06Sinkholes": [
+   "RbMap06Sinkholes",
+   "Level"
+  ],
+  "RbMap07RailFailure": [
+   "RbMap07RailFailure",
+   "Level"
+  ],
+  "RbMap08Contamination": [
+   "RbMap08Contamination",
+   "Level"
+  ],
+  "RbMap09SandStorm": [
+   "RbMap09SandStorm",
+   "Level"
+  ],
+  "RbMap10Geothermal": [
+   "RbMap10Geothermal",
+   "Level"
+  ],
+  "RbMap11SpringRenewal": [
+   "RbMap11SpringRenewal",
+   "Level"
+  ],
+  "RbMap12AutumnFinds": [
+   "RbMap12AutumnFinds",
+   "Level"
+  ],
+  "RbMap13SummerDrought": [
+   "RbMap13SummerDrought",
+   "Level"
+  ],
+  "RbMap14SandyDelta": [
+   "RbMap14SandyDelta",
+   "Level"
+  ],
+  "RecoverSettings": [
+   "RecoverSettings",
+   "Module"
+  ],
+  "RectangularArea": [
+   "RectangularArea"
+  ],
+  "RecyclingSettings": [
+   "RecyclingSettings",
+   "Module"
+  ],
+  "ReelOfWires": [
+   "ReelOfWires",
+   "Cargo"
+  ],
+  "ReserveFuelSettings": [
+   "ReserveFuelSettings",
+   "Module"
+  ],
+  "ResetModuleSettings": [
+   "ResetModuleSettings",
+   "Module"
+  ],
+  "Resource": [
+   "Resource"
+  ],
+  "ResourceEntity": [
+   "ResourceEntity"
+  ],
+  "ResourceGenerator": [
+   "ResourceGenerator"
+  ],
+  "ResourceGeneratorResult": [
+   "ResourceGeneratorResult"
+  ],
+  "ResourcePackRecipe": [
+   "ResourcePackRecipe"
+  ],
+  "ResourcePriceEntity": [
+   "ResourcePriceEntity"
+  ],
+  "ResourceRecyclingSettings": [
+   "ResourceRecyclingSettings",
+   "Module"
+  ],
+  "ResourceStorage": [
+   "ResourceStorage"
+  ],
+  "ResourceStorageSettings": [
+   "ResourceStorageSettings",
+   "Module"
+  ],
+  "ResourceSubType": [
+   "ResourceSubType"
+  ],
+  "ResourceUiSettings": [
+   "ResourceUiSettings"
+  ],
+  "ResourcesShopPrices": [
+   "ResourcesShopPrices"
+  ],
+  "ResourcesShopPricesGenerator": [
+   "ResourcesShopPricesGenerator"
+  ],
+  "ResourcesShopPricesResult": [
+   "ResourcesShopPricesResult"
+  ],
+  "ResourcesShopSettings": [
+   "ResourcesShopSettings",
+   "Module"
+  ],
+  "RetailLevel": [
+   "RetailLevel"
+  ],
+  "RetailLevels": [
+   "RetailLevels"
+  ],
+  "RetailLevelsGenerator": [
+   "RetailLevelsGenerator"
+  ],
+  "RigidBodyScannerSettings": [
+   "RigidBodyScannerSettings",
+   "Module"
+  ],
+  "RigidBodyStabilizerSettings": [
+   "RigidBodyStabilizerSettings",
+   "Module"
+  ],
+  "RoadPlanning": [
+   "RoadPlanning"
+  ],
+  "RoadPlanningGenerator": [
+   "RoadPlanningGenerator"
+  ],
+  "RoadPlanningGeneratorResult": [
+   "RoadPlanningGeneratorResult"
+  ],
+  "RoofingFelt": [
+   "RoofingFelt",
+   "Cargo"
+  ],
+  "RoutedConstraint": [
+   "RoutedConstraint"
+  ],
+  "RoutedConstraintChain": [
+   "RoutedConstraintChain"
+  ],
+  "RoutedConstraintChainStep": [
+   "RoutedConstraintChainStep"
+  ],
+  "Rubber": [
+   "Rubber",
+   "Cargo"
+  ],
+  "Sand": [
+   "Sand",
+   "Cargo"
+  ],
+  "SandRemoverSettings": [
+   "SandRemoverSettings",
+   "Module"
+  ],
+  "Scaffold": [
+   "Scaffold",
+   "Cargo"
+  ],
+  "SceneContainerAnalyzer": [
+   "SceneContainerAnalyzer",
+   "SceneProblemsAnalyzer"
+  ],
+  "SceneProblemsAnalyzer": [
+   "SceneProblemsAnalyzer"
+  ],
+  "SceneStatisticsAnalyzer": [
+   "SceneStatisticsAnalyzer"
+  ],
+  "ScoutPz14Prot": [
+   "ScoutPz14Prot",
+   "Truck"
+  ],
+  "SegmentPart": [
+   "SegmentPart",
+   "ConstructionPart"
+  ],
+  "SelfMaintenance": [
+   "SelfMaintenance",
+   "Module"
+  ],
+  "SequentialChainConstraint": [
+   "SequentialChainConstraint"
+  ],
+  "SfxSettings": [
+   "SfxSettings",
+   "Module"
+  ],
+  "ShaftBoneData": [
+   "ShaftBoneData"
+  ],
+  "ShaftDataSettings": [
+   "ShaftDataSettings"
+  ],
+  "ShopResourcePrices": [
+   "ShopResourcePrices"
+  ],
+  "ShopResourcesPricesGenerator": [
+   "ShopResourcesPricesGenerator"
+  ],
+  "ShopResourcesPricesResult": [
+   "ShopResourcesPricesResult"
+  ],
+  "SimplestVehicle": [
+   "SimplestVehicle",
+   "Truck"
+  ],
+  "SmallGenerator": [
+   "SmallGenerator",
+   "Cargo"
+  ],
+  "SoftContactSettings": [
+   "SoftContactSettings"
+  ],
+  "SoundEmitterSettings": [
+   "SoundEmitterSettings"
+  ],
+  "SourceClsEntry": [
+   "SourceClsEntry"
+  ],
+  "SpawnPoint": [
+   "SpawnPoint"
+  ],
+  "SslClass": [
+   "SslClass"
+  ],
+  "SslDocument": [
+   "SslDocument",
+   "Document"
+  ],
+  "StarterTrucks": [
+   "StarterTrucks"
+  ],
+  "StarterTrucksGenerator": [
+   "StarterTrucksGenerator"
+  ],
+  "StaticDynamicAnalyzer": [
+   "StaticDynamicAnalyzer",
+   "SceneProblemsAnalyzer"
+  ],
+  "StaticGeomScaleAnalyzer": [
+   "StaticGeomScaleAnalyzer",
+   "GameObjectProblemsAnalyzer"
+  ],
+  "StaticTruckAxisAction": [
+   "StaticTruckAxisAction"
+  ],
+  "StatisticsRow": [
+   "StatisticsRow"
+  ],
+  "StatisticsTable": [
+   "StatisticsTable"
+  ],
+  "StatisticsTableBuilder": [
+   "StatisticsTableBuilder"
+  ],
+  "Steel": [
+   "Steel",
+   "Cargo"
+  ],
+  "SteelArmature": [
+   "SteelArmature",
+   "Cargo"
+  ],
+  "SteelSheets": [
+   "SteelSheets",
+   "Cargo"
+  ],
+  "SteelWire": [
+   "SteelWire",
+   "Cargo"
+  ],
+  "SteeringRackSettings": [
+   "SteeringRackSettings"
+  ],
+  "Step39331pikeJollier": [
+   "Step39331pikeJollier",
+   "ChassisStepPike",
+   "Truck"
+  ],
+  "StepPikeLightTransporterOld": [
+   "StepPikeLightTransporterOld",
+   "ChassisStepPike",
+   "Truck"
+  ],
+  "StepPikeLightTransporterRes": [
+   "StepPikeLightTransporterRes",
+   "ChassisStepPike",
+   "Truck"
+  ],
+  "StringCollection": [
+   "StringCollection"
+  ],
+  "StumpGrinderSettings": [
+   "StumpGrinderSettings",
+   "Module"
+  ],
+  "StyrofoamBlock": [
+   "StyrofoamBlock",
+   "Cargo"
+  ],
+  "SubstanceSlicerSettings": [
+   "SubstanceSlicerSettings"
+  ],
+  "SuspensionAxle": [
+   "SuspensionAxle"
+  ],
+  "SuspensionSet": [
+   "SuspensionSet"
+  ],
+  "TaggedSettings": [
+   "TaggedSettings"
+  ],
+  "Tayga6455bBridgelayerRes": [
+   "Tayga6455bBridgelayerRes",
+   "ChassisTayga6455b",
+   "Truck"
+  ],
+  "Tayga6455bDumptruckOld": [
+   "Tayga6455bDumptruckOld",
+   "ChassisTayga6455b",
+   "Truck"
+  ],
+  "Tayga6455bDumptruckRes": [
+   "Tayga6455bDumptruckRes",
+   "ChassisTayga6455b",
+   "Truck"
+  ],
+  "TeleporterSettings": [
+   "TeleporterSettings"
+  ],
+  "TerraformingSystem": [
+   "TerraformingSystem"
+  ],
+  "TerraformingSystemGenerator": [
+   "TerraformingSystemGenerator"
+  ],
+  "TerraformingSystemResult": [
+   "TerraformingSystemResult"
+  ],
+  "TerrainImpactSettings": [
+   "TerrainImpactSettings"
+  ],
+  "TestCredits": [
+   "TestCredits",
+   "Credits"
+  ],
+  "ToEagleCameraTransition": [
+   "ToEagleCameraTransition",
+   "ToGameCameraTransition"
+  ],
+  "ToGameCameraTransition": [
+   "ToGameCameraTransition"
+  ],
+  "ToGameCameraTransitionGenerator": [
+   "ToGameCameraTransitionGenerator"
+  ],
+  "ToStratosphericCameraTransition": [
+   "ToStratosphericCameraTransition",
+   "ToGameCameraTransition"
+  ],
+  "ToTruckCameraTransition": [
+   "ToTruckCameraTransition",
+   "ToGameCameraTransition"
+  ],
+  "ToTruckFromEagleModeTransition": [
+   "ToTruckFromEagleModeTransition",
+   "ToGameCameraTransition"
+  ],
+  "ToolBoxes": [
+   "ToolBoxes",
+   "Cargo"
+  ],
+  "ToxicTank": [
+   "ToxicTank",
+   "Cargo"
+  ],
+  "ToyTruckSettings": [
+   "ToyTruckSettings"
+  ],
+  "TplAnimation": [
+   "TplAnimation",
+   "Module"
+  ],
+  "TplAnimationSettings": [
+   "TplAnimationSettings",
+   "Module"
+  ],
+  "TpsCameraPreset": [
+   "TpsCameraPreset"
+  ],
+  "TpsCameraPresetGenerator": [
+   "TpsCameraPresetGenerator"
+  ],
+  "Track": [
+   "Track"
+  ],
+  "TrackMeshDecal": [
+   "TrackMeshDecal"
+  ],
+  "TrackSwingSettings": [
+   "TrackSwingSettings",
+   "Module"
+  ],
+  "TrailRemoverSettings": [
+   "TrailRemoverSettings",
+   "Module"
+  ],
+  "TrailSettings": [
+   "TrailSettings"
+  ],
+  "TransitionType": [
+   "TransitionType"
+  ],
+  "TransporterSettings": [
+   "TransporterSettings",
+   "Module"
+  ],
+  "TreeCrusher": [
+   "TreeCrusher",
+   "Truck"
+  ],
+  "TreeCrusherOld": [
+   "TreeCrusherOld",
+   "Truck"
+  ],
+  "TreeCrusherSettings": [
+   "TreeCrusherSettings",
+   "Module"
+  ],
+  "TrenchDiggerSettings": [
+   "TrenchDiggerSettings",
+   "Module"
+  ],
+  "TrenchDiggerShovelSettings": [
+   "TrenchDiggerShovelSettings"
+  ],
+  "Truck": [
+   "Truck"
+  ],
+  "TruckAnchors": [
+   "TruckAnchors"
+  ],
+  "TruckAnchorsBodies": [
+   "TruckAnchorsBodies"
+  ],
+  "TruckAnchorsScalers": [
+   "TruckAnchorsScalers"
+  ],
+  "TruckCableLayerVfx01": [
+   "TruckCableLayerVfx01",
+   "EffectsSettings"
+  ],
+  "TruckCameraPresetResult": [
+   "TruckCameraPresetResult"
+  ],
+  "TruckCockpitUnderWaterSettings": [
+   "TruckCockpitUnderWaterSettings"
+  ],
+  "TruckConstraint": [
+   "TruckConstraint",
+   "Module"
+  ],
+  "TruckDetailsInfo": [
+   "TruckDetailsInfo"
+  ],
+  "TruckFadeSettings": [
+   "TruckFadeSettings",
+   "Module"
+  ],
+  "TruckGenerator": [
+   "TruckGenerator"
+  ],
+  "TruckGeneratorResult": [
+   "TruckGeneratorResult"
+  ],
+  "TruckHarvesterVfx01": [
+   "TruckHarvesterVfx01",
+   "EffectsSettings"
+  ],
+  "TruckHints": [
+   "TruckHints"
+  ],
+  "TruckHintsGenerator": [
+   "TruckHintsGenerator"
+  ],
+  "TruckHintsGeneratorResult": [
+   "TruckHintsGeneratorResult"
+  ],
+  "TruckMirrorSetting": [
+   "TruckMirrorSetting",
+   "Module"
+  ],
+  "TruckMobileSandScreenSettings": [
+   "TruckMobileSandScreenSettings",
+   "Module"
+  ],
+  "TruckOrientationSettings": [
+   "TruckOrientationSettings"
+  ],
+  "TruckPhantomScannerSettings": [
+   "TruckPhantomScannerSettings",
+   "Module"
+  ],
+  "TruckPhysPlacingSettings": [
+   "TruckPhysPlacingSettings",
+   "Module"
+  ],
+  "TruckRainSettings": [
+   "TruckRainSettings",
+   "Module"
+  ],
+  "TruckRaindropsSettings": [
+   "TruckRaindropsSettings",
+   "Module"
+  ],
+  "TruckSettings": [
+   "TruckSettings"
+  ],
+  "TruckStandartVfx01": [
+   "TruckStandartVfx01",
+   "EffectsSettings"
+  ],
+  "TruckStorage": [
+   "TruckStorage"
+  ],
+  "TruckStumpMulcherVfx01": [
+   "TruckStumpMulcherVfx01",
+   "EffectsSettings"
+  ],
+  "TruckTeleporterSettings": [
+   "TruckTeleporterSettings"
+  ],
+  "TruckUnderwaterSettings": [
+   "TruckUnderwaterSettings"
+  ],
+  "TruckWheel": [
+   "TruckWheel"
+  ],
+  "TruckWipersSettings": [
+   "TruckWipersSettings",
+   "Module"
+  ],
+  "Tubes": [
+   "Tubes",
+   "Cargo"
+  ],
+  "Tunnel03Entry": [
+   "Tunnel03Entry",
+   "EstablishRouteZone"
+  ],
+  "TurnableBridgeSettings": [
+   "TurnableBridgeSettings",
+   "Module"
+  ],
+  "Tuz119lynxMutt": [
+   "Tuz119lynxMutt",
+   "ChassisTuz119lynxMutt",
+   "Truck"
+  ],
+  "Tuz119lynxScoutOld": [
+   "Tuz119lynxScoutOld",
+   "ChassisTuz119lynx",
+   "Truck"
+  ],
+  "Tuz119lynxScoutRes": [
+   "Tuz119lynxScoutRes",
+   "ChassisTuz119lynx",
+   "Truck"
+  ],
+  "Tuz119lynxScoutTrailerRes": [
+   "Tuz119lynxScoutTrailerRes",
+   "ChassisTuz119lynx",
+   "Truck"
+  ],
+  "Tuz303karelianScoutDozerRes": [
+   "Tuz303karelianScoutDozerRes",
+   "ChassisTuz303karelian",
+   "Truck"
+  ],
+  "Tuz303karelianScoutOld": [
+   "Tuz303karelianScoutOld",
+   "ChassisTuz303karelian",
+   "Truck"
+  ],
+  "Tuz303karelianScoutRes": [
+   "Tuz303karelianScoutRes",
+   "ChassisTuz303karelian",
+   "Truck"
+  ],
+  "Typemask": [
+   "Typemask"
+  ],
+  "UiInfo": [
+   "UiInfo"
+  ],
+  "UiMarker": [
+   "UiMarker",
+   "Module"
+  ],
+  "UiResourceMarker": [
+   "UiResourceMarker",
+   "Module"
+  ],
+  "UiTruckTypeSort": [
+   "UiTruckTypeSort"
+  ],
+  "UiTruckTypeSortGenerator": [
+   "UiTruckTypeSortGenerator"
+  ],
+  "UniversalAction": [
+   "UniversalAction"
+  ],
+  "UniversalAxisAction": [
+   "UniversalAxisAction"
+  ],
+  "UnlockingSettings": [
+   "UnlockingSettings"
+  ],
+  "VehicleCameraSettings": [
+   "VehicleCameraSettings",
+   "Module"
+  ],
+  "VehicleLightMaterialDatas": [
+   "VehicleLightMaterialDatas"
+  ],
+  "VehicleLightMaterials": [
+   "VehicleLightMaterials",
+   "Module"
+  ],
+  "VehiclesHeadlights": [
+   "VehiclesHeadlights",
+   "Module"
+  ],
+  "VehiclesHeadlightsData": [
+   "VehiclesHeadlightsData"
+  ],
+  "VelocityReducerSettings": [
+   "VelocityReducerSettings",
+   "Module"
+  ],
+  "VoltrackConcreteMx": [
+   "VoltrackConcreteMx",
+   "ChassisVoltrackMx",
+   "Truck"
+  ],
+  "Voron3327CargoOld": [
+   "Voron3327CargoOld",
+   "ChassisVoron3327",
+   "Truck"
+  ],
+  "Voron3327CargoRes": [
+   "Voron3327CargoRes",
+   "ChassisVoron3327",
+   "Truck"
+  ],
+  "Voron3327CraneCargoRes": [
+   "Voron3327CraneCargoRes",
+   "ChassisVoron3327",
+   "Truck"
+  ],
+  "Voron3327DumptruckRes": [
+   "Voron3327DumptruckRes",
+   "ChassisVoron3327",
+   "Truck"
+  ],
+  "Voron3327TentOld": [
+   "Voron3327TentOld",
+   "Cargo"
+  ],
+  "Voron3327TentRes": [
+   "Voron3327TentRes",
+   "Cargo"
+  ],
+  "VostokAtm53pioneerDozerOld": [
+   "VostokAtm53pioneerDozerOld",
+   "ChassisVostokAtm53pioneer",
+   "Truck"
+  ],
+  "VostokAtm53pioneerDozerRes": [
+   "VostokAtm53pioneerDozerRes",
+   "ChassisVostokAtm53pioneer",
+   "Truck"
+  ],
+  "VostokEtv89CraneNew": [
+   "VostokEtv89CraneNew",
+   "ChassisVostokEtv89",
+   "Truck"
+  ],
+  "VostokMu97antBridgelayerOld": [
+   "VostokMu97antBridgelayerOld",
+   "ChassisVostokMu97ant",
+   "Truck"
+  ],
+  "VostokMu97antBridgelayerRes": [
+   "VostokMu97antBridgelayerRes",
+   "ChassisVostokMu97ant",
+   "Truck"
+  ],
+  "VostokTk53krotCableLayerOld": [
+   "VostokTk53krotCableLayerOld",
+   "ChassisVostokTk53krot",
+   "Truck"
+  ],
+  "VostokTk53krotCableLayerRes": [
+   "VostokTk53krotCableLayerRes",
+   "ChassisVostokTk53krot",
+   "Truck"
+  ],
+  "WardenKochevnikMobNew": [
+   "WardenKochevnikMobNew",
+   "ChassisWardenKochevnik",
+   "Truck"
+  ],
+  "WaterInteraction": [
+   "WaterInteraction"
+  ],
+  "WayfarerGasSemitrailer": [
+   "WayfarerGasSemitrailer",
+   "ChassisWayfarerSt7050",
+   "Truck"
+  ],
+  "WayfarerOft96TsD": [
+   "WayfarerOft96TsD",
+   "ChassisWayfarerOft96",
+   "Truck"
+  ],
+  "WayfarerOft96TsTCraneFlatbedNew": [
+   "WayfarerOft96TsTCraneFlatbedNew",
+   "ChassisWayfarerOft96",
+   "Truck"
+  ],
+  "WayfarerSt7050CargoMain": [
+   "WayfarerSt7050CargoMain",
+   "ChassisWayfarerSt7050",
+   "Truck"
+  ],
+  "WayfarerSt7050New": [
+   "WayfarerSt7050New",
+   "ChassisWayfarerSt7050",
+   "Truck"
+  ],
+  "WayfarerSt7050TrailerCargoAi": [
+   "WayfarerSt7050TrailerCargoAi",
+   "ChassisWayfarerSt7050",
+   "Truck"
+  ],
+  "WayfarerSt7050TrailerCargoNew": [
+   "WayfarerSt7050TrailerCargoNew",
+   "ChassisWayfarerSt7050",
+   "Truck"
+  ],
+  "WayfarerSt7050TrailerFridgeNew": [
+   "WayfarerSt7050TrailerFridgeNew",
+   "ChassisWayfarerSt7050",
+   "Truck"
+  ],
+  "WayfarerSt7050TrailerFuelNew": [
+   "WayfarerSt7050TrailerFuelNew",
+   "ChassisWayfarerSt7050",
+   "Truck"
+  ],
+  "WayfarerSt7050TrailerTentNew": [
+   "WayfarerSt7050TrailerTentNew",
+   "ChassisWayfarerSt7050",
+   "Truck"
+  ],
+  "Wheel": [
+   "Wheel"
+  ],
+  "WheelAlcesC400": [
+   "WheelAlcesC400",
+   "Wheel"
+  ],
+  "WheelAlcesC400Cargo": [
+   "WheelAlcesC400Cargo",
+   "Wheel"
+  ],
+  "WheelAlcesC400CargoDouble": [
+   "WheelAlcesC400CargoDouble",
+   "Wheel"
+  ],
+  "WheelAlcesC400Double": [
+   "WheelAlcesC400Double",
+   "Wheel"
+  ],
+  "WheelAramatsuBowhead30tFront": [
+   "WheelAramatsuBowhead30tFront",
+   "Wheel"
+  ],
+  "WheelAramatsuBowhead30tMiddle": [
+   "WheelAramatsuBowhead30tMiddle",
+   "Wheel"
+  ],
+  "WheelAramatsuBowhead30tMiddleTrail": [
+   "WheelAramatsuBowhead30tMiddleTrail",
+   "Wheel"
+  ],
+  "WheelAramatsuBowhead30tRear": [
+   "WheelAramatsuBowhead30tRear",
+   "Wheel"
+  ],
+  "WheelAramatsuBowhead30tTop": [
+   "WheelAramatsuBowhead30tTop",
+   "Wheel"
+  ],
+  "WheelAramatsuCrayfish": [
+   "WheelAramatsuCrayfish",
+   "Wheel"
+  ],
+  "WheelAramatsuCrayfishMod": [
+   "WheelAramatsuCrayfishMod",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoFront": [
+   "WheelAramatsuForesterNeoFront",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoFront1": [
+   "WheelAramatsuForesterNeoFront1",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoFront2": [
+   "WheelAramatsuForesterNeoFront2",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoMiddle": [
+   "WheelAramatsuForesterNeoMiddle",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoMiddle1": [
+   "WheelAramatsuForesterNeoMiddle1",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoMiddle2": [
+   "WheelAramatsuForesterNeoMiddle2",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoMiddleCrane": [
+   "WheelAramatsuForesterNeoMiddleCrane",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoRear": [
+   "WheelAramatsuForesterNeoRear",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoRear1": [
+   "WheelAramatsuForesterNeoRear1",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoRear2": [
+   "WheelAramatsuForesterNeoRear2",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoRearCrane": [
+   "WheelAramatsuForesterNeoRearCrane",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoTop": [
+   "WheelAramatsuForesterNeoTop",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoTop1": [
+   "WheelAramatsuForesterNeoTop1",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoTop2": [
+   "WheelAramatsuForesterNeoTop2",
+   "Wheel"
+  ],
+  "WheelAramatsuForesterNeoTrail": [
+   "WheelAramatsuForesterNeoTrail",
+   "Wheel"
+  ],
+  "WheelAramatsuKite3Front": [
+   "WheelAramatsuKite3Front",
+   "Wheel"
+  ],
+  "WheelAramatsuKite3Middle": [
+   "WheelAramatsuKite3Middle",
+   "Wheel"
+  ],
+  "WheelAramatsuKite3Rear1": [
+   "WheelAramatsuKite3Rear1",
+   "Wheel"
+  ],
+  "WheelAramatsuKite3Rear2": [
+   "WheelAramatsuKite3Rear2",
+   "Wheel"
+  ],
+  "WheelAramatsuKite3Top": [
+   "WheelAramatsuKite3Top",
+   "Wheel"
+  ],
+  "WheelAramatsuR1AsphaltRoller": [
+   "WheelAramatsuR1AsphaltRoller",
+   "Wheel"
+  ],
+  "WheelAramatsuR1AsphaltRollerFront": [
+   "WheelAramatsuR1AsphaltRollerFront",
+   "Wheel"
+  ],
+  "WheelArling120specialPaverNewFront": [
+   "WheelArling120specialPaverNewFront",
+   "Wheel"
+  ],
+  "WheelArling120specialPaverNewMiddle1": [
+   "WheelArling120specialPaverNewMiddle1",
+   "Wheel"
+  ],
+  "WheelArling120specialPaverNewMiddle2": [
+   "WheelArling120specialPaverNewMiddle2",
+   "Wheel"
+  ],
+  "WheelArling120specialPaverNewRear": [
+   "WheelArling120specialPaverNewRear",
+   "Wheel"
+  ],
+  "WheelArling120specialPaverNewTop": [
+   "WheelArling120specialPaverNewTop",
+   "Wheel"
+  ],
+  "WheelArling750rFront": [
+   "WheelArling750rFront",
+   "Wheel"
+  ],
+  "WheelArling750rRear": [
+   "WheelArling750rRear",
+   "Wheel"
+  ],
+  "WheelArmigerThunder": [
+   "WheelArmigerThunder",
+   "Wheel"
+  ],
+  "WheelArmigerThunderCivilian": [
+   "WheelArmigerThunderCivilian",
+   "Wheel"
+  ],
+  "WheelArmigerThunderExp": [
+   "WheelArmigerThunderExp",
+   "Wheel"
+  ],
+  "WheelAzov4317dlOldFront": [
+   "WheelAzov4317dlOldFront",
+   "Wheel"
+  ],
+  "WheelAzov4317dlOldRear": [
+   "WheelAzov4317dlOldRear",
+   "Wheel"
+  ],
+  "WheelAzov4317dlResFront": [
+   "WheelAzov4317dlResFront",
+   "Wheel"
+  ],
+  "WheelAzov4317dlResRear": [
+   "WheelAzov4317dlResRear",
+   "Wheel"
+  ],
+  "WheelBaikal5916OldFront": [
+   "WheelBaikal5916OldFront",
+   "Wheel"
+  ],
+  "WheelBaikal5916OldRear": [
+   "WheelBaikal5916OldRear",
+   "Wheel"
+  ],
+  "WheelBaikal5916ResFront": [
+   "WheelBaikal5916ResFront",
+   "Wheel"
+  ],
+  "WheelBaikal5916ResRear": [
+   "WheelBaikal5916ResRear",
+   "Wheel"
+  ],
+  "WheelBaikal65206Old": [
+   "WheelBaikal65206Old",
+   "Wheel"
+  ],
+  "WheelBigVfx01": [
+   "WheelBigVfx01",
+   "EffectsSettings"
+  ],
+  "WheelData": [
+   "WheelData"
+  ],
+  "WheelDerryLonghorn4520": [
+   "WheelDerryLonghorn4520",
+   "Wheel"
+  ],
+  "WheelDon71": [
+   "WheelDon71",
+   "Wheel"
+  ],
+  "WheelDon72malamute": [
+   "WheelDon72malamute",
+   "Wheel"
+  ],
+  "WheelDragline5111bBig": [
+   "WheelDragline5111bBig",
+   "Wheel"
+  ],
+  "WheelDragline5111bBigOld": [
+   "WheelDragline5111bBigOld",
+   "Wheel"
+  ],
+  "WheelDragline5111bBigStar": [
+   "WheelDragline5111bBigStar",
+   "Wheel"
+  ],
+  "WheelDragline5111bBigStarOld": [
+   "WheelDragline5111bBigStarOld",
+   "Wheel"
+  ],
+  "WheelDragline5111bSmall": [
+   "WheelDragline5111bSmall",
+   "Wheel"
+  ],
+  "WheelDragline5111bSmallOld": [
+   "WheelDragline5111bSmallOld",
+   "Wheel"
+  ],
+  "WheelDragline5111bSmallStar": [
+   "WheelDragline5111bSmallStar",
+   "Wheel"
+  ],
+  "WheelDragline5111bSmallStarOld": [
+   "WheelDragline5111bSmallStarOld",
+   "Wheel"
+  ],
+  "WheelDs135bunkerOld": [
+   "WheelDs135bunkerOld",
+   "Wheel"
+  ],
+  "WheelDs135bunkerOldFront": [
+   "WheelDs135bunkerOldFront",
+   "Wheel"
+  ],
+  "WheelDs135bunkerOldMiddle": [
+   "WheelDs135bunkerOldMiddle",
+   "Wheel"
+  ],
+  "WheelDs135bunkerOldRear": [
+   "WheelDs135bunkerOldRear",
+   "Wheel"
+  ],
+  "WheelDs135bunkerOldTop": [
+   "WheelDs135bunkerOldTop",
+   "Wheel"
+  ],
+  "WheelDs55katokOldFront": [
+   "WheelDs55katokOldFront",
+   "Wheel"
+  ],
+  "WheelDs55katokOldRear": [
+   "WheelDs55katokOldRear",
+   "Wheel"
+  ],
+  "WheelDs55katokResFront": [
+   "WheelDs55katokResFront",
+   "Wheel"
+  ],
+  "WheelDs55katokResRear": [
+   "WheelDs55katokResRear",
+   "Wheel"
+  ],
+  "WheelEmpty": [
+   "WheelEmpty",
+   "Wheel"
+  ],
+  "WheelEpecHwc945": [
+   "WheelEpecHwc945",
+   "Wheel"
+  ],
+  "WheelEpecLt200Front": [
+   "WheelEpecLt200Front",
+   "Wheel"
+  ],
+  "WheelEpecLt200Middle": [
+   "WheelEpecLt200Middle",
+   "Wheel"
+  ],
+  "WheelEpecLt200Rear": [
+   "WheelEpecLt200Rear",
+   "Wheel"
+  ],
+  "WheelEpecLt200Top": [
+   "WheelEpecLt200Top",
+   "Wheel"
+  ],
+  "WheelEpecTc305Front": [
+   "WheelEpecTc305Front",
+   "Wheel"
+  ],
+  "WheelEpecTc305Middle": [
+   "WheelEpecTc305Middle",
+   "Wheel"
+  ],
+  "WheelEpecTc305Rear": [
+   "WheelEpecTc305Rear",
+   "Wheel"
+  ],
+  "WheelEpecTc305Top": [
+   "WheelEpecTc305Top",
+   "Wheel"
+  ],
+  "WheelExtraBigVfx01": [
+   "WheelExtraBigVfx01",
+   "EffectsSettings"
+  ],
+  "WheelFake": [
+   "WheelFake",
+   "Wheel"
+  ],
+  "WheelGenerator": [
+   "WheelGenerator"
+  ],
+  "WheelGeneratorResult": [
+   "WheelGeneratorResult"
+  ],
+  "WheelGreenway740crossFront": [
+   "WheelGreenway740crossFront",
+   "Wheel"
+  ],
+  "WheelGreenway740crossRear": [
+   "WheelGreenway740crossRear",
+   "Wheel"
+  ],
+  "WheelGreenway740crossSideboardNewFront": [
+   "WheelGreenway740crossSideboardNewFront",
+   "Wheel"
+  ],
+  "WheelGreenway740crossSideboardNewRear": [
+   "WheelGreenway740crossSideboardNewRear",
+   "Wheel"
+  ],
+  "WheelGreenwayHt500DozerNewFront": [
+   "WheelGreenwayHt500DozerNewFront",
+   "Wheel"
+  ],
+  "WheelGreenwayHt500DozerNewMiddle": [
+   "WheelGreenwayHt500DozerNewMiddle",
+   "Wheel"
+  ],
+  "WheelGreenwayHt500DozerNewRear": [
+   "WheelGreenwayHt500DozerNewRear",
+   "Wheel"
+  ],
+  "WheelHeavyCrane": [
+   "WheelHeavyCrane",
+   "Wheel"
+  ],
+  "WheelHeavyLowbodySemitrailer": [
+   "WheelHeavyLowbodySemitrailer",
+   "Wheel"
+  ],
+  "WheelHollanderM7Front": [
+   "WheelHollanderM7Front",
+   "Wheel"
+  ],
+  "WheelHollanderM7Rear": [
+   "WheelHollanderM7Rear",
+   "Wheel"
+  ],
+  "WheelInvictusTypeaScout": [
+   "WheelInvictusTypeaScout",
+   "Wheel"
+  ],
+  "WheelKhanLoStrannikFront": [
+   "WheelKhanLoStrannikFront",
+   "Wheel"
+  ],
+  "WheelKhanLoStrannikMiddle": [
+   "WheelKhanLoStrannikMiddle",
+   "Wheel"
+  ],
+  "WheelKhanLoStrannikRear": [
+   "WheelKhanLoStrannikRear",
+   "Wheel"
+  ],
+  "WheelKhanLoStrannikSmall": [
+   "WheelKhanLoStrannikSmall",
+   "Wheel"
+  ],
+  "WheelKronenwerkL34Old": [
+   "WheelKronenwerkL34Old",
+   "Wheel"
+  ],
+  "WheelKronenwerkL34Res": [
+   "WheelKronenwerkL34Res",
+   "Wheel"
+  ],
+  "WheelMedVfx01": [
+   "WheelMedVfx01",
+   "EffectsSettings"
+  ],
+  "WheelMinutemanK350": [
+   "WheelMinutemanK350",
+   "Wheel"
+  ],
+  "WheelMinutemanK350Civilian": [
+   "WheelMinutemanK350Civilian",
+   "Wheel"
+  ],
+  "WheelMtk100mOldFront": [
+   "WheelMtk100mOldFront",
+   "Wheel"
+  ],
+  "WheelMtk100mOldMiddle": [
+   "WheelMtk100mOldMiddle",
+   "Wheel"
+  ],
+  "WheelMtk100mOldRear": [
+   "WheelMtk100mOldRear",
+   "Wheel"
+  ],
+  "WheelMtk100mOldTop": [
+   "WheelMtk100mOldTop",
+   "Wheel"
+  ],
+  "WheelMtk100mResFront": [
+   "WheelMtk100mResFront",
+   "Wheel"
+  ],
+  "WheelMtk100mResMiddle": [
+   "WheelMtk100mResMiddle",
+   "Wheel"
+  ],
+  "WheelMtk100mResRear": [
+   "WheelMtk100mResRear",
+   "Wheel"
+  ],
+  "WheelMtk100mResTop": [
+   "WheelMtk100mResTop",
+   "Wheel"
+  ],
+  "WheelMtk2006HarvesterNewFront": [
+   "WheelMtk2006HarvesterNewFront",
+   "Wheel"
+  ],
+  "WheelMtk2006HarvesterNewRear": [
+   "WheelMtk2006HarvesterNewRear",
+   "Wheel"
+  ],
+  "WheelMtkMd76OldFront": [
+   "WheelMtkMd76OldFront",
+   "Wheel"
+  ],
+  "WheelMtkMd76OldMiddle": [
+   "WheelMtkMd76OldMiddle",
+   "Wheel"
+  ],
+  "WheelMtkMd76OldRear": [
+   "WheelMtkMd76OldRear",
+   "Wheel"
+  ],
+  "WheelMtkMd76ResFront": [
+   "WheelMtkMd76ResFront",
+   "Wheel"
+  ],
+  "WheelMtkMd76ResMiddle": [
+   "WheelMtkMd76ResMiddle",
+   "Wheel"
+  ],
+  "WheelMtkMd76ResRear": [
+   "WheelMtkMd76ResRear",
+   "Wheel"
+  ],
+  "WheelMtkProseka200Old": [
+   "WheelMtkProseka200Old",
+   "Wheel"
+  ],
+  "WheelMtkProseka200Res": [
+   "WheelMtkProseka200Res",
+   "Wheel"
+  ],
+  "WheelMtkProseka200Vfx01": [
+   "WheelMtkProseka200Vfx01",
+   "EffectsSettings"
+  ],
+  "WheelMuleT1Alt": [
+   "WheelMuleT1Alt",
+   "Wheel"
+  ],
+  "WheelMuleT1Old": [
+   "WheelMuleT1Old",
+   "Wheel"
+  ],
+  "WheelMuleT1Res": [
+   "WheelMuleT1Res",
+   "Wheel"
+  ],
+  "WheelMuleT1Trailblazer": [
+   "WheelMuleT1Trailblazer",
+   "Wheel"
+  ],
+  "WheelNotaAllegro": [
+   "WheelNotaAllegro",
+   "Wheel"
+  ],
+  "WheelNotaAllegroSlim": [
+   "WheelNotaAllegroSlim",
+   "Wheel"
+  ],
+  "WheelQaDon": [
+   "WheelQaDon",
+   "Wheel"
+  ],
+  "WheelSandQarryNew": [
+   "WheelSandQarryNew",
+   "Wheel"
+  ],
+  "WheelSlotWithDesc": [
+   "WheelSlotWithDesc"
+  ],
+  "WheelSmallVfx01": [
+   "WheelSmallVfx01",
+   "EffectsSettings"
+  ],
+  "WheelStepPikeOldFront": [
+   "WheelStepPikeOldFront",
+   "Wheel"
+  ],
+  "WheelStepPikeOldRear": [
+   "WheelStepPikeOldRear",
+   "Wheel"
+  ],
+  "WheelStepPikeResFront": [
+   "WheelStepPikeResFront",
+   "Wheel"
+  ],
+  "WheelStepPikeResRear": [
+   "WheelStepPikeResRear",
+   "Wheel"
+  ],
+  "WheelTayga6455bOldFront": [
+   "WheelTayga6455bOldFront",
+   "Wheel"
+  ],
+  "WheelTayga6455bOldRear": [
+   "WheelTayga6455bOldRear",
+   "Wheel"
+  ],
+  "WheelTrailDesc": [
+   "WheelTrailDesc"
+  ],
+  "WheelTreecrusherFront": [
+   "WheelTreecrusherFront",
+   "Wheel"
+  ],
+  "WheelTreecrusherFrontOld": [
+   "WheelTreecrusherFrontOld",
+   "Wheel"
+  ],
+  "WheelTuz119lynxMod": [
+   "WheelTuz119lynxMod",
+   "Wheel"
+  ],
+  "WheelTuz119lynxMuttFront": [
+   "WheelTuz119lynxMuttFront",
+   "Wheel"
+  ],
+  "WheelTuz119lynxMuttRear": [
+   "WheelTuz119lynxMuttRear",
+   "Wheel"
+  ],
+  "WheelTuz119lynxOld": [
+   "WheelTuz119lynxOld",
+   "Wheel"
+  ],
+  "WheelTuz119lynxRes": [
+   "WheelTuz119lynxRes",
+   "Wheel"
+  ],
+  "WheelTuz119lynxTrailer": [
+   "WheelTuz119lynxTrailer",
+   "Wheel"
+  ],
+  "WheelTuz119lynxTrailerFront": [
+   "WheelTuz119lynxTrailerFront",
+   "Wheel"
+  ],
+  "WheelTuz119lynxTrailerRear": [
+   "WheelTuz119lynxTrailerRear",
+   "Wheel"
+  ],
+  "WheelTuz303karelianOldFront": [
+   "WheelTuz303karelianOldFront",
+   "Wheel"
+  ],
+  "WheelTuz303karelianOldMiddle": [
+   "WheelTuz303karelianOldMiddle",
+   "Wheel"
+  ],
+  "WheelTuz303karelianResFront": [
+   "WheelTuz303karelianResFront",
+   "Wheel"
+  ],
+  "WheelTuz303karelianResMiddle": [
+   "WheelTuz303karelianResMiddle",
+   "Wheel"
+  ],
+  "WheelType": [
+   "WheelType"
+  ],
+  "WheelVoron3327Alt": [
+   "WheelVoron3327Alt",
+   "Wheel"
+  ],
+  "WheelVoron3327Old": [
+   "WheelVoron3327Old",
+   "Wheel"
+  ],
+  "WheelVoron3327Res": [
+   "WheelVoron3327Res",
+   "Wheel"
+  ],
+  "WheelVostokAtm53pioneerOldFront": [
+   "WheelVostokAtm53pioneerOldFront",
+   "Wheel"
+  ],
+  "WheelVostokAtm53pioneerOldMiddle": [
+   "WheelVostokAtm53pioneerOldMiddle",
+   "Wheel"
+  ],
+  "WheelVostokAtm53pioneerOldRear": [
+   "WheelVostokAtm53pioneerOldRear",
+   "Wheel"
+  ],
+  "WheelVostokAtm53pioneerResFront": [
+   "WheelVostokAtm53pioneerResFront",
+   "Wheel"
+  ],
+  "WheelVostokAtm53pioneerResMiddle": [
+   "WheelVostokAtm53pioneerResMiddle",
+   "Wheel"
+  ],
+  "WheelVostokAtm53pioneerResRear": [
+   "WheelVostokAtm53pioneerResRear",
+   "Wheel"
+  ],
+  "WheelVostokEtv89Front": [
+   "WheelVostokEtv89Front",
+   "Wheel"
+  ],
+  "WheelVostokEtv89Middle": [
+   "WheelVostokEtv89Middle",
+   "Wheel"
+  ],
+  "WheelVostokEtv89Rear": [
+   "WheelVostokEtv89Rear",
+   "Wheel"
+  ],
+  "WheelVostokEtv89Top": [
+   "WheelVostokEtv89Top",
+   "Wheel"
+  ],
+  "WheelVostokMu97antOldFront": [
+   "WheelVostokMu97antOldFront",
+   "Wheel"
+  ],
+  "WheelVostokMu97antOldMiddle": [
+   "WheelVostokMu97antOldMiddle",
+   "Wheel"
+  ],
+  "WheelVostokMu97antOldRear": [
+   "WheelVostokMu97antOldRear",
+   "Wheel"
+  ],
+  "WheelVostokMu97antOldTop": [
+   "WheelVostokMu97antOldTop",
+   "Wheel"
+  ],
+  "WheelVostokMu97antResFront": [
+   "WheelVostokMu97antResFront",
+   "Wheel"
+  ],
+  "WheelVostokMu97antResMiddle": [
+   "WheelVostokMu97antResMiddle",
+   "Wheel"
+  ],
+  "WheelVostokMu97antResRear": [
+   "WheelVostokMu97antResRear",
+   "Wheel"
+  ],
+  "WheelVostokMu97antResTop": [
+   "WheelVostokMu97antResTop",
+   "Wheel"
+  ],
+  "WheelVostokTk53krotOldFront": [
+   "WheelVostokTk53krotOldFront",
+   "Wheel"
+  ],
+  "WheelVostokTk53krotOldMiddle": [
+   "WheelVostokTk53krotOldMiddle",
+   "Wheel"
+  ],
+  "WheelVostokTk53krotOldRear": [
+   "WheelVostokTk53krotOldRear",
+   "Wheel"
+  ],
+  "WheelVostokTk53krotResFront": [
+   "WheelVostokTk53krotResFront",
+   "Wheel"
+  ],
+  "WheelVostokTk53krotResMiddle": [
+   "WheelVostokTk53krotResMiddle",
+   "Wheel"
+  ],
+  "WheelVostokTk53krotResRear": [
+   "WheelVostokTk53krotResRear",
+   "Wheel"
+  ],
+  "WheelWardenKochevnikFront": [
+   "WheelWardenKochevnikFront",
+   "Wheel"
+  ],
+  "WheelWardenKochevnikMiddle": [
+   "WheelWardenKochevnikMiddle",
+   "Wheel"
+  ],
+  "WheelWardenKochevnikRear": [
+   "WheelWardenKochevnikRear",
+   "Wheel"
+  ],
+  "WheelWayfarerOft96Ts": [
+   "WheelWayfarerOft96Ts",
+   "Wheel"
+  ],
+  "WheelWayfarerSt7050": [
+   "WheelWayfarerSt7050",
+   "Wheel"
+  ],
+  "WheelWayfarerSt7050Double": [
+   "WheelWayfarerSt7050Double",
+   "Wheel"
+  ],
+  "WheelWayfarerSt7050Semitrailer": [
+   "WheelWayfarerSt7050Semitrailer",
+   "Wheel"
+  ],
+  "WheelZikz605eOld": [
+   "WheelZikz605eOld",
+   "Wheel"
+  ],
+  "WheelZikz605eRes": [
+   "WheelZikz605eRes",
+   "Wheel"
+  ],
+  "WheelZikz612cOld": [
+   "WheelZikz612cOld",
+   "Wheel"
+  ],
+  "WheelZikz612cRes": [
+   "WheelZikz612cRes",
+   "Wheel"
+  ],
+  "WheeledTrenchdiggerBigWheelsVfx01": [
+   "WheeledTrenchdiggerBigWheelsVfx01",
+   "EffectsSettings"
+  ],
+  "WheelsMaterialsSettings": [
+   "WheelsMaterialsSettings"
+  ],
+  "WheelsType": [
+   "WheelsType"
+  ],
+  "WinchGroup": [
+   "WinchGroup"
+  ],
+  "WinchSettings": [
+   "WinchSettings",
+   "Module"
+  ],
+  "WinchSocket": [
+   "WinchSocket"
+  ],
+  "WinchSocketSettings": [
+   "WinchSocketSettings"
+  ],
+  "WinchableSettings": [
+   "WinchableSettings",
+   "Module"
+  ],
+  "Wood": [
+   "Wood",
+   "Cargo"
+  ],
+  "WoodenPlank": [
+   "WoodenPlank",
+   "Cargo"
+  ],
+  "WordsMatcher": [
+   "WordsMatcher"
+  ],
+  "X2Barrels": [
+   "X2Barrels",
+   "Cargo"
+  ],
+  "X2Bricks": [
+   "X2Bricks",
+   "Cargo"
+  ],
+  "X2CellTower1": [
+   "X2CellTower1",
+   "Cargo"
+  ],
+  "X2CellTower2": [
+   "X2CellTower2",
+   "Cargo"
+  ],
+  "X2CellTower3": [
+   "X2CellTower3",
+   "Cargo"
+  ],
+  "X2Cement": [
+   "X2Cement",
+   "Cargo"
+  ],
+  "X2Concrete": [
+   "X2Concrete",
+   "Cargo"
+  ],
+  "X2ConcreteBlocks": [
+   "X2ConcreteBlocks",
+   "Cargo"
+  ],
+  "X2ConcretePipes": [
+   "X2ConcretePipes",
+   "Cargo"
+  ],
+  "X2Glass": [
+   "X2Glass",
+   "Cargo"
+  ],
+  "X2LarsenSheetPile": [
+   "X2LarsenSheetPile",
+   "Cargo"
+  ],
+  "X2LogsAfrican": [
+   "X2LogsAfrican",
+   "Cargo"
+  ],
+  "X2MetalBeams": [
+   "X2MetalBeams",
+   "Cargo"
+  ],
+  "X2MineralWool": [
+   "X2MineralWool",
+   "Cargo"
+  ],
+  "X2MiningDrill": [
+   "X2MiningDrill",
+   "Cargo"
+  ],
+  "X2PipesMedium": [
+   "X2PipesMedium",
+   "Cargo"
+  ],
+  "X2Plywood": [
+   "X2Plywood",
+   "Cargo"
+  ],
+  "X2QuartzSand": [
+   "X2QuartzSand",
+   "Cargo"
+  ],
+  "X2RoofingFelt": [
+   "X2RoofingFelt",
+   "Cargo"
+  ],
+  "X2Rubber": [
+   "X2Rubber",
+   "Cargo"
+  ],
+  "X2SolarPanel": [
+   "X2SolarPanel",
+   "Cargo"
+  ],
+  "X2SteelArmature": [
+   "X2SteelArmature",
+   "Cargo"
+  ],
+  "X2SteelSheets": [
+   "X2SteelSheets",
+   "Cargo"
+  ],
+  "X2SteelWire": [
+   "X2SteelWire",
+   "Cargo"
+  ],
+  "X2StyrofoamBlock": [
+   "X2StyrofoamBlock",
+   "Cargo"
+  ],
+  "X2TowerCrane1": [
+   "X2TowerCrane1",
+   "Cargo"
+  ],
+  "X2TowerCrane2": [
+   "X2TowerCrane2",
+   "Cargo"
+  ],
+  "X2TowerCrane3": [
+   "X2TowerCrane3",
+   "Cargo"
+  ],
+  "X2Tubes": [
+   "X2Tubes",
+   "Cargo"
+  ],
+  "X2ValveWater": [
+   "X2ValveWater",
+   "Cargo"
+  ],
+  "X2Wood": [
+   "X2Wood",
+   "Cargo"
+  ],
+  "X2WoodenPlank": [
+   "X2WoodenPlank",
+   "Cargo"
+  ],
+  "XseqFileTemplateWithModel": [
+   "XseqFileTemplateWithModel",
+   "CustomFileTemplate"
+  ],
+  "ZeroScaleAnalyzer": [
+   "ZeroScaleAnalyzer",
+   "GameObjectProblemsAnalyzer"
+  ],
+  "Zikz605eHeavyTransporterOld": [
+   "Zikz605eHeavyTransporterOld",
+   "ChassisZikz605e",
+   "Truck"
+  ],
+  "Zikz605eHeavyTransporterRes": [
+   "Zikz605eHeavyTransporterRes",
+   "ChassisZikz605e",
+   "Truck"
+  ],
+  "Zikz605eMobileScalperOld": [
+   "Zikz605eMobileScalperOld",
+   "ChassisZikz605eAlt",
+   "Truck"
+  ],
+  "Zikz605eMobileScalperRes": [
+   "Zikz605eMobileScalperRes",
+   "ChassisZikz605eAlt",
+   "Truck"
+  ],
+  "Zikz612cHeavyCraneOld": [
+   "Zikz612cHeavyCraneOld",
+   "ChassisZikz612c",
+   "Truck"
+  ],
+  "Zikz612cHeavyCraneRes": [
+   "Zikz612cHeavyCraneRes",
+   "ChassisZikz612c",
+   "Truck"
+  ],
+  "ZoneSettings": [
+   "ZoneSettings",
+   "Module"
+  ],
+  "ZoneViewData": [
+   "ZoneViewData"
+  ],
+  "ZoneViewStageInfo": [
+   "ZoneViewStageInfo"
+  ],
+  "object": [],
+  "test_constructions": [
+   "test_constructions",
+   "Level"
+  ]
+ }
+}

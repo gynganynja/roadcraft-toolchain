@@ -87,7 +87,9 @@ of every key.
 ## Rules and codes
 
 The codes continue `lint-bro`'s RC001-RC048. `.bro` truck files in a source tree are also passed through
-`bro_lint.lint_truck` (rule `bro-lint`, which keeps its own codes) with their model and markup.
+`bro_lint.lint_truck` (rule `bro-lint`, which keeps its own codes) with their model and markup. `lint-bro`'s
+**RC075** (warning: a BRO key the generator drops; info: a key that lands in the class where the engine never reads
+it) comes from `data/bro_passthrough.json`, see [bro-passthrough.md](bro-passthrough.md); the next free code is RC076.
 
 | Code | Rule | Severity | Catches | Evidence (grade) |
 |---|---|---|---|---|

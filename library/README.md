@@ -31,6 +31,7 @@ before installing it. Read the subject articles when authoring:
 | [cockpit-and-lamps.md](cockpit-and-lamps.md) | Steering wheel and gauges (`dataDashboard`), lamps that work in the campaign |
 | [audio-assets.md](audio-assets.md) | Engine audio sources, licences, recording identity, approximation auditions and sound-bank limits |
 | [textures-and-materials.md](textures-and-materials.md) | Texture sets, channel packing, material instances, interface images |
+| [bro-passthrough.md](bro-passthrough.md) | Which BRO fields the generator carries into the compiled class, renamed, transformed or drops (RC075) |
 | [retail-data.md](retail-data.md) | Where the shipped vehicles' data lives and how to read it, including compiled models |
 | [build-pipeline.md](build-pipeline.md) | SDK tools, class generation, packaging, installation, process rules |
 | [headless-build.md](headless-build.md) | Packing a mod without the Mod Editor, quietly and repeatably (`roadcraft pak build`) |

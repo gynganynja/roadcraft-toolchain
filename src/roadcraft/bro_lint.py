@@ -30,6 +30,8 @@ Each check comes from something that went wrong in a drive or a build (library/s
 * RC039  a timer-driven strobe hides the unlit lens: the lamp vanishes whenever its lit copy does not render
          ("the mesh disappears and reappears"); flash only a lit overlay (roadcraft.lamps.flasher).
 * RC045  explicit crane movement-sound subscriber bodies or joints missing from the selected model/markup.
+* RC075  a BRO key the generator drops (no field on the generator's C# class, or never read) or whose class key
+         the engine never reads (library/bro-passthrough.md, data/bro_passthrough.json from bro_passthrough.py).
 * RC049  gearbox `neutralGearSwitchingDelay` over 5 s: the box keeps its old gear that long after a stop, so the
          next pedal first carries on in the old direction (Dump Twuck at 60 s; retail 0-3, Baikal 65206 0.5).
 * RC046-RC048  tracked vehicles (roadcraft.tracks, tracked-vehicles.md): a track carried only by fakes on
@@ -43,6 +45,7 @@ Each check comes from something that went wrong in a drive or a build (library/s
 
 from __future__ import annotations
 
+import json
 from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any, Iterable
@@ -422,7 +425,61 @@ def lint_truck(doc: dict[str, Any], *, compiled_class: str | None = None,
             out.append(_finding("RC034", "error",
                                 "a winch-state blueprint subscriber requires a native winch controller; remove the donor branch or author a usable winch",
                                 "compiled class", "truck-settings.md"))
+    out.extend(passthrough_findings(doc))
     return sorted(out, key=lambda f: (SEVERITY_ORDER[f["severity"]], f["code"], f["where"]))
+
+
+PASSTHROUGH_TABLE = Path(__file__).with_name("data") / "bro_passthrough.json"
+_PASSTHROUGH: dict[str, Any] | None = None
+
+
+def passthrough_table() -> dict[str, Any]:
+    """RC075 table written by ``bro_passthrough.py --lint-table`` (empty when absent)."""
+    global _PASSTHROUGH
+    if _PASSTHROUGH is None:
+        try:
+            _PASSTHROUGH = json.loads(PASSTHROUGH_TABLE.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            _PASSTHROUGH = {}
+    return _PASSTHROUGH
+
+
+def passthrough_findings(doc: dict[str, Any], table: dict[str, Any] | None = None) -> list[dict[str, str]]:
+    """RC075: a BRO key the generator drops (no C# field, or never read), warning; or one whose class key the
+    engine never reads, info.  Typed nodes only (``__type``, resolved through ``typeChains``)."""
+    table = passthrough_table() if table is None else table
+    dropped, ignored = table.get("dropped") or {}, table.get("engineIgnored") or {}
+    chains = table.get("typeChains") or {}
+    if not dropped and not ignored:
+        return []
+    out: list[dict[str, str]] = []
+
+    def visit(node: Any, where: str) -> None:
+        if isinstance(node, list):
+            for i, item in enumerate(node):
+                visit(item, f"{where}[{i}]")
+            return
+        if not isinstance(node, dict):
+            return
+        t = node.get("__type")
+        types = chains.get(t, [t]) if isinstance(t, str) else []
+        for key, value in node.items():
+            if key.startswith("__"):
+                continue
+            here = f"{where}.{key}" if where else key
+            for name in types:
+                tf = f"{name}.{key}"
+                if tf in dropped:
+                    out.append(_finding("RC075", "warning", f"{t}.{key} never reaches the compiled class: {dropped[tf]}",
+                                        here, "bro-passthrough.md"))
+                    break
+                if tf in ignored:
+                    out.append(_finding("RC075", "info", f"{t}.{key} {ignored[tf]}", here, "bro-passthrough.md"))
+                    break
+            visit(value, here)
+
+    visit(doc, "")
+    return out
 
 
 def lint_files(bro: str | Path, compiled_class: str | Path | None = None, tpl: str | Path | None = None,
