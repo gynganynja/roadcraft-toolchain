@@ -153,6 +153,14 @@ CODES: dict[str, tuple[str, str, str]] = {
               "Retail: 144 of 144 caterpillar trail wheels have a model (sprocket/idler); Build/Game: every "
               "KGS-25 variant puts its 4 trails on modelless contact wheels and crashed the editor engine on "
               "deformable terrain only (cause not proven)"),
+    "RC080": ("body-inertia", "body inertia far below retail for its role: shapes too small for its mass",
+              "code analysis, static: the engine derives a body's inertia from its cdt_ collision shapes x mass "
+              "(Havok buildMassProperties; physics_semantics.md Q2), not from the mass alone, and "
+              "hkCenterOfMassOffset only moves the centre of mass; estimate: solid boxes of the .tpl per-mesh "
+              "bounds (tpl_reader.find_bounds), physics_report body_inertia; Retail: 0 of the 481 retail bodies in scope "
+              "(of 1,840 with cdt_ shapes, 124 truck classes; physics_report inertia, 2026-10-14); Game: Mammoth RC68's 9 t front wheel carriers on a "
+              "0.3 m cube (135 kg*m^2) gave 'super janky' steering and a front wheel almost rolled over "
+              "(library/suspension-and-wheels.md 'First working series spring')"),
 }
 RULES = sorted({rule for rule, _, _ in CODES.values()} | {"bro-lint"})
 
@@ -1772,6 +1780,88 @@ def rule_spring_motors(ctx: Context, markup: dict, markup_name: str, tpl_name: s
                         f"{SPRING_RETAIL_DAMPING * m_red / SPRING_DT:.3g} N*s/m")
 
 
+# RC080 floors: about half the retail minimum of inertia / mass on the middle axis per role (bodies of >= 1 t;
+# wheel carriers and track frames of any mass), and of the carried wheels' spin inertia ratio. Retail minima
+# from `roadcraft physics inertia` on the 2026-10-14 install (library/validator.md RC080).
+INERTIA_RETAIL_MIN = {"hull": 0.072, "wheel carrier": 0.045, "track frame": 0.029, "jointed body": 0.0067,
+                      "other root": 0.0067}
+INERTIA_FLOOR = {"hull": 0.03, "wheel carrier": 0.02, "track frame": 0.01, "jointed body": 0.003,
+                 "other root": 0.003}
+INERTIA_WHEEL_RETAIL_MIN = 0.447          # TUZ Lynx steer axles; Mammoth RC68 front carriers 0.018, RC69 0.33
+INERTIA_WHEEL_FLOOR = 0.1
+INERTIA_MIN_MASS = 1000.0
+INERTIA_CARRIERS = ("wheel carrier", "track frame")
+
+
+def judge_inertia(role: str, mass: float | None, per_mass_mid: float | None,
+                  wheel_ratio: float | None) -> list[str]:
+    """RC080 reasons for one body ([] = fine): ``per_mass_mid`` is inertia / mass on the middle body axis (m^2),
+    ``wheel_ratio`` that inertia over the carried wheels' spin inertia (physics_report fields
+    ``inertiaPerMass.mid`` and ``inertiaToWheelInertia``)."""
+    carrier = role in INERTIA_CARRIERS
+    if not carrier and (mass is None or mass < INERTIA_MIN_MASS):
+        return []
+    reasons = []
+    floor = INERTIA_FLOOR.get(role)
+    if floor is not None and per_mass_mid is not None and per_mass_mid < floor:
+        reasons.append(f"inertia/mass on the middle axis {per_mass_mid:.3g} m^2 (radius of gyration "
+                       f"{per_mass_mid ** 0.5:.2f} m) is below {floor} m^2; the retail {role} minimum is "
+                       f"{INERTIA_RETAIL_MIN[role]} m^2")
+    if carrier and wheel_ratio is not None and wheel_ratio < INERTIA_WHEEL_FLOOR:
+        reasons.append(f"its middle-axis inertia is {wheel_ratio:.3g}x the spin inertia of the wheels it carries "
+                       f"(below {INERTIA_WHEEL_FLOOR}x; retail carriers have >= {INERTIA_WHEEL_RETAIL_MIN}x)")
+    return reasons
+
+
+def rule_body_inertia(ctx: Context, target: str | Path, notes: list[str]) -> None:
+    """RC080: a wheel-carrying jointed body (wheel carrier, track frame) or any body of >= 1 t whose inertia,
+    estimated from its cdt_ shapes (physics_report.body_inertia), is far below retail for its role."""
+    if "body-inertia" not in ctx.rules:
+        return
+    from . import physics_report
+    try:
+        result = physics_report.report(target, game_root=getattr(ctx, "game_root", None))
+    except (physics_report.PhysicsReportError, OSError, zipfile.BadZipFile) as exc:
+        notes.append(f"RC080 body inertia not checked: {exc}")
+        return
+    for truck in result["trucks"]:
+        markup_name = ctx.find_stem(truck["tpl"], ".tpl_markup") if truck.get("tpl") else None
+        if markup_name is None or not ctx.bundle.has(markup_name):
+            continue                                        # retail markup: not the mod's to fix
+        doc = ctx.ps(markup_name)
+        infos = doc.get("objectInfos") if isinstance(doc, dict) else None
+        for ent in truck["entities"]:
+            if ent["kind"] != "body":
+                continue
+            f = ent["fields"]
+            value = lambda key: physics_report._num(f.get(key, {}).get("value"))  # noqa: E731
+            role = ent.get("inertiaRole") or ent.get("role")
+            mass = value("effectiveMass")
+            reasons = judge_inertia(role, mass, value("inertiaPerMass.mid"), value("inertiaToWheelInertia"))
+            if not reasons:
+                continue
+            oi = ent.get("objectIndex")
+            try:
+                line = infos[oi].line or None
+            except (TypeError, IndexError, KeyError, AttributeError):
+                line = None
+            axes = "/".join(f"{value('inertia.' + a):.0f}" if value("inertia." + a) is not None else "?"
+                            for a in "xyz")
+            extent = value("inertia.extent")
+            source = f.get("inertia.x", {}).get("source")
+            if source == "explicit":
+                shapes = "explicit inertia"
+            else:
+                shapes = f"{int(value('inertia.shapes') or 0)} cdt_ shape(s) spanning {extent or 0:.2f} m"
+            ctx.add("RC080", "warning", ctx.bundle.display(markup_name),
+                    f"body {ent['id']!r} ({role}, {mass:.0f} kg): inertia x/y/z {axes} kg*m^2 from {shapes}; "
+                    + "; ".join(reasons),
+                    line=line, key=f"objectInfos[{oi}]" if oi is not None else "",
+                    fix="enlarge its collision shapes to the body's real extent (inboard of the wheel keep-out), "
+                        "or use a COM offset (hkCenterOfMassOffset) with real-sized shapes; the inertia comes "
+                        "from the shapes, so mass on a token box leaves the body free to twist")
+
+
 def rule_ik_frames(ctx: Context, truck: Truck) -> None:
     nodes = truck.nodes
     ik = truck.props.get("prop_ik_system_visual")
@@ -2609,6 +2699,7 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
                     _check_lights(ctx, name, "vehicleLightMaterials.lights", lights, doc["tpl"], ctx.nodes(doc["tpl"]))
     rule_state_pairs(ctx, lamp_states)
     rule_misspelt_states(ctx, lamp_states)
+    rule_body_inertia(ctx, target, notes)
     for name in ctx.bundle.names():
         lower = name.lower()
         if lower.endswith(".tpl_markup") and lower not in checked_markups:

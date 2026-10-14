@@ -18,6 +18,7 @@ then measure the change on the [physics bench](physics-bench.md) before installi
 roadcraft physics report <mod.pak | source tree> [--json] [--truck <text>] [--game-root <RoadCraft>]
 roadcraft compare <mod.pak | source tree> --donor <"EPEC TC305" | other.pak | tree>
         [--json] [--fields softForceScale,friction.*.frictionValue] [--truck <text>] [--donor-truck <text>] [--all]
+roadcraft physics inertia [--json [--rows]] [--cache <dir>] [--game-root <RoadCraft>]   (retail body inertia per role)
 python -m roadcraft.physics_report report|compare ...        (the same commands, without the CLI wiring)
 ```
 
@@ -62,7 +63,8 @@ after a value is its source:
   `effectiveMass`. It also gives the body's `joint.*`: the constraint to its parent, with limits and
   the motor's fields. Defaults are filled per missing key, and `joint.motor.ignoredKeys` lists keys
   the engine never reads, such as the D11's `spring` on a position motor. The heaviest root body is
-  the **hull**. A non-hull body that carries track wheels is a **track frame**.
+  the **hull**. A non-hull body that carries track wheels is a **track frame**. Every body also gets
+  the inertia fields (see "Body inertia" below).
 - **axles:** each suspension axle a slot uses. This is either `axle[i]` from
   `suspensionAxleCollection`, or the `suspensionSet.front`/`.rear` fallback (rear only when
   `rearDiffers` and the slot `isRear`). Each axle lists all its fields and
@@ -117,6 +119,75 @@ Name-valued fields (classes, bodies, axle ids, tpl names) get no retail spread. 
 compared by presence only. Keys the engine never reads (`gearbox.lowRangeMultiplier`,
 `joint.motor.ignoredKeys`) are shown but never flagged.
 
+## Body inertia
+
+The engine derives a body's inertia from its cdt_ collision shapes and its mass, not from the mass alone
+(physics_semantics.md Q2). A heavy body on a token shape is therefore free to twist: Mammoth RC68's 9 t
+front wheel carriers sat on a 0.3 m cube (about 135 kg·m²), and the steering was "super janky", with a
+front wheel almost rolling over (Game; suspension-and-wheels.md "First working series spring"). The
+report estimates every body's inertia from its shapes, and validator rule RC080 flags outliers
+(validator.md).
+
+**Shapes.** The compiled `.tpl` holds a per-mesh bounds table (decoded 2026-10-14 on the RC68/RC69
+models, whose boxes are known, and found in 2412 of 2415 retail models with a node table;
+`tpl_reader.find_bounds`):
+
+- a bitset of `ceil(nodes / 8)` bytes, bit i (LSB first) set when node i has a mesh;
+- then one 89-byte record per set bit, in node order: `uint32 4`, one byte (mostly 0x0c), and 21
+  `float32`: AABB min3 and max3, oriented-box origin3 (a corner), axes 3x3 (rows) and size3, all in
+  the mesh node's own frame.
+
+A body's shapes are the meshes named `cdt*` whose nearest markup body (itself or above it in the node
+tree) is that body. When two parent-array candidates tie, the one that hangs the most cdt_ meshes
+directly under markup bodies wins, then the one with more parents stored before their children (the
+real array against its copy shifted by one entry). This resolved 7 retail models (the Aramatsu
+harvesters and forwarder, the Baikal crane trucks, the Alces PL30C, the MTK 2006) and the kanga25 and
+lada_niva mods, which before had no node tree in the report.
+
+**Method.** Each shape is a solid box of its oriented size. The body mass is shared by volume, the box
+tensors are summed about the shapes' centroid with the parallel-axis theorem, and the result is read on
+the body bone's x/y/z axes. `hkCenterOfMassOffset` (added to the centroid) or, with `havokMassCenter =
+False`, `boneCenterOfMassOffset` (from the bone) gives the centre of mass. That tensor moved to the
+centre of mass is reported separately as `inertiaAboutCom.*`, and is **not** the value used: Havok keeps
+the shapes' tensor when only the centre of mass moves (Inferred). RC68's carriers, with a 2.05 m COM
+offset, behaved like their 135 kg·m² centroidal value, not like the 38,000 kg·m² the shifted reading
+gives (Game). Boxes over-fill convex hulls, so the estimate is an upper bound on the shapes' own inertia.
+Havok's `optimizeInertiasOfConstraintTree` (factor 1) may raise light chained bodies further (C). If a
+markup body has an explicit inertia key, it is reported with source `explicit` instead. No retail markup
+has one, and the research found no such field.
+
+**Fields** (all `derived` unless explicit):
+
+| field | meaning |
+|---|---|
+| `inertia.shapes`, `inertia.shapeVolume` | cdt_ meshes found and their box volume; the evidence says why when there are none |
+| `inertia.x/y/z` | kg·m², about the body's axes through the shapes' centroid (absent mass: None) |
+| `inertia.extent.x/y/z`, `inertia.extent` | extent of the boxes along each body axis, and the largest, L (m) |
+| `inertiaPerMass.x/y/z`, `.min`, `.mid` | I/m (m²), the radius of gyration squared; `.mid` is the middle of the three |
+| `inertiaRatio.x/y/z` | I/(m·L²), dimensionless (a solid cube gives 1/6) |
+| `inertiaAboutCom.x/y/z`, `inertia.comFromCentroid` | the shifted reading and the COM offset length (see Method) |
+| `wheels.count/.mass/.radius/.inertia` | the physics wheel slots whose `parentBody` is this body; `wheels.inertia` = sum of 0.5·m·r² |
+| `inertiaToWheelInertia` | middle-axis body inertia / `wheels.inertia` |
+
+Each body also carries `inertiaRole`. This is `hull`, `wheel carrier` (a non-hull body that wheel slots
+hang on: a sprung carrier, an axle or a bogie body), `track frame`, `jointed body` (another non-root
+body) or `other root`.
+
+**Retail spread.** `roadcraft physics inertia` builds the spread of `inertiaPerMass.mid`,
+`inertiaPerMass.min` and `inertiaToWheelInertia` per role (all masses and >= 1 t) over every retail truck
+class. It takes about 40 s and is cached as JSON in `%LOCALAPPDATA%\roadcraft-toolchain\retail-cache`,
+keyed by the retail paks' sizes and times (`--cache` to move it; never inside the game folder). On the
+2026-10-14 install (124 classes, 1,840 bodies with shapes):
+
+| role | n | `inertiaPerMass.mid` min / p5 / median (m²) | `inertiaToWheelInertia` min / median |
+|---|---|---|---|
+| hull | 115 | 0.072 / 1.06 / 2.69 | 6.5 / 76 |
+| wheel carrier | 113 | 0.045 / 0.084 / 0.73 | 0.447 / 8.0 |
+| track frame | 30 | 0.029 / 0.029 / 0.029 | 0.60 / 0.60 |
+| jointed body, >= 1 t | 223 | 0.0067 / 0.029 / 0.58 | |
+
+Mammoth RC68's front carriers give 0.015 m² and 0.018x, and RC69's 0.27 m² and 0.33x.
+
 ## Engine facts used (C:\RC_RE\research\physics_semantics.md, grade C unless noted)
 
 - **Body defaults.** A body with a physics block but a missing key gets the value from the body
@@ -149,9 +220,10 @@ compared by presence only. Keys the engine never reads (`gearbox.lowRangeMultipl
 
 - **No sag or spring rate.** The T4 sag law is withdrawn (F3). The report never predicts sag, rest
   height or natural frequency. Calibrate on the bench.
-- **No mass for density bodies.** A `massFromDensity` body has no mass here. Its cdt_ volume is not
-  decoded, because the `.tpl` bounding-box records cannot be tied to objects. Body and total masses
-  then carry the note "lower bound".
+- **No mass for density bodies.** A `massFromDensity` body has no mass here. The `.tpl` bounds now tie
+  a box to each mesh ("Body inertia"), but a box over-fills the convex hull, so its volume is not used
+  for a mass. Body and total masses then carry the note "lower bound". Such a body still gets
+  `inertiaPerMass`, but not `inertia`.
 - **`boneOriginHeight` is not the centre of mass.** It is the mass-weighted height of the body bone
   origins and the wheel nodes, above the lowest wheel bottom. Havok puts a body's centre of mass at
   its hull centroid plus `hkCenterOfMassOffset`, and that centroid is not decoded. Compare it only

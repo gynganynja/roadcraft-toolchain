@@ -11,7 +11,9 @@ like one) and lists, for every truck class in it, the value the engine will use 
 * tracks (section height, tension, parentTracker, real/fake wheel counts);
 * truck-level drivetrain, steering, soft-contact and track-steering curves;
 * derived quantities that need no unknown law: total mass, wheel / parent-body mass ratio, frame
-  share, physics wheels per track, a centre-of-mass height proxy against the track width.
+  share, physics wheels per track, a centre-of-mass height proxy against the track width;
+* each body's inertia estimated from its cdt_ shapes (the ``.tpl`` per-mesh bounds, solid boxes, mass by
+  volume; :func:`body_inertia`), and ``inertia_distribution`` gives its retail spread per body role.
 
 Every value is ``{"value", "source", "evidence"}``.  ``source`` is ``explicit`` (set in the file),
 ``inherited`` (set in a base class reached through ``__type``), ``engine-default`` (the engine's own
@@ -26,7 +28,7 @@ retail truck of the same kind (tracked / wheeled) from the installed game, flagg
 the retail min..max and entries every retail truck has but the mod lacks.
 
 Deliberately not computed: static sag or spring rate (the T4 sag law is withdrawn, F3), body mass for
-``massFromDensity`` bodies (600 kg/m^3 x the cdt_ convex volume, which is not decoded from ``.tpl``),
+``massFromDensity`` bodies (600 kg/m^3 x the cdt_ convex volume; the .tpl gives boxes, which over-fill it),
 soft-contact force (law not decompiled).  library/physics-report.md documents fields, sources and
 limits.  Read-only and standard library only.
 """
@@ -48,7 +50,7 @@ from typing import Any, Callable, Iterable
 from . import ps_format
 from . import retail as retail_mod
 from . import schema as schema_mod
-from .tpl_reader import TplFormatError, TplNodes, read_tpl_bytes
+from .tpl_reader import TplFormatError, TplNodes, find_parents, read_tpl_bytes
 
 SOURCES = ("explicit", "inherited", "engine-default", "schema-default", "absent", "derived")
 SOURCE_LETTER = {"explicit": "E", "inherited": "I", "engine-default": "D", "schema-default": "S",
@@ -443,15 +445,31 @@ def _entity(eid: str, kind: str, role: str, fields: dict[str, Any], **extra: Any
     return {"id": eid, "kind": kind, "role": role, "fields": fields, **extra}
 
 
+def _cdt_under_bodies(bodies: set[str]) -> Callable[[TplNodes, tuple[int, ...]], tuple[int, int]]:
+    """Parent-array tie-break: the candidate that hangs the most cdt_ meshes directly under markup bodies, then
+    the one with the most parents stored before their children (the two-byte shifted copy of the real array
+    ties on everything else; the real one is the more nearly pre-ordered: the retail Baikal crane trucks,
+    the kanga25 mod)."""
+    def score(nodes: TplNodes, parents: tuple[int, ...]) -> tuple[int, int]:
+        names = {index: name for name, index in nodes.index.items()}
+        direct = sum(1 for i, p in enumerate(parents)
+                     if names.get(i, "").lower().startswith("cdt") and p >= 0 and names.get(p) in bodies)
+        return direct, sum(1 for i, p in enumerate(parents) if p < i)
+    return score
+
+
 def _load_nodes(ctx: Context, stores: list[Store], tpl: str | None, anchor: str | None,
-                need_parents: bool) -> tuple[TplNodes | None, str | None]:
+                need_parents: bool, bodies: set[str] | None = None) -> tuple[TplNodes | None, str | None]:
     hit = ctx.find(stores, tpl, ".tpl") if tpl else None
     if hit is None:
         return None, None
     data = hit[0].read(hit[1])
     for a in (anchor, None):
         try:
-            return read_tpl_bytes(data, anchor=a, parents=need_parents), hit[0].display(hit[1])
+            nodes = read_tpl_bytes(data, anchor=a, parents=False, bounds=True)
+            if need_parents:
+                find_parents(data, nodes, tiebreak=_cdt_under_bodies(bodies) if bodies else None)
+            return nodes, hit[0].display(hit[1])
         except Exception:  # noqa: BLE001 - a model that does not decode (TplFormatError, struct errors)
             continue
     return None, hit[0].display(hit[1])
@@ -531,7 +549,8 @@ def _bodies(ctx: Context, infos: list[Any], where: str | None) -> list[dict[str,
                     if ignored:
                         fields["joint.motor.ignoredKeys"] = V(ignored, "explicit", f"{jw}:{_kp(mbase)}; {EV_MOTOR}",
                                                               note="keys the engine never reads")
-        out.append(_entity(name, "body", "body", fields, root=joint is None))
+        out.append(_entity(name, "body", "body", fields, root=joint is None, objectIndex=oi,
+                           explicitInertia=_explicit_inertia(phys, where or "markup", base)))
     return out
 
 
@@ -704,9 +723,9 @@ def build_truck(ctx: Context, stores: list[Store], store: Store, name: str) -> d
         for i in t["fakeWheelIds"]:
             membership.setdefault(i, (ti, "fake"))
 
-    need_parents = any(not s.get("parentFrame") for s in slots)
+    need_parents = bool(bodies) or any(not s.get("parentFrame") for s in slots)   # bodies: their cdt_ shapes
     anchor = next((s.get("geomName") for s in slots if s.get("geomName")), None)
-    nodes, tpl_where = _load_nodes(ctx, stores, tpl, anchor, need_parents)
+    nodes, tpl_where = _load_nodes(ctx, stores, tpl, anchor, need_parents, {b["id"] for b in bodies})
 
     # wheel classes used by slots
     classes: dict[str, dict[str, Any]] = {}
@@ -825,6 +844,13 @@ def build_truck(ctx: Context, stores: list[Store], store: Store, name: str) -> d
         if b is not hull and b["id"] in track_parents:
             b["role"] = "track frame"
 
+    for b in bodies:
+        if b["role"] == "body":
+            carries = any(s["fields"]["slot.parentBody"]["value"] == b["id"] for s in slot_entities)
+            b["inertiaRole"] = "wheel carrier" if carries else ("jointed body" if not b.get("root") else "other root")
+        else:
+            b["inertiaRole"] = b["role"]
+    body_inertia(bodies, slot_entities, nodes, tpl_where)
     derived = _derived(bodies, slot_entities, tracks, nodes, tpl_where)
     entities += bodies + tracks + [axles[k] for k in sorted(axles)] + \
         [classes[k] for k in sorted(classes)] + slot_entities + [derived]
@@ -842,6 +868,197 @@ def _ancestors(nodes: TplNodes, name: str) -> Iterable[str]:
             return
         yield nodes.name_of(parent)
         index = parent
+
+
+INERTIA_AXES = ("x", "y", "z")
+EV_INERTIA = ("solid boxes of each cdt_ mesh's oriented bounds (.tpl bounds table, tpl_reader.find_bounds), the "
+              "body mass shared by volume, parallel-axis about the shapes' centroid, in the body bone's axes; the "
+              "engine derives inertia from the collision shapes x mass, not from mass alone "
+              f"({RESEARCH} Q2; library/suspension-and-wheels.md 'First working series spring')")
+NOTE_INERTIA = ("boxes over-fill convex hulls, so this is an upper estimate of the shapes' own inertia; Havok's "
+                "optimizeInertiasOfConstraintTree may raise light chained bodies further")
+EV_INERTIA_COM = ("the same tensor moved to the centre of mass (centroid + hkCenterOfMassOffset, or bone + "
+                  "boneCenterOfMassOffset when havokMassCenter is False) by the parallel-axis theorem")
+NOTE_INERTIA_COM = ("not what the engine uses (Inferred): Havok keeps the shapes' tensor when only the centre of "
+                    "mass moves, and the Mammoth RC68 carrier (0.3 m cube, COM offset 2.05 m) behaved like its "
+                    "135 kg*m^2 centroidal value, not like this one (Game)")
+EV_WHEEL_INERTIA = "sum over the wheel slots whose parentBody is this body of 0.5 x effectiveMass x physicalRadius^2"
+
+
+def _vec(v: Any) -> tuple[float, float, float] | None:
+    if isinstance(v, (list, tuple)) and len(v) == 3 and all(_num(x) is not None for x in v):
+        return (float(v[0]), float(v[1]), float(v[2]))
+    return None
+
+
+def _explicit_inertia(phys: dict, where: str, base: tuple) -> dict[str, Any] | None:
+    """An inertia key in the markup body (no retail markup has one; physics_semantics.md Q2 finds no inertia
+    override field): ``{"value": [x, y, z], "evidence": ...}``."""
+    for key, value in phys.items():
+        if "inertia" in str(key).lower():
+            vec = _vec(value)
+            if vec is None and _num(value) is not None:
+                vec = (float(value),) * 3
+            if vec is not None:
+                return {"value": list(vec), "evidence": f"{where}:{_kp(base + (key,))}"}
+    return None
+
+
+def _mat_dir(m: tuple[float, ...], v: tuple[float, ...]) -> tuple[float, float, float]:
+    return (v[0] * m[0] + v[1] * m[4] + v[2] * m[8], v[0] * m[1] + v[1] * m[5] + v[2] * m[9],
+            v[0] * m[2] + v[1] * m[6] + v[2] * m[10])
+
+
+def _mat_point(m: tuple[float, ...], p: tuple[float, ...]) -> tuple[float, float, float]:
+    d = _mat_dir(m, p)
+    return (d[0] + m[12], d[1] + m[13], d[2] + m[14])
+
+
+def _unit(v: tuple[float, ...]) -> tuple[tuple[float, float, float], float]:
+    n = sum(c * c for c in v) ** 0.5
+    return ((v[0] / n, v[1] / n, v[2] / n) if n > 1e-12 else (0.0, 0.0, 0.0)), n
+
+
+def body_shapes(nodes: TplNodes, body: str, bodies: set[str]) -> list[dict[str, Any]]:
+    """The cdt_ meshes of ``body`` (the body node itself and the nodes whose nearest body above is ``body``),
+    as model-space boxes: ``center``, unit ``axes``, edge ``size``, ``volume`` and the mesh ``node``."""
+    out = []
+    if not nodes.bounds:
+        return out
+    names = {index: name for name, index in nodes.index.items()}
+    for index, box in sorted(nodes.bounds.items()):
+        name = names.get(index)
+        if name is None or not name.lower().startswith("cdt"):
+            continue
+        owner = name if name in bodies else next((a for a in _ancestors(nodes, name) if a in bodies), None)
+        if owner != body or index >= len(nodes.matrices):
+            continue
+        m = nodes.matrices[index]
+        axes, size = [], []
+        for a in range(3):
+            unit, scale = _unit(_mat_dir(m, box.axes[a]))
+            axes.append(unit)
+            size.append(box.size[a] * scale)
+        out.append({"node": name, "center": _mat_point(m, box.center()), "axes": axes, "size": size,
+                    "volume": max(size[0], 0.01) * max(size[1], 0.01) * max(size[2], 0.01)})
+    return out
+
+
+def shapes_inertia(shapes: list[dict[str, Any]], mass: float
+                   ) -> tuple[tuple[float, float, float], list[list[float]]]:
+    """(centroid, 3x3 inertia tensor about it) of solid boxes sharing ``mass`` by volume, model axes."""
+    total = sum(s["volume"] for s in shapes)
+    c = tuple(sum(s["volume"] * s["center"][i] for s in shapes) / total for i in range(3))
+    tensor = [[0.0] * 3 for _ in range(3)]
+    for s in shapes:
+        mi = mass * s["volume"] / total
+        a, b, d = s["size"]
+        principal = (mi * (b * b + d * d) / 12, mi * (a * a + d * d) / 12, mi * (a * a + b * b) / 12)
+        r = [s["center"][i] - c[i] for i in range(3)]
+        r2 = sum(x * x for x in r)
+        for i in range(3):
+            for j in range(3):
+                tensor[i][j] += sum(principal[k] * s["axes"][k][i] * s["axes"][k][j] for k in range(3))
+                tensor[i][j] += mi * ((r2 if i == j else 0.0) - r[i] * r[j])
+    return c, tensor  # type: ignore[return-value]
+
+
+def _about(tensor: list[list[float]], axis: tuple[float, float, float]) -> float:
+    return sum(axis[i] * tensor[i][j] * axis[j] for i in range(3) for j in range(3))
+
+
+def body_inertia(bodies: list[dict], slots: list[dict], nodes: TplNodes | None, tpl_where: str | None) -> None:
+    """Add the inertia fields to every body entity (library/physics-report.md 'Body inertia')."""
+    names = {b["id"] for b in bodies}
+    model = tpl_where or "no compiled model (.tpl)"
+    for b in bodies:
+        f = b["fields"]
+        mass = _num(f["effectiveMass"]["value"])
+        carried = [s for s in slots if s.get("physics") and s["fields"]["slot.parentBody"]["value"] == b["id"]]
+        explicit = b.pop("explicitInertia", None)
+        shapes: list[dict[str, Any]] = []
+        why = None
+        if nodes is None:
+            why = "no compiled model (.tpl) found"
+        elif not nodes.bounds:
+            why = f"{model}: per-mesh bounds table not found"
+        elif b["id"] not in nodes.index:
+            why = f"{model}: no node named {b['id']}"
+        elif nodes.parents is None:
+            why = f"{model}: node tree (parent array) not resolved"
+        else:
+            shapes = body_shapes(nodes, b["id"], names)
+            if not shapes:
+                why = f"{model}: no cdt_ mesh under {b['id']}"
+        f["inertia.shapes"] = V(len(shapes), "derived", f"{model}: cdt_ meshes whose nearest body is {b['id']}"
+                                if not why else why)
+        per_mass: dict[str, float] = {}
+        if shapes:
+            bm = nodes.matrix(b["id"])
+            axes = [_unit(_mat_dir(bm, e))[0] for e in ((1, 0, 0), (0, 1, 0), (0, 0, 1))]
+            centroid, unit_tensor = shapes_inertia(shapes, 1.0)
+            corners = []
+            for s in shapes:
+                for sx in (-0.5, 0.5):
+                    for sy in (-0.5, 0.5):
+                        for sz in (-0.5, 0.5):
+                            p = [s["center"][i] + sum(s["axes"][k][i] * s["size"][k] * h
+                                                      for k, h in enumerate((sx, sy, sz))) for i in range(3)]
+                            corners.append([sum(p[i] * ax[i] for i in range(3)) for ax in axes])
+            extent = [max(c[a] for c in corners) - min(c[a] for c in corners) for a in range(3)]
+            length = max(extent)
+            com = list(centroid)
+            offset = _vec(f["hkCenterOfMassOffset"]["value"]) or (0.0, 0.0, 0.0)
+            bone_offset = _vec(f["boneCenterOfMassOffset"]["value"]) or (0.0, 0.0, 0.0)
+            if f["havokMassCenter"]["value"] is False:
+                origin = (bm[12], bm[13], bm[14])
+                com = [origin[i] + sum(bone_offset[k] * axes[k][i] for k in range(3)) for i in range(3)]
+            else:
+                com = [centroid[i] + sum(offset[k] * axes[k][i] for k in range(3)) for i in range(3)]
+            delta = [com[i] - centroid[i] for i in range(3)]
+            d2 = sum(x * x for x in delta)
+            f["inertia.shapeVolume"] = V(sum(s["volume"] for s in shapes), "derived",
+                                         f"{model}: sum of the cdt_ oriented-box volumes")
+            for a, ax in zip(INERTIA_AXES, axes):
+                per_mass[a] = _about(unit_tensor, ax)
+                f[f"inertia.extent.{a}"] = V(extent[INERTIA_AXES.index(a)], "derived",
+                                             f"{model}: extent of the cdt_ boxes along the body's {a} axis")
+            f["inertia.extent"] = V(length, "derived", f"{model}: largest extent L of the cdt_ boxes")
+            for a, ax in zip(INERTIA_AXES, axes):
+                k2 = per_mass[a]
+                f[f"inertia.{a}"] = V(None if mass is None else mass * k2, "derived", EV_INERTIA,
+                                      note=NOTE_INERTIA if mass is not None else
+                                      "massFromDensity: no mass here; inertiaPerMass still holds")
+                f[f"inertiaPerMass.{a}"] = V(k2, "derived", "inertia / mass (radius of gyration squared, m^2)")
+                f[f"inertiaRatio.{a}"] = V(k2 / (length * length) if length > 0 else None, "derived",
+                                           "inertia / (mass x inertia.extent^2), dimensionless")
+                shifted = k2 + d2 - sum(delta[i] * ax[i] for i in range(3)) ** 2
+                f[f"inertiaAboutCom.{a}"] = V(None if mass is None else mass * shifted, "derived", EV_INERTIA_COM,
+                                              note=NOTE_INERTIA_COM)
+            f["inertia.comFromCentroid"] = V(d2 ** 0.5, "derived", "distance from the cdt_ centroid to the centre "
+                                             "of mass (hkCenterOfMassOffset / boneCenterOfMassOffset)")
+        if explicit is not None:
+            for a, value in zip(INERTIA_AXES, explicit["value"]):
+                f[f"inertia.{a}"] = V(value, "explicit", explicit["evidence"])
+                if mass:
+                    per_mass[a] = value / mass
+                    f[f"inertiaPerMass.{a}"] = V(value / mass, "derived", "explicit inertia / mass")
+        if per_mass:
+            f["inertiaPerMass.min"] = V(min(per_mass.values()), "derived", "smallest of inertiaPerMass.x/y/z")
+            f["inertiaPerMass.mid"] = V(sorted(per_mass.values())[1], "derived",
+                                        "middle of inertiaPerMass.x/y/z (at least two axes are this soft)")
+        if carried:
+            wm = [_num(s["fields"].get("slot.effectiveMass", {}).get("value")) for s in carried]
+            wr = [_num(s["fields"].get("slot.physicalRadius", {}).get("value")) for s in carried]
+            wheel_i = sum(0.5 * m * r * r for m, r in zip(wm, wr) if m is not None and r is not None)
+            f["wheels.count"] = V(len(carried), "derived", "physics wheel slots whose parentBody is this body")
+            f["wheels.mass"] = V(sum(m for m in wm if m is not None), "derived", "sum of their effectiveMass")
+            f["wheels.radius"] = V(max((r for r in wr if r is not None), default=None), "derived",
+                                   "largest physicalRadius of those wheels")
+            f["wheels.inertia"] = V(wheel_i or None, "derived", EV_WHEEL_INERTIA)
+            if per_mass and mass is not None and wheel_i:
+                f["inertiaToWheelInertia"] = V(mass * sorted(per_mass.values())[1] / wheel_i, "derived",
+                                               "middle body inertia (of x/y/z) / wheels.inertia")
 
 
 def _derived(bodies: list[dict], slots: list[dict], tracks: list[dict], nodes: TplNodes | None,
@@ -919,7 +1136,10 @@ def report(target: str | Path, *, game_root: str | Path | None = None, ctx: Cont
 
 LIMITS = [
     "Static sag and spring rate are not computed: the T4 sag law is withdrawn (physics_semantics.md F3).",
-    "massFromDensity bodies have no mass here: 600 kg/m^3 x the cdt_ convex volume, which is not decoded from .tpl.",
+    "massFromDensity bodies have no mass here: 600 kg/m^3 x the cdt_ convex volume; the .tpl bounds give boxes, "
+    "which over-fill it.",
+    "Body inertia is a solid-box estimate from the .tpl mesh bounds (an upper bound on the shapes' own inertia), "
+    "about the shapes' centroid: hkCenterOfMassOffset moves the centre of mass, not the tensor (Inferred).",
     "boneOriginHeight is a mass-weighted height of bone origins, not the centre of mass (hull centroids are not "
     "decoded); compare it only between models built the same way.",
     "Soft-contact force law and sideways friction law are not decompiled; values are reported, not interpreted.",
@@ -1018,6 +1238,122 @@ def distribution(ctx: Context, kind: str) -> dict[str, Any]:
             if present:
                 with_value[key] = with_value.get(key, 0) + 1
     return {"kind": kind, "trucks": trucks, "values": values, "withRole": with_role, "withValue": with_value}
+
+
+INERTIA_SCHEMA = 1
+INERTIA_ROLES = ("hull", "wheel carrier", "track frame", "jointed body", "other root")
+INERTIA_METRICS = ("inertiaPerMass.mid", "inertiaPerMass.min", "inertiaToWheelInertia")
+_INERTIA: dict[str, dict[str, Any]] = {}
+
+
+def default_cache_dir() -> Path:
+    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / ".cache")
+    return Path(base) / "roadcraft-toolchain" / "retail-cache"
+
+
+def _retail_key(game_root: Path) -> list[list[Any]]:
+    base = game_root / retail_mod.PAK_DIR
+    return [[p.relative_to(base).as_posix(), p.stat().st_size, p.stat().st_mtime_ns]
+            for p in sorted(base.rglob("*.pak"))]
+
+
+def _quantile(values: list[float], q: float) -> float:
+    ordered = sorted(values)
+    pos = q * (len(ordered) - 1)
+    lo = int(pos)
+    hi = min(lo + 1, len(ordered) - 1)
+    return ordered[lo] + (ordered[hi] - ordered[lo]) * (pos - lo)
+
+
+def _stats(values: list[float]) -> dict[str, Any]:
+    if not values:
+        return {"n": 0}
+    return {"n": len(values), "min": _clean(min(values)), "p5": _clean(_quantile(values, 0.05)),
+            "median": _clean(statistics.median(values)), "max": _clean(max(values))}
+
+
+def inertia_rows(truck: dict[str, Any], name: str) -> list[dict[str, Any]]:
+    """One row per body with an inertia estimate: role, mass, the INERTIA_METRICS."""
+    rows = []
+    for ent in truck["entities"]:
+        if ent["kind"] != "body" or ent["fields"].get("inertiaPerMass.mid") is None:
+            continue
+        f = ent["fields"]
+        row = {"truck": name, "body": ent["id"], "role": ent.get("inertiaRole", ent.get("role")),
+               "mass": f["effectiveMass"]["value"], "extent": f.get("inertia.extent", {}).get("value")}
+        for metric in INERTIA_METRICS:
+            row[metric] = f.get(metric, {}).get("value")
+        rows.append(row)
+    return rows
+
+
+def inertia_distribution(ctx: Context, cache_dir: str | Path | None | bool = None) -> dict[str, Any] | None:
+    """Per body role, the retail spread of the inertia metrics over every retail truck class (all masses and
+    bodies of >= 1 t), with every row.  Cached in-process and, unless ``cache_dir`` is False, as JSON in
+    ``cache_dir`` (default :func:`default_cache_dir`), keyed by the retail paks' sizes and times."""
+    if ctx.game_root is None:
+        return None
+    key = _retail_key(ctx.game_root)
+    digest = hashlib.sha256(json.dumps([INERTIA_SCHEMA, key]).encode()).hexdigest()[:16]
+    if digest in _INERTIA:
+        return _INERTIA[digest]
+    cache = None
+    if cache_dir is not False:
+        folder = Path(cache_dir) if cache_dir else default_cache_dir()
+        try:
+            folder.resolve().relative_to(ctx.game_root.resolve())
+            raise PhysicsReportError("the retail inertia cache must not live inside the game folder")
+        except ValueError:
+            pass
+        cache = folder / f"retail-inertia-v{INERTIA_SCHEMA}-{digest}.json"
+        if cache.is_file():
+            try:
+                data = json.loads(cache.read_text(encoding="utf-8"))
+                if data.get("schemaVersion") == INERTIA_SCHEMA and data.get("key") == key:
+                    data["cache"] = {"path": str(cache), "hit": True}
+                    _INERTIA[digest] = data
+                    return data
+            except (OSError, ValueError):
+                pass
+    rows: list[dict[str, Any]] = []
+    trucks = 0
+    for name in sorted(retail_trucks(ctx)):
+        try:
+            rep = retail_report(ctx, name)
+        except PhysicsReportError:
+            continue
+        trucks += 1
+        rows += inertia_rows(rep, name)
+    roles: dict[str, Any] = {}
+    for role in INERTIA_ROLES:
+        mine = [r for r in rows if r["role"] == role]
+        roles[role] = {}
+        for label, sel in (("all", mine), (">=1t", [r for r in mine if (_num(r["mass"]) or 0) >= 1000])):
+            roles[role][label] = {m: _stats([r[m] for r in sel if _num(r[m]) is not None]) for m in INERTIA_METRICS}
+    data = {"schemaVersion": INERTIA_SCHEMA, "key": key, "trucks": trucks, "roles": roles, "rows": rows}
+    if cache is not None:
+        try:
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            temporary = cache.with_name(f".{cache.name}.{os.getpid()}.partial")
+            temporary.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+            os.replace(temporary, cache)
+            data = dict(data, cache={"path": str(cache), "hit": False})
+        except OSError:
+            data = dict(data, cache={"path": str(cache), "hit": False, "error": "not written"})
+    _INERTIA[digest] = data
+    return data
+
+
+def format_inertia(dist: dict[str, Any]) -> str:
+    lines = [f"retail body inertia over {dist['trucks']} truck classes (inertiaPerMass in m^2; "
+             "inertiaToWheelInertia dimensionless)"]
+    for role, by in dist["roles"].items():
+        for label, metrics in by.items():
+            for metric, s in metrics.items():
+                if s.get("n"):
+                    lines.append(f"{role:13s} {label:5s} {metric:22s} n {s['n']:4d}  min {_fmt(s['min'])}  "
+                                 f"p5 {_fmt(s['p5'])}  median {_fmt(s['median'])}  max {_fmt(s['max'])}")
+    return "\n".join(lines) + "\n"
 
 
 def _summary(dist: dict[str, Any] | None, role: str, field: str) -> dict[str, Any] | None:
@@ -1223,14 +1559,24 @@ def main(argv: list[str] | None = None) -> int:
     cmp_.add_argument("--fields", help="comma-separated field filters (substring, or glob with * ?)")
     cmp_.add_argument("--donor-truck", help="donor truck class filter when the donor is a pak/tree")
     cmp_.add_argument("--all", action="store_true", help="text: show every row, not only flagged ones")
-    for p in (rep, cmp_):
+    ine = sub.add_parser("inertia", help="retail spread of body inertia per body role (cached)")
+    ine.add_argument("--cache", help="cache directory (default %%LOCALAPPDATA%%/roadcraft-toolchain/retail-cache)")
+    ine.add_argument("--rows", action="store_true", help="JSON: include every retail body row")
+    for p in (rep, cmp_, ine):
         p.add_argument("--json", action="store_true", help="JSON output")
-        p.add_argument("--truck", help="only truck classes whose path contains this text")
         p.add_argument("--game-root", help="RoadCraft installation (schema and retail data)")
+    for p in (rep, cmp_):
+        p.add_argument("--truck", help="only truck classes whose path contains this text")
     args = parser.parse_args(argv)
     game_root = args.game_root or schema_mod.default_game_root()
     try:
-        if args.command == "report":
+        if args.command == "inertia":
+            dist = inertia_distribution(Context(game_root), args.cache)
+            if dist is None:
+                raise PhysicsReportError("no retail installation found (pass --game-root or set ROADCRAFT_GAME_ROOT)")
+            out = dist if args.rows else {k: v for k, v in dist.items() if k != "rows"}
+            text = json.dumps(out, indent=1, sort_keys=True) + "\n" if args.json else format_inertia(dist)
+        elif args.command == "report":
             result = report(args.target, game_root=game_root, truck=args.truck)
             text = json.dumps(result, indent=1, sort_keys=True) + "\n" if args.json else format_report(result)
         else:

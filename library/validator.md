@@ -90,7 +90,8 @@ The codes continue `lint-bro`'s RC001-RC048. `.bro` truck files in a source tree
 `bro_lint.lint_truck` (rule `bro-lint`, which keeps its own codes) with their model and markup. `lint-bro`'s
 **RC075** (warning: a BRO key the generator drops; info: a key that lands in the class where the engine never reads
 it) comes from `data/bro_passthrough.json`, see [bro-passthrough.md](bro-passthrough.md). RC076 is `spring-motors`
-RC077 is `save-compat` (below; it runs only with `--baseline`), RC078 is `material-type` and RC079 is `wheel-trail`; the next free code is RC080.
+RC077 is `save-compat` (below; it runs only with `--baseline`), RC078 is `material-type`, RC079 is `wheel-trail`
+and RC080 is `body-inertia`; the next free code is RC081.
 
 | Code | Rule | Severity | Catches | Evidence (grade) |
 |---|---|---|---|---|
@@ -125,13 +126,14 @@ RC077 is `save-compat` (below; it runs only with `--baseline`), RC078 is `materi
 | RC077 | save-compat | error / warning / info | only with `--baseline <installed>`: the candidate's savable descriptors against the baseline's, the names and indices restore looks up. Error: a new `constraintSequentialChains` chain (`RestoreFromSave` `data.Get`), a changed stage count, a joint added to a stage, a changed `powerConstraints` count, a new controllable constraint used by a `constraintChains` link, a removed cargo slot, all while both versions list `TruckConstraintsSavablePropDesc` (or `TruckStorageSavablePropDesc`). Warning: a removed or renamed truck identity (`auto_<name>_truck_info_`), savable desc, controllable constraint, chain or stage joint, a new controllable constraint, a reordered `powerConstraints`. Info: a new savable desc. See [save-compatibility.md](save-compatibility.md) | code analysis, static: `PropSavableObject.SetSavedProps`, `TruckConstraintsSavablePropDesc.LoadData`, `PropTruckConstraintView.RestoreFromSave`, `PropTruckConstraintController` (C:/RC_RE/research/save_semantics.md); Retail: 'key not found in dictionary'; Game: L275 v35 'Toolboxes' hang, grader joint rename |
 | RC078 | material-type | error | a `.mi` (pak member or source file) with no `__type` line, an empty `__type`, or a `__type` that names no material template: the retail material library (stems of `material_presets/*.mp`, `master_materials/*.mm`, `.mtl` in the client paks, `retail.material_templates`, cached per installation) or the mod's own `.mp`/`.mm`/`.mtl`. Retail loads **every** `.mi` in a mod pak at startup, linked or not, so one bad instance crashes the game at the main menu (about 40-90 s after launch) with no message. The fix hint names the preset the `.mi.resource` `parents` line gives, else the presets the mod's other MIs use; a near miss gets 'did you mean'. Without retail paks only a missing or empty `__type` is checked (a note says so). An unparsable `.mi` is read for a raw `__type =` line | code analysis, static: `.mi` load job `FUN_14214f0f0` -> `FUN_142979fa0` lookup returns null -> read at +0x48, AV exe+0x214f223; the `.mtl` loader `FUN_14214f880` falls back to `mtl` (C:/RC_RE/research/retail_crash_0x214f223.md); Game: Goliath RC7a's three beacon `.mi` without `__type` (bisected); Retail: retail ships no `.mi` in its paks, the SDK's 37 `root/mods_source` instances (all 14 presets) pass |
 | RC079 | wheel-trail | warning | a slot named in `prop_truck_rb.wheelsWithTrail` whose wheel class (via `wheelPool`, parents merged) has a caterpillar trail (`prop_wheel_trail_rb.isCaterpillar = True`) but no model (`geom.nameTpl` absent or empty). Retail puts crawler trails on the sprocket and idler. Non-caterpillar trails on modelless wheels (N&S rail cranes) are not flagged. Hits: KGS-25 x4 (every variant), T-80BVM x4; 0 on the other 15 installed mods | code analysis, static: `prop_truck_rb.ssc` starts caterpillar trails only for `wheelsWithTrail` slots; the native trail update `FUN_1404d56b0` has a branch that runs only on deformable terrain and reads the wheel geom's bounds and tracker (C:/RC_RE/research/physics_semantics.md 'Terrain deformation under wheels'); Retail: 144 of 144 caterpillar trail wheels have a model; Game: every KGS-25 variant crashed the editor engine on deformable terrain only (link to this trait Inferred, not proven) |
+| RC080 | body-inertia | warning | a markup body in the mod's own `.tpl_markup` that is a **wheel carrier** (a non-hull body that wheel slots hang on: sprung carrier, axle or bogie body) or **track frame** of any mass, or any body of >= 1 t, whose inertia estimated from its cdt_ shapes (`physics_report` "Body inertia") is far below retail for its role: inertia / mass on the middle body axis (`inertiaPerMass.mid`) below the role floor (hull 0.03, wheel carrier 0.02, track frame 0.01, other bodies 0.003 m^2; about half the retail minimum 0.072 / 0.045 / 0.029 / 0.0067), or, for a carrier, middle-axis inertia below 0.1x the spin inertia (0.5 m r^2) of the wheels it carries (retail minimum 0.447x, the TUZ Lynx steer axles). The message gives the x/y/z inertia, the shape count and extent; the fix hint: enlarge the shapes to the body's real extent (inboard of the wheel keep-out), or keep a COM offset with real-sized shapes. Bodies without a compiled model, bounds table or cdt_ mesh are not judged | code analysis, static: inertia comes from the collision shapes x mass (Havok `buildMassProperties`; physics_semantics.md Q2), `hkCenterOfMassOffset` only moves the centre of mass; Retail: 0 of 481 retail bodies in scope (1,840 bodies with shapes, 124 truck classes, `roadcraft physics inertia`); Game: Mammoth RC68's 9 t front carriers on a 0.3 m cube (135 kg·m², 0.015 m^2, 0.018x the wheel) were "super janky" and a front wheel almost rolled over; RC69 (0.22 x 1.2 x 1.8 m, 0.27 m^2, 0.33x) passes. Hits: RC68 x2 (the front carriers); 0 on the 27 installed paks |
 
 `--rules` takes the rule names: `ps-parse`, `ps-numbers`, `unknown-keys`, `wheel-frames`, `suspension`,
 `joints`, `lamps`, `materials`, `references`, `duplicates`, `ignored-fields`, `engine-defaults`,
-`objsettings-gate`, `spring-motors`, `save-compat`, `material-type`, `wheel-trail` and `bro-lint`.
+`objsettings-gate`, `spring-motors`, `save-compat`, `material-type`, `wheel-trail`, `body-inertia` and `bro-lint`.
 
 Not added (2026-10-14): a check for a wheel overlapping its parent body's hulls. It needs per-hull
-extents, which are not decoded from `.tpl`/`.tpl_data`. A test on hull-node origins inside the wheel
+extents, which were not decoded from `.tpl`/`.tpl_data` then (they are now: the bounds table, RC080 run). A test on hull-node origins inside the wheel
 cylinder (with the steering sweep) hits 33 slots on 12 retail trucks, for example roller forks whose
 centroid sits at the drum centre without touching it
 (`C:\RC_RE\research\springmotor\wheel_hull_survey.py`).
@@ -323,6 +325,29 @@ missing-flag fault and the misspelt lamp state, so a mod copied from it is caugh
 ### RC078 run (2026-10-14)
 
 `roadcraft validate --rules material-type` over the 7 installed paks (apoc_buggy, goliath_d11, jimny, kgs25, roamer105ute, walle, watcher_y61_expedition; 392 `.mi`), the 20 paks on `\\192.168.0.129\mods` (749 `.mi`) and the SDK's `root/mods_source` (37): 0 hits. The RC7a pak (`ba3f2ded...`) is deleted; the RC7 source tree with the three beacon `__type` lines removed (the RC7a state) gives exactly 3 errors, `mod_goli_d11_beacon_{body,lens,lit}.mi`, with fix hints `vehicle_body`, `vehicle_glass_outer`, `vehicle_lights` from their `.mi.resource` parents. Every `__type` in all of those paks names a retail preset (none names a master material, another `.mi`, or a mod-defined preset). Whether the library also accepts another instance's name is not known (Open): such a `.mi` is reported.
+
+### RC080 run (2026-10-14)
+
+Calibration: `roadcraft physics inertia` (all 124 retail truck classes, 1,840 bodies with cdt_ shapes) puts
+the lowest retail values per role at: hull 0.072 m^2 (the `scout_pz14_prot` chassis; the next is 0.41),
+wheel carrier 0.045 (Menzi A91 wheel segments), track frame 0.029 (EPEC LT200 rockers, 500 kg), jointed
+bodies of >= 1 t 0.0067 (Vostok ATM53 dumper spring, Invictus Type-A cabin); carried-wheel ratio 0.447x (TUZ
+Lynx steer axles). Each floor is at most half of that minimum, so retail gives 0 hits; a guard test
+(`tests/test_body_inertia.py`) re-checks this on the installed game.
+
+The middle axis is used, not the smallest: a rod-like body legitimately has almost no inertia about its own
+length (the MTK 2006 front suspension is 0.033x its wheels on that axis, 0.0065 m^2), while a token cube is
+soft about every axis. The retail 5th percentile was considered as the floor, but it would flag about 5 %
+of retail by construction.
+
+| Target | RC080 |
+|---|---|
+| `mammoth_rc68_twostage_5be91383.pak` (bench share) | 2: `BoneSuspFrontLeft_cdt`, `BoneSuspFrontRight_cdt` (135 kg·m², 0.015 m^2, 0.018x the wheel) |
+| `mammoth_rc69_seriesspring_6cfd86f5.pak` (bench share) | 0 (front carriers 3510 / 2466 / 1116 kg·m², 0.27 m^2, 0.33x) |
+| the 20 paks on `\\192.168.0.129\mods` and the 7 in `root\mods` | 0 |
+
+Per-hull extents are now decoded (the `.tpl` bounds table, physics-report.md "Body inertia"), so the
+wheel-against-hull check listed as not added under "Rules and codes" no longer lacks its input (not built).
 
 ## Library failures and how far the rules reach
 
