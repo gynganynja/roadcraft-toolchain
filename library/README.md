@@ -38,6 +38,7 @@ before installing it. Read the subject articles when authoring:
 | [quiet-launch.md](quiet-launch.md) | Running SDK tools and the engine without windows, focus theft or crash dialogs (`roadcraft.quiet`) |
 | [deterministic-paks.md](deterministic-paks.md) | Why rebuilds differ and how `roadcraft pak normalize`/`check` makes them byte-identical |
 | [install-manifest.md](install-manifest.md) | Which retail file or other mod each package member overrides (`roadcraft pak manifest`) |
+| [save-compatibility.md](save-compatibility.md) | What a save keeps of a truck, how it is matched, and how to update a mod without breaking saves (RC077) |
 | [validator.md](validator.md) | Runtime-failure checks for sources and packages, codes RC049-RC072 (`roadcraft validate`, `roadcraft schema`) |
 | [case-studies.md](case-studies.md) | Each mod built so far: what went wrong and what it taught |
 | [sources.md](sources.md) | Official documentation, the community guide, the unofficial route, support channels |

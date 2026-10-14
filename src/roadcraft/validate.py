@@ -133,6 +133,12 @@ CODES: dict[str, tuple[str, str, str]] = {
               "prismatic springs (lighter body >= 200 kg, TUZ Lynx family) reach 0.38 / 0.68 at most; Game: Mammoth "
               "RC62 rear heave (0.86 / 4.0) shook and swung limit to limit parked (physics_semantics.md "
               "'Spring-motor stability')"),
+    "RC077": ("save-compat", "saved vehicle state the baseline wrote and this version cannot restore",
+              "code analysis, static (C:/RC_RE/research/save_semantics.md): PropSavableObject.SetSavedProps matches "
+              "saved descs by type; TruckConstraintsSavablePropDesc.LoadData replaces the constraint state with the "
+              "saved one, then PropTruckConstraintView.RestoreFromSave does data.Get(chain.name) and the controller "
+              "indexes saved chains/stages/constraints by the current names ('key not found in dictionary', Retail "
+              "string); Game: L275 v35 'Toolboxes' chain hung old saves (library/save-compatibility.md)"),
 }
 RULES = sorted({rule for rule, _, _ in CODES.values()} | {"bro-lint"})
 
@@ -2135,6 +2141,225 @@ def rule_bro(ctx: Context) -> None:
                                         f"lint-bro {f['code']} ({f['library']})", f["code"], f["where"]))
 
 
+# ------------------------------------------------------------------------------------------------ save-compat
+
+CONSTRAINT_DESC = "TruckConstraintsSavablePropDesc"
+CARGO_DESC = "TruckStorageSavablePropDesc"
+OWNER = "OWNER"                     # PropTruckConstraintView.OWNER, the default addon of a chain constraint
+
+
+def _named(value: Any) -> list[tuple[str, Any]]:
+    """Entries of a ``[collection]`` field: a PS dict keyed by the ``[magic]`` name, or a list with ``name``."""
+    if isinstance(value, dict):
+        return [(str(k), v) for k, v in value.items() if not str(k).startswith("__")]
+    if isinstance(value, list):
+        return [(str(v.get("name", i)) if isinstance(v, dict) else str(i), v) for i, v in enumerate(value)]
+    return []
+
+
+def _list(value: Any) -> list:
+    if isinstance(value, list):
+        return value
+    if isinstance(value, dict):
+        return [v for k, v in value.items() if not str(k).startswith("__")]
+    return []
+
+
+@dataclass
+class SavableDescriptors:
+    """What restore looks up for one class (save_semantics.md): the savable desc types, and for the constraint
+    desc the powered constraints by index, the controllable ones by name, the sequential chains by name with each
+    stage's (addon, constraint) set by stage index, and the cargo slots."""
+    member: str
+    types: list[str]
+    powered: list[str]
+    controllable: list[str]
+    chain_refs: set[str]            # controllable constraints referenced by constraintChains links
+    sequential: dict[str, list[tuple[str, set[tuple[str, str]]]]]
+    cargo_slots: dict[str, bool]
+
+
+def savable_descriptors(ctx: Context) -> dict[str, SavableDescriptors]:
+    """Every class of the target with a ``prop_savable_object``, keyed by lower-case member path."""
+    out: dict[str, SavableDescriptors] = {}
+    for name in ctx.bundle.names():
+        if not name.lower().endswith(".cls"):
+            continue
+        data = ctx.bundle.read(name)
+        if b"prop_savable_object" not in data and b"__type" not in data:
+            continue
+        doc = _merged_class(ctx, name)
+        props = (doc or {}).get("properties") if isinstance(doc, dict) else None
+        holder = props.get("prop_savable_object") if isinstance(props, dict) else None
+        if not isinstance(holder, dict):
+            continue
+        types = []
+        for item in _list(holder.get("savablePropDescs")):
+            desc = item.get("desc") if isinstance(item, dict) else None
+            if isinstance(desc, dict) and isinstance(desc.get("__type"), str):
+                types.append(desc["__type"])
+        view = props.get("prop_truck_constraint_view")
+        view = view if isinstance(view, dict) else {}
+        powered = [c.get("constraintName", "") for c in _list(view.get("powerConstraints")) if isinstance(c, dict)]
+        controllable = [c.get("constraintName", "") for c in _list(view.get("controllableConstraints"))
+                        if isinstance(c, dict)]
+        refs = set()
+        for _, chain in _named(view.get("constraintChains")):
+            for link in _list(chain.get("links") if isinstance(chain, dict) else None):
+                if isinstance(link, dict) and link.get("constraint") in controllable \
+                        and link.get("addon", OWNER) == OWNER:
+                    refs.add(link["constraint"])
+        sequential: dict[str, list[tuple[str, set[tuple[str, str]]]]] = {}
+        for chain_name, chain in _named(view.get("constraintSequentialChains")):
+            stages = []
+            for stage_name, stage in _named(chain.get("links") if isinstance(chain, dict) else None):
+                pairs = {(str(c.get("addon", OWNER)), str(c.get("constraintName", "")))
+                         for c in _list(stage.get("constraints") if isinstance(stage, dict) else None)
+                         if isinstance(c, dict)}
+                stages.append((stage_name, pairs))
+            sequential[chain_name] = stages
+        cargo = props.get("prop_truck_cargo_controller")
+        cargo = cargo if isinstance(cargo, dict) else {}
+        slots = {k: isinstance(cargo.get(k), dict) for k in ("firstCargoSlot", "secondCargoSlot")}
+        out[name.lower()] = SavableDescriptors(name, types, powered, controllable, refs, sequential, slots)
+    return out
+
+
+_TRUCK_INFO = re.compile(r"^(?:.*/)?auto_(?!wheel_|preview_)(.+?)_truck_info_[^/]*\.sso\.resource$", re.I)
+
+
+def truck_identities(bundle: Bundle) -> dict[str, str]:
+    """Truck library names of a mod: ``auto_<name>_truck_info_<suffix>.sso.resource`` -> ``<name>``
+    (AutogenLibrariesCreator.ExtractModTagDirName / CreateKeyByDir); the save origin is truck_manager_rb_<name>."""
+    out = {}
+    for name in bundle.names():
+        match = _TRUCK_INFO.match(name)
+        if match:
+            out[match.group(1).lower()] = name
+    return out
+
+
+def rule_save_compat(ctx: Context, baseline: Context) -> None:
+    """RC077: compare the candidate's savable descriptors with the baseline's (the version existing saves were
+    written with).  error = restore or the first use of the restored state indexes a key or index the save lacks
+    (crash: the L275 v35 hang); warning = saved state dropped or applied to something else."""
+    if "save-compat" not in ctx.rules:
+        return
+    new = savable_descriptors(ctx)
+    old = savable_descriptors(baseline)
+    view_key = "properties.prop_truck_constraint_view"
+    old_ids, new_ids = truck_identities(baseline.bundle), truck_identities(ctx.bundle)
+    for ident, tag in sorted(old_ids.items()):
+        if ident not in new_ids:
+            ctx.add("RC077", "warning", ctx.bundle.display(tag),
+                    f"truck identity {ident!r} is gone (save origin 'truck_manager_rb_{ident}'): saved trucks of it are "
+                    "not recreated (ActorSaveManager.CreateActorFromSave finds no registered origin and returns null; "
+                    "the truck silently disappears from the save)", key=f"truck_info.{ident}",
+                    fix=f"keep 'auto_{ident}_truck_info_' in the .sso.resource name; a new identity is a new truck")
+    unmatched_new = [m for m in new if m not in old]
+    for member, base in sorted(old.items()):
+        cand = new.get(member)
+        if cand is None and len(unmatched_new) == 1 and len([m for m in old if m not in new]) == 1:
+            cand = new[unmatched_new[0]]          # the class file was renamed (e.g. a new suffix): compare anyway
+        if cand is None:
+            ctx.add("RC077", "warning", ctx.bundle.display(base.member),
+                    f"class {base.member} with saved state is gone from the candidate: saved actors of it are not "
+                    "restored against it", key="properties.prop_savable_object")
+            continue
+        path = ctx.bundle.display(cand.member)
+        removed = [t for t in dict.fromkeys(base.types) if t not in cand.types]
+        added = [t for t in dict.fromkeys(cand.types) if t not in base.types]
+        for t in removed:
+            ctx.add("RC077", "warning", path,
+                    f"savable desc {t} was removed: the state it saved is ignored on load (SetSavedProps only loads "
+                    "saved descs whose type the class still lists)", key=f"properties.prop_savable_object.{t}",
+                    fix="intended only as the defensive fix for an incompatible change (symptoms.md 'loads forever')")
+        for t in added:
+            ctx.add("RC077", "info", path,
+                    f"savable desc {t} is new: saves from the baseline restore its state from the class defaults"
+                    + ("; saves older than the baseline that still carry it are restored against this class"
+                       if t == CONSTRAINT_DESC else ""), key=f"properties.prop_savable_object.{t}")
+        if CARGO_DESC in base.types and CARGO_DESC in cand.types:
+            for slot, present in base.cargo_slots.items():
+                if present and not cand.cargo_slots.get(slot):
+                    ctx.add("RC077", "error", path,
+                            f"cargo slot {slot} was removed: a save with cargo in it calls ChangeCargo on a null slot "
+                            "(assert 'cargo slot is not setted' in PropTruckCargoController)",
+                            key=f"properties.prop_truck_cargo_controller.{slot}",
+                            fix="keep the slot, or drop TruckStorageSavablePropDesc")
+        if not (CONSTRAINT_DESC in base.types and CONSTRAINT_DESC in cand.types):
+            continue
+        # The saved TruckConstraintGlobalState replaces the one SetState built from the current class.
+        if len(cand.powered) != len(base.powered):
+            ctx.add("RC077", "error", path,
+                    f"powerConstraints count changed {len(base.powered)} -> {len(cand.powered)}: the save keeps the old "
+                    "array and the view/unit index it by the current positions (powerConstraints[i] / "
+                    "poweredConstrains[index] out of range)", key=f"{view_key}.powerConstraints",
+                    fix="keep the count; add new joints as controllable constraints, or drop "
+                        "TruckConstraintsSavablePropDesc")
+        else:
+            for i, (a, b) in enumerate(zip(base.powered, cand.powered)):
+                if a != b:
+                    ctx.add("RC077", "warning", path,
+                            f"powerConstraints[{i}] renamed {a!r} -> {b!r}: powered state is saved by index, so the "
+                            f"saved target of {a!r} drives {b!r}", key=f"{view_key}.powerConstraints[{i}]")
+        for name in cand.controllable:
+            if name in base.controllable:
+                continue
+            if name in cand.chain_refs:
+                ctx.add("RC077", "error", path,
+                        f"controllable constraint {name!r} is new and a constraintChains link uses it: the controller "
+                        "reads globalState.controlledConstrains.Get(name), which the old save lacks",
+                        key=f"{view_key}.controllableConstraints.{name}",
+                        fix="drop TruckConstraintsSavablePropDesc, or keep the joint out of constraintChains")
+            else:
+                ctx.add("RC077", "warning", path,
+                        f"controllable constraint {name!r} is new: an old save has no target for it (it stays at the "
+                        "model pose until moved); coop clients read controlledConstrains[name] when the host moves it",
+                        key=f"{view_key}.controllableConstraints.{name}")
+        for name in base.controllable:
+            if name not in cand.controllable:
+                ctx.add("RC077", "warning", path,
+                        f"controllable constraint {name!r} was removed or renamed: its saved target is still applied "
+                        "by name on load (SetConstraintTarget dereferences a null joint if the model lost it)",
+                        key=f"{view_key}.controllableConstraints.{name}",
+                        fix="keep the joint name in the model; renaming = removing plus adding")
+        for chain, stages in cand.sequential.items():
+            key = f"{view_key}.constraintSequentialChains.{chain}"
+            saved = base.sequential.get(chain)
+            if saved is None:
+                ctx.add("RC077", "error", path,
+                        f"sequential chain {chain!r} is new: PropTruckConstraintView.RestoreFromSave does "
+                        f"data.Get({chain!r}) on the old save's chains (key not found: the game hangs loading)",
+                        key=key, fix="drop TruckConstraintsSavablePropDesc from prop_savable_object (constraint state "
+                                     "is then not saved), or ship the chain as a new truck identity")
+                continue
+            if len(stages) != len(saved):
+                ctx.add("RC077", "error", path,
+                        f"sequential chain {chain!r} has {len(stages)} stages, the save {len(saved)}: the controller "
+                        "indexes the saved links by the current stage index (out of range when the chain runs, or at "
+                        "once if the save stopped past the new end)", key=f"{key}.links")
+            for i, (stage, pairs) in enumerate(stages[:len(saved)]):
+                saved_pairs = saved[i][1]
+                for addon, cname in sorted(pairs - saved_pairs):
+                    ctx.add("RC077", "error", path,
+                            f"sequential chain {chain!r} stage {i} ({stage}) gained {cname!r}"
+                            + (f" on addon {addon!r}" if addon != OWNER else "")
+                            + ": the controller reads links[i].addons[addon].constraints[name] from the saved chain "
+                              "(key not found when the chain runs)", key=f"{key}.links.{stage}.{cname}")
+                for addon, cname in sorted(saved_pairs - pairs):
+                    ctx.add("RC077", "warning", path,
+                            f"sequential chain {chain!r} stage {i} ({stage}) lost {cname!r}: the saved target is "
+                            "still applied by name on load (null joint if the model lost it)",
+                            key=f"{key}.links.{stage}.{cname}")
+        for chain in base.sequential:
+            if chain not in cand.sequential:
+                ctx.add("RC077", "warning", path,
+                        f"sequential chain {chain!r} was removed or renamed: the saved chain is kept in the state and "
+                        "its current stage targets are still applied by joint name (null joint if the model lost it)",
+                        key=f"{view_key}.constraintSequentialChains.{chain}")
+
+
 def count_retail_ignored(game_root: str | Path | None = None, out: str | Path | None = RETAIL_IGNORED_FILE) -> dict:
     """Count RC072 dead keys in retail content (every retail .cls, .prop and .tpl_markup) per (type key, key)
     with this module's walker and read-fields tables, and write data/retail_ignored_counts.json.  Takes about
@@ -2187,9 +2412,11 @@ def _read_fields_of(read_fields: Any) -> ReadFields:
 
 
 def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_root: str | Path | None = None,
-             read_fields: ReadFields | dict | None = None, notes: list[str] | None = None) -> list[Finding]:
+             read_fields: ReadFields | dict | None = None, notes: list[str] | None = None,
+             baseline: str | Path | None = None) -> list[Finding]:
     """Findings for a mod folder or a built .pak (see the module docstring).  ``rules`` limits the rule names
-    (``RULES``); ``read_fields`` is the RC072 reader table (:class:`ReadFields`, a read_fields.json-shaped dict, or a
+    (``RULES``); ``baseline`` is the installed/older pak or tree existing saves were written with (enables the
+    RC077 save-compat rule, which only runs then); ``read_fields`` is the RC072 reader table (:class:`ReadFields`, a read_fields.json-shaped dict, or a
     legacy ``{type key: [fields read]}``); None loads data/read_fields.json when present.  Every finding carries
     its ``member`` path and stable ``id`` (:func:`finding_id`)."""
     selected = set(rules) if rules else set(RULES)
@@ -2224,6 +2451,8 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
     rule_references(ctx)
     rule_materials(ctx)
     rule_bro(ctx)
+    if baseline is not None and "save-compat" in selected:
+        rule_save_compat(ctx, Context(open_target(baseline), retail_view, schema, selected, fields))
     checked_markups = set()
     lamp_states: set[str] = set()
     for truck in trucks(ctx):
@@ -2417,7 +2646,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="exit 1 when a finding at or above this severity exists (default error); with "
                              "--baseline only NEW findings count")
     parser.add_argument("--baseline", default=None,
-                        help="an older .pak or tree: label findings new/fixed/unchanged by id")
+                        help="an older .pak or tree (the installed version): label findings new/fixed/unchanged by "
+                             "id, and run the RC077 save-compat rule against it")
     parser.add_argument("--expand", action="store_true", help="list every location of each group")
     parser.add_argument("--game-root", default=None)
     parser.add_argument("--read-fields", default=None,
@@ -2434,7 +2664,8 @@ def main(argv: list[str] | None = None) -> int:
                                             notes=[]))
         for target in args.target:
             notes: list[str] = []
-            findings = validate(target, rules=rules, game_root=args.game_root, read_fields=fields, notes=notes)
+            findings = validate(target, rules=rules, game_root=args.game_root, read_fields=fields, notes=notes,
+                                baseline=args.baseline)
             items.append(report(str(target), findings, notes, expand=args.expand, baseline=base))
     except Exception as exc:                                  # noqa: BLE001 - tool error -> exit 2
         print(f"error: {type(exc).__name__}: {exc}", file=sys.stderr)

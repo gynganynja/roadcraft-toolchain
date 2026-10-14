@@ -90,7 +90,7 @@ The codes continue `lint-bro`'s RC001-RC048. `.bro` truck files in a source tree
 `bro_lint.lint_truck` (rule `bro-lint`, which keeps its own codes) with their model and markup. `lint-bro`'s
 **RC075** (warning: a BRO key the generator drops; info: a key that lands in the class where the engine never reads
 it) comes from `data/bro_passthrough.json`, see [bro-passthrough.md](bro-passthrough.md). RC076 is `spring-motors`
-(below); the next free code is RC077.
+and RC077 is `save-compat` (below; it runs only with `--baseline`); the next free code is RC078.
 
 | Code | Rule | Severity | Catches | Evidence (grade) |
 |---|---|---|---|---|
@@ -122,10 +122,11 @@ it) comes from `data/bro_passthrough.json`, see [bro-passthrough.md](bro-passthr
 | RC073 | engine-defaults | info | one per markup: physics bodies that omit `restitution`, `friction`, `angularDamping` or (with `massFromDensity`) `density` get 0.4, 0.5, 0.05, 600 | code analysis, static: `FUN_1430811e0` (physics_semantics.md F2); Retail crawlers omit restitution |
 | RC074 | objsettings-gate | info / warning | one info per markup: `objSettings.settings` entries that `exportedVersion` gates off, and entries naming no node of the compiled model (stale); a warning per node with `visibleDefault = False` that renders because the visibility gate is closed and no exporter prefix hides it | code analysis, static; in-game check pending (read_fields.md 3a, `gated`) |
 | RC076 | spring-motors | warning | a prismatic `tpl_markup_spring_motor` between two bodies of >= 200 kg whose k·dt²/m and c·dt/m exceed the retail load-bearing maximum 0.38 / 0.68. m is the reduced mass of the two bodies, an upper bound on the row's virtual mass, so the values are lower bounds; dt = 1/60. The message says when the solver's clamp to 1 caps the delivered rate (m/dt²) or damping (m/dt). `__parent` targets are resolved through the `.tpl` tree; hinge springs (inertia not decoded) and `massFromDensity` bodies are skipped | code analysis, static: `FUN_1442406f0`, `FUN_14423aa80`, `FUN_141594b60` (physics_semantics.md 'Spring-motor stability'); Retail: 0 of 62 prismatic springs flagged (9 load-bearing, all TUZ Lynx); Game: Mammoth RC62 (0.86 / 4.0 at the rear heave) shook while parked |
+| RC077 | save-compat | error / warning / info | only with `--baseline <installed>`: the candidate's savable descriptors against the baseline's, the names and indices restore looks up. Error: a new `constraintSequentialChains` chain (`RestoreFromSave` `data.Get`), a changed stage count, a joint added to a stage, a changed `powerConstraints` count, a new controllable constraint used by a `constraintChains` link, a removed cargo slot, all while both versions list `TruckConstraintsSavablePropDesc` (or `TruckStorageSavablePropDesc`). Warning: a removed or renamed truck identity (`auto_<name>_truck_info_`), savable desc, controllable constraint, chain or stage joint, a new controllable constraint, a reordered `powerConstraints`. Info: a new savable desc. See [save-compatibility.md](save-compatibility.md) | code analysis, static: `PropSavableObject.SetSavedProps`, `TruckConstraintsSavablePropDesc.LoadData`, `PropTruckConstraintView.RestoreFromSave`, `PropTruckConstraintController` (C:/RC_RE/research/save_semantics.md); Retail: 'key not found in dictionary'; Game: L275 v35 'Toolboxes' hang, grader joint rename |
 
 `--rules` takes the rule names: `ps-parse`, `ps-numbers`, `unknown-keys`, `wheel-frames`, `suspension`,
 `joints`, `lamps`, `materials`, `references`, `duplicates`, `ignored-fields`, `engine-defaults`,
-`objsettings-gate`, `spring-motors` and `bro-lint`.
+`objsettings-gate`, `spring-motors`, `save-compat` and `bro-lint`.
 
 Not added (2026-10-14): a check for a wheel overlapping its parent body's hulls. It needs per-hull
 extents, which are not decoded from `.tpl`/`.tpl_data`. A test on hull-node origins inside the wheel
