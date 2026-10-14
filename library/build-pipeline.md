@@ -1069,3 +1069,11 @@ Blender wrote the `@` file in full. The retried run happened to save normally, s
   - console behaviour on missing blobs or shader permutations
   - console tiling and size limits
 - **Evidence:** `C:\RC_RE\research\console_semantics.md`.
+## Direct pak patches and their editor mirrors (KGS-25, 2026-10-14, Build)
+
+A pass that patches an installed package's text members (`pak_patch.patch_text_members`) and also writes the editor
+copies (`--mirror`) must patch the **current** copy and keep its first backup for rollback only. Patching from the
+first backup silently drops every later pass's edits to that file when the script runs again (the KGS scripts
+`frame_hinge`, `wheel_feel`, `steer_curve`, `v7_retail_frames` do this; `hook_swing`, `hook_visibility`,
+`trail_wheels` patch the current copy). Make each patch idempotent or failing on a second run, and leave the editor
+copies at the installed version when a candidate is built but not installed.
