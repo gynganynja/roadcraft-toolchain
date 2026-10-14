@@ -101,6 +101,45 @@ class FlasherTests(unittest.TestCase):
             lamps.exterior_lights({"x": "searchlight"})
 
 
+class NativeGroupTests(unittest.TestCase):
+    def test_alces_shaped_block(self):
+        block = lamps.vehicle_light_materials({"head": ["reflector_headlights"], "brake": ["stop_lights"],
+                                               "reverse": ["reverse_lights"], "marker": ["marker_lights"],
+                                               "cockpit": ["_hp_cab_interior_gauges"]})
+        lights = block["lights"]
+        self.assertTrue(block["isEnabled"])
+        self.assertEqual(list(lights), ["Headlights", "Brake", "Reverse", "Marker", "Cockpit"])
+        self.assertEqual(lights["Brake"], {"lightData": {"defaultName": "default", "geomNames": ["stop_lights"],
+                                                         "__type": "BrakeHeadlights"},
+                                           "__type": "VehicleLightMaterialDatas"})
+        self.assertEqual(lights["Marker"]["lightData"]["lightName"], "lights_emissive")
+        self.assertEqual(lights["Marker"]["lightData"]["__type"], "Headlights")
+        self.assertEqual(lights["Cockpit"]["lightData"]["__type"], "CockpitLights")
+        self.assertNotIn("lightName", lights["Headlights"]["lightData"])
+        from roadcraft import validate
+        self.assertEqual(set(validate.bro_lights({"vehicleLightMaterials": block})),
+                         {f"{k}.lightData" for k in lights})
+
+    def test_states_override_and_empty_groups(self):
+        block = lamps.vehicle_light_materials({"brake": ["stop_lights"], "reverse": []},
+                                              states={"brake": "lights_emissive"})
+        self.assertEqual(list(block["lights"]), ["Brake"])
+        self.assertEqual(block["lights"]["Brake"]["lightData"]["lightName"], "lights_emissive")
+
+    def test_retail_has_no_indicator_or_hazard_group(self):
+        for role in ("indicator", "hazard", "turn_left"):
+            with self.assertRaises(ValueError):
+                lamps.vehicle_light_materials({role: ["turn_lights"]})
+
+    def test_dynamic_material_slot(self):
+        slot = lamps.dynamic_material("mod_x_body", "mod_x_stop_lit")
+        self.assertEqual(slot, {"materialName": "mod_x_body", "dynamicMaterials": {
+            "default": {"materialName": "mod_x_body"}, "lights": {"materialName": "mod_x_stop_lit"}}})
+        self.assertIn("lights_emissive", lamps.dynamic_material("a", "b", "lights_emissive")["dynamicMaterials"])
+        with self.assertRaises(ValueError):
+            lamps.dynamic_material("same", "same")
+
+
 class LampFindingTests(unittest.TestCase):
     def test_dump_twuck_v4_strobe_and_markup_are_flagged(self):
         markup = {"objSettings": {"settings": {"blue_beacons_on": {"visibility": {

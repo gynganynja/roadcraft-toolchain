@@ -184,7 +184,7 @@ The method proven on the CAT 793D (RC20) and the Apocalypse Buggy (headlights se
 
 | Retail has no headlight key (only an editor debug hotkey), so lamps that follow the engine cannot rely on the `Headlights` light type | Game (CAT 793D) |
 
-| Native `prop_vehicle_lights_material` brake / reverse states did not light in the campaign | Game (CAT 793D RC20) |
+| Native `prop_vehicle_lights_material` brake / reverse states did not light in the campaign. Retail uses exactly this route on 80 / 79 classes, so the cause is Unknown: candidates are a missing or misspelt `dynamicMaterials` state, or a test braking at standstill, which never enters BRAKE_PULL (see "How retail drives lamps") | Game (CAT 793D RC20); retail use Retail; cause Unknown |
 
 | RC21 drives brake and reverse lamps by show/hide on the brake pull / release events and `BlueprintNodeOnEngineReverse` (`OnEngineReverse` / `OnReleased`, the retail Bowhead's pattern) | Retail (pattern), Build (RC21 not yet confirmed in the game) |
 
@@ -197,6 +197,31 @@ The method proven on the CAT 793D (RC20) and the Apocalypse Buggy (headlights se
 | Real beam authoring now exists in Roamer and Lada native SFX helpers; see the scoped evidence below before claiming a tested result | Build; Lada daylight native states/captures, night reach open |
 
 
+
+## How retail drives lamps (SSL and retail survey, 2026-10-14)
+
+Full evidence: `C:\RC_RE\research\lamps_semantics.md`. Grades: Code = base-game SSL read; Retail = shipped
+classes, BROs and keymap; Inferred; Unknown.
+
+| Rule | Grade |
+|---|---|
+| Retail has **no turn signals, hazards or headlight toggle**. No keymap action exists for them (the `Truck` layer has Handbrake, TruckPedals, Horn, ActivateWipers and Switch*), and no node, state variable or blinker lens either | Code, Retail |
+| Every retail exterior lamp is a native material swap: `vehicleLightMaterials` -> `prop_vehicle_lights_material` calls `Geom.SetMaterial(state, object)`, using `lightName` (default `lights`) when lit and `defaultName` (default `default_cc`) when off | Code, Retail |
+| `Headlights` and `CockpitLights` are lit while `IsEngineRunning()` (ENGINE_STATE.RUNNING only) | Code |
+| `BrakeHeadlights` is lit while the movement state is BRAKE_PULL | Code |
+| `ReverseHeadlights` is lit while gear == -1 and the engine is running | Code |
+| BRAKE_PULL means the pedal opposes the direction of travel while moving. It is never entered at standstill (a negative pedal there means REVERSE) and never on the handbrake. It ends below ±0.1 pedal, and BRAKE_RELEASE follows | Code (`trucks/fsm_movement`) |
+| The movement FSM runs only while the engine runs and is reset on shutdown without firing a state: graphs must clear their brake / reverse flags on `OnEngineShutdown` (`lamp_states` does) | Code |
+| Retail survey of 110 lit classes: Brake 80, Reverse 79, Cockpit 101. Lit state is `lights` for head / brake / reverse and `lights_emissive` for markers / cockpit. Beacons are steady Headlights materials. No retail graph drives a lamp: brake events play sounds, reverse events start exhaust smoke and beepers. No retail truck has a `BlueprintNodeTickTimer` | Retail |
+| `isHeadlightsOn` is set only by the debug hotkey `Trucks.SwitchActivateVehicleHeadlight`. It moves the cockpit `HEADLIGHT` switch (Mule T1, Don 71, Khan Lo Strannik) and gates `prop_vehicles_headlights` SFX beams, which retail leaves empty (Derry Longhorn only). Do not build on either | Code, Retail; no native setter Inferred |
+| Retail trucks carry no beam emitter (no `sfx_light*` in any class); the source of retail night lighting is Unknown | Retail; Unknown |
+| Indicators can only be a decorative `lamps.flasher` run from the engine-running branch. A player-controlled indicator is impossible without an input | Code, Retail |
+
+**Kit:** `lamps.vehicle_light_materials({"head": [...], "marker": [...], "brake": [...], "reverse": [...],
+"cockpit": [...]})` writes the retail BRO block, and `lamps.dynamic_material(unlit, lit, state)` writes the markup
+slot it switches. Indicator and hazard roles raise `ValueError` (Retail shape, `tests/test_lamps.py`; the native
+brake / reverse states are not yet Game-confirmed on a mod). Use one route per lens object: a native group and a
+show/hide graph on the same object are untested (Inferred).
 
 ## Source-fitted exterior effects (Lada v5/v6, 2026-09-30)
 

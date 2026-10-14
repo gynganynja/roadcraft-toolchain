@@ -10,6 +10,9 @@ Proven parts (library/cockpit-and-lamps.md, "Exterior lamps and beacons with roa
   lens states.
 * Strobes (CAT 793D, Game): one-shot ``BlueprintNodeTickTimer`` nodes that restart each other show and hide an
   emitter object while the lamp body stays.
+* Native material groups (retail, 110 classes): ``vehicle_light_materials`` writes the BRO ``vehicleLightMaterials``
+  block and ``dynamic_material`` the markup slot states it switches. Retail has no turn signals, hazards or
+  headlight switch (research/lamps_semantics.md).
 
 Two faults this module cannot produce, and ``bro_lint`` reports (RC037-RC039):
 
@@ -111,6 +114,59 @@ def unlit_material(texture: str, *, normal: str | None = None, spec: str | None 
     """Unlit lens instance: opaque ``vehicle_body`` like every lit retail truck (never a glass preset)."""
     params = {"texDiff": texture, "texNM": normal or texture + "_nm", "texSpec": spec or texture + "_spec"}
     return {"game_material": "metal", "shaders": {"glt_shader": {"base": {"params": params}}}, "__type": "vehicle_body"}
+
+
+# ---------------------------------------------------------------- native material groups (the retail route)
+
+# Retail's own lamps (110 truck classes) are material swaps, not graphs: the BRO module ``vehicleLightMaterials``
+# compiles to ``prop_vehicle_lights_material``, whose SSL (game/truck/truck_vehicles_headlights) calls
+# ``Geom.SetMaterial(state, object)`` when its condition changes: Headlights and CockpitLights follow
+# ``IsEngineRunning``, BrakeHeadlights ``IsBrakePull`` (movement state BRAKE_PULL), ReverseHeadlights gear -1 with the
+# engine running. There is no turn-signal, hazard or headlight-switch group and no input action for one.
+# role: (BRO key, light type, lit state the retail majority uses). research/lamps_semantics.md.
+NATIVE_GROUPS: dict[str, tuple[str, str, str]] = {
+    "head": ("Headlights", "Headlights", "lights"),            # reflector_headlight(s), 119 entries
+    "marker": ("Marker", "Headlights", "lights_emissive"),     # marker_lights, beacons (steady), 58 entries
+    "brake": ("Brake", "BrakeHeadlights", "lights"),           # stop_lights, 65 of 80 entries
+    "reverse": ("Reverse", "ReverseHeadlights", "lights"),     # reverse_lights, 65 of 79 entries
+    "cockpit": ("Cockpit", "CockpitLights", "lights_emissive"),  # _hp_cab_interior_gauges, 101 entries
+}
+
+
+def vehicle_light_materials(groups: Mapping[str, Sequence[str]], *, default: str = "default",
+                            states: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """The BRO ``vehicleLightMaterials`` block retail trucks use (Alces C400 shape): ``groups`` maps a role of
+    ``NATIVE_GROUPS`` to the model objects it switches; ``states`` overrides a role's lit state name. Every object's
+    material slot needs markup ``dynamicMaterials`` with ``default`` and the lit state (``dynamic_material``).
+
+    Retail has no indicator, hazard or headlight-switch driver: such roles are refused, since a lens given a
+    Headlights role glows whenever the engine runs (Roamer 105). For brake and reverse in a mod prefer the graph
+    (``lamp_states``): the native brake/reverse states did not light on the CAT 793D in the campaign."""
+    unknown = sorted(set(groups) - set(NATIVE_GROUPS))
+    if unknown:
+        raise ValueError(f"no native lamp group for {unknown}: retail drives only {sorted(NATIVE_GROUPS)} "
+                         "(no turn signals, hazards or headlight switch); flash such lamps with lamps.flasher")
+    lights: dict[str, Any] = {}
+    for role, names in groups.items():
+        if not names:
+            continue
+        key, kind, state = NATIVE_GROUPS[role]
+        data: dict[str, Any] = {"defaultName": default}
+        lit = (states or {}).get(role, state)
+        if lit != "lights":                       # "lights" is the SSL default; retail omits it
+            data["lightName"] = lit
+        data.update({"geomNames": list(names), "__type": kind})
+        lights[key] = {"lightData": data, "__type": "VehicleLightMaterialDatas"}
+    return {"isEnabled": True, "lights": lights}
+
+
+def dynamic_material(unlit: str, lit: str, state: str = "lights", *, default: str = "default") -> dict[str, Any]:
+    """Markup ``materials.<slot>`` entry whose ``default`` state is ``unlit`` and whose ``state`` is ``lit`` (the SDK
+    Lynx sample's shape). Spell the state exactly as the lamp group does: the Lynx's ``lights_emmissive`` never
+    lights (validator RC066)."""
+    if unlit == lit:
+        raise ValueError("lit and unlit materials are the same: the lamp shows no change (RC067)")
+    return {"materialName": unlit, "dynamicMaterials": {default: {"materialName": unlit}, state: {"materialName": lit}}}
 
 
 # ---------------------------------------------------------------- graphs
