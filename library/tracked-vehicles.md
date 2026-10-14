@@ -216,6 +216,26 @@ wheels was radius + section (body speed / wheel spin 0.092-0.098 for 0.074 + 0.0
 Climbing: r5 has no hidden obstacle wheels; a step meets the front wheel (radius + section 0.098 m) and the
 belt between the wheels has no collision. **Open:** the owner's drive of r5, steps, slopes and mud.
 
+## Dozer blades: what resists a cut (2026-10-14)
+
+Source: `C:\RC_RE\research\physics_semantics.md`, "Dozer cutting resistance" (code analysis, static; the Goliath D11 RC6 against the Greenway HT500).
+
+**How the engine resists a blade cut.**
+- **Code:** `prop_terraforming_bucket` rewrites the blade's terrain contacts in diggable ground to point straight up, with `allowedPenetrationDistance` of slack. A cut face therefore never pushes back physically.
+- **Code:** each physics step, a scripted impulse is applied to the **chassis**. With the retail `TerraformingSystem` values it is `min(speed, 1 m/s) × (2500 × buried blade-hull volume + 2000 × volume cut that step) × (1 + downward tilt)`.
+- **Code:** an upward impulse, (buried fraction of the hull) × vehicle weight, goes to the **blade body**.
+- **Code:** the drag is not scaled by truck mass.
+- **Inferred:** a dozer stops when that drag beats track traction, or when the lift unloads the tracks. It is not a torque or engine-stall problem: rpm is cosmetic, and there is no stall logic.
+- **Retail (global, not per truck):** dig depth is capped at `defaultDepth` 1.5 m below the original terrain. Static and non-terraformable ground keeps hard contacts, so the blade becomes a wall.
+
+**Modding rules (Inferred until benched):**
+- Do not raise engine torque past the traction limit. At 1.3e6 the 111 t D11 already exceeds it; 3e6 only spins the tracks and enlarges the engagement kick.
+- Put the 1↔2 range boundary at the 1st/2nd torque crossover. With angularVelocity 1 / 2.5 this is about 3.5 km/h at a 0.43 m rolling radius. Then a loaded downshift costs no torque. With the HT500's 6 km/h boundary, 1st gives 35 % less torque than 2nd at the shift.
+- Low range is not stronger than 1st (both have gear factor 1). It only stops auto-shifting.
+- Per-pass depth is set by the lift joint's down stop and arm length. The HT500 stops at `Dump` +3° on a 4.2 m arm; the D11 at +5° on a 4.9 m arm, roughly twice the buried hull volume.
+- Drag grows with blade-hull thickness (front to back). Lift grows with the buried fraction of the hull's height.
+- Players: MANUAL mode, low range, 1-2 km/h, layers of 0.2-0.3 m, no steering in the cut.
+
 ## Checks
 
 `roadcraft lint-bro TRUCK.bro --class auto_X.cls --tpl X.tpl` (the markup beside the model is
