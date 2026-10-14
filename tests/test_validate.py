@@ -380,6 +380,67 @@ class MaterialAndReferenceTests(Base):
         self.assertEqual(keys, ["assets[0]", "links[1]", "materials.a.materialName", "texNM"])
 
 
+MI_BODY = 'shaders = { glt_shader = { base = { params = { texDiff = "t" } } } }\n'
+
+
+class MaterialTypeTests(Base):
+    """RC078: a .mi without a known __type crashes retail at the main menu (retail_crash_0x214f223.md)."""
+
+    def run_mi(self, files, retail_presets=("vehicle_body", "vehicle_lights")):
+        fx = self.fixture(files)
+        if retail_presets is not None:
+            pak = fx.game / "root" / "paks" / "client" / "default" / "default_materials.pak"
+            pak.parent.mkdir(parents=True)
+            with zipfile.ZipFile(pak, "w") as archive:
+                archive.writestr("master_materials/glt_extended_material.mm", "")
+                for name in retail_presets:
+                    archive.writestr(f"material_presets/{name}.mp", '__type = "glt_extended_material"\n')
+        notes = []
+        return fx.run(rules=["material-type"], notes=notes), notes
+
+    def test_missing_empty_unknown_and_valid(self) -> None:
+        found, _ = self.run_mi({
+            "material_instances/none.mi": MI_BODY,
+            "material_instances/none.mi.resource": "__type: res_desc_mtl\nfile: none.mi\nparents:\n"
+                                                   "- res://material_presets/vehicle_lights.mp.resource\n",
+            "material_instances/empty.mi": MI_BODY + '__type = ""\n',
+            "material_instances/unknown.mi": MI_BODY + '__type = "vehicle_bodyy"\n',
+            "material_instances/ok.mi": MI_BODY + '__type = "vehicle_body"\n',
+            "material_instances/master.mi": MI_BODY + '__type = "glt_extended_material"\n',
+            "material_instances/own.mi": MI_BODY + '__type = "my_preset"\n',
+            "material_presets/my_preset.mp": '__type = "glt_extended_material"\n'})
+        by_file = {f.member.rsplit("/", 1)[-1]: f for f in found}
+        self.assertEqual(sorted(by_file), ["empty.mi", "none.mi", "unknown.mi"])
+        self.assertTrue(all(f.code == "RC078" and f.severity == "error" for f in found))
+        self.assertIn("no message", by_file["none.mi"].message)
+        self.assertIn('__type = "vehicle_lights"', by_file["none.mi"].fixHint)
+        self.assertIn('"vehicle_body"', by_file["unknown.mi"].fixHint)
+        self.assertEqual(by_file["empty.mi"].line, 2)
+
+    def test_unparsable_mi_falls_back_to_the_raw_line(self) -> None:
+        found, _ = self.run_mi({"material_instances/bad.mi": "shaders = {\n__type = \"vehicle_body\"\n",
+                                "material_instances/bad2.mi": "shaders = {\n"})
+        self.assertEqual([f.member.rsplit("/", 1)[-1] for f in found], ["bad2.mi"])
+
+    def test_without_retail_only_missing_type_is_checked(self) -> None:
+        found, notes = self.run_mi({"material_instances/a.mi": MI_BODY + '__type = "anything"\n',
+                                    "material_instances/b.mi": MI_BODY}, retail_presets=None)
+        self.assertEqual([f.member for f in found], ["material_instances/b.mi"])
+        self.assertTrue(any("RC078" in n for n in notes))
+
+    def test_pak_members(self) -> None:
+        fx = self.fixture({})
+        fx.game.joinpath("root", "paks", "client").mkdir(parents=True)
+        with zipfile.ZipFile(fx.game / "root" / "paks" / "client" / "m.pak", "w") as archive:
+            archive.writestr("material_presets/vehicle_body.mp", "")
+        pak = Path(fx.tmp.name) / "mod.pak"
+        with zipfile.ZipFile(pak, "w") as archive:
+            archive.writestr("material_instances/beacon.mi", MI_BODY)
+            archive.writestr("material_instances/body.mi", MI_BODY + '__type = "vehicle_body"\n')
+        found = validate.validate(pak, rules=["material-type"], game_root=fx.game)
+        self.assertEqual([(f.code, f.path) for f in found], [("RC078", "mod.pak!material_instances/beacon.mi")])
+
+
 class PakTests(Base):
     def make_pak(self, members):
         path = Path(tempfile.mkdtemp()) / "mod.pak"
@@ -780,6 +841,23 @@ class SdkSampleIntegrationTests(unittest.TestCase):
 
     def test_no_type_or_reference_errors_on_sdk_content(self) -> None:
         self.assertFalse([f for f in self.found if f.code in ("RC049", "RC054", "RC055", "RC070")])
+
+
+@unittest.skipUnless((SDK_ROOT / "root" / "paks" / "client").is_dir() and any(SAMPLE.glob("material_instances/*.mi")),
+                     "RoadCraft retail paks or the SDK's shipped material instances not installed")
+class RetailMaterialTypeTests(unittest.TestCase):
+    """Retail ships no .mi in its paks; the SDK's own material instances (root/mods_source, every retail preset)
+    must all pass RC078 against the retail material library."""
+
+    def test_sdk_material_instances_pass(self) -> None:
+        from roadcraft import retail
+        library = retail.material_templates(SDK_ROOT)
+        self.assertIn("vehicle_body", library)
+        self.assertIn("glt_extended_material", library)
+        notes = []
+        found = validate.validate(SAMPLE, rules=["material-type"], notes=notes)
+        self.assertEqual(found, [])
+        self.assertFalse([n for n in notes if "RC078" in n])
 
 
 if __name__ == "__main__":

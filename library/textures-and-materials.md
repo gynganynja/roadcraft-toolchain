@@ -29,6 +29,12 @@
 | `vehicle_lights` | lit lamps | `texDiff`, `texSpec`, `emissive { intensity, bloomIntensity }`, `tex { emissiveTex }` | Build, Game |
 | `cutoff_volume_surface` | the cab's water cut-off volume | `game_material = "default"` | Build |
 
+**Every `.mi` needs `__type = "<preset>"` (code analysis, static + Game, 2026-10-14).** Retail loads every `.mi` in a
+mod pak at startup, linked or not, and looks `__type` up in the material library (the 14 `material_presets/*.mp` and
+3 `master_materials/*.mm` of `default_materials.pak`). A missing, empty or unknown name crashes the game at the main
+menu with no message (Goliath RC7a; C:/RC_RE/research/retail_crash_0x214f223.md). Generators that write `.mi` files
+must write the line; `roadcraft validate` reports it as RC078 ([validator.md](validator.md)).
+
 **Cab presets and the mud "covering" (L275 v31, 2026-10-13; Retail presets read, fix not yet seen in game).** The
 game's mud / dust layer on vehicles is the material's `covering`. Decoded `default_materials.pak` presets:
 `vehicle_body` = bare `glt_extended_material` (covering on); `vehicle_cabin` = the same plus `covering { forceDisable =

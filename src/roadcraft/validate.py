@@ -139,6 +139,12 @@ CODES: dict[str, tuple[str, str, str]] = {
               "saved one, then PropTruckConstraintView.RestoreFromSave does data.Get(chain.name) and the controller "
               "indexes saved chains/stages/constraints by the current names ('key not found in dictionary', Retail "
               "string); Game: L275 v35 'Toolboxes' chain hung old saves (library/save-compatibility.md)"),
+    "RC078": ("material-type", "material instance without a known __type: the game crashes at the main menu",
+              "code analysis, static: the retail .mi load job FUN_14214f0f0 runs for every .mi in a mod pak at "
+              "startup, linked or not, looks __type up in the material library (FUN_142979fa0) and reads +0x48 of "
+              "the result with no null check; the .mtl loader FUN_14214f880 falls back to 'mtl', the .mi loader "
+              "does not (C:/RC_RE/research/retail_crash_0x214f223.md); Game: Goliath RC7a's three beacon .mi "
+              "without __type crashed retail at the main menu with no message (AV exe+0x214f223, bisected)"),
 }
 RULES = sorted({rule for rule, _, _ in CODES.values()} | {"bro-lint"})
 
@@ -1997,6 +2003,75 @@ def rule_materials(ctx: Context) -> None:
                     + (" and its lamp states" if states else "") + " is lost; give it its own object or texture", line=lines.get(slot), key=f"materials.{slot}")
 
 
+_MI_TYPE_LINE = re.compile(r'^[ \t]*__type[ \t]*=[ \t]*"?([^"\r\n]*?)"?[ \t]*$', re.M)
+_MP_PARENT = re.compile(r"res://material_presets/([^/\s]+?)\.mp\.resource", re.I)
+MI_CRASH = ("the retail game loads every .mi in the pak at startup, linked or not, and crashes at the main menu "
+            "(about 40-90 s after launch) with no message")
+
+
+def _mi_type(ctx: Context, name: str) -> tuple[bool, str, int | None]:
+    """(present, value, line) of a .mi's top-level ``__type``; a raw-text fallback when the editor cannot parse it."""
+    doc = ctx.ps(name)
+    if isinstance(doc, dict):
+        if "__type" not in doc:
+            return False, "", None
+        value = doc["__type"]
+        return True, value.strip() if isinstance(value, str) else "", getattr(doc, "lines", {}).get("__type")
+    text = (ctx.bundle.read(name) or b"").decode("utf-8-sig", errors="replace")
+    match = None
+    for match in _MI_TYPE_LINE.finditer(text):
+        pass                                          # the last top-level assignment wins in a flat document
+    if match is None:
+        return False, "", None
+    return True, match.group(1).strip(), text.count("\n", 0, match.start()) + 1
+
+
+def rule_material_type(ctx: Context, notes: list[str] | None = None) -> None:
+    """RC078: every .mi must have a non-empty ``__type`` naming a material template (retail material_presets /
+    master_materials, or the mod's own .mp/.mm/.mtl)."""
+    if "material-type" not in ctx.rules:
+        return
+    mis = [n for n in ctx.bundle.names() if n.lower().endswith(".mi")]
+    if not mis:
+        return
+    own = {n.rsplit("/", 1)[-1][: -len(ext)] for n in ctx.bundle.names()
+           for ext in retail.MATERIAL_TEMPLATE_EXTENSIONS if n.lower().endswith(ext)}
+    library = retail.material_templates(ctx.game_root) if ctx.retail is not None and ctx.game_root else frozenset()
+    known = set(library) | own if library else None
+    if known is None and notes is not None:
+        notes.append("RC078: no retail material library (material_presets/*.mp) found: only missing or empty "
+                     "__type checked, not unknown names")
+    typed: dict[str, list[str]] = {}
+    for name in mis:
+        present, value, _ = _mi_type(ctx, name)
+        if present and value:
+            typed.setdefault(value, []).append(name.rsplit("/", 1)[-1])
+    for name in mis:
+        present, value, line = _mi_type(ctx, name)
+        path = ctx.bundle.display(name)
+        resource = ctx.bundle.read(name + ".resource") if ctx.bundle.has(name + ".resource") else b""
+        parent = _MP_PARENT.search(resource.decode("utf-8", errors="replace"))
+        if parent:
+            fix = (f'add __type = "{parent.group(1)}" (the preset its .mi.resource parents names); copy __type from '
+                   "the matching retail MI or the mod's other MIs of the same preset")
+        else:
+            fix = "copy __type from the matching retail MI or the mod's other MIs of the same preset"
+            if typed:
+                fix += " (this mod uses " + ", ".join(sorted(typed)) + ")"
+        if not present:
+            ctx.add("RC078", "error", path, f"material instance has no __type line: {MI_CRASH} "
+                    "(null material template read at +0x48, exe+0x214f223)", key="__type", fix=fix)
+        elif not value:
+            ctx.add("RC078", "error", path, f"material instance has an empty __type: {MI_CRASH}", line=line,
+                    key="__type", fix=fix)
+        elif known is not None and value not in known:
+            close = [k for k in known if k.lower() == value.lower()] or difflib.get_close_matches(value, sorted(known), 1)
+            ctx.add("RC078", "error", path,
+                    f"__type {value!r} names no material in the retail material library (material_presets, "
+                    f"master_materials) or this mod: the lookup returns null and {MI_CRASH}", line=line,
+                    key="__type", fix=(f'did you mean __type = "{close[0]}"? ' if close else "") + fix)
+
+
 def _material_look(ctx: Context, entry: dict) -> tuple[str | None, str]:
     """(base texture, preset) of a markup material slot's instance."""
     mi = ctx.ps(_mi_member(str(entry.get("materialName", ""))))
@@ -2450,6 +2525,7 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
     rule_duplicates(ctx)
     rule_references(ctx)
     rule_materials(ctx)
+    rule_material_type(ctx, notes)
     rule_bro(ctx)
     if baseline is not None and "save-compat" in selected:
         rule_save_compat(ctx, Context(open_target(baseline), retail_view, schema, selected, fields))
