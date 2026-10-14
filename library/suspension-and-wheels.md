@@ -381,6 +381,43 @@ and `mud` (0.8 / 0.3 / 2.5) entries and raises wheel mass to 70 kg. `compare` ou
 four-wheel mass, 280 kg, is still under the retail 340 because the lightest retail trucks carry more wheel mass than
 70 x 4. Unmeasured; owner drive pending.
 
+## Wheel ruts: what deforms the terrain (code analysis, static, 2026-10-14)
+
+Source: `C:\RC_RE\research\physics_semantics.md`, "Terrain deformation under wheels".
+
+There are three separate channels. None of them is a terraforming brush; the dozer `TerraformingSystem` and its 1.5 m dig cap are a different path.
+
+| Channel | What drives it | Grade |
+|---|---|---|
+| Physical extrusion | A contact listener on every physical wheel body (fakes too). Per contact point it adds a depth to the terrain's per-cell map and writes it into the 2x2 cells around the point. It writes only on deformable-layer cells, more where the ground is wet. Gate: dbg var `physics/truck/enable wheel extrusion from wetness` | Code |
+| Visual mud push | `vfx.vfxSkeleton` cylinders on `_wheel` with `systems` bit 16 (mud; 2 water, 8 grass) | SDK flags; Game (Apoc body boxes) |
+| Rut decal | `prop_wheel_trail_rb` (`trailParams.width`, height map, parallax) | Retail/Code (SSL) |
+
+**Depth of one stamp (Code, `FUN_140dbcf50`):**
+
+```
+terrainDeformationFactor * (softForceScale/0.56 + 0.5) * min(1, (truck mass / wheel count - wheel mass) / 4000)
+   * ( 0.24 / ((clamp(width/0.52, 0.25, 4) + 1)/2) + 1.44 * max(0, |spin speed - ground speed| - 0.5) * clamp((speed - 1.2)/2.4, 0, 1) )
+```
+
+Inferred: the meanings of truck mass, wheel count, spin and ground speed. What follows from the law:
+- **Code:** `terrainDeformationFactor` (from the friction table entry for the current surface) scales only this depth. It does not scale sinkage (the separate soft-contact force), the mud push or any radius.
+- **Code:** `softForceScale` also scales ruts: 1.0 digs 2.3x deeper than 0.28.
+- **Code:** a wide wheel digs less in its static term.
+- **Code:** wheelspin above 0.5 m/s, at more than 1.2 m/s, digs much more.
+- **Code:** the stamp footprint is the terrain cell grid. No wheel or vfx size sets it.
+
+**An empty `vfx` is not "no ruts":**
+- **Inferred:** the wheel pushes no mud, bends no grass and makes no splash.
+- **Code:** the physical extrusion and the trail are unaffected.
+- **Retail:** the 5111B dragline ships empty `vfx` on its end wheels.
+
+**Rules (Retail unless graded):**
+- `terrainDeformationFactor`: 0 on asphalt, gravel and `default`; 0.25 on mud and sand; up to 2.5 on grass and ground (HT500).
+- Cylinder: radius 0.85-1.2 and height 0.5-1.5 in wheel-model units; `systems` 18 or 26. No retail cylinder has a zero or negative dimension.
+- **Code (SSL):** mirror `trailSfxDesc` into `defaultTrailSfxDesc`, or a mod wheel loses its trail (`ResetTrailDesc`).
+- Crawlers: [tracked-vehicles.md](tracked-vehicles.md), "Ruts, mud and trails under a crawler" (RC079).
+
 ## Stop geometry (measured, 2026-10-02)
 
 **Game (KGS-25 editor bench; the Lada trials fit it too):** a wheel sits `height + min + travel`

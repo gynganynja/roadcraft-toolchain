@@ -236,6 +236,27 @@ Source: `C:\RC_RE\research\physics_semantics.md`, "Dozer cutting resistance" (co
 - Drag grows with blade-hull thickness (front to back). Lift grows with the buried fraction of the hull's height.
 - Players: MANUAL mode, low range, 1-2 km/h, layers of 0.2-0.3 m, no steering in the cut.
 
+## Ruts, mud and trails under a crawler (2026-10-14)
+
+Source: `C:\RC_RE\research\physics_semantics.md`, "Terrain deformation under wheels" (code analysis, static; retail survey of 321 wheel and 124 truck classes).
+
+**Where the ruts come from.** There is no track-level terrain code: everything is per wheel.
+- **Code:** every physical wheel, fakes included, extrudes the deformable terrain at its contact points. `terrainDeformationFactor` scales the depth of that stamp ([suspension-and-wheels.md](suspension-and-wheels.md), "Wheel ruts").
+- **Retail:** the visual mud push comes only from the `vfx` cylinders on the sprocket and idler (TC305 and HT500: radius 1.05, height 1, `systems` 26). The contact fakes have no model and no `vfx`.
+- **Code (SSL):** the track rut decal starts only for the slots named in `prop_truck_rb.wheelsWithTrail`. Retail names the front and rear end wheels, with `isRear` on the rear one: TC305 `roller_left0/12`, HT500 `roller_front_l_0` / `roller_rear_l_9`. The trail width spans the track (TC305 2.25 m).
+
+**Modding rules:**
+- Name the sprocket and idler (the end wheels **with a model**) in `wheelsWithTrail`, never modelless contact fakes (validator **RC079**; Retail: 144 of 144 caterpillar trail wheels have a model).
+- Give the sprocket and idler a `vfx` cylinder like retail. An empty `vfx` is legal (the 5111B dragline ships it), but that wheel then pushes no mud.
+- Contact fakes need no model and no `vfx`. Their friction table sets their rut depth.
+
+**The KGS-25 crash on deformable terrain (Open).**
+- **Game:** every variant crashed the editor engine on the acceptance terrain. No log was kept.
+- **Inferred, first suspect:** all five KGS-25 paks put their 4 trails on modelless `contact` wheels. The native trail update runs an extra branch only on deformable terrain, and that branch reads the wheel geom and its tracker. Nothing else in the wheel classes differs from retail: empty or missing `vfx`, 22 wheels, width, mass and factors all have retail precedent.
+- **Workaround:** move `wheelsWithTrail` to `kgs_L/R_idler0` and `kgs_L/R_drive0` (`isRear` on the rear pair).
+- **Settle with a bench**, with the owner's go-ahead: baseline, trails moved, and baseline with `physics/truck/enable wheel extrusion from wetness` off.
+- The installed T-80BVM has the same layout (RC079 x4). Whether it survives deformable terrain is untested.
+
 ## Checks
 
 `roadcraft lint-bro TRUCK.bro --class auto_X.cls --tpl X.tpl` (the markup beside the model is
@@ -274,7 +295,8 @@ next build ([build-pipeline.md](build-pipeline.md)).
   bench one frame-hung axle at two
   frame masses.
 - Deformable terrain: spawning the crane on the acceptance scene's terrain crashed the editor
-  engine for every variant, so terrain behaviour rests on the owner's drives.
+  engine for every variant, so terrain behaviour rests on the owner's drives. First suspect and
+  workaround: "Ruts, mud and trails under a crawler" above (Inferred; bench pending).
 - The owner's drive of fix 2.
 - KGS-25 headless bench: repeat runs for run-to-run noise; the harsh course on a centred lane for the baseline,
   cf9dca20, f841eb34 and retail damping (they left the pad); a wider step slab.

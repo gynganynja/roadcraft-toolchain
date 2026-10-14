@@ -145,6 +145,14 @@ CODES: dict[str, tuple[str, str, str]] = {
               "the result with no null check; the .mtl loader FUN_14214f880 falls back to 'mtl', the .mi loader "
               "does not (C:/RC_RE/research/retail_crash_0x214f223.md); Game: Goliath RC7a's three beacon .mi "
               "without __type crashed retail at the main menu with no message (AV exe+0x214f223, bisected)"),
+    "RC079": ("wheel-trail", "track trail on a wheel that has no model",
+              "code analysis, static: prop_truck_rb.ssc starts a caterpillar trail (PropWheelTrail.InitSFX, "
+              "propGeom transform) only for wheels named in wheelsWithTrail; the native trail update FUN_1404d56b0 "
+              "runs an extra branch only on deformable terrain (terrain +0x2940/+0x700) that reads the wheel geom's "
+              "bounds and a tracker (IsValid assert) (physics_semantics.md 'Terrain deformation under wheels'); "
+              "Retail: 144 of 144 caterpillar trail wheels have a model (sprocket/idler); Build/Game: every "
+              "KGS-25 variant puts its 4 trails on modelless contact wheels and crashed the editor engine on "
+              "deformable terrain only (cause not proven)"),
 }
 RULES = sorted({rule for rule, _, _ in CODES.values()} | {"bro-lint"})
 
@@ -1505,6 +1513,35 @@ def rule_wheel_frames(ctx: Context, truck: Truck) -> None:
                 "inside out", key="properties.prop_truck_rb.wheelSlotWithDescs")
 
 
+def rule_wheel_trails(ctx: Context, truck: Truck) -> None:
+    """RC079: a slot named in ``wheelsWithTrail`` whose wheel class has a caterpillar trail but no model."""
+    trails = truck.rb.get("wheelsWithTrail")
+    if not isinstance(trails, dict) or not trails:
+        return
+    path = ctx.bundle.display(truck.name)
+    for index, slot in enumerate(truck.slots):
+        if not isinstance(slot, dict) or slot.get("geomName") not in trails:
+            continue
+        wheel = _wheel_class(ctx, truck, slot.get("editableWheel"))
+        wprops = (wheel or {}).get("properties")
+        if not isinstance(wprops, dict) or not isinstance(wprops.get("prop_truck_wheel"), dict):
+            continue
+        trail = wprops.get("prop_wheel_trail_rb") or wprops.get("prop_wheel_trail")
+        if not isinstance(trail, dict) or trail.get("isCaterpillar") is not True:
+            continue
+        geom = wprops.get("geom")
+        model = geom.get("nameTpl") if isinstance(geom, dict) else None
+        if isinstance(model, str) and model.strip():
+            continue
+        ctx.add("RC079", "warning", path,
+                f"wheelsWithTrail names slot {slot.get('geomName')!r}, whose wheel {slot.get('editableWheel')!r} has "
+                "a caterpillar trail but no model (no geom.nameTpl). No retail crawler does this: they put the "
+                "trails on the sprocket and idler (wheels with a model, e.g. EPEC TC305 roller_left0/12). Every "
+                "KGS-25 variant does it and crashed the editor engine on deformable terrain (cause not proven). "
+                "Name the end wheels that have a model in wheelsWithTrail instead",
+                key=f"properties.prop_truck_rb.wheelsWithTrail.{slot.get('geomName')}")
+
+
 def rule_suspension(ctx: Context, truck: Truck) -> None:
     path = ctx.bundle.display(truck.name)
     rb = truck.rb
@@ -2539,6 +2576,7 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
                 lamp_states.update({light.get("lightName", "lights"), light.get("defaultName", "default_cc")})
         rule_suspension(ctx, truck)
         rule_wheel_frames(ctx, truck)
+        rule_wheel_trails(ctx, truck)
         rule_ik_frames(ctx, truck)
         rule_lamps(ctx, truck)
         markup, markup_name = ctx.markup(truck.tpl)

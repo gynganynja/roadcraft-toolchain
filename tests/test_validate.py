@@ -190,6 +190,34 @@ class WheelFrameTests(Base):
         self.assertEqual(set(codes(found)), {"RC062"})
 
 
+class WheelTrailTests(Base):
+    TRAIL = ' prop_wheel_trail_rb = { isCaterpillar = True }\n'
+
+    def files(self, wheel_geom, trail_slot="FL", caterpillar=True):
+        slots, _ = four_wheels()
+        geom = f' geom = {{ nameTpl = "{wheel_geom}" }}\n' if wheel_geom is not None else ""
+        trail = self.TRAIL if caterpillar else ' prop_wheel_trail_rb = { }\n'
+        wheel = f'properties = {{\n prop_truck_wheel = {{ width = 0.5 }}\n{geom}{trail}}}\n__type = "truck_wheel_muted"\n'
+        rb = f"wheelsWithTrail = {{ {trail_slot} = {{ __type = \"WheelTrailDesc\" }} }}" if trail_slot else ""
+        return {"ssl/truck.cls": truck_cls(slots, extra_rb=rb), "ssl/w.cls": wheel}
+
+    def test_trail_on_modelless_caterpillar_wheel(self) -> None:
+        found = self.fixture(self.files(None)).run(rules=["wheel-trail"])
+        self.assertEqual(codes(found), ["RC079"])
+        self.assertEqual(found[0].severity, "warning")
+        self.assertEqual(found[0].key, "properties.prop_truck_rb.wheelsWithTrail.FL")
+
+    def test_retail_shapes_are_clean(self) -> None:
+        for files in (self.files("wm"),                       # trail wheel with a model (TC305 sprocket/idler)
+                      self.files(None, trail_slot=None),      # modelless fakes without a trail entry
+                      self.files("", trail_slot="NOPE"),      # trail entry naming no slot
+                      self.files(None, caterpillar=False)):   # non-caterpillar trail (N&S rail cranes)
+            self.assertEqual(self.fixture(files).run(rules=["wheel-trail"]), [])
+
+    def test_empty_name_tpl_counts_as_no_model(self) -> None:
+        self.assertEqual(codes(self.fixture(self.files("")).run(rules=["wheel-trail"])), ["RC079"])
+
+
 class SuspensionTests(Base):
     def test_missing_collection_and_bad_index(self) -> None:
         slots, nodes = four_wheels()
