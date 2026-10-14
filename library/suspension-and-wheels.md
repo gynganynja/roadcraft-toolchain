@@ -652,3 +652,23 @@ squashes into them (Inferred: visual tyre deformation follows real contacts).
 |---|---|
 | A sprung wheel carrier needs collision shapes sized for its real inertia. Inertia comes from the shapes, so mass on a token box leaves the carrier free to twist under steering and side loads | Game (RC68), Build |
 | Keep every hull that is not a wheel's direct parent at least about 0.2 m from the tyre, over the full travel and steering: soft tyres squash into near hulls, and the deformation shows as a moving bulge | Game (RC67/RC68), Inferred mechanism |
+
+**RC69's "too high" and "bones judder" (Build, found offline; drive pending): sprung carriers resting on
+hull contact.** The RC67/RC69 hull audit checked the carriers only at rest. Swept over their prismatic
+travel:
+
+- the front 9 t carrier boxes (top z 2.28) hit the body hulls (bottoms z 2.30) after 2-3 cm of
+  compression, against a 9 cm design empty sag;
+- the rear housing hulls hit the body hulls after 14 cm, against a 15 cm loaded design sag.
+
+So the front sat on hull contact all the time and the rear did when loaded: a high stance plus contact
+chatter. The spring motors were nowhere near the per-step clamp (0.147 / 0.667 front, 0.216 / 0.671 rear).
+
+**RC70 (sha 6726811a, installed, not yet driven)** trims the front boxes to x 0.05..0.53, z 1.08..2.04.
+Its build script (`collision_hulls_rc70.py`) sweeps every carrier hull over its travel plus 3 cm
+against everything it can collide with, trimming in 2 cm steps until clear. An independent re-check puts
+the first contact at 0.25 m of rear compression, beyond the 0.20 m limit. `validate` shows 0 new.
+
+| Rule | Grade |
+|---|---|
+| Audit sprung-carrier hulls over the whole joint travel plus a margin, against every hull that is not the carrier's direct joint parent, not just at rest. A carrier that touches a hull partway through its travel rests on that contact instead of its spring | Build (RC69), Game pending |
