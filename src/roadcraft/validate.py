@@ -1936,12 +1936,26 @@ def rule_state_pairs(ctx: Context, lamp_states: set[str]) -> None:
                     key=f"materials.{slots[0]}.dynamicMaterials.{state}")
 
 
-def _mi_member(name: str) -> str:
-    return f"material_instances/{name.lower()}.mi"
+# Source projects and hand-packed mods keep material instances in material_instances/; the editor's Build Mod
+# renames every used asset to <name>_<guid> and packs them under materials/ (SuperHeavy Crane, 2026-10-14).
+MI_DIRS = ("material_instances", "materials")
+
+
+def _mi_member(name: str, folder: str = MI_DIRS[0]) -> str:
+    return f"{folder}/{name.lower()}.mi"
+
+
+def _mi_find(ctx: Context, name: str) -> str:
+    """The member holding material instance ``name`` (first folder that has it; the default folder otherwise)."""
+    for folder in MI_DIRS:
+        member = _mi_member(name, folder)
+        if ctx.source_of(member) is not None:
+            return member
+    return _mi_member(name)
 
 
 def _same_material(ctx: Context, a: str, b: str) -> bool:
-    da, db = ctx.ps(_mi_member(a)), ctx.ps(_mi_member(b))
+    da, db = ctx.ps(_mi_find(ctx, a)), ctx.ps(_mi_find(ctx, b))
     if not isinstance(da, dict) or not isinstance(db, dict):
         return False
     return json.dumps(da, sort_keys=True) == json.dumps(db, sort_keys=True)
@@ -2074,7 +2088,7 @@ def rule_material_type(ctx: Context, notes: list[str] | None = None) -> None:
 
 def _material_look(ctx: Context, entry: dict) -> tuple[str | None, str]:
     """(base texture, preset) of a markup material slot's instance."""
-    mi = ctx.ps(_mi_member(str(entry.get("materialName", ""))))
+    mi = ctx.ps(_mi_find(ctx, str(entry.get("materialName", ""))))
     if not isinstance(mi, dict):
         return None, ""
     texture = None
@@ -2153,8 +2167,8 @@ def rule_references(ctx: Context) -> None:
                 specs += [(f"dynamicMaterials.{state}.materialName", (s or {}).get("materialName"))
                           for state, s in (entry.get("dynamicMaterials") or {}).items() if isinstance(s, dict)]
                 for key, material in specs:
-                    if isinstance(material, str) and material and not present(_mi_member(material) + ".resource") \
-                            and not present(_mi_member(material)):
+                    if isinstance(material, str) and material and not any(
+                            present(_mi_member(material, folder) + ext) for folder in MI_DIRS for ext in (".resource", "")):
                         missing(path, f"materials.{slot}.{key}", material, "material instance",
                                 getattr(materials, "lines", {}).get(slot))
         elif lower.endswith(".mi"):
