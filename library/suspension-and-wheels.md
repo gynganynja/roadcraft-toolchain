@@ -396,6 +396,14 @@ point, when that lies between them.
 | Lada front, v2 limits -0.09 / +0.19 against the trial's -0.22 / +0.12, height 0.18 | 0.09 to 0.37 against -0.04 to 0.30 | v2 on its top stop (travel 0.0006); the trial rests at 0.053-0.057, between the stops |
 | Lada rear, same two axles | | rests at 0.103 and 0.104: one spring equilibrium in both |
 
+**Note 2026-10-14 (code analysis, static: `C:\RC_RE\research\physics_semantics.md`, "Unloaded
+wheel rest"):** the stop positions are confirmed from code. The spring neutral is also confirmed at
+`height`. One correction: an unloaded wheel does not hang exactly at `height`. Its own weight sags
+it further, by roughly as much as the loaded sag (about 0.15-0.2 m at strength ~0.015 and damping
+0.14; Inferred). It reaches the droop stop only when `height + max` lies within that reach. To make
+wheels hang on the droop stop, use `max <= 0` (neutral at or beyond the droop stop), as 15 of the
+30 retail survey axles do (Armiger, Minuteman, Invictus).
+
 **A negative `min` raises the top stop:** the wheel may be pushed above its modelled place. It does
 not extend the wheel down (this replaces the reading in "Native-limit sign correction" below).
 Read this way, the retail scouts rest near their modelled stance between their stops at beta 58
