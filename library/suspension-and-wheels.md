@@ -617,3 +617,26 @@ Stage 1 takes the empty truck's sag on the wheel joint and bottoms out on its bu
 leaving stage 2 to carry the payload. RC68 doubles as a calibration point for the wheel-joint sag law
 (empty sag on a known strength). Open: the owner reports a bulge moving around the inside rear tyre
 (tyre deformation with `isDoubleTire`), under investigation.
+
+**RC68 drove (Game, owner):** "super janky" steering, and a front wheel "rolled over sideways almost from
+the weight". The cause: the 9 t front sprung bodies had only a 0.3 m cube shape, so their inertia was
+about 135 kg·m². Steering torque and side loads twisted the carrier (Build analysis). The owner also saw
+a bulge in random spots of the inner rear tyres while parked, "like an invisible collision mesh", which
+first appeared with RC67. The tray, body and chassis hulls sat 5.6-10 cm from the rear tyres, while
+RC67's keep-out margin was only 5 cm. With the wheels on sprung bodies those hulls are not the wheels'
+direct parent, so they collide with the wheels, and the soft tyre contact (`softForceScale` 0.24)
+squashes into them (Inferred: visual tyre deformation follows real contacts).
+
+**RC69 (sha 6cfd86f5, installed, not yet driven; rollback RC68)** fixes both:
+
+- front carrier shapes 0.22 x 1.2 x 1.8 m inboard at x +-0.42 (inertia about 1.1-3.5e3 kg·m², 0.205 m
+  outside the steering sweep);
+- the front COM offset back at the wheel centre, and the front wheel joints rigid again;
+- every hull rebuilt with a 0.20 m tyre keep-out: zero colliding overlaps, belly clearance 1.005 m.
+
+`validate` against RC68 shows 0 new findings.
+
+| Rule | Grade |
+|---|---|
+| A sprung wheel carrier needs collision shapes sized for its real inertia. Inertia comes from the shapes, so mass on a token box leaves the carrier free to twist under steering and side loads | Game (RC68), Build |
+| Keep every hull that is not a wheel's direct parent at least about 0.2 m from the tyre, over the full travel and steering: soft tyres squash into near hulls, and the deformation shows as a moving bulge | Game (RC67/RC68), Inferred mechanism |
