@@ -1030,3 +1030,21 @@ Blender wrote the `@` file in full. The retried run happened to save normally, s
 - **Integration:** this note only. The deferred automation is a project lock file (`temp/ship.lock`, holding the
   PID) taken at the start of the ship and released on exit.
 - **Limits:** a peer session's read-only Blender opening the same blend did not fail. Only a concurrent save did.
+
+## Crossing shells and coincident split copies: depth fight on the L275 door tops (L275 v44, Claude, 2026-10-14)
+
+- **Finding and action:**
+  - **Two shells crossing.** "Door-top paint flickers like 2 intersecting meshes": each source door is two body shells, the framed door and a lower shell. Along the door top and its rounded shoulder their surfaces cross, from 0.9 mm below to 0.7 mm above each other. The interior's door-top trim also carried coincident split copies (a face and its own triangles), which the exact vertex-set dedupe misses.
+  - **Why it showed now.** Both only became visible once the hifi layouts gave each face its own texels.
+  - **What fixed it.** `l275_minespec_mod/tools/door_shells.py` recesses the shell with the lower top into itself. It moves the vertices 2 mm along their own normals, at full depth within 15 mm of a crossing and tapering to zero at 40 mm. It runs on the source body before the cabin-paint split, and again per LOD. `tools/cab_coplanar.py` deletes faces fully hidden under a same-facing face.
+- **What did not work:**
+  - **Pushing single faces.** It drags their neighbours into new overlaps, and the passes never converge.
+  - **A straight -z drop of a whole shell top.** It opened crevices and dark slits on the curved shoulder (workbench renders), and repeated drops stacked a 5 mm step.
+- **Overlap test that works.** A sample point counts as covered only when it projects inside the other face, i.e. the closest point lies along the other face's own normal within 0.02 mm.
+  - Measuring against the sampling face's normal with a 0.15 mm tolerance flagged edge samples of small faces against their coplanar neighbours. That gave hundreds of false "coincident" hits.
+  - Use `BVHTree.find_nearest_range` (every face in range), not one ray cast. A ray started off the surface skips a coincident face.
+- **Holes and steps.** Check them with a ray grid (first-hit height before and after, misses = holes). Also render the actual view, because a vertical ray grid does not show slits seen at grazing angles.
+- **Side effect found.** cab_paint's in-cab ray test misclassifies faces whose ray hits the other crossing shell at once. That is why grey mud-covered streaks run through the blue no-mud door-top paint.
+- **Scope and grade:** L275 cab doors, LOD0-3. The geometry is measured. The in-game result is not yet driven.
+- **Evidence:** `C:/RC/l275_doortop` (scan.py, door.py, islands.py, raygrid.py, renders*, shells*); L275 build-147 / test-148.
+- **Integration:** this note. The deferred automation is a generic "crossing shells" check for every vehicle: cross-island same-facing pairs closer than 1 mm.

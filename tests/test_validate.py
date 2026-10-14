@@ -407,6 +407,15 @@ class MaterialAndReferenceTests(Base):
         keys = sorted(f.key for f in found)
         self.assertEqual(keys, ["assets[0]", "links[1]", "materials.a.materialName", "texNM"])
 
+    def test_editor_build_materials_folder_resolves(self) -> None:
+        # the editor's Build Mod packs <name>_<guid>.mi under materials/, not material_instances/ (SuperHeavy Crane)
+        fx = self.fixture({
+            "models/m_g.tpl.asset/m_g.tpl_markup": 'materials = { a = { materialName = "paint_g" } }\n',
+            "materials/paint_g.mi": 'shaders = { glt_shader = { base = { params = { texDiff = "tex_g" } } } }\n',
+            "materials/paint_g.mi.resource": "__type: res_desc_mtl\nfile: paint_g.mi\nlinks:\n- res://pct/tex_g.pct.resource\n",
+            "pct/tex_g.pct.resource": "__type: res_desc_pct\n"})
+        self.assertEqual(codes(fx.run(rules=["references"])), [])
+
 
 MI_BODY = 'shaders = { glt_shader = { base = { params = { texDiff = "t" } } } }\n'
 
