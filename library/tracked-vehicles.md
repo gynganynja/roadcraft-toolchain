@@ -208,6 +208,11 @@ A 1 m tracked robot, every wheel on `BoneChassis_cdt` on one rigid axle (min = m
 | r5 with soft contact (`isSoftContactEnabled`, the default) | the small front wheel sank about 5 cm more than the big one: rested 9 deg nose-down; 4x `softForceScale` launched him; soft contact off: level |
 | Hard contact with `sidewaysFrictionMaxVelocity` 1 (default) | ploughed ahead in pivots (10-28 deg); 0.1 m/s: 51-67 deg; 0.02: lopsided (70 / 5 deg) |
 
+**Code note (static, 2026-10-14; `C:\RC_RE\research\physics_semantics.md`, "Tyre slip and sideways friction" and "Track belt and soft contact law"):**
+- `sidewaysFrictionMaxVelocity` and `sidewaysFrictionMultiplier` have no reader in the engine (Code, negative search). They did not cause the pivot change in the row above (Inferred: it was confounded, or run-to-run spread).
+- WALL-E's wheel slots set `enableLateralForce = True`. That adds a side impulse on every wheel (mu x weight share x g, at full strength from 6 deg of slip angle), which resists the sideways scrub that a pivot needs. **No retail crawler sets it** (Retail: TC305, HT500, ATM53, TK53, Bowhead, LT200, 5111B and others). For a skid-steer, leave it False on every slot (Code for the force; Inferred for the effect on pivots; bench A/B pending).
+- The belt applies no force. The track job is a 30 Hz kinematic chain that only drives the visuals, so support exists only at the physical wheels, real and fake (Code, `FUN_140cca380`).
+
 Model rule for a real wheel that carries its own model: unit radius, real proportions (X = width / radius,
 KGS-25 idler 1.513 units for 0.454 / 0.3), scaled by the class radius (`geomRadius` 1). A visual-only wheel's
 model is unit width instead (the visual wheel's X is scaled by `width`). Rolling radius of the small hidden
