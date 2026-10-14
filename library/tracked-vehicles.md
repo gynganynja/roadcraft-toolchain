@@ -37,7 +37,15 @@ parse):
 | Rigid real wheels with rigid fakes | 5: Alces PL30C, Aramatsu Kite3, EPEC TC305 grabber, dragline 5111B (2) |
 | Sprung fakes only, real wheels raised | 3: Aramatsu Bowhead, Vostok ATM53 (2); the fakes have min < 0 and strength 0.045-0.08 |
 
-**No shipped track rests on stop fakes alone.** Near-zero fakes (min 0, strength about 0.001)
+The survey's ground classification uses authored mount geometry, not native
+loaded wheel positions. In particular, sprung real wheels may extend to the
+ground: Bowhead includes two sprung real trail wheels per side and ATM53
+includes sprung real middle wheels. A row labelled "sprung fakes only" therefore
+does not prove its real wheels stay airborne during native driving. Confirm the
+loaded contact/travel data before copying such a support arrangement (SDK class
+inspection, WALL-E investigation2026-10-05).
+
+**No shipped track rests on stop fakes alone in this authored-layout survey.** Near-zero fakes (min 0, strength about 0.001)
 appear only beside rigid real wheels at ground level, e.g. EPEC TC305: fakes min 0 / max 0.4 /
 height 0 / strength 0.001 / damping 0.3 (Retail). Nor does any shipped vehicle weld a
 wheel-carrying body to the hull with a fixed constraint: track frames and bogies hang on hinges or
@@ -193,7 +201,7 @@ Game, one vehicle (KGS-25 fix 2); every step was needed, none alone was enough:
 
 A 1 m tracked robot, every wheel on `BoneChassis_cdt` on one rigid axle (min = max = 0, strength 1, damping
 0.85). r1 (hidden physics wheels everywhere, 122 kg) "bounces around and rolls over without doing anything"
-(owner, Game). On the editor bench (Game, flat pad; runs in the WALL-E project's `bench_runs/`):
+(owner, Game). On the editor bench (Game; originally called a flat pad, later measured as terrain contact; runs in the WALL-E project's `bench_runs/`):
 
 | Layout or setting | Measured |
 |---|---|
@@ -206,7 +214,7 @@ A 1 m tracked robot, every wheel on `BoneChassis_cdt` on one rigid axle (min = m
 | r5: the visible front and big wheels ARE the real wheels (KGS-25 idler class with `geom`), nose and top rollers visual, no hidden wheels | rests and drives with the belt clear of near-coincident circles |
 | r5 driving only the big wheel (a sprocket) | its wheels spun, he barely moved and did not pivot; all four driven: 3.2 m forward, pivots 51 / 67 deg |
 | r5 with soft contact (`isSoftContactEnabled`, the default) | the small front wheel sank about 5 cm more than the big one: rested 9 deg nose-down; 4x `softForceScale` launched him; soft contact off: level |
-| Hard contact with `sidewaysFrictionMaxVelocity` 1 (default) | ploughed ahead in pivots (10-28 deg); 0.1 m/s: 51-67 deg; 0.02: lopsided (70 / 5 deg) |
+| Hard contact, three runs that differ only in `sidewaysFrictionMaxVelocity` (1 default, 0.1, 0.02 m/s; r5c, r5e, r5g) | pivots 10-28 deg, 51-67 deg, and lopsided 70 / 5 deg. **Re-attributed 2026-10-14:** the engine never reads that field (physics_semantics.md "Tyre slip and sideways friction"; code analysis, static). The bench commands changed nothing else (the session transcript: only `WALLE_SIDE_V` differs, and the two script edits between the runs added switches that were unset). So this spread is the bench's run-to-run variation in pivot yaw, not an effect of the field. Repeat a pivot measurement several times before crediting a change |
 
 **Code note (static, 2026-10-14; `C:\RC_RE\research\physics_semantics.md`, "Tyre slip and sideways friction" and "Track belt and soft contact law"):**
 - `sidewaysFrictionMaxVelocity` and `sidewaysFrictionMultiplier` have no reader in the engine (Code, negative search). They did not cause the pivot change in the row above (Inferred: it was confounded, or run-to-run spread).
@@ -299,9 +307,87 @@ next build ([build-pipeline.md](build-pipeline.md)).
   which needs a non-frozen bench with known per-wheel load and a damping sweep. The original plan:
   bench one frame-hung axle at two
   frame masses.
+- `enableLateralForce` on a crawler's wheel slots.
+  - What it does (code analysis, static): each flagged wheel on the ground gets a sideways impulse
+    `mu x (truck mass / wheel count) x g x min(slip angle / 6 deg, 1)` that opposes sliding above 0.5 m/s
+    (physics_semantics.md "Tyre slip and sideways friction").
+  - Retail sets it on wheeled trucks and on no crawler.
+  - On a crawler it should resist the scrub that a pivot needs (Inferred).
+  - WALL-E r2-r6 sets it on its 4 ground wheels.
+  - Settle it with a bench A/B: every slot off, several pivots per variant, because single pivots spread
+    widely (see the WALL-E table above).
 - Deformable terrain: spawning the crane on the acceptance scene's terrain crashed the editor
   engine for every variant, so terrain behaviour rests on the owner's drives. First suspect and
   workaround: "Ruts, mud and trails under a crawler" above (Inferred; bench pending).
 - The owner's drive of fix 2.
 - KGS-25 headless bench: repeat runs for run-to-run noise; the harsh course on a centred lane for the baseline,
   cf9dca20, f841eb34 and retail damping (they left the pad); a wider step slab.
+
+## WALL-E r2 follow-up: idle belt and straightness (2026-10-05)
+
+**Owner report; reproduced in native editor:** physical wheels and chassis can
+be stationary while the animated belt changes outline. Review fixed-camera
+native image sequences separately from physical telemetry. Tension 10 held the
+outline in reviewed post-drive/idle sequences, but its isolated drive still failed
+straightness. It is a visual improvement, not a validated complete repair.
+
+Measure full zero-steer paths in both directions, including launch, and repeat
+the exact packaged candidate. Test turning and sustained full throttle as well.
+WALL-E r3/r4 passed build checks and looked better in some short trials, but
+failed repeated native drives; neither was installed. Higher damping, wheel
+friction, differential locking or rear metadata are not established remedies.
+
+Confirm the surface with native ground/terrain flags and support height. The
+unchanged r2 was much straighter on a verified static platform than on template
+terrain. A different surface is diagnostic evidence, not proof of a repair.
+Separate startup failures from driving results and retain native readiness probes.
+
+The full [WALL-E stability case](../docs/case-studies/walle-stability.md) preserves
+measurements, failed approaches, source/build identities and corrections.
+**Game (owner feedback, 2026-10-05):** installed r5 fixes the reported track
+flapping; the owner calls the remaining wandering "isnt that bad" and identifies
+flapping as the main issue. Preserve r5 as the working version. It combines
+tension10 with crawl/contact/damping changes; the report supports the combined
+build's visual outcome, not a universal tension-only causal claim. The previous
+0.5497m repeat failure against the0.5m bench gate remains numerical evidence.
+Package `fe6fd41188940e0a243a9cde8d8f01c22869bcbb9fcba9305ba9fa33282c4ae1`,
+transaction `8ca355d7acf54874a874b86a2326cb65`; exact feedback is preserved in
+the mod's `stability_20261005/owner_feedback_r5.json`. No extra automated check
+is warranted for this subjective owner assessment.
+
+
+## Applying the WALL-E findings to KGS-25 (2026-10-05)
+
+**Build (current package inspection):** installed KGS-25 is the later curb-repair
+package `bcb343c6bd5abe398d0c580b3c43fd3e78eee75fb9254e340223b8b430b87114`,
+matching its repair build receipt and distributed package, not the older fix2
+identity in the historical account above. Both tracks omit trackTensionDefault
+and use trackTensionDrive0.13. Engine jerkingScale2 and maxDeltaAngVel0.001,
+neutralGearSwitchingDelay60, and reverse wheel resistance enabled are confirmed
+in the installed truck class. The curb repair retains fix2's support arrangement
+and adds raised ramp fakes; those additions were build-checked, not validated by
+this read-only comparison.
+
+**Inferred priorities, not KGS-tested fixes:**
+- If its belt flaps with stationary bodies, isolate a tension change first.
+  WALL-E's default/drive10 combination held its outline in editor sequences and
+  shipped in the owner-confirmed r5 fix. This makes tension a strong test lead;
+  it does not establish10 as a universal or necessary crawler setting.
+- For the recorded KGS full-lock judder, compare jerkingScale2 with0 while keeping
+  the same support, gearing, surface and inputs. WALL-E's successful combined
+  version uses0, but earlier no-pulse variants failed other handling checks.
+  The source field is a testable lead, not proof that pulses cause KGS judder.
+- Use fixed-camera rest/post-drive sequences alongside body and wheel telemetry
+  to distinguish animated-belt flapping from support motion. Use normal State
+  controls when assessing controller smoothing, and label terrain versus static
+  contact; earlier KGS tests used a static pad.
+- Do not transplant WALL-E's damping100, mass distribution, friction0.2, crawl
+  gears or extra radius into the41t frame-supported crane. They were combined
+  miniature-rig tuning, whereas KGS has independent support/curb requirements.
+
+Evidence: WALL-E r5 package `fe6fd41188940e0a243a9cde8d8f01c22869bcbb9fcba9305ba9fa33282c4ae1`,
+owner-confirmed track fix and preserved repeat failure in
+[the stability case](../docs/case-studies/walle-stability.md); KGS curb-repair
+`repair_2026-10-03/build/receipt.json` and direct installed-package inspection.
+No KGS files/settings were changed, and no native test was run for this comparison.
+No validator is added: the cross-vehicle tuning hypotheses need matched tests.

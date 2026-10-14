@@ -14,7 +14,7 @@ list (`rigidBodyNames`, `isNewController`, ...), so judge a field by the schema 
 | `truckSettings.maxSteerSpeed` | 1 (instant) | 0.027-0.032 | SDK, Retail, Game (Warthog) |
 | `truckSettings.backSteerSpeed` | 1 (instant) | 0.054-0.072 | SDK, Retail |
 | `truckSettings.pedalsResponsiveness` | 1 | 0.35 (Don 71: 0.51) | SDK, Retail |
-| `truckSettings.enableLateralForce` | | True | Retail |
+| `truckSettings.enableLateralForce` | False | True on wheeled trucks only; retail sets it on no crawler. Do not copy it to a tracked vehicle (tracked-vehicles.md "Open"). The compiled class has it per wheel slot, a slip-angle side impulse (Code, static). The BRO slot override is `isEnableLateralForceOverride` / `enableLateralForceOverride` (editor captions) | Retail, Code (static) |
 | `slopeAngleFrictionMult`, `wheelsSubstanceResistanceMult` | | splines, e.g. `[0,1, 30,1, 65,0.9, 75,0.35]` and `[0,0.55, 0.5,0.65, 1,0.7]` | Retail |
 | `softContactSettings` | | `{ maxPenetrationDepth = 3, forceScale = 0.015 }` | Retail |
 

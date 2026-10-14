@@ -697,6 +697,20 @@ class Context:
                 self._stems.setdefault((stem, "." + ext), name)
         self._instance_types: dict[str, Any] = {}
         self._sso_classes: set[str] | None = None
+        self._bro_types: dict[str, str] | None = None
+
+    def bro_types(self) -> dict[str, str]:
+        """Designer-wizard types the editor registers from the mod's own ``bro/<folder>/<stem>.bro`` files, as
+        it does for shipped ones in meta_desc_bro: ``BrandToClassName(stem)`` -> folder, e.g. ``WheelWalleBig``
+        -> ``wheels`` for ``bro/wheels/wheel_walle_big.bro``. Retail paks carry no ``.bro`` files."""
+        if self._bro_types is None:
+            self._bro_types = {}
+            for name in self.bundle.names():
+                parts = name.lower().split("/")
+                if parts[-1].endswith(".bro") and "bro" in parts[:-1]:
+                    folder = ".".join(parts[parts.index("bro") + 1:-1])
+                    self._bro_types.setdefault(schema_mod.brand_class_name(parts[-1][:-4]), folder)
+        return self._bro_types
 
     def sso_classes(self) -> set[str]:
         """SSL class names of every mod and retail ``.sso`` file (SSLUtils.ConvertBrandToClassName)."""
@@ -941,6 +955,11 @@ class _TypeWalker:
             # an SSL class registered from a mod/retail .sso file (BrandToClassName), e.g. AutoXxxReplicated
             if type_name in self.ctx.sso_classes():
                 result = (_OPAQUE, set())
+            elif type_name in self.ctx.bro_types():
+                # a mod's own bro/<folder>/<stem>.bro: checked as its folder's base type when that is unambiguous
+                base = self.schema.bro_folder_bases().get(self.ctx.bro_types()[type_name])
+                key = self.schema.find(base, ".bro") if base else None
+                result = (key or _OPAQUE, set())
         cache[cache_key] = result
         return result
 

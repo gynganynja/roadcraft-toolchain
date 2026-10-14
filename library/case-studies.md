@@ -1761,3 +1761,376 @@ Owner: "All the textures are a bit of a mess ... I need a clean interior". Shipp
   Preloading cut strength ~2.7x while damping fell only 0.14 -> 0.10, so damping / strength rose to ~19 (retail Armiger
   ~10, Apoc buggy chatter at ~6.7). v5 (`fbc12bd8...`): damping 0.06 (~11x) and wheel mass 95 -> 130 kg (Armiger 125).
   When strength changes, scale damping with it; the ratio band 7-10 is an inference from three vehicles, not a law.
+
+## WALL-E r2 stability investigation (2026-10-05)
+
+Current status and the complete follow-up are in the [WALL-E stability case](../docs/case-studies/walle-stability.md). The notes below retain earlier checkpoints, including conclusions later rejected.
+
+
+The owner reported tracks vibrating while resting and failure to drive straight, and
+authorized autonomous repair. The installed package matched registered r2 (SHA-256
+`dc3936a7d03bb090e41315dc30cb0eb60d56733058d1d9d2f855b08fb4aa5fa0`). A new isolated
+bench copied the packaged classes/models and recorded member identity, rather than
+assuming the existing experimental editor project matched the installed build.
+Baseline forward drift was 2.04 m over 15.72 m settled displacement; native parked
+captures reproduced belt deformation with stationary wheels. Terrain-contact telemetry
+corrects the earlier WALL-E flat-pad claim. Failed parameter trials remain recorded.
+
+Shared integration adds `straight`/`idle` bench schedules and phase stability metrics
+with six regression tests (17 bench-related tests passed), and records the distinction
+between rendered belt stability, wheel/chassis telemetry and retail acceptance.
+The investigation record is `stability_20261005/` in the WALL-E project; candidate and
+installation results will be appended when validated.
+
+### Rejected damping-only package replay (2026-10-05)
+
+**Game, isolated editor:** the first damping-100/tension-1 trial looked promising
+(forward lateral 0.433 m), but exact r3 package replay produced 2.697 m forward lateral
+error and 0.624 m reverse error. The five gameplay resource snapshots are semantically
+identical, so the discrepancy is not a package/source mismatch. **r3 is rejected and was
+not installed.** This corrects any provisional conclusion based on the first run.
+Higher damping alone is not a reliable straight-driving fix; repeat tests before installing.
+The tension-1 parked belt remedy remains supported independently. Lateral support plus
+damping 100 improved straightness but weakened steering (17/27 deg in 4 s), so that setup
+also remains experimental. Critical-collision quality alone and disabled wheel-spin impulse
+triggers did not solve the wandering. Further steering/contact tests are in progress.
+Evidence: WALL-E `stability_20261005/bench/runs/release_straight_051641`, input snapshots,
+`critical_straight_052104`, `noimpulse_straight_052413`; candidate registry records rejection.
+
+### Tension-1 conclusion corrected after driving (2026-10-05)
+
+**Game, native framebuffer review:** `stable_rear_straight_00.png` and `_03.png`
+still show the upper belt changing outline after the drive, despite stationary chassis
+and wheels. The earlier tension-1 parked sequence looked steadier than r2/zero tension,
+but it did **not** establish a complete belt fix. Do not release on telemetry alone.
+Further belt-tension/geometry diagnosis continues. Rear-only lateral support plus
+damping 100 produced two steadier sustained-drive trials (yaw ranges 7.16/5.52 and
+8.33/8.97 deg forward/reverse), with wider powered turns. Stock-crawler brake strength
+0.35 stopped initial wheel creep in the measured combined run. These remain experimental.
+The correctly bounded compliant-axle attempt also stalled before viewport readiness;
+no physical outcome is inferred from that startup failure. Steering-curve experiments
+did not recover tight powered pivots. All records remain in WALL-E `stability_20261005/`.
+
+### Rear-only support and critical-collision follow-up (2026-10-05)
+
+**Game, isolated editor:** rear-only lateral support, damping 100, parking strength
+0.35 and reverse wheel resistance disabled improved forward yaw across multiple runs,
+but the longer reverse tests still showed 16-19 degrees settled heading range and
+an initial direction kick. Removing engine jerking did not resolve this. The combined
+critical-collision trial (`stable_final_straight_055545`, an exploratory name, not a
+release) worsened forward deviation to 9.746 m / 34.90 degrees over 30.46 m; rejected.
+The simpler `stable_candidate_straight_060258` measured 0.560 m / 6.33 degrees forward
+and 0.486 m / 16.15 degrees reverse, with whole-phase reverse yaw -21.1 degrees.
+This is not yet a complete fix. Both-end lateral support is being retested with
+full-lock steering to assess the straightness/turning tradeoff.
+
+Tension 10, independently, kept the parked belt outline steady in native captures
+after sustained driving and coasting (`stable10_*`, `stable_candidate_straight_*`).
+Tension 1's earlier post-drive failure remains recorded. Braking strength 0.35 does
+not universally eliminate initial physical wheel creep: some fresh-spawn runs still
+showed roughly 0.3 rad/s on one wheel while the chassis moved less than 1 mm. Distinguish
+that from the large animated-belt deformation. Whole-phase metrics are retained beside
+settled windows so launch yaw is not hidden. No successor package has been installed.
+
+
+### r4 replay and remaining drift (2026-10-05)
+
+**Game, native editor:** all four wheel slots with lateral support, tension 10, damping
+100, reverse wheel resistance off and handbrake strength 0.35 produced steady belts and
+lower yaw variation. Pre-package straight settled lateral/yaw: forward 0.067 m / 3.65°,
+reverse 0.132 m / 8.40°. Exact r4 replay: forward 1.100 m / 7.96°, reverse 0.486 m / 7.39°.
+Normal turns remained available (63.5/67.2° over 4 s, 2.35/2.34 m displacement), but
+full-lock turns are wider. r4 is held for further tuning, not installed. It retained 333
+of 337 archive member occurrences unchanged; source/BRO mirrors and all build checks passed.
+
+Sideways friction 0.05 worsened both straight directions (2.790/1.310 m lateral). A neutral
+steering curve ending at -1 did not recover tight zero-throttle pivots (11.8/14.8 m travelled
+over 8 s); an automatic 1-to-2 shift occurred during the first turn. However, the r4 straight
+drive stayed in first gear, so shifting does NOT explain its remaining drift. Brief wheel
+spin spikes remain; lower torque with this support layout is the next hypothesis, not a fix.
+
+Evidence: WALL-E `stability_20261005/bench/runs/stable_all_straight_060956`,
+`stable_all_grip05_straight_061557`, `stable_all_neutral_straight_062136`, and
+`release_r4_park_062837`. r4 SHA-256
+`dc0432859804ea5eb67d218b46e55ade2922e9286fc2abc3427285203acd6e36`;
+recipe `recipes/stability-r4-build-01.json`; build job `20261004T202639Z-985df53414af`.
+Whole-phase output has a launch-kick regression; 18 bench and 9 workflow tests pass.
+
+
+### r4 rejected after repeat (2026-10-05)
+
+**Game, native editor:** the unchanged r4 repeat failed consistency: settled forward
+1.404 m / 14.31° and reverse 2.282 m / 21.39°. It also fails the planned whole-phase
+baseline-relative check (at least 25% lower lateral/displacement ratio and 50% lower yaw
+range in both directions of every replay). r4 is now rejected and was not installed.
+The original 1.100 m replay and all repeat results are retained, not cherry-picked.
+Lower torque (7000) with the same four-wheel support improved forward lateral error to
+0.110 m, but reverse yaw range grew to 12.98° and speed fell; it was not selected.
+The belt remained visually steady at tension 10 throughout the reviewed parked sequences.
+
+Next hypothesis is drivetrain topology: separate the differently sized powered front/rear
+wheels into a driven rear sprocket and free front idler per side, with proportionate torque
+and speed targets. This is experimental and not established as the cause. Retail EPEC
+uses side-grouped real end wheels with isRear omitted, so neither interleaving slot order
+nor blindly adding isRear flags is supported as a fix. Evidence is under WALL-E
+`stability_20261005/bench/runs/release_r4_repeat_straight_064326` and
+`stable_halfpower_straight_063619`; exact resources remain in the per-run snapshots.
+
+
+### Rear sprocket tests did not solve straight driving (2026-10-05)
+
+**Game, native editor; WALL-E only:** on the tension-10/all-lateral/damping-100
+base, front idlers (`torqueType=none`) and rear drive, torque 7000 and half-speed
+gear table stalled forward (1.60 m settled; one rear spun at 8–10 rad/s while
+the other barely moved). Restoring the original gear table and locking the
+differential in both RB and gearbox controller removed the stall (45.86 m
+settled forward, 13.64 m reverse), but normal steering produced only 4.7/3.2
+degrees and full-lock steering 2.0/0.5 degrees: rejected. Runtime diff-lock
+was verified on. Those two changes were combined, so the cause of the recovered
+forward drive is not isolated. Do not recommend permanent diff lock as a crawler
+straightness fix without measuring steering.
+
+SDK `PropRigidBodyStabilizer` changes solver deactivation/sleep only; its name
+does not imply a heading controller. This inspection does not identify a new
+fix. Evidence: `stability_20261005/bench/runs/rear_sprocket_straight_064931`
+and `rear_sprocket_locked_straight_065525`; per-run source snapshots retained.
+
+
+### WALL-E r5 owner follow-up (2026-10-05)
+
+**Game (owner report):** after testing installed r5, the owner confirmed track
+flapping was fixed and said the remaining wandering was not that bad. Flapping
+was the principal complaint. The working version stays r5; the numerical
+repeat failure remains historical evidence. Scope, exact package/transaction,
+and prior failed experiments are in [the stability case](../docs/case-studies/walle-stability.md).
+
+
+### KGS-25 current identity and WALL-E transfer review (2026-10-05)
+
+**Build:** read-only inspection found installed KGS-25 matches the October3
+curb repair, SHA-256 `bcb343c6bd5abe398d0c580b3c43fd3e78eee75fb9254e340223b8b430b87114`.
+This supersedes historical statements that fix2 is still installed. The later
+repair adds four raised ramp contacts and preserves the fix2 ground support.
+It retains low belt tension and engine jerkingScale2. WALL-E suggests isolated
+belt-tension and torque-pulse tests, plus separate visual/physical measurements;
+none has yet been tested on this KGS build. See
+[the scoped comparison](tracked-vehicles.md#applying-the-wall-e-findings-to-kgs-25-2026-10-05).
+
+
+## WALL-E r6: head and eye animation without custom SSL (2026-10-11)
+
+**Request:** "custom ssl script for a function for walle to turn his head around and look around and eyes
+move". Custom SSL cannot ship (build-pipeline.md, 2026-10-05 probes), so the feature was built from the game's
+data-driven animation route ([animated-parts.md](animated-parts.md)). The owner chose all four behaviours (wake
+up / power down, a look-around key, idle glances, glances into turns), eye lamps following the eyes and a fixed
+first-person camera.
+
+- **Build:** head / eye bones and five clips in the body model (Blender Actions, `anim_on = True`); r5's class
+  and markup tuning reproduced unchanged; the main class gains `prop_animation_controller` and a "Head"
+  blueprint (54 nodes). Package `d1260fdb...`: only the body model's four compiled files and the main class and
+  descriptor differ from r5; lint 0/0, package audit passed. Installed over r5 with a receipt.
+- **Bench (Game, editor play mode):** asleep pose held at spawn and eased upright after engine start; clips
+  played; turn rate measured in deg/s (the first threshold, 0.2, fired on straight-line jitter; set to 12);
+  idle glances verified with a shortened wait. Blender renders of each pose caught an over-strong asleep
+  pose (22 + 26 deg looked face-down; shipped 12 + 18).
+- **Open:** the owner's view in the game, the Ctrl+K key, lamp beams following the eyes.
+
+## Zukterra Jimny recovered as a native RoadCraft scout (2026-10-05)
+
+**Build:** recovered the owner's compiled SnowRunner CombineXMesh assets into editable sources and rebuilt the Jimny body, stock bumpers and normalized BFG master wheel with the RoadCraft SDK and Blender 5.0. The first source importer left skinned running gear and the steering wheel detached; the corrected weighted bind reconstruction and summed duplicate influences are documented in [frames](frames.md#recovered-snowrunner-combinexmesh-bind-poses-jimny-2026-10-05). The donor Lynx BRO had `addToPreviewLibrary = False`; enabling it produced the two missing preview catalog roots. The first pack failed on the donor tyre-trail PCT references; copied the three SDK trail texture/descriptor families under `mod_jimny_trails_*` and regenerated the wheel classes. Native lamp-kit lens states and fitted beam anchors were authored, and the cockpit camera was placed on the right-hand-drive side.
+
+Native package followed by the established Mod Manager brand export produced `f75d755e776583206251d763bfa6f5c74b087e33391590f3bd2ae8e4b2bf8ef6` (22709479 bytes). Package/retail checks: 2058 passed; saved-Blender checks: 477 passed; final rig checks: 30 passed; BRO/compiled lint: zero errors or warnings. Pinned test `20261005T112651Z-0626b985f399` passed against recipe `recipes/jimny-v2.json`. Evidence lives in [C:/Program Files (x86)/Steam/steamapps/common/RoadCraft/Roadcraft Development Package/Jimny_RoadCraft_20261005](C:/Program Files (x86)/Steam/steamapps/common/RoadCraft/Roadcraft Development Package/Jimny_RoadCraft_20261005), especially `reports/package.json`, `reports/retail_export.json`, `reports/source_inspection.json`, `reports/validation.json` and its test job receipt. The delivery ZIP contains the retail PAK and editor assets only. No installation, native driving capture, handling acceptance or campaign acceptance is claimed; `project.json.accepted` remains empty. The original recovered mod assets were retained.
+
+
+### Jimny revision: 31-inch tyres and 4-inch lift (2026-10-05)
+
+**User feedback:** the first wheels looked too large; requested realistic 31-inch tyres and a 4-inch lift. **Build:** replaced the first 34.6-inch setup with 31x10.5R15 geometry and matching compiled physical dimensions. The lift is 101.6 mm over an explicit stock-height reference, excluding the 59.7 mm gained from tyre radius. Reposed the axle-bound skin, fitted collision and cameras/emitters/winch anchors to the revised stance, and retained stable joint/catalog names. Revised wheel mass is 40 kg; suspension bump allowance is 0.13 m to retain modelled belly clearance. These are authored settings, not native handling measurements.
+
+Candidate `jimny-31in-4in-v2`, PAK `469c1afda17f09631bea0f69ea75704b9f28d92b1b942fe2a4fda78e2d24d13f`, passed 2058 package checks, 481 saved-source checks and 36 final rig/physical-dimension checks, plus shared lint with no errors or warnings; test `20261005T114212Z-d1dec4be0149` passed. Previous PAK, editor ZIP, assembled Blender model, preview and reports were preserved under `Jimny_RoadCraft_20261005/revisions/jimny-v1`. New source/preview, delivery and receipts are in [C:/Program Files (x86)/Steam/steamapps/common/RoadCraft/Roadcraft Development Package/Jimny_RoadCraft_20261005](C:/Program Files (x86)/Steam/steamapps/common/RoadCraft/Roadcraft Development Package/Jimny_RoadCraft_20261005); see [the dimension/lift lesson](suspension-and-wheels.md#requested-tyre-inches-and-lift-reference-jimny-revision-2026-10-05). No installation or driving acceptance was performed.
+
+
+### Jimny recovered mod: polish pass, 2026-10-05
+
+**User request:** retain realistic 31-inch tyres and a four-inch lift, check for a 90-degree chassis rotation, and polish/finalise the mod. **Build:** native chassis and axle bases were already identity, so the global rig was retained. Added orientation and sampled collision-clearance gates, steering-column alignment/native cockpit control, disjoint red tail/brake and white reverse emitters with rear-facing beams, clear Blender preview glass, four recovery points declared in the original XML, and tyre-track scale 1.0 instead of the donor's 1.8. All 498 saved-source, 53 final and 2,106 package checks pass; shared lint is clean. The package SHA-256 is a1f4618358bc0fc71ba79260ae0449e8abf63c2dd4913c0f0c1af15f962ddef3. Prior v2 bytes and reports are retained in revisions/jimny-31in-4in-v2.
+
+An isolated editor fixture was prepared without launch. Owner go-ahead for focus-taking drive tests was requested and remains pending at this record; the candidate is not labelled Game-tested or accepted. Loaded suspension height, live axle/steering/lamp operation, driving/braking and retail acceptance stay Open. Static factory-plus-lift height is not a measurement of settled native stance. Evidence resides in Jimny_RoadCraft_20261005/reports and bench_ready; no retail installation was performed.
+
+
+### Roamer 105 ute recovered conversion: 35-inch polish candidate (2026-10-05)
+
+**User feedback:** tyres looked too large; requested realistic 35-inch tyres, four inches of lift, a correctly oriented chassis and a polished final mod. **Build:** preserved the supplied archive and previous package pins; fitted 35x12.5-inch mesh and physical wheel dimensions; normalised inherited chassis/body bases without rotating the visible truck; restored original suspension skin weights with 14 visual chains, solid axle controllers and source-specific steering names; added six gauges, paired animated wipers, native mirror materials, lamp show/hide states and single-mip shop icons. The export-order wiper failure and its parked-frame repair are recorded in cockpit-and-lamps.md. A donor gearbox would stall below its upshift thresholds on the smaller wheels; shifted targets now stay below each calculated gear top.
+
+**Correction:** the preceding candidate equated suspension `height = 0.1016` with four inches of loaded lift. Height is the neutral spring offset, so the polish candidate includes explicit design sag plus the requested 101.6 mm target and measured-stop geometry. Actual loaded lift is still Open; these are authored estimates. The isolated previous-candidate bench and current-source test fixture are preserved separately. Owner go-ahead for focus-taking editor physics tests is pending; compilation/offline checks are not Game evidence, installation or acceptance. Evidence: project `Roamer105Ute_20261005`, source/fitment/mechanical manifests, native_validation and package audit/receipts.
+
+
+**Build (Roamer ute clearance follow-up, 2026-10-05):** the recovered frame and front engine boxes overlapped tyre-cylinder samples at full front steering/bump (20 failing cases per saved file). Narrowing those convex boxes to 0.9 m and 1.0 m gave zero overlaps across 331,776 samples in each of the textured and native export sources, at the ideal lift, +/-30 degrees, 130 mm bump and 180 mm droop. Reverse beams were corrected to native -Z and separate 8/45-intensity tail/brake copies retained engine-idle and stop states. Final offline package audit passed 2448 checks; PAK SHA-256 `cb0c2424c639aa7274e2c7a5bfd231ce59b3e4cbbfc1768a04311627e02d46b1`. Evidence: `Roamer105Ute_20261005/polish_completion.json`, `native_validation/collision_clearance.json`, compiled frames and package audit. Settled lift, rolled axles, terrain contact and live lamps remain Open until the approved native run; no install or acceptance.
+
+
+### Jimny owner-directed installation, 2026-10-06
+
+**User request / Build:** the owner instructed “Just build it and install it”, superseding the pending bench-first sequence. The source/model rebuild passed; the first job (20261005T172856Z-b453d3e25b35) rejected a registry change made after recipe pinning, so preserve/update candidate metadata before pinning. The refreshed job (20261005T173125Z-f103ebb26143) passed prepare/source/import, then its native generator gate refused another project's active editor. That test was left running. Current BROs, both TPLs and the matching generated truck class were byte-verified against the archived polished-v3 source bundle. The unchanged generated classes were retained, the native assets repackaged, and the new pinned test 20261005T173702Z-518ae115b863 passed all three validation steps. No failed build receipt was relabelled successful.
+
+After the editor closed, installation transaction 6736a3b3c7cc4c8391e6cf75bb59b361 installed package SHA-256 e6e88093a47864c7d04d79c0f32ddec07437736e2e276456ae6b09755472ba89 into the previously empty configured slot. Post-copy hash and ZIP CRC passed. Previous absence is retained for rollback; accepted remains empty. Evidence: Jimny_RoadCraft_20261005/reports/{installed_20261006.json,install_receipt_20261006.json,install_test_receipt_20261006.json} and the named transaction receipt. Driving, loaded stance and retail acceptance remain Open.
+
+
+## Watcher Y61 final conversion (2026-10-06)
+
+**User request / Build / Game, native editor:** owner requested conversion and installation, realistic 35-inch tyres, four-inch lift, and correction of the reported quarter-turned chassis. The final source retains a charcoal expedition accessory mix, 35x12.5R17 running tyres and matched spare, recovered CombineXMesh underbody/steering bindings, three LODs, fitted lamps and source-derived recovery sockets. The final native hinge is valid (-3/+3 degrees); blueprint imports and source-fixture wheel registration were repaired before testing. See frames.md, cockpit-and-lamps.md and suspension-and-wheels.md for bounded findings.
+
+Native normal, harsh, unbraked-idle, 80-second one-surface drive, pad-to-terrain transition and matched lift-reference trials completed. The 1024 m pad prevented the earlier long drive from leaving its flat surface: 156.85 m forward and 70.26 m reverse, all tyres contacting, maximum roll 1.31 degrees and pitch 2.1 degrees. This establishes stability/responsiveness under those schedules, not perfect straightness; the forward whole-phase heading changed 4.3 degrees. The loaded lift measured 103.49 mm against the matched custom zero-extra-lift reference. Native functional checks cover headlight switching, brake/reverse states, cockpit camera/steering, drivetrain state toggles, horn/fuel/water presence and normal winch attachment/pulling/release. Eight FPS observations ranged 56.647-60, median 59.6715 in this capped editor run; no universal hardware or multiplayer performance claim.
+
+Build 20261005T191440Z-2d37692c3fd7 passed exact package/source verification (1473 member occurrences, 1334 exact byte matches, 139 streamed texture descriptors, 98 nodes) and zero lint errors/warnings. Final PAK SHA-256 2f5fcdbe9986a95680bc526d31503953cf729685689a1483d3dfc86ffe46c121. Authorised install transaction e2f857cefece4ffdbcff52974bec1cdf preserved the prior d2d0e01248ac951437ad97019a21e67e6317029e304a019671d12de16a27dc0b PAK. Failed startup/fixture receipts remain preserved; no historical failed receipt was promoted to a pass. Campaign save/load, multiplayer and owner acceptance remain Open and accepted identities remain empty. Evidence: WatcherY61_Final reports/{final_build_job,final_native_verification,package_validation,final_install_result}.json and local transaction receipt.
+
+
+### Roamer 105 ute native finalisation and installation (2026-10-06)
+
+**User authorization / SDK/Game / Build / Install:** the owner explicitly authorized all tests and finalisation after the earlier install-only request. This supersedes the earlier pending-native entries without changing their historical receipts. Final PAK SHA-256 `28458332ba8d2f6b67b80ba92fcaff1dc357d64b1ba289b8c78cd884d6f22953` passed 2,448 package checks, all 83 native release gates and 648 configured shared tests (641 passed, seven skipped). Lint has zero errors and warnings; its generic suspension uncertainty info is complemented by actual native stop-margin/contact samples.
+
+Native tyre dimensions are 0.889 m diameter / 0.3175 m width. Loaded axle means measured about 100.8/100.5 mm, with 102.7/105.2 mm additional lift against an independently calibrated zero stock-bind reference. The final four drive schedules recorded 2,727 samples, correct negative reverse velocity/gear, all four contacts and upright chassis. Normal-drive, full-throttle, unbraked-idle and harsh-steering/braking evidence uses deformable editor terrain, not a claimed perfectly flat static test surface. The missing drag-link terminal hinge, reflected dashboard text and direct headlight-service generator omission were repaired. Ordinary State controls confirmed reverse lamps/beams and service-brake overlays; debug controls alone bypassed those callbacks. The earlier positive-pedal reverse-labelled runs were actually forward and are excluded as reverse evidence.
+
+Failures remain preserved: wrapped YAML redirected the first fixture, nested preview paths exceeded native path capacity, and the first default-current truck was Minuteman rather than the ute. Shared folded-path relocation and signed reverse schedules have regression tests. See physics-bench.md, ik-visual-rigs.md, cockpit-and-lamps.md, suspension-and-wheels.md and symptoms.md for scoped lessons.
+
+The tested PAK replaced installed `cb0c2424c639aa7274e2c7a5bfd231ce59b3e4cbbfc1768a04311627e02d46b1` in transaction `60c1dc8bdc91478a90bb7d494f859525`, with exact prior bytes retained. The ZIP contains final PAK, packed Blender artwork, native project, README/checksum and helper licences. Evidence: Roamer105Ute_20261005/native_validation/final_native_report.json, loaded_lift_final.json, package/{audit,build_receipt,delivery_receipt}.json, polish_completion.json and R105Final_20261006/runs/sealed_final_suite_all_070751. Retail campaign shop/save acceptance and deep-water behavior remain Open; installation and native editor proof do not invent owner acceptance.
+
+
+### Jimny native finalisation and installed release (2026-10-06)
+
+**User authorization / SDK/Game / Build / Install:** owner requested all tests
+and finalisation after explicitly authorizing installation. This supersedes the
+pending-native entries above while retaining their historical receipts. Final
+package `3bc1828f04777872234f6e809b4a9bbc671f552afa93e31b70c3404721c1532a` passed 2,106 package checks, 498 saved-source
+checks, 59 final static checks, 439 native release checks and the configured
+shared suite (645 passed, seven skipped; 652 run). New RC049 checks and four
+regressions reject enabled deforming wheels without the required compiled tire
+mesh. All four pinned release steps passed in `20261005T235201Z-15acf5228d88`.
+
+Native final driving records 2,650 samples across ordinary normal/full-throttle,
+unbraked idle and harsh steering/braking schedules. Full-throttle forward moved
+196.88 m and reverse 52.59 m; actual gear -1 and negative wheel/forward velocities
+establish reverse. Chassis stayed upright and springs retained stop margins;
+rest had four contacts. Radius 0.393700004 m and width 0.2667 m match 31x10.5-inch
+tyres. Loaded mean residual is about +0.58 mm and every wheel within 4.1 mm of
+the authored four-inch reference. This is body-frame calibration on deformable
+SDK terrain, not an independently measured stock vehicle or a perfectly flat
+static pad. Source chassis and axle bases remain identity; native underside,
+exterior and cockpit captures were reviewed separately from numerical gates.
+
+Startup initially asserted `failed to find deforming geom obj with name 'tire'`
+because recovered wheel objects had project-specific names. Native tire/rim
+identities repaired this. Wrong editor data, unresolved paths and an assumed
+joint requirement for a single-body rig were fixture faults, retained as failed
+runs. Ordinary State/AUTO negative pedal fixed the debug-only reverse stall as
+a test protocol correction; the gearbox was not changed on that inference.
+Headlight service ownership and explicit recovery sockets were restored after
+generator omissions. Winch attachment, pulling (7.950 to 3.956 m rope) and
+release passed. First-person cockpit mode is necessary for live dashboard
+steering updates. CSV vector transport repaired a PowerShell `-File` array
+binding failure. An invalid trail object-reference equality gate was corrected
+using the existing Lada lesson: both descriptors exist and their full compiled
+values match; isMod=false editor runtime does not prove retail reset behavior.
+Original failure reports and off-center recovery captures remain retained.
+
+Transaction `a6a8c1052c8c4a329b59d4122485d3b5` replaced installed
+`e6e88093a47864c7d04d79c0f32ddec07437736e2e276456ae6b09755472ba89`, preserving exact previous bytes. Installed
+PAK hash/CRC and final delivery CRC/file parity pass. Delivery contains final
+PAK, packed editable Blender/native sources, README, verification summary and
+checksums. Accepted remains empty; campaign shop/save, multiplayer and deep
+water remain Open, and original cockpit lacks authored gauges/wiper clips.
+Source-check has no accepted inventory; saved-source checks and recipe pins
+provide current-source verification without manufacturing an accepted baseline.
+
+Evidence: `Jimny_RoadCraft_20261005/reports/{native_final_report,visual_review_final,
+native_loaded_final,finalisation,final_install_receipt,delivery}.json`; final
+drive `J31TestF_20261006/runs/final_all_092833`, services retry
+`final_services_all_093912`, centered native views `final_views_all_094631`.
+See physics-bench.md, suspension-and-wheels.md, cockpit-and-lamps.md and
+symptoms.md for the integrated scoped findings.
+
+### Jimny 2014 chassis reference and pending v7 detail (2026-10-06)
+
+**Owner choices / primary reference / Build:** the owner requested full
+suspension, brake-line and harness detail, red/gold hardware, 31-inch tyres and
+a four-inch lift, referencing late-2014 Australian RHD hardware. The owner
+explicitly retained the recovered approximately 2485 mm wheelbase rather than
+the factory 2250 mm. The mod therefore remains a custom-proportion Jimny.
+
+Suzuki Australia's October-2014 brochure establishes ladder frame/eight body
+mounts, rigid axles, three-link suspension, separate springs/shocks and ABS/ESC.
+Suzuki's November-2014 specifications establish recirculating-ball steering,
+front stabilizer and disc-front/drum-rear brakes. The older SN413 factory manual
+is the mechanical baseline, not proof of late ESC routing; genuine RHD ABS/ESP
+FIG.503J supplies the brake-circuit reference. The 100 mm supplier kit listing
+supports corrected arms, panhards and extended hoses. Exclude rear disc swaps,
+coilovers, JB74 hardware and the non-ABS brake-balance bracket. Dimensions and
+clip locations fitted to the custom source are recorded as adaptations.
+
+Evidence: Jimny references/jb43_2014.json (primary links and adaptation manifest),
+reports/suspension_assembly.json and saved-source checks. Existing installed v6
+and its receipts remain preserved. Native v7 build/closure and installation
+are pending; campaign acceptance remains empty. A sandbox profile-access failure
+retained native job 20261006T051231Z-100f279ab248. Shared jobs-recover requires an
+accepted package; this project's verified installed candidate does not qualify.
+Automatic review rejected unapproved manual lock release. Do not fabricate an
+accepted pin or remove the lock blindly. Candidate-only recovery currently
+requires explicit owner approval and rechecks of exact bytes/closed processes.
+
+
+### Jimny v7 installed for owner testing (2026-10-06)
+
+**Build / SDK / Game:** The owner explicitly approved candidate-only recovery,
+rebuild and installation. Recovery rechecked dead job ownership, closed native
+processes, installed v6 hash, empty acceptance and transaction state, and kept
+failure/recovery receipts before releasing only the exact abandoned locks.
+The accepted-package recovery limitation was not bypassed without approval and
+no accepted identity was fabricated. Initial profile permission and subsequent
+package failures are retained. See the scoped atlas/closure findings above.
+
+Full build job 20261006T074204Z-dff1b4564bb2 passed; pinned test recipe
+jimny-suspension-v7-test-r8 passed saved-source, suspension, wheel-reference,
+final vehicle and static checks. Native capture job
+20261006T074623Z-85eace0321b0 passed an isolated normal-state drive, service,
+steering-pose and brake protocol. The drive applied 9/9 controls, recorded
+626 samples, moved forward/reverse and turned both ways while upright and
+inside suspension stop margins. Native visual audit passed 437/439 checks;
+full-lock drag-link gaps remain Open. The prior 652-test toolchain suite had
+645 passes and seven skips; it is tooling evidence, not v7 campaign acceptance.
+
+Candidate `jimny-suspension-v7-test`, package SHA-256
+cb9dd34ab99f27830eee6ae931ea4fecde0bf062b8dc3fcbd9ddebcbbb048cd7,
+was installed transactionally with v6 rollback bytes under transaction
+31c9e648a6da4b20b97254c2ecad93db. Installed bytes were independently rehashed.
+Reports: suspension_v7_test_candidate.json, suspension_v7_native_capture.json,
+suspension_v7_install_receipt.json. Status is an installed test candidate with
+open visual findings; it remains unaccepted pending the owner's retail drive.
+Added steering joints warrant a newly purchased vehicle for a clean test.
+
+
+### Owner quality rejection: Jimny and Roamer ute (2026-10-06)
+
+**Owner feedback / Open:** The owner reports inverted wheels on one side,
+incomplete lighting and incorrect rigging/animations in the Jimny/Roamer ute,
+and materially better Lada quality. This supersedes any broad final/polished
+assessment of these vehicles; prior bounded tests and package identities stay
+preserved. No retail acceptance follows from successful compilation or counts.
+Exact fault-to-vehicle allocation and root transforms still require reproduction.
+
+**Build audit:** Jimny slot-position/radius assertions do not verify outward rim
+facing; its Blender preview applies an assumed left half-turn. The existing
+Lada native-frame lesson was therefore not enforced as a handedness check.
+Roamer seal_native_release.py accepts any wiper tilt and image size >10,000
+bytes, which do not establish correct sweep/park or visible feature quality.
+Jimny v7 has 437/439 native visual checks passed and two real drag-link closure
+failures (up to 63.2 mm). Jimny v6's absent gauge/wiper clips were documented,
+and its source disables tplAnimation/truckRainSettings; missing features should
+not be presented as complete animation support. Shared helper opt-in and broad
+release wording allowed verified subsets to be mistaken for finished quality.
+
+Evidence: Jimny reports/quality_feedback_20261006.json, tools/validate.py,
+tools/preview.py, tools/build_bro.py, reports/suspension_native_checks.json;
+Roamer seal_native_release.py, polish_completion.json. The Lada comparison is
+the owner's assessment; this audit did not reproduce the reported retail faults.
+Repair requires measured facing of all four native rims, an inventory of every
+visible lamp/state, motion range/axis/park verification and attachment closure,
+with visible review tied to the exact installed candidate. Asset-specific
+regression checks must follow reproduced causes; no guessed handedness fix or
+automatic shared threshold change was applied in this explanatory audit.

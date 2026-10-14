@@ -201,6 +201,40 @@ def file_identity(path: str | Path, expected_sha256: str | None = None) -> dict[
     return result
 
 
+def _supersede_by_later_installs(transactions: list[dict[str, Any]], live: str | None) -> bool:
+    """Clear needsReview on terminal package transactions that later listed installs replaced: each later
+    install started from the bytes the one before left, and the chain reaches the live package (the history
+    jobs-recover checks). Without an accepted package, every review-candidate install but the newest would
+    otherwise need review (WALL-E r3-r6, 2026-10-13). True when a row changed."""
+    def usable(row: dict[str, Any]) -> bool:
+        return (row.get("kind") == "package-transaction" and not row.get("error") and
+                row.get("targetMatchesConfig") is not False)
+
+    installs: dict[str, set[str]] = {}
+    for row in transactions:
+        if usable(row) and row.get("state") == "INSTALLED" and row.get("previousSha256") and \
+                row.get("candidateSha256"):
+            installs.setdefault(row["previousSha256"], set()).add(row["candidateSha256"])
+    changed = False
+    for row in transactions:
+        if not live or not row.get("needsReview") or not usable(row):
+            continue
+        left = {"INSTALLED": row.get("candidateSha256"), "ROLLED_BACK": row.get("previousSha256"),
+                "NOT_INSTALLED": row.get("previousSha256")}.get(row.get("state"))
+        if not left or left == live:
+            continue
+        reached, todo = set(), list(installs.get(left, ()))
+        while todo:
+            digest = todo.pop()
+            if digest not in reached:
+                reached.add(digest)
+                todo.extend(installs.get(digest, ()))
+        if live in reached:
+            row.update(supersededByLaterInstall=True, needsReview=False)
+            changed = True
+    return changed
+
+
 def status(registry: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     accepted = registry.get("accepted", {})
     candidates = registry.get("candidates", {})
@@ -296,6 +330,9 @@ def status(registry: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
                 row["needsReview"] = True
         transactions.append(row)
         recovery_required |= row.get("needsReview", False)
+    if _supersede_by_later_installs(transactions, installed.get("sha256") if installed else None):
+        recovery_required = installed_relation == "unstable" or any(
+            row.get("needsReview", False) for row in transactions)
     locks = []
     for location in config.get("transactionLocks", []):
         row = {"path": str(Path(location)), "present": Path(location).exists()}

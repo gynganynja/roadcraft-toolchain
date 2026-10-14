@@ -44,12 +44,22 @@ PropWheelParticlesBase = { __type = "section"
 """
 
 
-def make_sdk(root: Path) -> Path:
+META_DESC_BRO = """
+Wheel = { __type = "section" __members = { tpl = { __type = "string" } } }
+WheelShippedSample = { __type = "Wheel" __moduleName = "designer_wizard.wheels.wheel_shipped_sample" }
+EditableWheel = { __type = "section"
+   __members = { scale = { __type = "float" } wheel = { __ptr = "Wheel" __family = ".bro" __type = "mod" } } }
+Truck = { __type = "section"
+   __members = { wheelPool = { __ptr = "EditableWheel" __family = ".bro" __type = "collection" } } }
+"""
+
+
+def make_sdk(root: Path, bro: str = "") -> Path:
     meta = root / "root" / "prebuild" / "meta_descs"
     meta.mkdir(parents=True)
     (meta / "meta_desc.ps").write_text(META_DESC, encoding="utf-8")
     (meta / "meta_desc_ssl.ps").write_text(META_DESC_SSL, encoding="utf-8")
-    (meta / "meta_desc_bro.ps").write_text("", encoding="utf-8")
+    (meta / "meta_desc_bro.ps").write_text(bro, encoding="utf-8")
     return root
 
 
@@ -162,6 +172,20 @@ class UnknownKeyTests(Base):
         fx = self.fixture({"ssl/w.cls": 'properties = { prop_truck_wheel = { width = 2 rimObjName = "rim" } }\n'})
         found = fx.run(rules=["ignored-fields"], sdk=True, read_fields={".prop::prop_truck_wheel": ["width"]})
         self.assertEqual([(f.code, f.key) for f in found], [("RC072", "properties.prop_truck_wheel.rimObjName")])
+
+    def test_mod_wheel_bro_types_resolve(self) -> None:
+        """The editor registers bro/wheels/wheel_mine.bro as WheelMine (base Wheel), as meta_desc_bro does for
+        shipped wheels; WALL-E and the editor-made D11 both reference their own wheels this way."""
+        pool = ('__type = "Truck"\nwheelPool = {{\n a = {{ scale = 0.1 wheel = {{ __type = "{t}" }} '
+                '__type = "EditableWheel" }}\n}}\n')
+        fx = self.fixture({"bro/wheels/wheel_mine.bro": 'tpl = "m"\n',
+                           "bro/trucks/ok.bro": pool.format(t="WheelMine"),
+                           "bro/trucks/shipped.bro": pool.format(t="WheelShippedSample"),
+                           "bro/trucks/typo.bro": pool.format(t="WheelMyne")})
+        make_sdk(fx.game, bro=META_DESC_BRO)
+        found = fx.run(rules=["unknown-keys"], sdk=True)
+        self.assertEqual([(f.code, f.path.rsplit("/", 1)[-1], f.key) for f in found],
+                         [("RC054", "typo.bro", "wheelPool.a.wheel.__type")])
 
 
 class WheelFrameTests(Base):

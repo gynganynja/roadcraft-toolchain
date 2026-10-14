@@ -380,6 +380,7 @@ class Schema:
         self._flat: dict[tuple[str, str], dict[str, tuple[dict, str]]] = {}
         self._fields: dict[tuple[str, str, str], dict[str, Any]] = {}
         self._document: dict[str, Any] | None = None
+        self._bro_bases: dict[str, str] | None = None
 
     # ---- construction
     def _load_resource_schema(self) -> dict[str, Any] | None:
@@ -578,6 +579,22 @@ class Schema:
         """``<family>::<name>`` of a type as the editor resolves it (``family`` = the namespace looked in)."""
         rec = self._db.find(name, family)
         return None if rec is None else f"{rec['family']}::{rec['name']}"
+
+    def bro_folder_bases(self) -> dict[str, str]:
+        """Base type of each designer-wizard folder whose shipped modules all share one: meta_desc_bro registers
+        ``bro/<folder>/<stem>.bro`` as ``BrandToClassName(stem) = { __type = <base>, __moduleName =
+        "designer_wizard.<folder>.<stem>" }`` (``wheels`` -> ``Wheel``: 188 of 188 shipped wheels, 2026-10-13).
+        Folders with mixed bases (``trucks``: Truck and chassis types) are left out."""
+        if self._bro_bases is None:
+            seen: dict[str, set[str]] = {}
+            for desc in (self.data.get("meta_desc_bro") or {}).values():
+                module = desc.get("__moduleName") if isinstance(desc, dict) else None
+                if not isinstance(module, str) or not module.startswith("designer_wizard.") or \
+                        not isinstance(desc.get("__type"), str):
+                    continue
+                seen.setdefault(".".join(module.split(".")[1:-1]), set()).add(desc["__type"])
+            self._bro_bases = {folder: next(iter(bases)) for folder, bases in seen.items() if len(bases) == 1}
+        return self._bro_bases
 
     def _rec(self, type_key: str) -> dict[str, Any]:
         family, _, name = type_key.partition("::")

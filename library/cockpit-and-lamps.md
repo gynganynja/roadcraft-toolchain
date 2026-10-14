@@ -909,3 +909,79 @@ Code = shader/SSL read, Retail = retail/SDK data, Build = measured on a mod's fi
 Evidence: retail `material_presets/vehicle_mirror_*.mp`, `td/pip_mirror_01.td` (`truck_mirror`), 73 retail classes,
 SDK `tuz_119lynx_mod` blend (Blender headless), `cat793d_detail/tools/mirrors.py` and the project blend,
 `C:\RC_RE\research\scripts\mirror_glass_ray.py`.
+## Recovering separate lamp regions and a steering axis (Jimny, 2026-10-05)
+
+
+
+**Build:** Jimny's recovered clear tail lens covered both red and white sections. Emitting through the whole lens tinted the reversing section red. Its revised source derives disjoint emitters from the original opaque lamp body: sample each face's UV centroid in its recovered colour atlas, classify red faces for tail/brake and neutral white faces for reverse. This recovered atlas uses solid red/white islands; these thresholds are asset-specific. The clear lens remains visible in all states. The native lamp graph switches the emitters, with independent rear-facing reverse beams; unique diff textures avoid material/preset conflicts. Each red emitter has 4,958 source triangles; white reverse has 1,376. This is source/compiled validation; native visual and reverse-event testing remain Open.
+
+
+
+The recovered steering rim's smallest covariance eigenvector identifies its column axis. Align the steering bone's Blender Z to that normal, then verify its exported native Y and connect dataDashboard steering with axis Y. Rebinding in rest pose preserves source geometry. A geometry-derived axis is suitable for this planar rim, not an arbitrary steering assembly. Project validation checks a >0.999 axis dot product and generated prop_cockpit_dashboard; actual live animation remains Open. Evidence: Jimny_RoadCraft_20261005 tools/{create_models.py,build_bro.py,validate.py}, reports/rig.json, reports/polish_cockpit.png and the polished-v3 package identity recorded in frames.md.
+
+
+
+
+
+## Verify parked animation frames after compilation (Roamer ute, 2026-10-05)
+
+
+
+**Build:** Blender 5.2 source wipers parked at zero rotation, but the first native model compiled the two controller frames at the 44-degree raised pose when the clips were named `r105ute_wipers_backward` and `r105ute_wipers_forward`. Ordering them as `r105ute_wipers_forward` then `r105ute_wipers_return` restored compiled parked frames while retaining both explicit, disjoint frame ranges (1–18 and 20–37). Keep source rest, compiled rest and live clip motion as separate checks; a successful exporter and an animation-name list do not prove a correct parked state. The precise ordering mechanism is Open, so do not enforce this naming scheme on other assets.
+
+
+
+Evidence: `Roamer105Ute_20261005/fix_wiper_rest.py`, `native_validation/source_services.json`, `native_validation/compiled_frames.json` and native `anim_list.json`; source sweeps rose from about 1.45 m to 1.81/1.84 m. Package audit checks both clips and parked controller axes. Runtime rain/animation validation awaits the owner's editor-test go-ahead. No universal validator was added for a single exporter-order observation.
+
+
+
+
+
+### Y61 live light and recovery validation (editor play mode, 2026-10-06)
+
+
+
+**SDK / Game, native editor:** use PropVehiclesHeadlights.namesFxVhc for beams that follow the ordinary headlight switch; starting those same effects from an engine-start graph prevents the switch from owning them. Y61's final beam service turns both heads and tails off/on with isHeadlightsOn. Its lens graph keeps the shipped engine-running convention separately. Native visibility probes confirmed service-brake overlays, independent reverse lenses/beams, and release states.
+
+
+
+DbgUpdateInputs writes truck.input directly, bypassing TruckState.pedals and the ordinary movement FSM. It is useful for repeatable rigid-body trials but did not exercise Y61 brake/reverse callbacks. The State method sustained ordinary inputs in this fixture: positive AUTO drove forward; negative AUTO braked then reversed. Sample braking while forward velocity remains positive; the first short/full-brake probe was already reversing by the time its correlated response arrived. Ten seconds of acceleration followed by -0.15 pedal produced two confirmed BRAKE_PULL observations with visible brake overlays. Do not label a missing event in a debug-only drive a broken lamp.
+
+
+
+Recovery source-controller points and PropWinchable target sockets are separate declarations. Y61 now explicitly declares four recovered target sockets and eight source entries (the existing duplicated source convention). The final editor test attached through ordinary targeting, pulled a second Y61, released, then separately attached valid source/target physical bodies. Earlier source-only classes and the rejected eight-target assumption are retained. The project package validator checks target sockets against the BRO's four recovered points; no universal explicit-target requirement is imposed on stock vehicles. Evidence: WatcherY61_Final `native_tests/final_recovery_result.json`, job 20261005T190903Z-3f1ff73a5714, `reports/final_native_verification.json` (86 checks), `tools/fit_recovery_points.py`; shipped sources `prop_truck_view_controller.ssc`, `prop_vehicles_headlights.ssc`, and movement-FSM states. Retail campaign acceptance remains separate.
+
+
+
+
+
+### Reflected conversion text and gauge sweeps (Roamer ute, 2026-10-06)
+
+
+
+**Build / SDK/Game:** a canonical conversion with negative determinant can preserve correct topology yet reverse cockpit-facing text. Roamer's live cockpit exposed mirrored dashboard lettering. Reflect U only on text-bearing cluster/head-unit/button/plate slots, then refit needle pivots against the corrected cluster UV plane and reverse their sweep signs where the fitted basis reverses. Do not reflect the entire finished rig. The saved-source fit remained within 0.003 m, source geometry was retained, and the native cockpit capture shows readable dial text and working wiper sweeps. Evidence: Roamer105Ute_20261005/final_cockpit_uv.py, native_validation/cockpit_uv_correction.json and R105Final_20261006/runs/final_native_suite_all_063805/{cockpit,cockpit_wipers}.png.
+
+
+
+**SDK/Build/Game:** the ute reused the Y61 native headlight service pattern. This SDK generator omitted direct effect group names when bonesNames was empty, producing an empty prop_vehicles_headlights. Task build_native.gameplay now restores the authored namesFxVhc/namesFxVhcFake arrays after generation and verifies every effect exists. Native probes show all ten front/auxiliary effects false/true as the switch changes. Ordinary State controls confirmed reverse lenses and both reverse beams, then brakePull while still travelling forward and the bright brake overlay with dim tail hidden. Debug-only missing callbacks were excluded. Evidence: native_validation/native_class_regeneration.json, headlight_service.json and R105Final_20261006/runs/zero_reference_v3_lamps_parked_070216 receipts. General post-generation automation is deferred because another generator/version may support direct groups differently.
+
+
+
+
+
+### Jimny native service correction (2026-10-06)
+
+
+
+**Game / SDK / Build:** the recovered Jimny's engine-start lamp graph kept head beams active even when the headlight state was off. Assign ordinary beams to `prop_vehicles_headlights`, remove those beam names from engine-start graph ownership, and restore explicit direct effect groups after this SDK generator omitted empty-bone-name entries. Reverse beams remain event-controlled separately. Retain failed switch probes: Jimny J31TestE services 019/022/024 showed head beams always active. Target recovery sockets are explicit copies of the recovered four points, separately from the view-winch source points; preserve the generator's existing duplicated source convention. Final switch/attachment retesting uses J31TestF. This reuses the previously proven Y61/Roamer native pattern; no new universal effect-group repair is imposed.
+
+
+
+**Game, Jimny live steering probe (2026-10-06):** in third-person, highPoly=false
+dashboard telemetry retained currentAngle zero even at steer +/-1. Switch to
+first-person and wait for highPoly=true before testing cockpit animation; the
+same source then reports +/-360 degrees on BoneSteering's configured Y axis.
+This is a visibility/update-protocol distinction, not evidence of a broken rig.
+Both pose/frame sets are preserved in J31TestF final_all_092833 and
+final_services_all_093912. Native camera rendering/steering were validated;
+the recovered cockpit has no authored gauge or wiper clips.

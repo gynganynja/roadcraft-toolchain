@@ -72,7 +72,8 @@ A project for the tools is a relocatable SDK project folder (`.project` referenc
 
 | Blender's "Cannot change old file (file saved with @)": a stale `<file>.blend@` blocked the rename after a save; delete it and save again, with retries. An old `<file>.blend1` does it too (the save first renames the current file to `.blend1`; the Dump Twuck body was left only as `.blend@`): save with `preferences.filepaths.save_version = 0` | Build (Roamer 105, Dump Twuck v9) |
 | A step that succeeded fails the job with `WinError 32` renaming its `.<step>.log.partial` (Dump Twuck v9: after import, then after the compiled-class lint): a scanner briefly holds the just-closed log. `jobs._run_command` now retries that rename like `_atomic_json` (bounded, Windows sharing errors only) | Build (Dump Twuck v9) |
-| `jobs-recover` after a failed native step refuses with "Last successful install does not identify the live candidate bytes" when `local/machine.json` `transactionReceipts` lacks the newest install: `roadcraft install` does not append its receipt there. Add the new `local/transactions/<id>/receipt.json` after each install | Build (Dump Twuck v8/v9) |
+| `jobs-recover` after a failed native step refuses with "Last successful install does not identify the live candidate bytes" when `local/machine.json` `transactionReceipts` lacks the newest install: `roadcraft install` does not append its receipt there. Add the new `local/transactions/<id>/receipt.json` after each install. With no receipts listed, `status` shows no install history at all (WALL-E had 4 unlisted). Once they were listed, `status` used to flag every older review-candidate install as `needsReview` with `recoveryRequired: true`, because only an *accepted* live package superseded a receipt. It now also accepts a continuous chain of later listed installs that reaches the live package (`supersededByLaterInstall`, `core._supersede_by_later_installs`): the same history `jobs-recover` checks | Build (Dump Twuck v8/v9; WALL-E r3-r6, 2026-10-13) |
+| `mod-recipe` vehicle recipes have no `validate` step: run `roadcraft validate <candidate.pak> --baseline <installed or previous candidate>` by hand before installing, and keep its JSON with the candidate's evidence | Build (WALL-E r6 audit, 2026-10-13) |
 | `jobs-recover` with an installed review candidate (empty `accepted`) needs the registry candidate's `receipt` pin to be a package receipt naming the candidate (`{"candidate": <name>, "packageSha256": <sha>, "accepted": false}`, as `package/candidates/<name>/package_receipt.json` in the grader and buggy projects); a package *transaction* receipt pinned there fails with "Pinned candidate receipt does not identify the installed candidate". Every `<transactions root>/*/receipt.json` must also be listed in `transactionReceipts` ("An unlisted transaction receipt blocks candidate recovery"), and the chain of previous/candidate hashes must end at the live package. The Roamer registry was converted on 2026-10-13 (transaction receipts moved to `installReceipt`) | Build (Roamer 105 glass campaign; recovery receipt `jobs/20261012T231634Z-c93e35c53b46/job_recovery_*.json`) |
 | `mod_pak_builder` packs only resources reachable through `.resource` links from the roots: when a material instance stops linking a texture that no other instance links, that texture's `pct/<n>.pct.resource`, `pct/<n>_<i>.pct_mip`, `td/<n>.td` and `td/<n>.td.resource` members disappear from the pak. A member-level package audit must expect exactly those removals and check that every `res://pct/<n>.pct.resource` link in the packed `.mi.resource` files resolves to a packed mod texture; links to shipped game textures (`flat_nm`, `wipers_flow_01`, `wipers_noise_01` from the wiper/rain instances) are never packed and must be excluded | Build (Roamer 105 glass campaign attempts 001 and 002) |
 | A pinned recipe pins the shared toolchain's runtime files, so another session editing `src/roadcraft` invalidates it mid-run ("Stale or missing input ... cli.py", "changed pinned input ... pak_build.py"). For a campaign built while others change the toolchain, copy the runtime into the campaign (`toolchain-runtime/`, with `runtime_snapshot.json`) and pin with `ROADCRAFT_TOOLCHAIN` pointing at it | Build (Roamer 105 winch 2026-10-01 and proxy campaign 2026-10-13) |
@@ -1012,6 +1013,80 @@ Blender wrote the `@` file in full. The retried run happened to save normally, s
 - Shop card and icon store `bodyTriangles`; a geometry change needs `tools/render_preview.py` again or validation fails.
 - Raise the project's own body LOD0 guard deliberately and say so in the config comment (L275: 400k -> 480k for a
   ~122k undercarriage replacing a 45k chassis).
+
+
+### Registering an added WALL-E visual wheel (2026-10-05)
+
+**SDK/Game, WALL-E native editor fixture:** a wheel alias in the truck's wheelPool
+and the aggregate library alone was insufficient. The native live truckWheels
+table lacked the new descriptor and the truck did not finish loading. Registering
+the class in the vehicle-specific truck_wheel_info.sso, with the corresponding
+resource dependencies, restored loading. Check the full reference chain when
+adding wheels; distinguish resource startup failures from measured physics.
+WheelsLibrary.Get uses the live truckWheels table. The exact progression and
+native lookup probe are in the [WALL-E case](../docs/case-studies/walle-stability.md).
+This loaded diagnostic still failed driving; registration success is not handling
+validation. A shared universal check is deferred until descriptor loading paths
+outside this fixture are surveyed.
+
+
+### Fail background Blender scripts explicitly
+
+**Build, WALL-E articulated diagnostic (2026-10-05):** Blender5.0.1 returned0
+when an assertion in a background Python script stopped before saving. Use
+`--python-exit-code 1` (or another nonzero value), and verify expected outputs
+before continuing. Existing shared Blender adapters already use this flag;
+the isolated WALL-E authoring/export commands were corrected to match. Failed
+preparation/export logs remain in `articulated_probe/build/logs/*_failed01.log`.
+A process exit code alone is insufficient evidence of a produced asset.
+
+
+### Emit fixed decimal numbers in PS/BRO output
+
+**Game, native editor loading; Build (WALL-E, 2026-10-05):** a class containing
+`maxDeltaAngVel = 2e-05` asserted in ssl_desc.cpp(280), reporting an unsupported
+`psARRAY` value. Replacing only that token with `0.00002` reached native Play;
+all other snapshotted gameplay resources were byte-identical and the documents
+were semantically identical to the Python parser. Python round-trip success is
+therefore insufficient to establish native numeric syntax. This is a loading
+defect, not evidence of a motor/handling failure.
+
+The shared `ps_format.dumps` writer now emits finite floats in fixed decimal
+form using the shortest round-tripping representation, including nested arrays
+and integral floats. Historical exponent syntax remains readable; NaN and
+infinities are refused explicitly. This writer is already used by authoring and
+resource-edit workflows. `tests/test_ps_numeric_serialization.py` covers the
+observed small value, exponent extremes, signed zero, float types and invalid
+values. Evidence: WALL-E `stability_20261005/reports/ps_decimal_native.json`,
+failed `crawl_delta00002_straight_165627` and loaded
+`crawl_delta00002_decimal_straight_170306`. Native driving success is separate.
+
+
+### SSL source loading is separate from distributable script output
+
+**SDK/Game, isolated native editor probe (WALL-E, 2026-10-05):** register a new
+SSL resource before calling `LoadSSLModule`. SDK sources
+`ssl/autotest/global_autotest.ssl` and `game_editor_sequence.ssl` do this; a new
+marker class failed without registration and returned its expected string after
+`LoadInitialResourceTag` with local source loading. This proves source execution,
+not package portability. Restoring normal `UseBinarySsl=true` asserted on the
+missing `_debug.sslbin`, even with `BinaryModulesGenEnabled=true`. No reusable
+compiled output was found. Preserve the resource/config/source identities and
+verify normal binary loading before promising a custom script mod. The
+[WALL-E case](../docs/case-studies/walle-stability.md) contains exact probe/log
+identities. Global SDK settings were unchanged; no heading controller shipped.
+
+
+### Separate authoring inputs from outputs (Y61, 2026-10-06)
+
+**Build:** Y61 prepare changed its pinned .blend input and correctly failed after its source checks passed (job 20261005T120412Z-cc18c1c28b1c). Preserve the receipt and lock, and verify external state before recovery. Author edits must read immutable snapshots and write a different path; final compilation reads frozen authoring sources without rewriting them. Manually written recipes in a recipes/ subfolder must use absolute output paths, or normalize them before pinning: relative outputs were checked under recipes/project instead of the project root, retaining a second failure despite successful authoring (20261005T172754Z-a34930cbc10e). The repaired bind-authoring operation uses distinct immutable input/output paths and absolute outputs. No shared recovery policy or acceptance authority follows from a successful isolated authoring operation.
+
+
+### Y61 source fixture registration and blueprint imports (2026-10-06)
+
+**SDK/Game, isolated native editor:** WheelsLibrary's live truckWheels is populated by AutogenLibrariesCreator scanning `res://autogen_dw/trucks/auto_<truck>/auto_<truck>_truck_wheel_info.sso.resource` and the corresponding truck_info descriptor. Editing an aggregate auto_wheels_library SSO or only placing a flat mod suffix file did not populate this source fixture. Canonical descriptor aliases referring to the exact production SSO bytes fixed fixture startup. Production packaged-mod entries retain their .mod suffix identities; do not ship fixture aliases or alter the stock global library. The editor fixture registration is a different path from packaged-mod registration.
+
+The Y61 ShowHideGeomObjects graph also required explicit class-resource imports for `ssl/game/truck/blueprint_node_show_hide_geom_objects.sso.resource` and `ssl/ssl/lib/blueprint/blueprint_time_library.ssolib.resource`. A graph present in class text can still fail because its native class is not imported. Shipped readable script sources are in `default_non_retail_resources.pak`; descriptors and compiled modules have separate storage. Evidence: WatcherY61_Final `native_tests/sdk_sources/autogen_libraries_creator.ssc`, `register_editor_entities.py`, `reports/lamp_dependency_fix.json`, failed jobs 20261005T181821Z-1ccb9e3c2f35 and 20261005T182203Z-3ed28c4d3af5, successful canonical job 20261005T182937Z-f6f617d26e50. Existing source-fixture checks remain project-specific because mod manifests use a distinct registration path.
 
 ## One ship script per project at a time (L275 v42, Claude, 2026-10-14)
 

@@ -28,6 +28,8 @@ before installing it. Read the subject articles when authoring:
 | [articulated-steering.md](articulated-steering.md) | Centre-pivot steering: the steering hinge, oscillation body, frame-parented wheels, sign |
 | [trailers.md](trailers.md) | Trailers and towing: retail trailers are bodies of one truck (fifth-wheel and drawbar joints), the winch rope and self-driving tow, no runtime hitch |
 | [secondary-physics.md](secondary-physics.md) | Swinging accessories: mudflaps, whip flags, antennas, swing-out brackets (retail no-collision, massFactor 0 pattern, ragdoll axes) |
+
+| [animated-parts.md](animated-parts.md) | Parts that move by themselves or on a key: model clips, `prop_animation_controller`, blueprint triggers; why custom SSL is not a mod route |
 | [truck-settings.md](truck-settings.md) | Truck BRO settings: steering, pedals, gearbox, controls, the SDK sample's gaps |
 | [cockpit-and-lamps.md](cockpit-and-lamps.md) | Steering wheel and gauges (`dataDashboard`), lamps that work in the campaign |
 | [audio-assets.md](audio-assets.md) | Engine audio sources, licences, recording identity, approximation auditions and sound-bank limits |
@@ -45,7 +47,8 @@ before installing it. Read the subject articles when authoring:
 | [sources.md](sources.md) | Official documentation, the community guide, the unofficial route, support channels |
 
 The [D11 case study](../docs/case-studies/d11.md) preserves its source-repair and
-capture findings. [Components](../docs/components.md) distinguishes shared tooling
+capture findings. The [WALL-E stability case](../docs/case-studies/walle-stability.md)
+preserves the miniature-crawler investigation, rejected trials and owner-confirmed r5 track fix. [Components](../docs/components.md) distinguishes shared tooling
 from historical probes. Apply a case's rules only within their stated scope.
 
 ## Evidence grades

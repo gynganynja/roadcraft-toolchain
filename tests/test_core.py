@@ -108,6 +108,35 @@ class CoreTests(unittest.TestCase):
         self.assertFalse(result["recoveryRequired"])
         self.assertTrue(result["transactionReceipts"][0]["supersededByAccepted"])
 
+    def test_status_review_candidate_installs_superseded_by_a_continuous_chain(self) -> None:
+        digests = {name: core.sha256_file(self.write(f"{name}.pak", name.encode())) for name in "abcx"}
+        installed = self.write("installed.pak", b"c")
+
+        def receipt(name: str, previous: str, candidate: str) -> str:
+            self.write_json(f"tx/{name}/receipt.json", {
+                "transactionId": name, "state": "INSTALLED", "installedPath": str(installed),
+                "previousSha256": digests[previous], "candidateSha256": digests[candidate]})
+            return f"tx/{name}/receipt.json"
+
+        registry_path = self.write_json("registry.json", {
+            "schemaVersion": 1, "project": "W", "accepted": {},
+            "candidates": {n: {"package": {"path": f"{n}.pak", "sha256": digests[n]}} for n in "abc"}})
+        receipts = [receipt("t1", "x", "a"), receipt("t2", "a", "b"), receipt("t3", "b", "c")]
+        config_path = self.write_json("machine.json", {
+            "schemaVersion": 1, "installedPackage": "installed.pak", "transactionReceipts": receipts})
+        result = core.status(core.read_registry(registry_path), core.read_config(config_path))
+        self.assertEqual(result["installedRelation"], "candidate:c")
+        self.assertFalse(result["recoveryRequired"])
+        rows = result["transactionReceipts"]
+        self.assertEqual([r.get("supersededByLaterInstall", False) for r in rows], [True, True, False])
+        self.assertEqual([r["needsReview"] for r in rows], [False, False, False])
+        # a gap in the history (no install from b) leaves the older receipts for review
+        self.write_json("machine.json", {"schemaVersion": 1, "installedPackage": "installed.pak",
+                                         "transactionReceipts": receipts[:1] + receipts[2:]})
+        result = core.status(core.read_registry(registry_path), core.read_config(config_path))
+        self.assertTrue(result["recoveryRequired"])
+        self.assertEqual([r["needsReview"] for r in result["transactionReceipts"]], [True, False])
+
     def test_duplicate_zip_occurrences_are_compared_by_content(self) -> None:
         before = self.root / "before.pak"
         after = self.root / "after.pak"

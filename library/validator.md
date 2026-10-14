@@ -322,6 +322,28 @@ None of the wheel-frame, suspension or joint-limit errors fire on the owner's cu
 Lada faults those rules encode were fixed in earlier builds. The SDK sample still carries both the
 missing-flag fault and the misspelt lamp state, so a mod copied from it is caught.
 
+### WALL-E audit (r6, 2026-10-13)
+
+The installed r6 pak gave 0 errors, 4 warnings and 8 info. `--baseline` r5 gave 0 new, 12 unchanged and 0 fixed.
+The source tree gave 3 errors and 13 warnings. Two lessons came out of it:
+
+- **RC054 on a mod's own wheel types was a validator false positive.** `wheelPool.<w>.wheel.__type =
+  "WheelWalleBig"` names the mod's `bro/wheels/wheel_walle_big.bro`. The editor-made D11 does the same
+  (`WheelD11tFront`, 5 errors on the D11 repair tree). `meta_desc_bro.ps` registers only the shipped modules:
+  `BrandToClassName(stem) = { __type = <base> __moduleName = "designer_wizard.<folder>.<stem>" }`, and every
+  one of the 188 shipped wheels has base `Wheel`. The validator now registers the mod's own
+  `bro/<folder>/<stem>.bro` the same way: `Context.bro_types()` and `Schema.bro_folder_bases()`. It checks
+  such a type as its folder's base, or treats it as opaque when the folder's bases are mixed (`trucks`).
+  After the fix, the WALL-E tree has 0 errors. Test: `test_mod_wheel_bro_types_resolve`.
+- **Before calling a tuning value dead, check where RC072's fix hint points.** WALL-E r5 set both
+  `bodyFriction = 0.2` on the wheels and `frictionValue = 0.2` for the friction updater's `default` and
+  `asphalt` materials. The updater writes that value into the wheel at start, so r5's intent took effect. The
+  wheel key is a harmless duplicate.
+
+The remaining source-tree warnings are RC053 in the BRO mirror (`enableLateralForce`, `softForceScaleStatic`,
+two wheel-resistance flags, `winchSources`). The build does not package that mirror, and the compiled classes
+are clean.
+
 ### RC078 run (2026-10-14)
 
 `roadcraft validate --rules material-type` over the 7 installed paks (apoc_buggy, goliath_d11, jimny, kgs25, roamer105ute, walle, watcher_y61_expedition; 392 `.mi`), the 20 paks on `\\192.168.0.129\mods` (749 `.mi`) and the SDK's `root/mods_source` (37): 0 hits. The RC7a pak (`ba3f2ded...`) is deleted; the RC7 source tree with the three beacon `__type` lines removed (the RC7a state) gives exactly 3 errors, `mod_goli_d11_beacon_{body,lens,lit}.mi`, with fix hints `vehicle_body`, `vehicle_glass_outer`, `vehicle_lights` from their `.mi.resource` parents. Every `__type` in all of those paks names a retail preset (none names a master material, another `.mi`, or a mod-defined preset). Whether the library also accepts another instance's name is not known (Open): such a `.mi` is reported.
@@ -369,6 +391,15 @@ wheel-against-hull check listed as not added under "Rules and codes" no longer l
   closest documented spawn/save failure is "Vehicle bought under an older build is dead" (a joint added or
   renamed; truck-settings.md). Catching it needs a comparison of joint names against the previous release,
   which is not implemented. Record the two stories in the library before encoding them.
+- **Animated parts (animated-parts.md).** No rule cross-checks animation names (**Open**). The checks a
+  rule would need:
+  - every `prop_animation_controller` `tplAnimationName` is a clip in the compiled model (`anim_list.json`, or
+    the clip names in the `.tpl`);
+  - every `BlueprintNodeTplAnimStart` `animUidRef` names a controller clip;
+  - every bone that `Set Geom Rotation` targets exists in the model.
+
+  A misspelt clip plays nothing and gives no error. The WALL-E project checks these with its own script (all
+  resolved on r6, 2026-10-13).
 
 ## False positives and limits
 
@@ -379,6 +410,8 @@ wheel-against-hull check listed as not added under "Rules and codes" no longer l
 - The node tables come from `tpl_reader`. Six retail models do not decode, and the wheel and joint checks skip
   them.
 - RC069 needs the source tree's `tpl/obj_list.json`.
+- The mod's own designer-wizard types (`bro/<folder>/<stem>.bro`) are checked as their folder's base type.
+  In a folder with mixed bases (`trucks`), they are opaque.
 - RC072 is as complete as `read_fields.json`. Keys of `.ssl`/`.prop` types outside its `ignoredKnown` lists
   are not judged, because those reads lists are partial.
 - RC073 judges the markup as written plus its `.lods_base`. Bodies the engine creates (wheels) have no markup

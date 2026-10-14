@@ -340,7 +340,13 @@ native mod initialization can reset the active descriptor. Compare compiled
 contents, not only native descriptor object identity. The final Lada fixture
 reported isMod=false with two distinct descriptor objects; it did not exercise
 the retail mod-only reset branch. The complete compiled descriptor content is
-equal, and runtime physical tyre width measured 0.202487618 m.
+equal, and runtime physical tyre width measured 0.202487618 m. Jimny's final
+isMod=false editor fixture likewise reports activeEqualsDefault=false on all
+four wheels although both descriptors exist and their complete compiled values
+are equal. Its audit now checks presence plus full compiled parity, retaining
+the failed reference-equality gate and leaving retail reset behavior Open.
+Evidence: Jimny reports/native_audit_pointer_equivalence_failed.json,
+native_final_report.json and J31TestF final_services_all_093912.
 
 Evidence: shipped `wheel_trail.cls/.sfx`, `trail.vsh`, Roamer trail contracts,
 Lada build-007/test-008 and v6 `effects_result.json`. Shared
@@ -543,6 +549,58 @@ Evidence: Dump Twuck `reports/revision_007_tyres/{tyre_build.json,tyre_saved_aud
 **Build:** wheel slots carry the wheel tpls; nothing in the skinned body turns with the wheel. Skin rotors, hats and
 hubs to the steering joint (front) or axle frame (rear) and keep them rotationally symmetric (no drilled pattern or
 logo that should visibly turn). Calipers, splash shields and hoses on the same bone stay put while steering.
+
+
+
+## Requested tyre inches and lift reference (Jimny revision, 2026-10-05)
+
+
+
+**Build:** an inherited SnowRunner wheel scale is not a requested tyre diameter. The first Jimny used `0.45 * 0.975979` m radius, about 34.6 inches diameter; the owner reported that the wheels looked too big and requested 31-inch tyres with a 4-inch lift. The revised native master has radius 1, the wheel scale is `31 * 0.0254 / 2 = 0.3937` m, and the generated `prop_truck_wheel.radius` is 0.3937. Check the saved tyre vertices and compiled radius independently. For the selected 31x10.5R15 configuration, source width is 0.2667 m and rim radius is 0.1905 m. Resize the rim and tyre bead/sidewall separately; uniform whole-wheel scaling preserves the previous rim-to-tyre proportion. Saved geometry measured 31.0000006 inches, and the compiled class matched all three target dimensions. RadiusOffset is zero in this candidate, so the nominal physics envelope is not reduced by the old 35 mm offset; loaded contact and deformation still need a native drive.
+
+
+
+A lift needs an explicit reference: tyre radius gain and suspension lift are separate. Jimny uses the [Suzuki brochure](https://www.suzuki.com.ph/wp-content/uploads/sites/3/2015/06/jimny-brochure.pdf)'s 1.705 m stock overall height and 205/70R15 stock tyres (0.334 m radius). Its target model top is `1.705 + (0.3937 - 0.334) + 0.1016 = 1.8663` m. The inherited art already had an elevated stance, so simply adding another 0.1016 m would have double-counted its existing lift. The model is authored at the target lifted stance, with axle/weighted running-gear, collision, cockpit, lamp and winch positions synchronized; BRO neutral height remains the designed sag, without adding the lift again. This stock-height reference does not prove every inherited body proportion or the settled ride height. Native settling/handling remains **Open**.
+
+
+
+Evidence: [C:/Program Files (x86)/Steam/steamapps/common/RoadCraft/Roadcraft Development Package/Jimny_RoadCraft_20261005/stance.json](C:/Program Files (x86)/Steam/steamapps/common/RoadCraft/Roadcraft Development Package/Jimny_RoadCraft_20261005/stance.json), `tools/stance_contract.py`, `reports/rig.json`, `reports/source_inspection.json`, `reports/validation.json`; pinned recipe `recipes/jimny-31in-4in-v2.json`, passed test `20261005T114212Z-d1dec4be0149`. Geometry dimension checks are wired into the saved-source test, and physical dimensions plus retail wheel-physics parity are checked from actual `prop_truck_wheel` declarations. Do not let a missing property satisfy a parity assertion through `None == None`.
+
+
+
+
+
+### Explicit nominal fitment before conversion delivery (Y61, 2026-10-06)
+
+
+
+**User report / Build:** Y61's generic .5 m runtime wheel radius meant 39.37-inch diameter and appeared oversized. Record intended diameter and width in inches before picking wheel scale. Revised source uses literal nominal 35 x 12.5 inches (.889 m diameter, .3175 m width) and 17-inch rims; resize the rear spare too. Normalize the running-wheel geometry and verify visual dimensions against its runtime scale. This nominal request is not a manufacturer measurement. A +101.6 mm spring neutral offset is an authored 4-inch suspension setting; verify loaded height against the same-tyre zero-extra-lift variant before claiming a measured 4-inch stance. Evidence: WatcherY61_35in_4in fitment.json, geometry_fitment.json and source_validation.json. Native loaded-stance measurement remains Open.
+
+
+
+
+
+**Game, editor play mode follow-up to Y61 nominal fitment:** the matched five-field zero-extra-lift reference has the same 35-inch tyre class, masses, limits, spring strength and damping; only height changes from .2816 to .18. Normal candidate-minus-reference loaded body height is 103.49 mm (requested 101.6 mm), using median samples at 1-5 seconds on a rigid flat pad. Other settled starts were about 103.6 mm; one harsh-run start had an additional 11 mm settling difference. Do not interpret this as an OEM Y61 stock-height survey. Nominal wheel radius is .4445 m, while live physicalRadius is .4245 m because the existing 20 mm deformation radiusOffset is retained. Distinguish nominal mesh size from the soft contact envelope. Evidence: WatcherY61_Final `reports/native_physics_review.json`, `native_tests/zero_extra_lift_v3_result.json`, passed reference job 20261005T185648Z-1ecc4758a1b2 and `fitment.json`. This supersedes the earlier open editor lift measurement for the final revision; owner retail acceptance remains Open.
+
+
+
+
+
+### Loaded stance needs measured axle loads (Roamer ute, 2026-10-06)
+
+
+
+**SDK/Game / Build:** a 25-percent-per-wheel analytical assumption gave this ute about 145 mm front and 56 mm rear loaded offsets despite a 101.6 mm target. Preserve complete axle entries when calibrating height: patch_axles replaces each entry, and omitted strength/damping change the reference. Native rest measurements, not an inferred equal load split, set the final tune. A height-minus-101.6 mm reference initially settled below its nominal zero bind stance; calibrate that reference to actual zero before calling its difference a loaded lift. Keep the failed comparison and its calibration provenance. A body pitch spring of 200,000 rested on its +/-2-degree limit; 1,000,000 with damping 50,000 settled roughly 0.45 degree away from neutral without touching the limit. These are this rig's measured values, not universal suspension constants. Evidence: Roamer105Ute_20261005/native_validation/{lift_calibration_initial,final_axles,loaded_lift_uncalibrated_reference,loaded_lift_final}.json and linked native series.
+
+
+
+
+
+### Native tyre deformation mesh identity (Jimny, 2026-10-06)
+
+
+
+**Game / Build:** default `deformEnable=True` requires the model object named `tire`. The recovered Jimny used `jimny_tire`, and native startup asserted in `truck_wheel_prop.cpp(527)` before the vehicle could be tested. Preserve the failure, rename the authored tyre object (all LODs) to `tire`, and verify the compiled TPL. `bro_lint.wheel_model_references` / `lint-bro <wheel.bro> --class <wheel.cls> --tpl <wheel.tpl>` now reports RC049 for the missing default object. Explicit supported custom object contracts may pass their name to the helper; the check does not establish deformation appearance. Evidence: Jimny native `baseline_normal` test in `J31TestC_20261006`, retained `native_assert_log.txt`; fixed wheel TPL names `_wheel, jimny_wheel, JIMNY, Armature, rim, tire`.
 
 ## Load-adaptive suspension (code analysis, static, 2026-10-14)
 
