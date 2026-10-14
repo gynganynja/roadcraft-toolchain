@@ -587,3 +587,33 @@ package, `lint-bro` 0/0; **not installed, not benched, not driven** (Build).
 | A spring motor's per-step numbers use m_eff, the constraint row's virtual mass from the **two jointed bodies only**. m_eff is at most their reduced mass m1·m2/(m1+m2) and never includes the load carried below. The engine computes k·dt²/m_eff and c·dt/m_eff and **clamps each to 1**. So the most it can deliver is a rate of m_eff/dt² and a damping of m_eff/dt (at 60 Hz: 3,600·m_eff and 60·m_eff). Requests above that are silently capped, not unstable. maxForce is HK_REAL_MAX: there is no force clamp | Code (`FUN_1442406f0`, `FUN_14423aa80`, `FUN_141594b60`; physics_semantics.md 'Spring-motor stability') |
 | Keep load-bearing prismatic springs at k·dt²/m_eff ≤ ~0.4 and c·dt/m_eff ≤ ~0.7. That is the retail maximum: the TUZ Lynx frames run 0.14-0.22 / 0.52 and the Lynx trailer axles 0.28-0.38 / 0.53-0.68. RC62's front prismatic is at ≥ 0.18 / ≥ 0.86. The rear heave is at ≥ 0.86 / ≥ 4.0, so its damping is clamped and only ≤ 2.2e5 of the 8.8e5 N·s/m arrives (25 %). To deliver a damping c, m_eff must be ≥ c·dt. Lint RC076 flags this | Code (clamp), Retail (62 prismatic springs, 0 flagged), Inferred (that the shortfall causes the swing) |
 | Keep a prismatic sprung body at ≥ 1/2 of the mass hung below it and ≥ 1/8 of its parent's mass. Retail goes no further than 2.0 and 8 (Lynx). RC62's rear heave is a 4 t link between 44 t of chassis and 34.8 t below it (the 12 t roll body and two 11.4 t duals), so 8.7 and 11 | Retail; Inferred (that exceeding the ratios fails) |
+
+### First working series spring: Mammoth RC67 and the two-stage RC68 (2026-10-14)
+
+**RC67 drove in the retail game and is the first working series-spring build:** it stands on its
+wheels, with no shake and no sink (Game, owner). The combination that worked:
+
+- every sprung body on the default collision layer (never `no_collision`: its wheels copy the carrier's
+  layer at spawn);
+- every hull rebuilt with a tyre keep-out volume swept over the full travel and steering;
+- the rear axle-housing hulls placed on the rear sprung body;
+- an audit that each overlapping hull pair is a body and its direct joint parent (the only filtered
+  pair);
+- every spring motor inside the RC076 envelope by reduced mass.
+
+The owner's verdict on RC67: "sits very high in the rear", "still feels stiff unloaded" (Game). A
+linear rear spring sized for a 7.3x axle-load swing (k ~ 1e7 N/m) sags only 0.027 m empty, leaving the
+rear 0.093 m above the modelled stance (Build). This is the predicted limit of a single linear spring
+(see "Series spring as built").
+
+**RC68 (sha 5be91383, installed, not yet driven; rollback RC67)** is a two-stage progressive suspension:
+
+| Stage | Where | Values |
+|---|---|---|
+| 1, soft and short | the wheel joint, neutral on its droop stop | front {min -0.04, max 0, height 0.15, strength 0.06, damping 0.5}; rear {-0.06, 0, 0.107, 0.035, 0.5} |
+| 2, stiff | the prismatic spring motor | rear k 1.335e7 N/m, limits -0.20 / +0.22; front limits -0.19 / +0.20 |
+
+Stage 1 takes the empty truck's sag on the wheel joint and bottoms out on its bump stop under load,
+leaving stage 2 to carry the payload. RC68 doubles as a calibration point for the wheel-joint sag law
+(empty sag on a known strength). Open: the owner reports a bulge moving around the inside rear tyre
+(tyre deformation with `isDoubleTire`), under investigation.
