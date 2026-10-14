@@ -140,6 +140,28 @@ def roots_from_mod(mod: dict[str, Any]) -> list[str]:
     return tags
 
 
+def foreign_documents_dir(project: Path) -> str | None:
+    """The ``documents-dir`` of ``project/.project`` when it names a different existing-or-not folder, else None.
+
+    The packer resolves ``mods-dir: $(documents-dir)/mods_source``, so a project folder copied without
+    repointing its ``.project`` packs the original folder's sources."""
+    try:
+        text = (project / ".project").read_text(encoding="utf-8-sig", errors="replace")
+    except OSError:
+        return None
+    match = re.search(r"^documents-dir:\s*(.+?)\s*$", text, re.MULTILINE)
+    if not match:
+        return None
+    value = match.group(1).strip().strip("\"'")
+    if "$(" in value:
+        return None                               # a variable we do not resolve here
+    try:
+        same = Path(value).resolve() == project.resolve()
+    except OSError:
+        same = False
+    return None if same else value
+
+
 def plan(project: str | Path, mod_file: str | Path, output: str | Path, *, roots_file: str | Path | None = None,
          roots: Sequence[str] | None = None, work: str | Path | None = None, game_root: str | Path | None = None,
          normalize: bool = True, timeout: float = DEFAULT_TIMEOUT, candidate: str | None = None,
@@ -155,6 +177,12 @@ def plan(project: str | Path, mod_file: str | Path, output: str | Path, *, roots
     problems: list[str] = []
     if not (project / ".project").is_file():
         problems.append(f"{project} has no .project (a staged SDK project folder is required)")
+    elif not (stage_classes or suffix):          # staging repoints documents-dir in its own copy
+        elsewhere = foreign_documents_dir(project)
+        if elsewhere:
+            problems.append(f"{project / '.project'} has documents-dir {elsewhere}, another folder: the packer would "
+                            "read that folder's mods_source, not this project's (Goliath RC8 2026-10-14: a copied p/ "
+                            "silently packed RC7's files). Point documents-dir at this project")
     mod: dict[str, Any] = {}
     if not mod_file.is_file():
         problems.append(f"mod file {mod_file} does not exist")

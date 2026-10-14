@@ -136,6 +136,16 @@ class PakBuildTest(unittest.TestCase):
         staged = pak_build.plan(self.project, _mod(self.root), self.root / "out2.pak", game_root=self.game)
         self.assertEqual(staged.problems, [])
 
+    def test_project_pointing_at_another_folder_is_refused(self):
+        other = self.root / "rc7" / "p"
+        (self.project / ".project").write_text(f"documents-dir: {other.as_posix()}\nmods-dir: $(documents-dir)/mods_source\n",
+                                                encoding="utf-8")
+        p = pak_build.plan(self.project, _mod(self.root), self.root / "out.pak", game_root=self.game)
+        self.assertTrue(any("documents-dir" in problem for problem in p.problems))
+        (self.project / ".project").write_text(f"documents-dir: {self.project.as_posix()}\n", encoding="utf-8")
+        p = pak_build.plan(self.project, _mod(self.root), self.root / "out2.pak", game_root=self.game)
+        self.assertEqual(p.problems, [])
+
     def test_mod_file_flow_lists(self):
         mod = self.root / "flow.mod"
         mod.write_text("title: T\nscenes: []\nassets: [ssl/a.sso.resource, 'ssl/b.sso.resource']\n", encoding="utf-8")
