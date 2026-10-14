@@ -495,3 +495,25 @@ Full analysis: `C:\RC_RE\research\physics_semantics.md`, "Load-adaptive suspensi
 | For a large payload swing, use the retail **physical series spring**: wheel joint near-rigid (strength 0.25, damping 1.0, min = max = 0, `height` = lift), wheels parented to axle/side bodies on a `tpl_markup_constraint_prismatic` with `tpl_markup_spring_motor{spring N/m, damping N·s/m}` sized `k = loaded axle load x g / loaded sag`. Retail precedents: Lynx scout / Mutt / trailer, 2e5-6e5 N/m on 500 kg axle bodies; ZiKZ 605E trailer, balancers 2.1e6 N·m/rad | Retail; sag proportional to load Inferred; not yet driven on a mod |
 | Retail dump trucks (Baikal 65206, Tayga, Voron, OFT96) use only soft wheel joints: strength 0.025-0.08, **damping 0.35-0.75**, 0.25-0.5 m of bump travel from neutral. Their spring-motor hinges are frame-roll articulations, not load springs | Retail |
 | A load volume's payload is its own rigid body, joined to `parentBody`. Its mass follows the fill (minimum 1 kg); its COM stays at the volume mesh's centroid | Code (`FUN_1405e2590`, `FUN_1405dc380`) |
+
+### Series spring as built: Mammoth (CAT 793D) RC61 (2026-10-14)
+
+Package `Mammoth_20261014_SeriesSpring_RC61.pak` (sha 8bf628da): built, `validate` 0 new against the installed
+package, `lint-bro` 0/0; **not installed, not benched, not driven** (Build).
+
+- **Front, per wheel:** a 6 t body on a prismatic, `childRotation [90,0,0]`, -0.23/+0.20, spring motor
+  3.51e6 N/m, c 2.71e5.
+- **Rear:** a 4 t heave body on a prismatic, -0.27/+0.22, 1.13e7 N/m, c 8.8e5. Under it, a 12 t axle-housing
+  body on a roll hinge (`childRotation [0,0,0]`, +-4 deg, 7.23e6 N·m/rad, c 5.6e5), carrying both duals.
+- **Wheel axles:** min 0 / max 0 / strength 0.45 / damping 1, height 0.15 (front) / 0.12 (rear).
+- **Chassis:** 72 -> 44 t, so the total mass and COM are unchanged.
+- **Design sag:** front 0.090 / 0.149 m, rear 0.046 / 0.199 m (empty / loaded with 218 t).
+
+| Rule | Grade |
+|---|---|
+| A wheel slot's parent body is the nearest physics bone above the wheel node in the tpl tree. Re-parenting the wheel bones in Blender is the whole hookup; there is no class field. `physics report` resolves `slot.parentBody` this way | Build |
+| Move the axles controller's visual frames (`BoneAxleFront*`, `BoneAxleRear`) under the sprung bodies too. With min = max = 0 the controller shows no wheel travel, so frames left on the chassis detach visually | Build |
+| A rigid rear axle needs two bodies to keep cross-axle articulation: heave on a prismatic, then roll on a hinge along the truck axis, with roll rate = heave rate x strut spacing^2 / 4. A single prismatic body removes articulation | Build (design) |
+| Keep wheel mass / sprung-body mass at or below about 1, the retail maximum. A 3 t front body under a 5.7 t wheel gave `slot.massRatio` 1.9 in `compare` | Build, Retail |
+| Identity-frame new bones (Blender head -> tail along +Y, roll 0) come out identity in the tpl (as `BoneDump_cdt` / `BoneAxleRear`), so prismatic-down is `childRotation [90,0,0]`. This confirms the Dump Twuck example's inferred axis at Build grade | Build |
+| A linear spring cannot serve a 4.3x axle-load swing (rear 53.5 -> 229.6 t) at both <= 0.10 m empty and <= 0.2 m loaded. Sizing for loaded leaves the empty rear at 0.046 m. This is why the two-payload bench, and a two-stage option, matter | Build (design) |
