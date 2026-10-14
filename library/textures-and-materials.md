@@ -470,6 +470,8 @@ here), so check the "Saved:" lines before judging a re-render.
 
 `vehicle_body` / `vehicle_lights` material instances accept `no_backface_culling = True` and `doubleSidedLighting` (`"normal"`; the Roamer uses `"none"` on `vehicle_lights`, whose skinned emissive shader has no double-sided-lighting split). The Roamer's whole body uses them because its source meshes have open and inside-out shells. When reusing such art, either carry the params over or repair the shells; check the island orientation (signed volume per connected island) before deciding. Keep the body's `enableLwiLodTransition` False and leave the export vertex-compression block out: both made the engine look for prebuilt shader permutations that two-sided skinned materials do not have (Roamer crash 2026-09-13).
 
+**Never on `vehicle_cabin`** (Watcher 61 v7, 2026-10-15). `doubleSidedLighting "normal"` with `no_backface_culling` on cabin instances crashed retail as soon as the truck spawned. The error was "Prebuilt shader cache or executable is obsolete", shader `glt` psh, with the defines `GLT_DOUBLE_SIDED_LIGHTING`, `COMMON_USE_VEHICLE_INTERIOR_HACKS`, `COMMON_VP_USE_SKIN` and `GLT_WRITE_EMISSIVE`. The game has no prebuilt variant of the skinned cabin shader with double-sided lighting. Keep cabin instances plain, and make the cab faces point at the seats in the geometry (an inward lining or moulded trims).
+
 ## Cockpit interiors that read blurry (L275 v20, 2026-10-12; Build, owner symptom)
 
 Owner: "The interior is super blurry and looks really low quality". Measured: 0.24 px/mm (one texel per 4 mm) with the
