@@ -41,7 +41,10 @@ from . import engine as eng
 from . import physics_bench as pb
 
 SCHEMA_VERSION = 1
-PROBE_ITEMS = ("engine", "bodies", "com", "wheels", "joints", "tracks")
+PROBE_ITEMS = ("engine", "bodies", "com", "wheels", "joints", "tracks", "terrain", "linear")
+# items whose statements had not run in an engine when written: each is tried once at rest (probe_checks) and
+# left out of the per-sample probe if the engine rejects it, so one unknown accessor cannot cost a run's probes
+CHECKED_ITEMS = ("terrain", "linear")
 GEARS = ("AUTO", "LOW_GEAR", "HIGH_GEAR", "REVERSE", "NEUTRAL")
 SWITCH = ("Unchanged", "On", "Off")
 IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -231,8 +234,41 @@ def load_scenario(source: str | Path | dict[str, Any]) -> dict[str, Any]:
         "stopToleranceM": _number(analysis.get("stopToleranceM", 0.005), "analysis.stopToleranceM", 0, 1),
         "judderMinHz": _number(analysis.get("judderMinHz", 0.3), "analysis.judderMinHz", 0.01, 30),
         "articulation": _articulation_spec(analysis.get("articulation")),
+        "groundHeight": None if analysis.get("groundHeight") is None else
+        _number(analysis["groundHeight"], "analysis.groundHeight", -1e4, 1e4),
+        "sprung": _sprung_spec(analysis.get("sprung")),
     }
     return out
+
+
+def _sprung_spec(raw: Any) -> dict[str, Any] | None:
+    """``analysis.sprung``: ``bodies`` {name: modelled [left, up, fwd] offset from the hull origin, or null}
+    (a list of names = no modelled offsets), ``joints`` {constraint name: [min, max]} (m, or deg for hinges)."""
+    if raw is None:
+        return None
+    if not isinstance(raw, dict) or set(raw) - {"bodies", "joints"}:
+        raise ScenarioError("analysis.sprung must be {bodies, joints}")
+    bodies = raw.get("bodies") or {}
+    if isinstance(bodies, list):
+        bodies = {name: None for name in bodies}
+    if not isinstance(bodies, dict) or not all(isinstance(n, str) and IDENT.match(n) for n in bodies):
+        raise ScenarioError("analysis.sprung.bodies must name bodies")
+    out_bodies = {}
+    for name, off in bodies.items():
+        if off is not None and not (isinstance(off, list) and len(off) == 3):
+            raise ScenarioError(f"analysis.sprung.bodies.{name} must be [left, up, fwd] or null")
+        out_bodies[name] = None if off is None else [_number(v, f"analysis.sprung.bodies.{name}", -100, 100) for v in off]
+    joints = raw.get("joints") or {}
+    if not isinstance(joints, dict):
+        raise ScenarioError("analysis.sprung.joints must map constraint names to [min, max]")
+    out_joints = {}
+    for name, lim in joints.items():
+        # markup constraints are named "<child body>|<parent body>" (Mammoth readback, 2026-10-14)
+        if not (isinstance(name, str) and re.match(r"^[A-Za-z_][A-Za-z0-9_]*(\|[A-Za-z_][A-Za-z0-9_]*)?$", name)
+                and isinstance(lim, list) and len(lim) == 2):
+            raise ScenarioError(f"analysis.sprung.joints.{name} must be [min, max]")
+        out_joints[name] = [_number(v, f"analysis.sprung.joints.{name}", -360, 360) for v in lim]
+    return {"bodies": out_bodies, "joints": out_joints}
 
 
 def _box(row: Any, where: str) -> dict[str, Any]:
@@ -431,8 +467,42 @@ def probe_script(items: Sequence[str], tpl: str = "*") -> str:
         lines += ['var trackProp = truck.owner.TryGet<PropTruckTrack>()', 'if trackProp != null',
                   ' for var ti, track in trackProp.GetTracks()',
                   '  result += StringFormat("T %i %.4f\\n", ti, track.GetAverageSlidingVelocity())', ' end', 'end']
+    if "terrain" in items:
+        # H <wheel index> <terrain height under the wheel centre>: GetTerrain().GetHeight(Vector3d) as retail
+        # ssl/game/truck/grader/prop_grader_constraints_controller.ssc (Inferred from ExecSsl; checked at rest).
+        # The terrain only: a static scene mesh (a test pad) is not in it (analysis.groundHeight).
+        lines += ['var hi = 0', 'for var hwheel in truck.GetWheels()', ' var hinfo = hwheel.runtimeInfo',
+                  ' if hinfo != null',
+                  '  result += StringFormat("H %i %.4f\\n", hi, GetTerrain().GetHeight(hinfo.transform.GetPosition()))',
+                  ' end', ' hi += 1', 'end']
+    if "linear" in items:
+        # L <constraint> <position>: prismatic constraints (PhysConstraintInstance.IsPositional, GetCurrentPosition:
+        # ssl/physics/phys_constraint_instance.ssl; Inferred).  No motor target: a spring motor has none
+        lines += ['for var lj in ps.GetAllConstraints()', ' if lj.IsPositional()',
+                  '  result += "L " + lj.GetConstraintName() + StringFormat(" %.5f\\n", lj.GetCurrentPosition())',
+                  ' end', 'end']
     lines.append("return result")
     return "\n".join(lines)
+
+
+def probe_check_marker(item: str) -> str:
+    return {"terrain": "\nH ", "linear": "\nL "}[item]
+
+
+def probe_checks(session: Any, scenario: dict[str, Any], folder: Path) -> dict[str, Any]:
+    """Try each CHECKED_ITEMS probe once (alone, with the F header) at rest; an item whose reply is not a probe
+    reply with its own lines is dropped from the per-sample probe.  probe_checks.json keeps the replies."""
+    wanted = [i for i in scenario["probes"]["items"] if i in CHECKED_ITEMS]
+    out: dict[str, Any] = {"items": {}, "kept": [i for i in scenario["probes"]["items"] if i not in CHECKED_ITEMS]}
+    for item in wanted:
+        reply = _try_ssl(session, probe_script([item], scenario["vehicle"]["tpl"]), timeout=8.0)
+        ok = reply.startswith("F ") and probe_check_marker(item) in "\n" + reply
+        out["items"][item] = {"ok": ok, "reply": reply[:600]}
+        if ok:
+            out["kept"].append(item)
+    out["kept"] = [i for i in PROBE_ITEMS if i in out["kept"]]
+    (folder / "probe_checks.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+    return out
 
 
 _RB_HEAD = ['var truck = $globalStorage.TryGet<TruckManagerRb>()?.TryGetCurrent()', 'if truck == null',
@@ -464,10 +534,24 @@ def readback_scripts() -> dict[str, str]:
             'var r = "RB_MOTORS\\n"', 'for var j in ps.GetAllConstraints()', ' if j.HasMotor()',
             '  r += "m " + j.GetConstraintName() + StringFormat(" %.1f %.1f\\n", j.GetMotorSpring(), '
             'j.GetMotorDamping())', ' end', 'end', 'return r']),
+        # FloatRange has .min/.max (ssl/math/float_range.ssc); the KGS-25 campaign's .x failed (error 2059)
         "limits": "\n".join(_RB_HEAD + _RB_PS + [
             'var r = "RB_LIMITS\\n"', 'for var j in ps.GetAllConstraints()', ' if j.IsAngular()',
             '  var l = j.GetAngularLimits()',
-            '  r += "l " + j.GetConstraintName() + StringFormat(" %.5f %.5f\\n", l.x, l.y)', ' end', 'end',
+            '  r += "l " + j.GetConstraintName() + StringFormat(" %.5f %.5f\\n", l.min, l.max)', ' end', 'end',
+            'return r']),
+        # prismatic constraints: position and linear limits (phys_constraint_instance.ssl; Inferred)
+        "positional": "\n".join(_RB_HEAD + _RB_PS + [
+            'var r = "RB_POSITIONAL\\n"', 'for var j in ps.GetAllConstraints()', ' if j.IsPositional()',
+            '  var pl = j.GetLinearLimits()',
+            '  r += "p " + j.GetConstraintName() + StringFormat(" %.5f %.5f %.5f\\n", j.GetCurrentPosition(), '
+            'pl.min, pl.max)', ' end', 'end', 'return r']),
+        # each body's collision layer (RigidBody.GetCollisionFilterInfo().GetLayer(): ssl/physics/rigid_body.ssl,
+        # collision_filter_info.ssl; Inferred) and system group
+        "layers": "\n".join(_RB_HEAD + _RB_PS + [
+            'var r = "RB_LAYERS\\n"', 'for (var i = 0; i < ps.GetBodyCount() and i < 64; i += 1)',
+            ' var body = ps.GetBodyByIdx(i)', ' var fi = body.GetCollisionFilterInfo()',
+            ' r += "y " + body.GetName() + " " + fi.GetLayer() + StringFormat(" %i\\n", fi.GetSystem())', 'end',
             'return r']),
     }
 
@@ -476,7 +560,8 @@ def parse_readback(replies: dict[str, str]) -> dict[str, Any]:
     """The readback replies as values; a reply without its RB_ marker is kept as an error text."""
     out: dict[str, Any] = {"errors": {}}
     markers = {"identity": "RB_IDENTITY", "wheels": "RB_WHEELS", "softForce": "RB_SOFTFORCE",
-               "constraints": "RB_CONSTRAINTS", "motors": "RB_MOTORS", "limits": "RB_LIMITS"}
+               "constraints": "RB_CONSTRAINTS", "motors": "RB_MOTORS", "limits": "RB_LIMITS",
+               "positional": "RB_POSITIONAL", "layers": "RB_LAYERS"}
     constraints: dict[str, dict[str, Any]] = {}
     for key, reply in replies.items():
         if not isinstance(reply, str) or not reply.startswith(markers.get(key, "?")):
@@ -503,6 +588,13 @@ def parse_readback(replies: dict[str, str]) -> dict[str, Any]:
                 for p in lines:
                     if p[0] == "l":
                         constraints.setdefault(p[1], {}).update(limits=[float(p[2]), float(p[3])])
+            elif key == "positional":
+                for p in lines:
+                    if p[0] == "p":
+                        constraints.setdefault(p[1], {}).update(position=float(p[2]),
+                                                                linearLimits=[float(p[3]), float(p[4])])
+            elif key == "layers":
+                out["bodyLayers"] = {p[1]: {"layer": p[2], "system": int(p[3])} for p in lines if p[0] == "y"}
         except (IndexError, ValueError) as exc:
             out["errors"][key] = f"unparsed: {exc}: {reply[:200]}"
     if constraints:
@@ -785,14 +877,18 @@ def parse_extra(path: str | Path) -> list[dict[str, Any]]:
         text = row.get("r") or ""
         if not text.startswith("F "):
             continue
-        joints, tracks = [], []
+        joints, tracks, terrain, linear = [], [], {}, []
         for ln in text.splitlines():
             p = ln.split()
             if p and p[0] == "J" and len(p) >= 4:
                 joints.append({"name": p[1], "angle": float(p[2]), "target": float(p[3])})
             elif p and p[0] == "T" and len(p) >= 3:
                 tracks.append({"track": int(p[1]), "sliding": float(p[2])})
-        rows.append({"t": row["t"], "joints": joints, "tracks": tracks})
+            elif p and p[0] == "H" and len(p) >= 3:
+                terrain[int(p[1])] = float(p[2])
+            elif p and p[0] == "L" and len(p) >= 3:
+                linear.append({"name": p[1], "position": float(p[2])})
+        rows.append({"t": row["t"], "joints": joints, "tracks": tracks, "terrain": terrain, "linear": linear})
     return rows
 
 
@@ -815,6 +911,8 @@ def write_csvs(samples: list[dict[str, Any]], extra: list[dict[str, Any]], folde
                     "mudDepth", "onTerrain"], []),
         "joints": (["t", "joint", "angle", "target"], []),
         "tracks": (["t", "track", "sliding"], []),
+        "terrain": (["t", "wheel", "terrainY"], []),
+        "linear": (["t", "joint", "position"], []),
     }
     for s in samples:
         e = s.get("engine") or {}
@@ -836,6 +934,10 @@ def write_csvs(samples: list[dict[str, Any]], extra: list[dict[str, Any]], folde
             tables["joints"][1].append([row["t"], j["name"], j["angle"], j["target"]])
         for tr in row["tracks"]:
             tables["tracks"][1].append([row["t"], tr["track"], tr["sliding"]])
+        for wheel, height in sorted(row.get("terrain", {}).items()):
+            tables["terrain"][1].append([row["t"], wheel, height])
+        for lj in row.get("linear", []):
+            tables["linear"][1].append([row["t"], lj["name"], lj["position"]])
     written = []
     for name, (header, rows) in tables.items():
         if not rows:
@@ -989,6 +1091,151 @@ def summarise(samples: list[dict[str, Any]], scenario: dict[str, Any],
         "yaw": motion, "phases": phases}
     if analysis.get("articulation") is not None:
         out["articulation"] = articulation(samples, scenario, hull, extra)
+    out["stillness"] = stillness(rows, analysis)
+    ground = wheel_ground(samples, scenario, extra)
+    if ground:
+        out["wheelGround"] = ground
+    if analysis.get("sprung") is not None:
+        out["sprung"] = sprung(samples, scenario, hull, extra)
+    return out
+
+
+def series_stats(times: Sequence[float], values: Sequence[float], *, fmin: float = 0.3,
+                 tail: float = 5.0) -> dict[str, Any] | None:
+    """First/median/min/max/last, peak-to-peak overall and over the first and last ``tail`` seconds, standard
+    deviation and the strongest oscillation (dominant_frequency) of one signal."""
+    pairs = sorted(zip(times, values))
+    if not pairs:
+        return None
+    ts, vs = [p[0] for p in pairs], [p[1] for p in pairs]
+    head = [v for t, v in pairs if t <= ts[0] + tail]
+    last = [v for t, v in pairs if t >= ts[-1] - tail]
+    imax = max(range(len(vs)), key=lambda k: vs[k])
+    return {"first": round(vs[0], 5), "median": round(statistics.median(vs), 5), "min": round(min(vs), 5),
+            "max": round(max(vs), 5), "maxAt": round(ts[imax], 2), "last": round(vs[-1], 5),
+            "ptp": round(max(vs) - min(vs), 5), "ptpFirst": round(max(head) - min(head), 5),
+            "ptpLast": round(max(last) - min(last), 5),
+            "std": round(statistics.pstdev(vs), 5) if len(vs) > 1 else 0.0,
+            "oscillation": dominant_frequency(ts, vs, fmin=fmin)}
+
+
+def stillness(rows: list[dict[str, Any]], analysis: dict[str, Any]) -> dict[str, Any]:
+    """Hull height (mm), roll and pitch (deg) over the whole run: statistics, strongest oscillation and the time
+    after which all three stay within analysis.settle of their final value (null = never)."""
+    ts = [r["t"] for r in rows]
+    out = {"heightMm": series_stats(ts, [1000 * r["y"] for r in rows], fmin=analysis["judderMinHz"]),
+           "rollDeg": series_stats(ts, [r["roll"] for r in rows], fmin=analysis["judderMinHz"]),
+           "pitchDeg": series_stats(ts, [r["pitch"] for r in rows], fmin=analysis["judderMinHz"]),
+           "settledAfterS": settle_time(rows, analysis["settle"])}
+    return out
+
+
+def _wheel_labels(scenario: dict[str, Any], count: int) -> list[str]:
+    names = scenario["vehicle"].get("wheelNames") or []
+    return [names[i] if i < len(names) else f"wheel{i}" for i in range(count)]
+
+
+def wheel_ground(samples: list[dict[str, Any]], scenario: dict[str, Any],
+                 extra: list[dict[str, Any]] | None) -> dict[str, Any] | None:
+    """Per wheel: bottom height (centre y - GetPhysicalRadius) and its depth below the ground (positive = sunk),
+    the ground being the terrain under the wheel (H lines) or, where higher, ``analysis.groundHeight`` (a static
+    scene mesh such as a test pad, which GetTerrain().GetHeight does not see)."""
+    pad = scenario["analysis"].get("groundHeight")
+    terrain_at = {round(r["t"], 4): r.get("terrain", {}) for r in extra or []}
+    if pad is None and not any(terrain_at.values()):
+        return None
+    count = max((len(s["wheels"]) for s in samples), default=0)
+    labels = _wheel_labels(scenario, count)
+    out: dict[str, Any] = {"groundHeight": pad, "terrainProbe": any(terrain_at.values()), "wheels": {}}
+    for i, label in enumerate(labels):
+        ts, bottom, depth, terrain_ts, terrain_depth = [], [], [], [], []
+        for s in samples:
+            if i >= len(s["wheels"]):
+                continue
+            w = s["wheels"][i]
+            radius = w.get("physicalRadius")
+            if radius is None or "pos" not in w:
+                continue
+            b = w["pos"][1] - radius
+            terrain = terrain_at.get(round(s["t"], 4), {}).get(i)
+            grounds = [g for g in (terrain, pad) if g is not None]
+            if not grounds:
+                continue
+            ts.append(s["t"])
+            bottom.append(b)
+            depth.append(max(grounds) - b)
+            if terrain is not None:
+                terrain_ts.append(s["t"])
+                terrain_depth.append(terrain - b)
+        if not ts:
+            continue
+        entry = {"radiusM": round(samples[-1]["wheels"][i].get("physicalRadius") or 0.0, 4),
+                 "bottomY": series_stats(ts, bottom), "depthM": series_stats(ts, depth),
+                 "sunkSamples": sum(1 for d in depth if d > 0.02), "samples": len(ts)}
+        if terrain_depth:
+            entry["depthBelowTerrainM"] = series_stats(terrain_ts, terrain_depth)
+        out["wheels"][label] = entry
+    return out
+
+
+def _relative_pose(hull: dict[str, Any], body: dict[str, Any]) -> tuple[list[float], float, float]:
+    """A body's origin in the hull frame [left, up, fwd] (m) and its roll/pitch against the hull (deg)."""
+    left = pb._cross(hull["up"], hull["fwd"])
+    d = [a - b for a, b in zip(body["pos"], hull["pos"])]
+    offset = [_dot(d, left), _dot(d, hull["up"]), _dot(d, hull["fwd"])]
+    roll = math.degrees(math.atan2(_dot(body["up"], left), _dot(body["up"], hull["up"])))
+    pitch = math.degrees(math.atan2(_dot(body["fwd"], hull["up"]), _dot(body["fwd"], hull["fwd"])))
+    return offset, roll, pitch
+
+
+def sprung(samples: list[dict[str, Any]], scenario: dict[str, Any], hull: str,
+           extra: list[dict[str, Any]] | None) -> dict[str, Any]:
+    """``analysis.sprung {bodies, joints}``: each sprung body's pose against the hull (offset left/up/fwd in m
+    relative to its first sample and to ``bodies[name]`` = the modelled offset if given, roll/pitch in deg), and
+    each prismatic (L lines, m) and hinge (J lines, deg) constraint against its limits ``joints[name] = [min, max]``
+    (time spent within 1 cm / 0.2 deg of a limit)."""
+    spec = scenario["analysis"]["sprung"]
+    fmin = scenario["analysis"]["judderMinHz"]
+    out: dict[str, Any] = {"bodies": {}, "joints": {}}
+    for name, modelled in spec["bodies"].items():
+        ts, offs, rolls, pitches = [], [], [], []
+        for s in samples:
+            h, b = s["bodies"].get(hull), s["bodies"].get(name)
+            if not h or not b or "up" not in h or "up" not in b:
+                continue
+            off, roll, pitch = _relative_pose(h, b)
+            ts.append(s["t"])
+            offs.append(off)
+            rolls.append(roll)
+            pitches.append(pitch)
+        if not ts:
+            out["bodies"][name] = {"note": "no samples"}
+            continue
+        entry: dict[str, Any] = {"offsetFirst": [round(v, 4) for v in offs[0]]}
+        for k, axis in enumerate(("left", "up", "fwd")):
+            entry[f"{axis}M"] = series_stats(ts, [o[k] for o in offs], fmin=fmin)
+        if modelled is not None:
+            entry["modelledOffset"] = modelled
+            entry["upFromModelledM"] = series_stats(ts, [o[1] - modelled[1] for o in offs], fmin=fmin)
+        entry["rollDeg"] = series_stats(ts, rolls, fmin=fmin)
+        entry["pitchDeg"] = series_stats(ts, pitches, fmin=fmin)
+        out["bodies"][name] = entry
+    series: dict[str, tuple[str, list[tuple[float, float]]]] = {}
+    for row in extra or []:
+        for lj in row.get("linear", []):
+            series.setdefault(lj["name"], ("m", []))[1].append((row["t"], lj["position"]))
+        for j in row.get("joints", []):
+            series.setdefault(j["name"], ("deg", []))[1].append((row["t"], math.degrees(j["angle"])))
+    for name, (unit, pts) in sorted(series.items()):
+        entry = {"unit": unit, **(series_stats([p[0] for p in pts], [p[1] for p in pts], fmin=fmin) or {})}
+        limits = spec["joints"].get(name)
+        if limits:
+            tol = 0.01 if unit == "m" else 0.2
+            entry["limits"] = limits
+            entry["atMinSamples"] = sum(1 for _, v in pts if v <= limits[0] + tol)
+            entry["atMaxSamples"] = sum(1 for _, v in pts if v >= limits[1] - tol)
+            entry["samples"] = len(pts)
+        out["joints"][name] = entry
     return out
 
 
@@ -1229,6 +1476,9 @@ def scripts_for(scenario: dict[str, Any]) -> dict[str, Any]:
         out["loadScene"] = load_scene_script(scenario["scene"]["loadSsl"])
     if scenario["probes"].get("readback"):
         out["readback"] = readback_scripts()
+    checked = [i for i in scenario["probes"]["items"] if i in CHECKED_ITEMS]
+    if checked:
+        out["probeChecks"] = {i: probe_script([i], scenario["vehicle"]["tpl"]) for i in checked}
     if scenario["capture"]:
         hull = scenario["vehicle"].get("hull") or "BoneChassis_cdt"
         out["capture"] = {"states": {s["name"]: state_script(s)[0] for s in scenario["capture"]["states"]},
@@ -1270,7 +1520,8 @@ def run_one(label: str, pak: str | None, scenario: dict[str, Any], args: argpars
     if args.dry_run:
         return {"label": label, "folder": str(out), "pak": pak, "session": session.plan()}
     out.mkdir(parents=True, exist_ok=False)
-    eng.prepare_layout(layout, pak=pak, project=args.project, game_root=args.game_root)
+    eng.prepare_layout(layout, pak=pak, project=args.project, game_root=args.game_root,
+                       link=bool(getattr(args, "link_copy", False)))
     if scenario["spawn"]["method"] == "scene":
         if layout.strategy != "project-copy":
             raise ScenarioError("spawn.method scene needs --strategy project-copy (it edits the private scene copy)")
@@ -1312,7 +1563,14 @@ def run_one(label: str, pak: str | None, scenario: dict[str, Any], args: argpars
                 if mode == "capture":
                     result["capture"] = capture(session, scenario, out, clock)
                 else:
-                    result["inputs"] = drive(session, scenario, out, clock)
+                    driven = scenario
+                    if any(i in CHECKED_ITEMS for i in scenario["probes"]["items"]):
+                        result["probeChecks"] = probe_checks(session, scenario, out)
+                        driven = {**scenario, "probes": {**scenario["probes"], "items": result["probeChecks"]["kept"]}}
+                    result["inputs"] = drive(session, driven, out, clock)
+                    if scenario["capture"]:
+                        # a run's screenshots are taken at its end (the settled state), after the last probe
+                        result["capture"] = capture(session, scenario, out, clock)
     finally:
         record = getattr(session, "record", {})
         (out / "session.json").write_text(json.dumps(record, indent=1, default=str), encoding="utf-8")
@@ -1392,6 +1650,9 @@ def _parser() -> argparse.ArgumentParser:
         p.add_argument("--adapter-id", type=int, default=0)
         p.add_argument("--prune-copy", dest="prune_copy", action="store_true",
                        help="project-copy: delete the run's private mods_source copy after the run (logs, CSVs stay)")
+        p.add_argument("--link-copy", dest="link_copy", action="store_true",
+                       help="project-copy: hard-link the private mods_source copy where the volume allows (files the "
+                            "bench edits are unlinked first); saves the project's size in disk per run")
     a = sub.add_parser("analyse")
     a.add_argument("folder")
     a.add_argument("--scenario", required=True)

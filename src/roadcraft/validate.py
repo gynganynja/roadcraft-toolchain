@@ -126,6 +126,13 @@ CODES: dict[str, tuple[str, str, str]] = {
               "code analysis, static; in-game check pending: consumer 0x1431e6c60 applies per-object objSettings only "
               "when exportedVersion >= 1 (collision), 2 (visibility), 3 (lighting, sorting, render); absent = 0 "
               "(list ctor 0x1435ca970); read_fields.json 'gated', read_fields.md 3a"),
+    "RC076": ("spring-motors", "load-bearing prismatic spring motor outside the retail regime",
+              "code analysis, static: hkpCalcMotorData (ME FUN_1442406f0) turns tpl_markup_spring_motor into "
+              "tau = k*dt^2/m_eff and damping = c*dt/m_eff, each clamped to [0, 1], m_eff = the row's virtual mass "
+              "from both bodies (FUN_14423aa80), maxForce = HK_REAL_MAX (FUN_141594b60); Retail: load-bearing "
+              "prismatic springs (lighter body >= 200 kg, TUZ Lynx family) reach 0.38 / 0.68 at most; Game: Mammoth "
+              "RC62 rear heave (0.86 / 4.0) shook and swung limit to limit parked (physics_semantics.md "
+              "'Spring-motor stability')"),
 }
 RULES = sorted({rule for rule, _, _ in CODES.values()} | {"bro-lint"})
 
@@ -779,6 +786,23 @@ class Context:
     def tpl_bytes(self, tpl_name: str | None) -> bytes | None:
         member = self.find_stem(tpl_name, ".tpl") if tpl_name else None
         return self.read(member) if member else None
+
+    def tree(self, tpl_name: str | None) -> TplNodes | None:
+        """Like :meth:`nodes`, with the parent array located (tpl_reader.find_parents); slower, so callers ask
+        for it only when they need the node tree.  None when the model or its parent array is not found."""
+        if not tpl_name:
+            return None
+        key = f"tree|{tpl_name.lower()}"
+        if key not in self._nodes:
+            data = self.tpl_bytes(tpl_name)
+            nodes = None
+            if data:
+                try:
+                    nodes = read_tpl_bytes(data, parents=True)
+                except (TplFormatError, ValueError, IndexError):
+                    nodes = None
+            self._nodes[key] = nodes if nodes is not None and nodes.parents is not None else None
+        return self._nodes[key]
 
     def markup(self, tpl_name: str | None) -> tuple[Any, str | None]:
         """Effective markup of a model: ``tpl/X.lods_base`` with ``X.tpl_markup`` merged on top (schema.md 4.1)."""
@@ -1594,6 +1618,111 @@ def rule_joints(ctx: Context, markup: dict, markup_name: str, nodes: TplNodes | 
                     "too); controls that address joints by name reach only one", key="objectInfos")
 
 
+# ------------------------------------------------------------------------------------------------ spring motors
+
+SPRING_DT = 1.0 / 60.0                  # editor.cfg Physics.Substep.fixedFps (physics_semantics.md Q7)
+SPRING_RETAIL_TAU = 0.38                # retail load-bearing prismatic springs: TUZ Lynx trailer axle 0.375
+SPRING_RETAIL_DAMPING = 0.68            # TUZ Lynx trailer axles 0.675; frames 0.52
+SPRING_MIN_BODY_KG = 200.0              # lighter props (antennas, balloons, wires) run clamped in retail too
+
+
+def _body_masses(markup: dict) -> dict[str, float | None]:
+    """Markup physics body -> mass in kg (None when massFromDensity: the hull volume is not decoded)."""
+    out: dict[str, float | None] = {}
+    for info in markup.get("objectInfos") or []:
+        if not isinstance(info, dict):
+            continue
+        name = (info.get("objectId") or {}).get("name")
+        for prop in info.get("properties") or []:
+            if isinstance(prop, dict) and prop.get("__type") == "tpl_markup_object_property_physics" and name:
+                mass = prop.get("mass")
+                out[name] = None if prop.get("massFromDensity") is True or not isinstance(mass, (int, float)) \
+                    else float(mass)
+    return out
+
+
+def _body_above(nodes: TplNodes, name: str, bodies: dict[str, Any]) -> str | None:
+    """Nearest markup physics body above node ``name`` in the model tree (the '__parent' constraint target)."""
+    if nodes.parents is None or name not in nodes.index:
+        return None
+    by_index = {index: node for node, index in nodes.index.items()}
+    index = nodes.index[name]
+    for _ in range(len(nodes.parents)):
+        index = nodes.parents[index] if 0 <= index < len(nodes.parents) else -1
+        if index < 0:
+            return None
+        node = by_index.get(index)
+        if node in bodies:
+            return node
+    return None
+
+
+def rule_spring_motors(ctx: Context, markup: dict, markup_name: str, tpl_name: str | None) -> None:
+    """RC076: a prismatic ``tpl_markup_spring_motor`` between two bodies of >= 200 kg whose per-step solver numbers
+    leave the retail regime.  The engine turns spring k and damping c into k*dt^2/m_eff and c*dt/m_eff, each clamped
+    to [0, 1]; m_eff is the constraint row's virtual mass from the two connected bodies only, at most the reduced mass
+    m1*m2/(m1+m2), so the values here are lower bounds.  Hinge springs need the reduced inertia about the axis, which
+    is not decoded, and are not checked."""
+    if "spring-motors" not in ctx.rules:
+        return
+    path = ctx.bundle.display(markup_name)
+    masses = _body_masses(markup)
+    original = ctx.ps(markup_name)
+    original_infos = original.get("objectInfos") if isinstance(original, dict) else None
+    tree: TplNodes | None = None
+    tree_loaded = False
+    for oi_index, info in enumerate(markup.get("objectInfos") or []):
+        if not isinstance(info, dict):
+            continue
+        body = (info.get("objectId") or {}).get("name")
+        for e_index, entity in enumerate(info.get("entities") or []):
+            if not isinstance(entity, dict) or entity.get("__type") != "tpl_markup_constraint_prismatic":
+                continue
+            motor = entity.get("motor")
+            if not isinstance(motor, dict) or motor.get("__type") != "tpl_markup_spring_motor":
+                continue
+            k, c = motor.get("spring", 0), motor.get("damping", 0)
+            if not isinstance(k, (int, float)) or not isinstance(c, (int, float)):
+                continue
+            target = entity.get("target", "__parent")
+            if target == "__world":
+                continue
+            if target == "__parent":
+                if not tree_loaded:
+                    tree, tree_loaded = ctx.tree(tpl_name), True
+                target = _body_above(tree, body, masses) if tree is not None and body else None
+            m1, m2 = masses.get(body), masses.get(target) if target else None
+            if not m1 or not m2 or min(m1, m2) < SPRING_MIN_BODY_KG:
+                continue
+            m_red = m1 * m2 / (m1 + m2)
+            tau = k * SPRING_DT * SPRING_DT / m_red
+            damping = c * SPRING_DT / m_red
+            if tau <= SPRING_RETAIL_TAU and damping <= SPRING_RETAIL_DAMPING:
+                continue
+            notes = []
+            if damping > 1:
+                notes.append(f"damping is clamped to 1, so at most m_eff/dt = {m_red / SPRING_DT:.3g} N*s/m of the "
+                             f"{c:.3g} asked for is delivered ({100 * min(1.0, 1 / damping):.0f} %)")
+            if tau > 1:
+                notes.append(f"the rate is clamped to 1, so at most m_eff/dt^2 = {m_red / SPRING_DT ** 2:.3g} N/m of "
+                             f"the {k:.3g} asked for is delivered")
+            if not notes:
+                notes.append("not clamped, but beyond anything retail ships on a load-bearing prismatic")
+            try:
+                line = original_infos[oi_index]["entities"][e_index].line or None
+            except (TypeError, IndexError, KeyError, AttributeError):
+                line = None
+            ctx.add("RC076", "warning", path,
+                    f"spring motor on prismatic {body!r} against {target!r} ({m1:.0f} / {m2:.0f} kg): k*dt^2/m_eff "
+                    f">= {tau:.2f} and c*dt/m_eff >= {damping:.2f} at 60 Hz (m_eff <= {m_red:.0f} kg, the reduced mass; "
+                    f"the supported load is not in it); retail load-bearing prismatic springs stay at <= "
+                    f"{SPRING_RETAIL_TAU} / <= {SPRING_RETAIL_DAMPING}; " + "; ".join(notes),
+                    line=line, key=f"objectInfos[{oi_index}].entities[{e_index}].motor",
+                    fix=f"raise the lighter body's mass (take it from the heavier one) or keep spring <= "
+                        f"{SPRING_RETAIL_TAU * m_red / SPRING_DT ** 2:.3g} N/m and damping <= "
+                        f"{SPRING_RETAIL_DAMPING * m_red / SPRING_DT:.3g} N*s/m")
+
+
 def rule_ik_frames(ctx: Context, truck: Truck) -> None:
     nodes = truck.nodes
     ik = truck.props.get("prop_ik_system_visual")
@@ -2111,6 +2240,7 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
         if isinstance(markup, dict) and markup_name and ctx.bundle.has(markup_name):
             checked_markups.add(markup_name.lower())
             rule_joints(ctx, markup, markup_name, truck.nodes)
+            rule_spring_motors(ctx, markup, markup_name, truck.tpl)
     for name in ctx.bundle.names():
         if name.lower().endswith(".bro"):
             doc = ctx.ps(name)
@@ -2129,6 +2259,7 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
             markup, markup_name = ctx.markup(stem)
             if isinstance(markup, dict):
                 rule_joints(ctx, markup, name, ctx.nodes(stem))
+                rule_spring_motors(ctx, markup, name, stem)
     unique: dict[tuple, Finding] = {}
     for f in ctx.findings:
         unique.setdefault((f.code, f.path, f.line, f.key, f.message), f)

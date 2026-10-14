@@ -63,8 +63,8 @@ class FakeSession:
     def exec_ssl(self, script, timeout=12.0):
         self.scripts.append(script)
         self.clock.sleep(0.03)  # a reply takes time
-        if "GetBodyCount" in script:
-            return fake_engine.probe_reply(self.clock.t)
+        if "GetBodyCount" in script or 'StringFormat("F %i' in script:
+            return fake_engine.probe_reply(self.clock.t, script)
         for marker, play in (("SSL_LOAD_REQUESTED", False), ("SSL_PLAY_REQUESTED", True)):
             if marker in script:  # synchronously: the clock is virtual
                 fake_engine.load_scene(re.search(r'p\.name = "([^"]*)"', script).group(1), play, delay=0)
@@ -710,6 +710,149 @@ class PakOverlayTests(unittest.TestCase):
             z.writestr("a.txt", "2")
         with self.assertRaises(po.OverlayError):
             po.read_members(bad)
+
+    def test_overlay_keeps_identical_members_linked(self):
+        import zipfile
+        from roadcraft import pak_overlay as po
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, True)
+        ms = tmp / "project" / "mods_source"
+        (ms / "autogen_dw/trucks/auto_k").mkdir(parents=True)
+        (ms / "autogen_dw/trucks/auto_k/auto_k.cls").write_text("old class\n", encoding="utf-8")
+        (ms / "textures").mkdir()
+        (ms / "textures/big.tga").write_bytes(b"\1" * 64)
+        (ms / "textures/changed.tga").write_bytes(b"\1" * 64)
+        pak = tmp / "k.pak"
+        with zipfile.ZipFile(pak, "w") as z:
+            z.writestr("ssl/auto_k_x1.cls", "new class\n")
+            z.writestr("textures/big.tga", b"\1" * 64)        # same bytes as the project: stays a hard link
+            z.writestr("textures/changed.tga", b"\2" * 64)
+        report = po.overlay(tmp / "project", pak, tmp / "out")
+        out = tmp / "out" / "mods_source"
+        self.assertEqual(report["problems"], [])
+        self.assertEqual(report["keptLinked"], 1)
+        self.assertTrue(os.path.samefile(out / "textures/big.tga", ms / "textures/big.tga"))
+        self.assertFalse(os.path.samefile(out / "textures/changed.tga", ms / "textures/changed.tga"))
+        self.assertEqual((ms / "textures/changed.tga").read_bytes(), b"\1" * 64)          # source untouched
+        self.assertEqual((out / "textures/changed.tga").read_bytes(), b"\2" * 64)
+
+
+class SeriesSpringTests(unittest.TestCase):
+    """Mammoth series-spring bench additions: terrain and prismatic probes (checked at rest before use), wheel
+    depth below the ground, sprung-body poses and joint limits, a screenshot at the end of a run, linked copies."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        FakeSession.instances = []
+        FakeSession.clock = VirtualClock()
+        fake_engine.STATE.__init__()
+        self.project = self.tmp / "project"
+        scene = self.project / "mods_source" / "xscenes/mods/pad/pad.scn"
+        scene.parent.mkdir(parents=True)
+        scene.write_text(PAD_SCENE, encoding="utf-8")
+        scene.with_name("pad.scn.resource").write_text("__type: res_xscn_desc\n", encoding="utf-8")
+        (self.project / "mods_source" / "big.bin").write_bytes(b"\0" * 4096)
+
+    def scenario(self):
+        return custom_scenario(
+            durationSeconds=12, scene={"file": "xscenes/mods/pad/pad.scn", "settleSeconds": 1},
+            inputs={"method": "Debug", "schedule": [{"at": 0, "phase": "parked", "handbrake": "On"}]},
+            spawn={"method": "scene", "scene": "xscenes/mods/pad/pad.scn", "vehicle": "test_vehicle",
+                   "position": [0, 60.3, -18]},
+            vehicle={"hull": "BoneChassis_cdt", "wheelNames": ["FR", "FL", "RR", "RL"]},
+            probes={"rateHz": 10, "items": ["bodies", "wheels", "joints", "terrain", "linear"], "readback": True},
+            capture={"cameras": [{"name": "side", "offset": [12, 3, -6]}]},
+            analysis={"groundHeight": 0.0, "sprung": {"bodies": {"BoneChassis_cdt": [0, 0, 0]},
+                                                       "joints": {"SuspFrontLeft": [-0.05, 0.2]}}})
+
+    def run_cli(self, *extra):
+        path = self.tmp / "s.json"
+        path.write_text(json.dumps(self.scenario()), encoding="utf-8")
+        out = io.StringIO()
+        code = bh.main(["run", str(path), "--out", str(self.tmp / "o"), "--strategy", "project-copy", "--project",
+                        str(self.project), "--owner-approved", "test", "--game-root", str(self.tmp / "game"), *extra],
+                       factory=FakeSession, clock=FakeSession.clock, stdout=out)
+        report = json.loads(out.getvalue())
+        self.assertEqual(code, 0, report)
+        return report["runs"][0], FakeSession.instances[0]
+
+    def test_probe_statements(self):
+        script = bh.probe_script(["wheels", "terrain", "linear"])
+        self.assertIn('StringFormat("H %i %.4f\\n", hi, GetTerrain().GetHeight(hinfo.transform.GetPosition()))', script)
+        self.assertIn(" if lj.IsPositional()", script)
+        self.assertIn("lj.GetCurrentPosition()", script)
+        self.assertNotIn("GetTerrain", bh.probe_script(["wheels"]))
+        self.assertTrue(all(ord(c) < 128 for c in script))
+        self.assertIn("l.min, l.max", bh.readback_scripts()["limits"])
+
+    def test_run_checks_probes_measures_depth_and_screenshots_at_the_end(self):
+        run, session = self.run_cli("--link-copy")
+        folder = self.tmp / "o" / "candidate"
+        checks = json.loads((folder / "probe_checks.json").read_text(encoding="utf-8"))
+        self.assertTrue(checks["items"]["terrain"]["ok"] and checks["items"]["linear"]["ok"])
+        self.assertEqual(checks["kept"], ["bodies", "wheels", "joints", "terrain", "linear"])
+        for name in ("terrain.csv", "linear.csv", "wheels.csv"):
+            self.assertTrue((folder / name).is_file(), name)
+        summary = run["summary"]
+        fr = summary["wheelGround"]["wheels"]["FR"]   # fake wheel: centre y 0.4, radius 0.6, terrain 0.05, pad 0
+        self.assertAlmostEqual(fr["depthM"]["median"], 0.25, places=4)
+        self.assertAlmostEqual(fr["depthBelowTerrainM"]["median"], 0.25, places=4)
+        self.assertEqual(fr["sunkSamples"], fr["samples"])
+        joint = summary["sprung"]["joints"]["SuspFrontLeft"]
+        self.assertEqual(joint["unit"], "m")
+        self.assertAlmostEqual(joint["oscillation"]["hz"], 1.0, delta=0.1)
+        self.assertGreater(joint["atMinSamples"], 0)
+        self.assertEqual(summary["sprung"]["joints"]["hinge_blade"]["unit"], "deg")
+        self.assertAlmostEqual(summary["stillness"]["rollDeg"]["oscillation"]["hz"], 1.0, delta=0.1)
+        self.assertIsNone(summary["stillness"]["settledAfterS"])
+        self.assertAlmostEqual(summary["sprung"]["bodies"]["BoneChassis_cdt"]["upFromModelledM"]["max"], 0.0, places=4)
+        shots = json.loads((folder / "capture.json").read_text(encoding="utf-8"))
+        self.assertTrue((folder / "as_loaded__side.png").is_file())
+        self.assertNotIn("error", shots[0])
+        last_probe = max(i for i, s in enumerate(session.scripts) if "GetBodyCount" in s)
+        shot_at = [i for i, s in enumerate(session.scripts) if "SaveScreenshot(" in s and "as_loaded__side" in s]
+        self.assertEqual(len(shot_at), 1)
+        self.assertGreater(shot_at[0], last_probe)
+        private = folder / "root" / "mods_source"
+        self.assertTrue(os.path.samefile(private / "big.bin", self.project / "mods_source" / "big.bin"))
+        self.assertIn("60.3", (private / "xscenes/mods/pad/pad.scn").read_text(encoding="utf-8"))
+        self.assertNotIn("60.3", (self.project / "mods_source/xscenes/mods/pad/pad.scn").read_text(encoding="utf-8"))
+
+    def test_a_rejected_probe_is_left_out_of_the_run(self):
+        with mock.patch.dict(os.environ, {"RC_FAKE_NO_TERRAIN": "1"}):
+            run, session = self.run_cli()
+        folder = self.tmp / "o" / "candidate"
+        checks = json.loads((folder / "probe_checks.json").read_text(encoding="utf-8"))
+        self.assertFalse(checks["items"]["terrain"]["ok"])
+        self.assertIn("error 2059", checks["items"]["terrain"]["reply"])
+        self.assertNotIn("terrain", checks["kept"])
+        probes = [s for s in session.scripts if "GetBodyCount" in s]
+        self.assertTrue(probes and not any("GetTerrain" in s for s in probes))
+        self.assertFalse((folder / "terrain.csv").exists())
+        self.assertTrue((folder / "linear.csv").is_file())
+        self.assertFalse(run["summary"]["wheelGround"]["terrainProbe"])     # the pad height alone
+        self.assertAlmostEqual(run["summary"]["wheelGround"]["wheels"]["RL"]["depthM"]["median"], 0.2, places=4)
+        self.assertFalse(os.path.samefile(folder / "root/mods_source/big.bin", self.project / "mods_source/big.bin"))
+
+    def test_readback_parses_prismatic_positions_and_layers(self):
+        parsed = bh.parse_readback({
+            "limits": "RB_LIMITS\nl SuspRearRoll -0.06981 0.06981\n",
+            "positional": "RB_POSITIONAL\np SuspFrontLeft -0.08500 -0.23000 0.20000\n",
+            "layers": "RB_LAYERS\ny BoneChassis_cdt default 3\ny BoneSuspRear_cdt no_collision 3\n"})
+        self.assertEqual(parsed["constraints"]["SuspFrontLeft"], {"position": -0.085, "linearLimits": [-0.23, 0.2]})
+        self.assertEqual(parsed["constraints"]["SuspRearRoll"]["limits"], [-0.06981, 0.06981])
+        self.assertEqual(parsed["bodyLayers"]["BoneSuspRear_cdt"], {"layer": "no_collision", "system": 3})
+
+    def test_sprung_spec_is_validated(self):
+        for bad in ({"bodies": {"x y": None}}, {"bodies": {"B": [0, 1]}}, {"joints": {"J": [0]}}, {"other": 1}):
+            with self.assertRaises(bh.ScenarioError):
+                bh.load_scenario(custom_scenario(analysis={"sprung": bad}))
+        named = bh.load_scenario(custom_scenario(analysis={"sprung": {"joints": {"BoneA_cdt|BoneB_cdt": [-0.2, 0.2]}}}))
+        self.assertIn("BoneA_cdt|BoneB_cdt", named["analysis"]["sprung"]["joints"])   # engine's child|parent names
+        ok = bh.load_scenario(custom_scenario(analysis={"sprung": {"bodies": ["A", "B"]}, "groundHeight": 60}))
+        self.assertEqual(ok["analysis"]["sprung"], {"bodies": {"A": None, "B": None}, "joints": {}})
+        self.assertEqual(ok["analysis"]["groundHeight"], 60.0)
 
 
 if __name__ == "__main__":

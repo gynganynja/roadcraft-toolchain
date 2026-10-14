@@ -254,10 +254,20 @@ def private_cfg_text(layout: "RunLayout", game_root: str | Path | None = None) -
             f"  ProjectPath: {(game / 'root' / '.project').as_posix()}\n")
 
 
+def _link_or_copy2(src: str, dst: str) -> str:
+    """copytree copy_function: a hard link where the volume allows, else a copy."""
+    try:
+        os.link(src, dst)
+    except OSError:
+        shutil.copy2(src, dst)
+    return dst
+
+
 def prepare_layout(layout: RunLayout, *, pak: str | Path | None = None, project: str | Path | None = None,
-                   game_root: str | Path | None = None) -> RunLayout:
+                   game_root: str | Path | None = None, link: bool = False) -> RunLayout:
     """Create the private folders.  ``moddirs``: the candidate pak alone in ``mods``; ``project-copy``:
-    a copy of the project's ``mods_source`` (as physics_bench.init_bench) with no pak.  The source pak
+    a copy of the project's ``mods_source`` (as physics_bench.init_bench) with no pak; ``link`` makes that
+    copy of hard links (the bench unlinks a file before it edits it: the spawn scene).  The source pak
     and project are only read."""
     if layout.root.exists() and any(layout.root.iterdir()):
         raise EngineError(f"run folder {layout.root} is not empty")
@@ -279,7 +289,7 @@ def prepare_layout(layout: RunLayout, *, pak: str | Path | None = None, project:
         source = Path(project) / "mods_source"
         if not source.is_dir():
             raise EngineError(f"no mods_source in {project}")
-        shutil.copytree(source, layout.mods_source)
+        shutil.copytree(source, layout.mods_source, copy_function=_link_or_copy2 if link else shutil.copy2)
         layout.copied.append(str(source))
         if layout.cfg:
             layout.cfg.parent.mkdir(parents=True, exist_ok=True)

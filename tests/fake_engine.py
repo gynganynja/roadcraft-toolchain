@@ -13,7 +13,8 @@ this file])).  It accepts the engine's argv, joins the ConsoleTre hub like the e
   speaker registered with ``{__PrivateId__ = native GUID text}``, body = UTF-8 + one NUL.
 
 Canned replies: a probe script gets synthetic F/G/B/C/W/J/T lines (hull roll oscillating at
-RC_FAKE_ROLL_HZ, default 1 Hz), an input script gets ROAMER_INPUT_APPLIED, SaveScreenshot writes a PNG
+RC_FAKE_ROLL_HZ, default 1 Hz; H terrain lines when it calls GetTerrain(), unless RC_FAKE_NO_TERRAIN=1 makes
+that an SSL error; L prismatic lines when it calls GetCurrentPosition), an input script gets ROAMER_INPUT_APPLIED, SaveScreenshot writes a PNG
 in two steps (partial, then complete), a script containing RC_FAKE_HANG gets no reply.
 RC_FAKE_MODE=silent never connects (for wall-clock tests).  RC_FAKE_LOG receives JSON lines of the
 argv and every script.
@@ -112,7 +113,7 @@ def png_bytes(width: int = 4, height: int = 2) -> bytes:
 
 
 # ---------------------------------------------------------------- canned engine behaviour
-def probe_reply(t: float) -> str:
+def probe_reply(t: float, script: str = "") -> str:
     hz = float(os.environ.get("RC_FAKE_ROLL_HZ", "1.0"))
     roll = math.radians(2.0) * math.sin(2 * math.pi * hz * t)
     up = (-math.sin(roll), math.cos(roll), 0.0)
@@ -127,6 +128,12 @@ def probe_reply(t: float) -> str:
         lines.append(f"W {0.10 + 0.01 * i:.4f} {(-1) ** i:.4f} 0.4000 {i:.4f} 1 3.000 0.5000 0.6000 0.0000 1")
     lines.append(f"J hinge_blade {0.1 * math.sin(t):.4f} 0.0000")
     lines.append("T 0 0.0100")
+    if "GetTerrain()" in script:   # H lines: terrain under each wheel; RC_FAKE_NO_TERRAIN=1 rejects the accessor
+        if os.environ.get("RC_FAKE_NO_TERRAIN") == "1":
+            return "__automation__ (3:40) error 2059 : can't resolve identifier 'GetTerrain'"
+        lines += [f"H {i} 0.0500" for i in range(4)]
+    if "GetCurrentPosition" in script:   # L lines: prismatic positions
+        lines += [f"L SuspFrontLeft {0.05 * math.sin(2 * math.pi * hz * t):.5f}", "L SuspRear -0.04000"]
     return "\n".join(lines) + "\n"
 
 
@@ -189,8 +196,8 @@ def answer(script: str) -> str | None:
             return "NO_TRUCKS"
         STATE.truck = True
         return "SET_CURRENT fake_truck"
-    if "GetBodyCount" in script:
-        return probe_reply(time.monotonic() - START)
+    if "GetBodyCount" in script or 'StringFormat("F %i' in script:
+        return probe_reply(time.monotonic() - START, script)
     if "ROAMER_INPUT_APPLIED" in script:
         return "ROAMER_INPUT_APPLIED\nrequestedPedals 0.000\nrequestedSteer 0.000\n"
     if "GetFrameNmb" in script:

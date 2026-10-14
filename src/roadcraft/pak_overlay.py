@@ -265,8 +265,13 @@ def overlay(project_dir: str | Path, pak: str | Path, out_dir: str | Path, *, su
                 hits += 1
         if not hits:
             raise OverlayError(f"body {bone} is in no .tpl_markup of the pak")
+    report["keptLinked"] = 0
     for name, rel in target_of.items():
-        _write_new(out / "mods_source" / rel, members[name])
+        dst = out / "mods_source" / rel
+        if dst.is_file() and dst.stat().st_size == len(members[name]) and dst.read_bytes() == members[name]:
+            report["keptLinked"] += 1   # the project already holds these bytes: keep the hard link (disk)
+            continue
+        _write_new(dst, members[name])
     # registration shims: the editor engine registers trucks and wheel sets by scanning
     # res://autogen_dw/trucks/auto_<t>/auto_<t>_truck_info.sso, ..._truck_wheel_info.sso and trucks/preview/
     # (retail ssl/game/autogen_libraries_creator.ssc: AddTagsForTruckDir, key = folder minus "auto_"), not the

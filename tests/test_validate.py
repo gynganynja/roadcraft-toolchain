@@ -239,6 +239,57 @@ class JointTests(Base):
         self.assertEqual(fx.run(rules=["joints"]), [])
 
 
+def spring_markup(child_mass, k, c, *, parent_mass=44000, target='target = "BoneChassis_cdt"',
+                  joint="tpl_markup_constraint_prismatic", density=""):
+    return (f'version = 1\nobjectInfos = [\n'
+            f' {{ objectId = {{ name = "BoneChassis_cdt" }} properties = [ {{ mass = {parent_mass} '
+            f'__type = "tpl_markup_object_property_physics" }} ] }}\n'
+            f' {{ objectId = {{ name = "BoneSuspRear_cdt" }} properties = [ {{ mass = {child_mass} {density} '
+            f'__type = "tpl_markup_object_property_physics" }} ]\n'
+            f'   entities = [ {{ __type = "{joint}" {target} isMinLimit = True minLimit = -0.27 isMaxLimit = True '
+            f'maxLimit = 0.22 motor = {{ spring = {k} damping = {c} __type = "tpl_markup_spring_motor" }} }} ] }}\n]\n')
+
+
+class SpringMotorTests(Base):
+    """RC076: per-step solver numbers k*dt^2/m_eff and c*dt/m_eff of load-bearing prismatic spring motors."""
+
+    def run_markup(self, markup, tpl=None):
+        nodes = {"BoneChassis_cdt": matrix(), "BoneSuspRear_cdt": matrix(0, 1, -2)}
+        fx = self.fixture({"models/mods/m.tpl.asset/m.tpl_markup": markup,
+                           "models/mods/m.tpl.asset/tpl/m.tpl": tpl or tpl_bytes(nodes)})
+        return fx.run(rules=["spring-motors"])
+
+    def test_mammoth_rc62_rear_heave_is_clamped(self) -> None:
+        found = self.run_markup(spring_markup(4000, 11300000, 880000))
+        self.assertEqual(codes(found), ["RC076"])
+        self.assertEqual(found[0].severity, "warning")
+        self.assertIn("damping is clamped to 1", found[0].message)
+        self.assertIn("2.2e+05", found[0].message)            # m_eff/dt = 3667 kg x 60
+        self.assertTrue(found[0].line)
+        self.assertIn("damping <=", found[0].fixHint)
+
+    def test_mammoth_rc62_front_is_beyond_retail_but_not_clamped(self) -> None:
+        found = self.run_markup(spring_markup(6000, 3510000, 271000))
+        self.assertEqual(codes(found), ["RC076"])
+        self.assertIn("not clamped", found[0].message)
+
+    def test_retail_lynx_frame_and_light_props_are_clean(self) -> None:
+        self.assertEqual(self.run_markup(spring_markup(500, 300000, 12000, parent_mass=1700)), [])
+        self.assertEqual(self.run_markup(spring_markup(30, 5000, 2500, parent_mass=1700)), [])     # Lynx balloon
+        self.assertEqual(self.run_markup(spring_markup(4000, 11300000, 880000, density="massFromDensity = True")), [])
+
+    def test_hinge_springs_are_not_checked(self) -> None:
+        self.assertEqual(self.run_markup(spring_markup(4000, 11300000, 880000, joint="tpl_markup_constraint_hinge")),
+                         [])
+
+    def test_parent_target_resolved_through_the_model_tree(self) -> None:
+        nodes = {"BoneChassis_cdt": matrix(), "BoneSuspRear_cdt": matrix(0, 1, -2), "cdt_rear": matrix(0, 1, -2)}
+        data = tpl_bytes(nodes)
+        tree = struct.pack("<3h", -1, 0, 1) + data[6:]        # parent array in the padding: root, chassis, susp
+        self.assertEqual(codes(self.run_markup(spring_markup(4000, 11300000, 880000, target=""), tree)), ["RC076"])
+        self.assertEqual(self.run_markup(spring_markup(4000, 11300000, 880000, target=""), data), [])  # no tree: skip
+
+
 LIGHTS = ('prop_vehicle_lights_material = { lights = { "0" = { defaultName = "default" lightName = "lights_emissive" '
           'geomNames = [ "marker_lights" ] __type = "Headlights" } } }')
 

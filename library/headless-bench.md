@@ -215,6 +215,43 @@ and disk before each launch (the campaign's `run_queue.sh` stops below 6 GB / 5 
 Speed note (KGS-25, Game): `normal`'s pedal 0.35 in AUTO reaches 2 m/s in 1st gear and 2.9 m/s after the shift; for a
 slow climb use `gear: LOW_GEAR` (about 1.25 m/s at pedal 0.35).
 
+## Mammoth series-spring bench (2026-10-14, laptop, owner-approved 3 runs; results in `C:\RC_RE\bench-headless\mammoth\results.md`)
+
+Scenario `library/bench-scenarios/mammoth_parked_empty.json`:
+- the truck parked, empty, handbrake on, engine on, no pedal;
+- 40 s of 10 Hz probes on the roamer105_acceptance pad.
+
+Bench additions for this campaign (all tested with the fake engine):
+
+| Addition | What | Grade |
+|---|---|---|
+| probe `terrain` | `H <wheel> <GetTerrain().GetHeight(wheel centre)>`; `terrain.csv`; `summary.wheelGround` = wheel bottom (centre y - `GetPhysicalRadius`) vs the higher of terrain and `analysis.groundHeight` (a static scene mesh such as a pad is not in the terrain: on roamer105 the terrain reads 42.499 under the pad top 60.0) | Game (RC60 check) |
+| probe `linear` | `L <constraint> <GetCurrentPosition()>` for `IsPositional()` constraints; `linear.csv` | Inferred (RC60 has no prismatic; not yet run on one) |
+| checked items | `terrain` and `linear` are tried once at rest (`probe_checks.json`) and left out of the per-sample probe if the reply lacks their lines, so one rejected accessor cannot cost a run's probes | Build |
+| readback | `limits` now reads `FloatRange.min/.max` (the `.x` of the KGS campaign was the error); new `positional` (position, `GetLinearLimits`) and `layers` (`GetCollisionFilterInfo().GetLayer()`, system group per body) | limits and layers Game (RC60), positional Inferred |
+| `analysis.sprung {bodies, joints}` | each sprung body's offset (left/up/fwd) and roll/pitch against the hull, vs a modelled offset; each prismatic (m) / hinge (deg) series against its limits; `summary.stillness` = hull height/roll/pitch statistics, strongest oscillation, settle time over the whole run | Build |
+| `run` + `capture` section | a run's screenshots are taken after the last probe (the settled state) | Build |
+| `--link-copy` | the run's private `mods_source` copy is hard links (the spawn scene is unlinked before it is edited); `pak_overlay` keeps a pak member that matches the project's bytes as a hard link (`keptLinked`, 1231 of 1317 Mammoth members): a run costs ~0 disk instead of ~1.6 GB | Build; no kit file changed through the links in launch 1 |
+
+| Launch | Run | Result | Grade |
+|---|---|---|---|
+| 1 | RC60 (2adf6d7a) parked | Scene loaded and the truck became current (~117 s); readback and probe checks ran at rest. The first input step `state.isEngineOff.Set(false)` then crashed the engine: `ssl game crash` "Shaker hasn't been found. (EngineStart)" (`PropTruckShakerNativeController.StartShaker` from `BlueprintNodeTruckShaker.Play` on `OnEngineStarting`). The Mammoth class plays shakers "EngineStart" / "EngineShutdown" but its `prop_truck_shaker_native_controller` is empty. 0 probe samples | Game (engine headless) |
+| - | RC61, RC62 | not launched under the first approval (stop on a failed launch, no relaunch) | - |
+| 2-4 | RC60, RC61, RC62 parked, **engine off** (second approval, "3 runs engine-off") | All complete: 362/363/355 samples at about 9 Hz, about 2.5 min each. `terrain` and `linear` passed their checks on RC61 and RC62. Readback confirmed each build: layers, motors and prismatic limits. No kit file changed through the links. Results: `C:\RC_RE\bench-headless\mammoth\results.md` | Game (engine headless) |
+
+Mammoth facts for later benches (Game):
+- Markup constraint names are `<child body>|<parent body>`, e.g. `BoneSuspFrontLeft_cdt|BoneChassis_cdt`.
+- `GetCurrentPosition` of a prismatic with `childRotation [90,0,0]` is + = down (droop). It matched the body offset
+  to 1 mm.
+- The chassis body's `GetForward` is world-down. The bench's hull pitch therefore reads -90 at rest, and its
+  roll/pitch are in a rotated frame (positions, heights and joints are unaffected).
+- A truck that falls off the pad makes the pad-height depth meaningless: check the positions.
+
+**Pitfall: engine start can crash the editor engine.** A truck whose blueprint plays a shaker the class does not define
+dies on `isEngineOff.Set(false)`. Before an engine-on scenario, check the class: every
+`BlueprintNodeTruckShaker.shakerName` must exist in `prop_truck_shaker_native_controller`. Otherwise leave the
+engine off (`"engine": false` sends no engine statement).
+
 ## Scene, play mode, truck, screenshot (`scene` command; Build with the fake, not yet run live)
 
 Recipe and evidence: `C:\RC_RE\research\scene_play.md`.
