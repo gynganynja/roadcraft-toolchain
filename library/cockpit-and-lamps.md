@@ -889,3 +889,23 @@ Owner: "Can you make the interior fully polished and finalized". An audit of the
 
 Project: `l275_minespec_mod/tools/interior_v20.py` (bones, groups), `ute_systems.py` (dataDashboard),
 `art/interior_v20/generator/{r10_interior,r50_gauges,r51_gauge_art,gauge_layout}.py`.
+
+## Rear-view mirrors (picture-in-picture glass), 2026-10-14
+
+Static research (laptop item 4; details in `C:\RC_RE\research\mirror_semantics.md`, copy on the share). Grades:
+Code = shader/SSL read, Retail = retail/SDK data, Build = measured on a mod's files, Inferred.
+
+| Rule | Grade |
+|---|---|
+| The SDK recipe is the reference: glass `_hp_cab_interior_mirror_<side>` (`mirror_hp_mat` -> `vehicle_mirror_hp_cubemap` with `dynamicMaterials` `truck_mirror` -> `vehicle_mirror_hp` and `_lp_cubemap`) + coplanar outside glass `_lp_cab_interior_mirror_<side>` (`mirror_lp_mat` -> `vehicle_mirror_lp`) + empty `pip_camera_<side>` at the glass centre on `BoneBody_cdt` (+Y = glass normal, +Z up) + class `prop_rear_view_mirror.mirrorParams` {fov, centerLocatorName, objName, pipCameraMaterialName `truck_mirror`, cubemapMaterialName `_lp_cubemap`} | Retail (SDK Lynx) |
+| Leave the mirror instances bare (`__type = "vehicle_mirror_hp"` etc.). The preset's `colorParams [[0,255,255,255]]` is **ARGB** (A=0, RGB white), so F0 = 1 and the glass shows the live picture unscaled. An RGBA-style override tints it (`[255,255,255,0]` = yellow F0) | Code (`combine_material_pip_mirror.fx`, `meta_desc.ps` colorARGB), Retail |
+| The PIP shader reads no albedo, normal or spec map: only the live 540x360 FP16 image through UV0 (U flipped in the shader) times Schlick(F0). Tints come from geometry or the cubemap fallback, never from the instance's textures | Code |
+| Nothing may sit on or in front of the glass except a transparent decal. `_hp_cab_`/`_lp_cab_` objects swap with the cockpit, but every other object (e.g. a body chrome mesh the glass was copied from) stays drawn. The Mammoth kept its chrome glass faces under a 1 mm-proud flat copy: the chrome pokes through 34 % of the left glass (up to 2.25 mm) and z-fights elsewhere, so the mirror shows patches of body atlas or chrome. Delete the source faces, or move them 10 mm or more back | Code (`prop_truck_cockpit_high_poly.ssc`), Build (Mammoth ray cast); that this is the owner's "weird colour" is Inferred |
+| Lay the glass UVs out like the SDK: v 0..1 bottom to top, u along up x normal (hp; reversed on lp), u spanning about 0.65 of the image (Lynx 0.175-0.825). A strip as narrow as the Mammoth's (0.19 of u on a 1.1 m tall glass) is a ~3x zoom that can fill the mirror with one surface; widen it or raise `fov` | Retail (Lynx measured), Inferred |
+| Retail: 2 mirrors per truck, fov 35-60 (typical 45/40), locator names `pip_camera_left/right`; at most 9 mirrors registered at once (`MAX_MIRROR_COUNT` 10, assert `< 10`), one PIP camera renderer with up to 10 textures | Retail, Code |
+| Reflections render only in the high-poly cockpit with the game's "mirror reflections" setting on; otherwise the glass gets the cubemap material (grey chrome GLT, reflectance 0.78, SSR off) | Code |
+| Mod Editor crash with PIP on: the editor config forbids shader compilation and crashes on an attempt (`Debug.ForbidShaderCompilation`, `Preload.CrashOnShaderCompilationAttempt`), and the editor keeps PIP asserts retail strips. The cause is not established; run editor play with mirror reflections off. A log or dump names the assert | Code/Retail (config, strings); cause unknown |
+
+Evidence: retail `material_presets/vehicle_mirror_*.mp`, `td/pip_mirror_01.td` (`truck_mirror`), 73 retail classes,
+SDK `tuz_119lynx_mod` blend (Blender headless), `cat793d_detail/tools/mirrors.py` and the project blend,
+`C:\RC_RE\research\scripts\mirror_glass_ray.py`.

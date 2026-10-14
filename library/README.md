@@ -26,6 +26,7 @@ before installing it. Read the subject articles when authoring:
 | [ik-visual-rigs.md](ik-visual-rigs.md) | Visual IK chains: wishbones, uprights, dampers, cylinders, linkages |
 | [cranes.md](cranes.md) | Mobile cranes: crane IK chains, telescopes, winch and hook, crane controls, slew-less cranes |
 | [articulated-steering.md](articulated-steering.md) | Centre-pivot steering: the steering hinge, oscillation body, frame-parented wheels, sign |
+| [trailers.md](trailers.md) | Trailers and towing: retail trailers are bodies of one truck (fifth-wheel and drawbar joints), the winch rope and self-driving tow, no runtime hitch |
 | [secondary-physics.md](secondary-physics.md) | Swinging accessories: mudflaps, whip flags, antennas, swing-out brackets (retail no-collision, massFactor 0 pattern, ragdoll axes) |
 | [truck-settings.md](truck-settings.md) | Truck BRO settings: steering, pedals, gearbox, controls, the SDK sample's gaps |
 | [cockpit-and-lamps.md](cockpit-and-lamps.md) | Steering wheel and gauges (`dataDashboard`), lamps that work in the campaign |
