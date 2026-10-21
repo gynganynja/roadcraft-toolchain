@@ -12,6 +12,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
+def _reachable(test) -> bool:
+    """True when a share path answers; a lost share login raises OSError (WinError 1326) instead of False."""
+    try:
+        return bool(test())
+    except OSError:
+        return False
+
+
 from roadcraft import physics_report as pr
 from roadcraft import schema as schema_mod
 from roadcraft import tpl_reader
@@ -285,7 +293,7 @@ class RetailCalibrationTests(unittest.TestCase):
         self.assertEqual(again["roles"], self.dist["roles"])
 
 
-@unittest.skipUnless(RC68.is_file() and RC69.is_file(), f"Mammoth bench paks not reachable: {SHARE}")
+@unittest.skipUnless(_reachable(lambda: RC68.is_file() and RC69.is_file()), f"Mammoth bench paks not reachable: {SHARE}")
 class MammothAcceptanceTests(unittest.TestCase):
     def test_rc68_front_carriers_flagged_rc69_passes(self):
         hits = [f for f in v.validate(RC68, rules=["body-inertia"]) if f.code == "RC080"]

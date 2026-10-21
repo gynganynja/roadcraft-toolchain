@@ -14,6 +14,14 @@ import zipfile
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
+def _reachable(test) -> bool:
+    """True when a share path answers; a lost share login raises OSError (WinError 1326) instead of False."""
+    try:
+        return bool(test())
+    except OSError:
+        return False
+
+
 from roadcraft import physics_report as pr
 from roadcraft import schema as schema_mod
 from roadcraft.tpl_reader import TplNodes
@@ -480,7 +488,7 @@ class RetailTests(unittest.TestCase):
         self.assertEqual({e["fields"]["softForceScale"]["value"] for e in contact}, {0.75})
         self.assertEqual(self.ctx.schema() is not None, True)
 
-    @unittest.skipUnless(KGS_FIXTURE.is_dir(), f"KGS-25 fixture share not reachable: {KGS_FIXTURE}")
+    @unittest.skipUnless(_reachable(KGS_FIXTURE.is_dir), f"KGS-25 fixture share not reachable: {KGS_FIXTURE}")
     def test_kgs_fixture_reproduces_the_desktop_diff(self):
         result = pr.compare(KGS_FIXTURE, "EPEC TC305", ctx=self.ctx,
                             fields=["softForceScale", "mass", "terrainDeformationFactor", "section.height",
