@@ -2134,3 +2134,17 @@ visible lamp/state, motion range/axis/park verification and attachment closure,
 with visible review tied to the exact installed candidate. Asset-specific
 regression checks must follow reproduced causes; no guessed handedness fix or
 automatic shared threshold change was applied in this explanatory audit.
+
+## KGS-25 v10: the ground-run radius (2026-10-22)
+
+Owner's v9 verdict (Drive Queue): every handling check passed, but "idler wheels need to be bigger as objects can
+get between and cause it to get stuck" and "gets covered in mud even when on concrete". Offline comparison against
+the EPEC TC305 and Greenway HT500 found the one layout fact every earlier pass had kept: the KGS carried its weight on
+hidden physics wheels of 0.27 m rolling radius, under half of any shipped crawler's (0.39-0.58 m), because its visible
+road wheels were bigger than its physics wheels where vanilla does the reverse. v10 raised the 14 contact slot bones
+0.22 m and set the contact radius to 0.42 m (ground line, art and belt unchanged; validate 0 new, lint 0 errors) and
+added the retail wheel covering flag. The owner after the first drive: "What did you do? That made such a difference,
+it feels so nice now" (Game). Lesson recorded in tracked-vehicles.md ("Vanilla ground run", recipe step 8). Still
+open there: the shoe pitch overlap (0.175 m shoes on a 0.137 m pitch) and whether the covering flag cured the mud.
+Evidence: kgs25 final `tools/raise_contacts.py`, `tools/ground_run.py`, `logs/validate_v10.json`, README "Tracks
+against vanilla".

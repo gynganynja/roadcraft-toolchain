@@ -688,6 +688,14 @@ steering limit or remodel the cylinder. See [articulated-steering.md](articulate
 for mesh overlap at the model stage (kanga25_mod `tools/audit_rig.py`), limit the luff, and keep boom and chassis
 in one collision group so the physics cannot jam. See [cranes.md](cranes.md).
 
+## Crawler stops on small obstacles; "objects get between" the idler and the track (KGS-25 v9, 2026-10-22)
+
+**Owner report (Game):** "idler wheels need to be bigger as objects can get between and cause it to get stuck".
+**Cause (Build, geometry):** the hidden ground-run physics wheels were r 0.2 under a 0.07 section (0.27 m rolling
+radius) while the sprocket and idler sit raised; retail crawlers roll on 0.39-0.58 m hidden rollers. **Fix (Build; Game,
+owner drive 2026-10-22: "feels so nice now"):** raise the contact slots and enlarge their radius so the ground line stays (tracked-vehicles.md, "Vanilla
+ground run"). The visible wheels need no change.
+
 ## A hidden part leaves stray vertices behind, or never comes back (KGS-25 hook, 2026-10-14)
 
 **Owner drive (Game):** "when connecting a load, hook disappears but some vertices remain. Hook also never comes

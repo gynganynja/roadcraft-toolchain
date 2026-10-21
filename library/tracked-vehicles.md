@@ -196,6 +196,10 @@ Game, one vehicle (KGS-25 fix 2); every step was needed, none alone was enough:
    (read_fields.md "Tracked contributors"; code analysis, static).
 7. Run `roadcraft lint-bro` with the class, model and markup (below), then measure on the bench
    before installing: roll in pivot turns, hull height, frame twist and the yaw achieved.
+8. Give the hidden ground wheels a vanilla rolling radius (radius + section height 0.4-0.6 m, TC305 0.58, HT500
+   0.39-0.57) with their centres raised so the ground line stays; keep the visible rollers at their art size. The
+   KGS-25 went from 0.27 m to 0.49 m in v10 and the owner's first words were how much better it felt (Game,
+   2026-10-22; see "Vanilla ground run" below). Keep every real wheel's top under the return rollers' inner face.
 
 ## A small crawler on the hull: WALL-E (2026-10-04)
 
@@ -279,6 +283,7 @@ read by default) runs `roadcraft.tracks`:
 |---|---|---|---|
 | RC046 | warning | a track whose ground wheels are all stop fakes, no real wheel at ground level (needs the model) | none |
 | RC047 | warning | a wheel-carrying body (track frame) welded to its parent by a fixed constraint at any mass share, or on a hinge/slide with no motor; the message names a frame under 10 % of the body mass and gives the HT500 hinge as the fix (widened 2026-10-13: fix 2's heavy but welded frames passed the old 10 % rule) | none |
+| (deferred) | - | a crawler whose ground-run physics wheels roll on less than ~0.35 m (radius + section): every shipped crawler's hidden ground wheels roll on 0.39-0.58 m; the KGS-25's 0.27 m wedged on small obstacles until v10. Not yet a lint rule: needs the section height joined to the wheel class radius per track (one build, one drive of evidence) | KGS-25 |
 | RC048 | info | sprung wheels on a jointed body under 10 % of the total body mass: expect springs softer than the vehicle-mass formula (rationale superseded 2026-10-13, see below; the flag stays) | Aramatsu Forester Neo crane and forwarder |
 
 **RC048's rationale is now unsupported** (2026-10-13): it rested on the mass-scaling inference and
@@ -391,3 +396,37 @@ owner-confirmed track fix and preserved repeat failure in
 `repair_2026-10-03/build/receipt.json` and direct installed-package inspection.
 No KGS files/settings were changed, and no native test was run for this comparison.
 No validator is added: the cross-vehicle tuning hypotheses need matched tests.
+
+## Vanilla ground run: big hidden rollers under small visible ones (KGS-25 v10, 2026-10-22)
+
+**Retail (compiled classes + `tpl-nodes`):**
+
+| Vehicle | Visible road rollers | Hidden physics wheels on the ground run | Rolling radius (radius + section) |
+|---|---|---|---|
+| EPEC TC305 | 11 per side at y 0.259 (visual slots, r ~0.12) | 5 fakes r 0.38 at y 0.521 (0.26 m **above** the visual centres, bottoms level with the real end wheels at 0.14) | 0.58 m; real front/rear wheels r 0.34: 0.54 m |
+| Greenway HT500 | 8 per side at y 0.309 | 8 fakes r 0.208 at y 0.452; front/rear idlers r 0.38 at ground (0.215) | fakes 0.39 m, idlers 0.565 m |
+| KGS-25 r4-v9 | 7 per side r 0.275 at y 0.34 | 7 contacts r 0.20 at y 0.265 (below the visual centres) | 0.27 m |
+
+The belt is drawn from the real wheels and the `visualWheelSlots` only: `truck_track.ssc` passes `physicsRollers`
+(wheelIds) and `visualRollers` to `InitNative` and calls `AddFakeWheels` afterwards (SDK script; the TC305's big
+fakes do not bulge its belt, Retail). So a crawler's obstacle-handling radius is free to choose: give the hidden ground
+wheels a big radius with their centres raised so the ground line stays, and keep the visible rollers small.
+
+**Owner report (KGS-25 v9, Game):** "idler wheels need to be bigger as objects can get between and cause it to get
+stuck". With 0.27 m rolling radius anything over ~0.15 m wedged under the raised sprocket/idler against the small
+rigid end contacts. **Fix (Build; owner drive 2026-10-22, Game: "that made such a difference, it feels so nice now"):** contact slot bones up 0.22 m, class radius 0.20 -> 0.42 (0.49 m
+rolling), same ground line; the two real end contacts shape the belt, which now leaves the end road wheel 0.2 m
+earlier at 24-28 deg (was 39-42 deg); keep real-wheel tops under the return rollers' inner face or the belt's top run
+lifts off them (KGS: 0.905 vs 0.995). Check the ramp/nose fakes against the new tangent line: the KGS r1 ramps (r 0.33)
+were 8 cm proud of the old belt line and are 1-1.4 cm inside the new one.
+
+**Shoe pitch (Retail vs Build):** TC305 track section = one 0.9 m mesh for 4 bones on a 0.238 m pitch (~0.225 m per
+shoe, 1.3 cm gap); KGS-25 shoes are 0.175 m long on a 0.137 m pitch (3.8 cm overlap), so neighbours clip where the belt
+bends. Not yet reported by the owner; the fix is a shorter shoe or pitch + bone spacing ~0.18 m (track-section
+re-export). Section height vs shoe depth (TC305 0.2 vs 0.10 below the bone; KGS 0.07 vs 0.103) is still Open: the
+engine's alignment of the shoe to the physics plane is not established.
+
+**Covering (Retail survey):** `allowCovering = True` is normal on retail bodies (114/125), wheels (153/154) and track
+sections (22/24). 384 of the 479 retail wheel classes with `prop_covering` set `isWriteIntensityToBuf = True` (every
+modelled TC305/HT500 wheel; fakes have no covering block); mod generators emit the block without it. Added to the KGS
+modelled wheels in v10 against the owner's "covered in mud even on concrete" (effect Inferred until driven).
