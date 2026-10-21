@@ -252,3 +252,22 @@ Segment_1, Segment_2; Kanga 25 too). **Rule (SSL source + compiled frames):** ma
 (winch points, VFX boxes) were authored for that frame. Also missing in the client class: `equipmentCameraType CRANE`
 on `prop_camera_equipment_preset` (ZiKZ, Kanga), crane sound graph (`Addon`), effect emitter nodes
 (`sfx_exhaust_*`, `sfx_radiator_haze`) and the effect/sound links in the class `.resource`. c3 installed; drive Open.
+
+**Telescope reach wall (c4-c7, owner: the boom stops at about 45 m total, about 23 m per joint; engine read 2026-10-22).**
+The native crane IK puts no cap on how far a telescope can reach (C, `C:\RC_RE\research\physics_semantics.md`
+"IK prismatic reach").
+- **Limits:** each prismatic's limits are the Havok limits from the markup, unchanged.
+- **Solver:** `dq = (JᵀJ + 0.1·I)⁻¹Jᵀe`, then a uniform speed cap and a clamp to the limits. There is no reach, length,
+  root-distance or cdt-derived limit.
+- **Even split:** two telescope joints on the same axis always share an extension equally. An even 23/23 stop
+  therefore means neither joint hit its own limit.
+- **Hard stop:** the wall was the same in c4 and c7, although the motor-target lead differed about 10x. That points
+  to a hard stop (I). In order of likelihood:
+  1. a `propCraneIK.blockedZones` box, which moves and slews with the crane;
+  2. compiled telescope limits that are not 104.94 / 93.28;
+  3. a cdt contact at that pose.
+- **Rules:**
+  - keep `blockedZones` empty unless a zone is wanted;
+  - check the compiled telescope limits with `tpl-nodes`;
+  - in game, dbg var `Game/Truck/IK` shows whether the blue target sphere or the physical effector stops first.
+- **Status:** mod-specific check pending, because the share was unreachable.
