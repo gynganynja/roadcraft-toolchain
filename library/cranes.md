@@ -252,3 +252,24 @@ Segment_1, Segment_2; Kanga 25 too). **Rule (SSL source + compiled frames):** ma
 (winch points, VFX boxes) were authored for that frame. Also missing in the client class: `equipmentCameraType CRANE`
 on `prop_camera_equipment_preset` (ZiKZ, Kanga), crane sound graph (`Addon`), effect emitter nodes
 (`sfx_exhaust_*`, `sfx_radiator_haze`) and the effect/sound links in the class `.resource`. c3 installed; drive Open.
+
+## YouTube review fixes (Kanga 25 c11, 2026-10-22; Cezium29 review of KGS 25 + Kanga 25, unverified on c10)
+
+| Report | Cause (Build / Retail) | c11 change |
+|---|---|---|
+| Crane camera can't be placed around the working end | `equipmentCameraSettings.equipmentCameraPreset.attachmentBone` `_equipment_camera` sat on the front frame; retail hangs it on the telescope body (Baikal: child of BoneArm1_cdt) so the orbit travels with the boom | locator on BoneTele3_cdt near the head, boom centreline |
+| Attachment points odd, a vehicle lift did not complete | `winchSettings.craneZoneRadius` 14; every retail crane uses 5-10 regardless of boom length (Baikal 8, TC305 18.5 m boom 8, HWC945 25.5 m boom 10) | 8 and `minWinchLength` 1.8 (Baikal) |
+| Big luff cylinders lag the boom while it stows | luff ram base on an unlimited `HINGE2` (spare axis); Baikal tower piston: single limited `HINGE` + `PRISMATIC` | `HINGE` about the ram bone's native Z (lateral, from compiled frames) +-60, `PRISMATIC` unchanged; steering rams keep HINGE2 (frames roll) |
+| No menu icons | streamed, mip-split icon textures (textures-and-materials.md) | Lada UI texture route |
+| (laptop RE) wheel chatter | `activateCriticalCollisionTypeOnInit` False from the Baikal pool; True in 515 / 515 retail wheel classes | True |
+
+Crane controls (CRN-01): the owner's Drive Queue verdict on c10 says sticks / keyboard drive the crane. By design and
+kept: forward-only boom, no outriggers, pick-and-carry. Effects of all c11 changes: Inferred until driven.
+
+## Winch source at the head sheave (KGS-25 v11, 2026-10-22)
+
+A reviewer (pre-v8 build): the crane's guide line "points at the boom". The KGS-25 `prop_truck_crane_rb.winchSource`
+sat 0.57 m below the tip bone: 0.9 m under the head sheave and 0.5 m above the modelled hook block, in mid-air. Put
+the source where the rope physically leaves the structure, the sheave bottom (sheave centre = the hook pendulum
+pivot, radius from where the drum rope arrives): KGS offset (0, -0.17, 0.97) from the tip bone. Geometric (Build);
+whether it changes the guide line in game is Open until driven.

@@ -14,6 +14,7 @@
 | Budgets in the SDK samples: Lynx body 4096, glass 4096 x 2048, rim 1024, tyre 2048 x 1024; Crayfish sets 4096, rim 2048 | SDK |
 | One wheel model is shared by all wheels of a class, so only one wheel needs texture space | Build |
 | Store card 368 x 308 (opaque), vehicle list icon 960 x 640 (transparent): one-level BC7 with alpha, `disableStreaming: true`. The `.td` needs `mipmap_level = 0`: any other value makes the converter cut a non-power-of-two width (KGS-25's icon shipped as 512 x 640 with 4 levels) | Build, Game |
+| Confirmed with the SDK `TextureConverter --usage MD+MT` (KGS-25 v11, 2026-10-22): `mipmap_level = 1` cut a 960 x 640 source to 512 x 640 with 4 levels whether the TGA was 24- or 32-bit; `mipmap_level = 0` kept 960 x 640, one level, format 52. A compiled pak carries the result in `pct/<name>.pct.resource` (`sx`, `nMipMap`, `format`, `disableStreaming`); the KGS-25, Kanga 25 and T-80BVM icons were all the cut 512 x 640 x 4 / format 51 / streamed kind while every other mod in the set matched retail. The BRO fields are `UiInfo.uiCustomIcon` and `ChassisInfo.uiCustomShopIcon` (schema `descRESOURCE_TEXTURE`; no retail truck uses them, retail uses atlas ids in `uiIcon`) | Build |
 | The exporter links textures by Blender image **name**: name each image exactly as its resource (`mod_x_body`), or packaging fails on `res://td/<name>.tga.td.resource` | Build (16M3 grader) |
 | A trail height map (`MH`, texture type `hdetm`) compiles to half a byte per pixel (format 37); use the shipped trail descriptor | Build (Roamer 105: sizes then matched the TUZ's) |
 | Spec values used after "looks like it's made of plastic" (source maps had paint at roughness 0), metalness / roughness: paint 0.25 / 0.35, chrome 1.0 / 0.12, painted steel 0.55 / 0.5, rubber 0 / 0.88, fabric 0 / 0.85, plastics 0 / 0.65 | Build (Roamer 105; not re-judged by the owner) |
@@ -565,3 +566,15 @@ Owner: "use the bfg tyre from this blend and the white steelie rim" (Watcher61 p
   (`mesh.materials[i] = m`) when re-assigning bake materials.
 
 Project: `l275_minespec_mod/art/wheels_v35` (generator `w10_build.py`, `w20_compose.py`, `w30_review.py`).
+
+## Menu icons that never show (Kanga 25 / KGS-25, player review 2026-10-21)
+
+**Game (player review, both cranes):** no icons in vehicle selection, shop or garage. **Cause (Build, installed
+packages compared):** both cranes' `uiCustomIcon` texture shipped as a streamed, mip-split texture (Kanga: 512 x 640,
+4 `.pct_mip` files, `disableStreaming: false`; KGS: 4 mips, `MD`) while every mod whose icons show (Lada, Mammoth,
+D11, Roamer 105, Dump Twuck) ships one full-size level with `disableStreaming: true`, `MD+MT` for both icon and shop
+card. Running TextureConverter with `--usage MD+MT` imposed that usage's mips and a resize despite `mipmap_level 1`.
+**Fix (Build, kanga25_mod c11 `prepare_textures.compile_ui`):** the Lada route - td `mipmap_level 1, resample 0,
+fade_end 0`, converter `--quality 3` (no `--usage`), check sx/sy/nMipMap == size/1, write `disableStreaming: true`;
+package audit checks the shipped resources. In-game confirmation: Open.
+
