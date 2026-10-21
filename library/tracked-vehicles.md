@@ -229,6 +229,42 @@ wheels was radius + section (body speed / wheel spin 0.092-0.098 for 0.074 + 0.0
 Climbing: r5 has no hidden obstacle wheels; a step meets the front wheel (radius + section 0.098 m) and the
 belt between the wheels has no collision. **Open:** the owner's drive of r5, steps, slopes and mud.
 
+## A tiny-roller crawler: Nivek TED (2026-10-19)
+
+A 1.36 m tracked scissor jack whose only real wheels are the four end rollers (radius 0.034 m physical,
+0.059 m rolling radius with the 22 mm section), all driven, rigid frame, hard contact, every other roller
+visual. Headless bench (`roadcraft.bench_headless`, scenario `C:\RC\TED_RoadCraft_Mod\bench\ted_drive.json`:
+full-pedal straight, AUTO reverse, full-lock pivots; runs in `bench\runs\c*_ted_drive`). All Game (headless bench):
+
+| Build | Measured |
+|---|---|
+| c3: rigid (min = max = 0), 30 kg rollers, torque 11,000, friction 0.8 | stalled: one diagonal pair stood still while the other spun (a four-legged table: a rigid frame on four rigid contacts rests on one diagonal) |
+| c4: same, `maxDeltaAngVel` 0.0002 | forward 2.4 m in 12 s with the wheels at exactly 1st gear's `angularVelocity` (3.1 rad/s); reverse stuck after 0.4 m with the wheels free-spinning, one at the governor cap |
+| c5: 6 mm travel (`roadcraft suspension --sag 0.006 --bump 0.006 --droop 0.006`), 45 kg rollers | 6 m forward / 7 m reverse, but wheel spin readings jumped between -99 and +99 rad/s, reverse yawed 70 deg, pivots weak |
+| c6: 150 kg rollers (body 750 kg), torque 11,000 | spin calm, wheels held at about 2-3 rad/s and the body barely moved (torque-bound) |
+| **c7: c6 + torque 40,000** | **forward 12.6 m, up to 1.7 m/s, shifts to 2nd; reverse 11 m at 1.4 m/s; pivots 110 / 60 deg; roll under 0.9 deg** |
+| c8: 80 kg rollers, torque 20,000 | 8-10 m but drifted 32 deg and pivots 45-50 deg: worse than c7 |
+
+- **A tiny driven roller needs spin inertia, not just body mass.** The solver takes wheel inertia from the cylinder
+  (0.5 m r^2) with no mass-ratio clamp (physics_semantics.md section 2, row 7): 30 kg at 0.034 m is 0.017 kg m^2,
+  about 14x less than WALL-E's wheels, and the slipping rollers ran away to 20-120 rad/s, far above the gear
+  governor. 150 kg rollers (0.087 kg m^2, still inside stock wheel masses of 120-450 kg) calmed it; then raise
+  torque until the body follows (c6 to c7). Keep the vehicle total in mind (c7: 1,470 kg against the real 580). Game (bench); cause Inferred.
+- **Give four rigid end wheels a few mm of travel.** It shares the load across both diagonals (c4 to c5). Game (bench).
+- The `normal` schedule's reverse phase brakes rather than reverses (headless-bench.md); measure reverse with AUTO and a negative pedal.
+- **rc1 (= c7) skated in the game** (owner 2026-10-20: "moving around like crazy, every direction even sideway
+  with no input"). Cause: the chassis collision boxes followed the mesh down to 6.5 cm above the ground (blade 5.2 cm)
+  over a 0.059 m rolling radius, and scraped the bench's terrain. Same physics with the boxes raised to 0.14 m (blade
+  0.15 m), same `ted_drive` course (run b1d vs c7): braked stops 0.03 m / 0.2 deg instead of 0.34 m / 27 deg, final
+  stop 0.001 m instead of 0.44 m / 41 deg, sideways slide over 12 m 0.10 m instead of 1.09 m, peak wheel spin 38
+  instead of 121 rad/s. A handbrake-strength change (0.35 to 0.03) and 45 kg rollers were tested too and are not the
+  cause (runs h1-h3). **Rule: keep cdt_ boxes well clear of the ground on small-wheeled vehicles; they need not follow
+  the mesh's underside** (Game, headless bench; owner's in-game check of rc2 pending).
+- Bench course `ted_rocks.json` (0.06-0.12 m boxes under belly and tracks, handbrake-off idles) and `ted_brake.json`
+  (long handbrake stops); `tools/phase_report.py` prints per-phase drift. The TED pad scene carries a seed cube so
+  `spawn.boxes` works (headless-bench.md).
+- **Open:** rc2 in the game, steps and slopes (a step meets a 0.059 m rolling radius).
+
 ## Dozer blades: what resists a cut (2026-10-14)
 
 Source: `C:\RC_RE\research\physics_semantics.md`, "Dozer cutting resistance" (code analysis, static; the Goliath D11 RC6 against the Greenway HT500).

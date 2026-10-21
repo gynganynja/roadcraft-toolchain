@@ -76,6 +76,18 @@ s.screenshot(abs_path)`; `engine.plan_layout` / `prepare_layout` make the privat
   `truck.owner.TryGet<controller>().GetState().<field>.Set(value)` as the D11 RC3 bench set
   `PropTruckViewGraderController.bladeAngle`. Names must be identifiers and values numbers, booleans or
   `Enum.VALUE`: no free SSL.
+  A control can instead call a controller method: `{"controller", "call", "args"}` emits
+  `truck.owner.TryGet<controller>().<call>(args...)`; args are numbers, booleans, `Enum.VALUE` or
+  identifier strings (quoted). Use it where the target is not a plain state field, such as a markup
+  linear lift: `{"controller": "PropTruckConstraintView", "call": "SetConstraintTarget", "args": ["lift", 0.857, 0.08]}`
+  (the method branches on `IsAngular()` to `SetMotorTargetPosition`; SSL `prop_truck_constraint_view.ssc`, Build: TED 2026-10-19).
+- `spawn.boxes` copies the scene's first unit-cube mesh; a scene without one (the SDK 1x1 template) needs a seed cube first. TED's `tools/bench_project.py` parks one under the ground (cube data from the D11 acceptance scene, `bench/cube_mesh_data.txt`).
+- **Reverse in the named schedules is a brake test, not a reverse drive.** `normal`/`harsh`/`straight`
+  set manual `REVERSE` with a negative pedal; in manual reverse the pedals are not swapped
+  (`C:\RC_RE\research\gearbox_semantics.md` section 4), so the back pedal brakes and the wheels barely
+  turn (TED c2/c3: gear -1, rpm 1045, wheels 0-0.1 rad/s). To measure reverse drive, use a custom step
+  with `"gear": "AUTO"` and a negative pedal (auto reverse swaps the pedals) or manual `REVERSE` with a
+  positive pedal. Code (C) for the pedal rule; Game (TED bench) for the symptom.
 - `probes.items`: `engine` (G line), `bodies` (B), `com` (C), `wheels` (W) are `series_probe.ps1`
   verbatim (test-checked); `joints` (J: angular constraints, angle and motor target) and `tracks` (T:
   sliding velocity) are the D11 RC3 bench's. Wheel load, slip and constraint forces have no known SSL

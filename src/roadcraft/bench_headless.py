@@ -73,24 +73,50 @@ def _choice(value: Any, where: str, options: Sequence[str]) -> str:
     return value
 
 
+def _literal(value: Any, where: str, strings: bool = False) -> str:
+    """An SSL literal for a control value: a number, a bool, Enum.VALUE or (``strings``) a quoted identifier."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return _fmt(_number(value, where, -1e6, 1e6))
+    if isinstance(value, str) and ENUM_VALUE.match(value):
+        return value
+    if strings and isinstance(value, str) and IDENT.match(value):
+        return f'"{value}"'
+    raise ScenarioError(f"{where} must be a number, a bool or Enum.VALUE" + (" or an identifier string" if strings else ""))
+
+
 def _control(row: Any, where: str) -> dict[str, Any]:
-    """A joint/attachment control: ``truck.owner.TryGet<controller>().GetState().<field>.Set(value)``
-    (the D11 RC3 bench set ``PropTruckViewGraderController`` ``bladeAngle`` this way)."""
-    if not isinstance(row, dict) or set(row) - {"controller", "field", "value"}:
-        raise ScenarioError(f"{where} must be {{controller, field, value}}")
-    for key in ("controller", "field"):
+    """A joint/attachment control, in one of two forms:
+
+    - ``{controller, field, value}``: ``truck.owner.TryGet<controller>().GetState().<field>.Set(value)``
+      (the D11 RC3 bench set ``PropTruckViewGraderController`` ``bladeAngle`` this way);
+    - ``{controller, call, args}``: ``truck.owner.TryGet<controller>().<call>(args...)``, for controllers
+      whose targets are not plain state fields (the TED bench drove its linear lift with
+      ``PropTruckConstraintView.SetConstraintTarget("lift", 0.857, 0.08)``). ``args`` are numbers, bools,
+      Enum.VALUE or identifier strings (emitted quoted)."""
+    if not isinstance(row, dict):
+        raise ScenarioError(f"{where} must be {{controller, field, value}} or {{controller, call, args}}")
+    if "call" in row:
+        if set(row) - {"controller", "call", "args"}:
+            raise ScenarioError(f"{where} must be {{controller, call, args}}")
+        keys = ("controller", "call")
+    else:
+        if set(row) - {"controller", "field", "value"}:
+            raise ScenarioError(f"{where} must be {{controller, field, value}}")
+        keys = ("controller", "field")
+    for key in keys:
         if not isinstance(row.get(key), str) or not IDENT.match(row[key]):
             raise ScenarioError(f"{where}.{key} must be an identifier")
+    if "call" in row:
+        args = row.get("args") or []
+        if not isinstance(args, list) or len(args) > 8:
+            raise ScenarioError(f"{where}.args must be a list of at most 8 values")
+        literals = [_literal(a, f"{where}.args[{i}]", strings=True) for i, a in enumerate(args)]
+        return {"controller": row["controller"], "call": row["call"], "args": args, "literal": ", ".join(literals)}
     value = row.get("value")
-    if isinstance(value, bool):
-        literal = "true" if value else "false"
-    elif isinstance(value, (int, float)):
-        literal = _fmt(_number(value, f"{where}.value", -1e6, 1e6))
-    elif isinstance(value, str) and ENUM_VALUE.match(value):
-        literal = value
-    else:
-        raise ScenarioError(f"{where}.value must be a number, a bool or Enum.VALUE")
-    return {"controller": row["controller"], "field": row["field"], "value": value, "literal": literal}
+    return {"controller": row["controller"], "field": row["field"], "value": value,
+            "literal": _literal(value, f"{where}.value")}
 
 
 def _step(row: Any, k: int, previous: dict[str, Any] | None) -> dict[str, Any]:
@@ -392,9 +418,12 @@ def input_script(step: dict[str, Any] | None, method: str = "Debug") -> str:
                       f"viewController.dbgAccelerationOverride = {_fmt(step['pedal'])}",
                       f"viewController.dbgSteerOverride = {_fmt(step['steer'])}"]
         for i, control in enumerate(step["controls"]):
-            lines += [f"var control{i} = truck.owner.TryGet<{control['controller']}>()",
-                      f"if control{i} != null and control{i}.GetState() != null",
-                      f" control{i}.GetState().{control['field']}.Set({control['literal']})", "end"]
+            lines.append(f"var control{i} = truck.owner.TryGet<{control['controller']}>()")
+            if "call" in control:
+                lines += [f"if control{i} != null", f" control{i}.{control['call']}({control['literal']})", "end"]
+            else:
+                lines += [f"if control{i} != null and control{i}.GetState() != null",
+                          f" control{i}.GetState().{control['field']}.Set({control['literal']})", "end"]
     lines += [
         'var result = "ROAMER_INPUT_APPLIED\\n"',
         'result += StringFormat("requestedPedals %.3f\\n", state.pedals.Get())',

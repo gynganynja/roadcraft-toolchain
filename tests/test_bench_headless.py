@@ -144,6 +144,15 @@ class ScenarioTests(unittest.TestCase):
         self.assertEqual(scenario["seed"], 7)
         self.assertEqual(scenario["inputs"]["schedule"][2]["controls"][0]["literal"], "-1.000")
 
+    def test_call_control(self):
+        scenario = bh.load_scenario(custom_scenario(inputs={"schedule": [{"at": 0, "controls": [
+            {"controller": "PropTruckConstraintView", "call": "SetConstraintTarget", "args": ["lift", 0.857, 0.08]}]}]}))
+        control = scenario["inputs"]["schedule"][0]["controls"][0]
+        self.assertEqual(control["literal"], '"lift", 0.857, 0.080')
+        script = bh.input_script(scenario["inputs"]["schedule"][0])
+        self.assertIn('control0.SetConstraintTarget("lift", 0.857, 0.080)', script)
+        self.assertNotIn("control0.GetState()", script)
+
     def test_rejections(self):
         bad = [custom_scenario(extra=1),
                custom_scenario(inputs={"schedule": [{"at": 1}, {"at": 1}]}),
@@ -153,6 +162,10 @@ class ScenarioTests(unittest.TestCase):
                    {"controller": "X); DeleteAll(", "field": "f", "value": 1}]}]}),
                custom_scenario(inputs={"schedule": [{"at": 0, "controls": [
                    {"controller": "X", "field": "f", "value": "1)\nDeleteAll("}]}]}),
+               custom_scenario(inputs={"schedule": [{"at": 0, "controls": [
+                   {"controller": "X", "call": "F", "args": ['a"); Evil("']}]}]}),
+               custom_scenario(inputs={"schedule": [{"at": 0, "controls": [
+                   {"controller": "X", "call": "F", "field": "f", "args": []}]}]}),
                custom_scenario(probes={"items": ["bodies", "secrets"]}),
                custom_scenario(scene={"loadSsl": 'a"); Evil("'}),
                custom_scenario(durationSeconds=5),

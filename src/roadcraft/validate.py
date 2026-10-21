@@ -161,6 +161,11 @@ CODES: dict[str, tuple[str, str, str]] = {
               "(of 1,840 with cdt_ shapes, 124 truck classes; physics_report inertia, 2026-10-14); Game: Mammoth RC68's 9 t front wheel carriers on a "
               "0.3 m cube (135 kg*m^2) gave 'super janky' steering and a front wheel almost rolled over "
               "(library/suspension-and-wheels.md 'First working series spring')"),
+    "RC081": ("towing-action", "TOGGLE_TOWING action mapped on a truck without a winch: the HUD script crashes",
+              "Game: TED c1 (headless bench, 2026-10-19) died with 'SSL runtime error: trying to get member of null "
+              "object' in PlayerInputTruckController.GetToggleableActionReactive: the towing toggle reads the winch "
+              "state, which is null without prop_truck_view_winch_controller; c2 blanked the row and ran; Retail: 38 "
+              "of 1,120 retail classes map TOGGLE_TOWING and all 38 have prop_truck_view_winch_controller"),
 }
 RULES = sorted({rule for rule, _, _ in CODES.values()} | {"bro-lint"})
 
@@ -1569,6 +1574,21 @@ def rule_wheel_trails(ctx: Context, truck: Truck) -> None:
                 key=f"properties.prop_truck_rb.wheelsWithTrail.{slot.get('geomName')}")
 
 
+def rule_towing_action(ctx: Context, truck: Truck) -> None:
+    """RC081: the action mapper maps TOGGLE_TOWING but the class has no winch controller."""
+    mapper = truck.props.get("prop_truck_view_actions_mapper")
+    if not isinstance(mapper, dict) or isinstance(truck.props.get("prop_truck_view_winch_controller"), dict):
+        return
+    for path, sub in _walk_dicts(mapper, "properties.prop_truck_view_actions_mapper"):
+        if "TOGGLE_TOWING" in (sub.get("namedActionType"), sub.get("actionType")):
+            ctx.add("RC081", "error", ctx.bundle.display(truck.name),
+                    "the action mapper maps TOGGLE_TOWING but the class has no prop_truck_view_winch_controller: "
+                    "the towing toggle reads the winch state, which is null, and the HUD script stops with "
+                    "'trying to get member of null object' (TED c1). Every retail class that maps it has a winch. "
+                    "Blank the action slot (or add the winch module through the BRO)", key=path)
+            return
+
+
 def rule_suspension(ctx: Context, truck: Truck) -> None:
     path = ctx.bundle.display(truck.name)
     rb = truck.rb
@@ -2700,6 +2720,7 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
         rule_suspension(ctx, truck)
         rule_wheel_frames(ctx, truck)
         rule_wheel_trails(ctx, truck)
+        rule_towing_action(ctx, truck)
         rule_ik_frames(ctx, truck)
         rule_lamps(ctx, truck)
         markup, markup_name = ctx.markup(truck.tpl)

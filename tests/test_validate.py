@@ -242,6 +242,26 @@ class WheelTrailTests(Base):
         self.assertEqual(codes(self.fixture(self.files("")).run(rules=["wheel-trail"])), ["RC079"])
 
 
+
+class TowingActionTests(Base):
+    MAPPER = ('prop_truck_view_actions_mapper = {{ fifthAction = {{ namedActionType = "{a}" '
+              'isToggleable = True __type = "ActionMapping" }} }}')
+
+    def files(self, action, winch=False):
+        slots, _ = four_wheels()
+        extra = self.MAPPER.format(a=action) + (" prop_truck_view_winch_controller = { }" if winch else "")
+        return {"ssl/truck.cls": truck_cls(slots, lights=extra), "ssl/w.cls": WHEEL_CLS}
+
+    def test_towing_without_winch(self) -> None:
+        found = self.fixture(self.files("TOGGLE_TOWING")).run(rules=["towing-action"])
+        self.assertEqual(codes(found), ["RC081"])
+        self.assertEqual(found[0].severity, "error")
+        self.assertIn("fifthAction", found[0].key)
+
+    def test_retail_shapes_are_clean(self) -> None:
+        for files in (self.files("TOGGLE_TOWING", winch=True), self.files("TOGGLE_LIGHTS")):
+            self.assertEqual(self.fixture(files).run(rules=["towing-action"]), [])
+
 class SuspensionTests(Base):
     def test_missing_collection_and_bad_index(self) -> None:
         slots, nodes = four_wheels()

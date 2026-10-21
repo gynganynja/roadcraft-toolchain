@@ -42,7 +42,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable, Sequence
 
-from . import project_context, quiet
+from . import audio_mute, project_context, quiet
 
 ENGINE_EXE = "Roadcraft ModEditor.exe"
 HUB_PORT = 20563                   # ConsoleServer.DefaultServerPort; the engine has no port setting (Inferred)
@@ -759,6 +759,10 @@ class EngineSession:
                                       desktop="private", priority="below_normal", log=self._engine_log,
                                       crash_dump_dir=self.layout.crash)
             self._event("engine-started", pid=self.engine.pid, desktop=self.engine.desktop_name)
+            # owner 2026-10-20: the editor engine must always be silent (it has no mute setting of its own)
+            self._muter = audio_mute.start_background(pids=[self.engine.pid], wait=self.wall_clock + 60,
+                                                      log=self.layout.logs / "audio_mute.log")
+            self._event("audio-mute", started=self._muter is not None)
             self._watchdog = threading.Thread(target=self._watch, daemon=True)
             self._watchdog.start()
             self.target = self._wait_listener()
@@ -932,6 +936,9 @@ class EngineSession:
             result.update(engineExit=self.engine.poll(), leakedWindows=self.engine.leaked_windows,
                           privateWindows=self.engine.private_windows)
             self.engine.close()
+        muter = getattr(self, "_muter", None)
+        if muter is not None and muter.poll() is None:
+            muter.kill()
         if self._engine_log:
             self._engine_log.close()
         if hasattr(self, "_t0"):

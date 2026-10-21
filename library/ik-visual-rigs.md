@@ -66,6 +66,20 @@ claim that this looked like spring compression was unverified and contradicted b
 Use a continuous skinned winding instead; see the continuous-coil section below (**Build**,
 native appearance still **Open**).
 
+**Two-stage scissor lift on a linear joint** (Nivek TED, 2026-10-19, Game: headless bench run `c7l_ted_lift`).
+The table is its own physics body on a markup `tpl_markup_constraint_prismatic` with a position motor; the
+scissor is purely visual, five chains in `prop_ik_system_visual`:
+1. `[BoneChassis_cdt, IK_Al, IK_Bu_L, IK_T1_L]` with the table body as effector: the lower-stage arm pair (left).
+2. `[IK_Al, IK_Bu_R, IK_T1_R]`, effector the table: its right twin.
+3. `[BoneTable_cdt, IK_SlideT (PRISMATIC along native Z, -0.05..0.30), IK_Au, IK_T2]`, effector `IK_Bu_L`: the upper
+   stage hangs from the table and slides in its track.
+4. and 5. `[BoneChassis_cdt, IK_SlideB_X, IK_Bl_X, IK_T3_X]`, effector `IK_Al`: the bottom slider shoes.
+
+The cylinders are `[BoneChassis_cdt, IK_Barrel (HINGE2 [1,0,0]), IK_Rod (PRISMATIC [1,0,0], -0.02..stroke+0.03)]`
+with effector `IK_Au`. Hoses between manifold and barrel are skinned half to each bone. On the bench the table went
+0 to 0.857 m at 0.08 m/s, held, part-lowered and rose again; the end-state shots show both stages open and the
+table level. Drive the joint from a scenario with a `call` control (headless-bench.md).
+
 ## Things that did not work
 
 - A follower chain pinned to an unmoved wheel slot at zero offset, with the whole linkage hung off

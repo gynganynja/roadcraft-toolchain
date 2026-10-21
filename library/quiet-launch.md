@@ -48,6 +48,18 @@ The launcher cannot switch off the engine's own windows and dialogs; pass these 
 `engine.build_command` passes this set (with `ErrorToConsoleOnly` rather than `AutomationMode`, the
 default in the earlier ExecSsl runs) and grades each entry; see [headless-bench.md](headless-bench.md).
 
+## Sound: the editor engine is always muted (2026-10-20)
+
+The owner asked for the mod editor to be muted always. The SDK editor has no mute or volume setting: its
+config's only audio key is `SoundPerformancePreset`, and the debug-variable table has no volume control
+(strings scan of the editor exe). So `roadcraft.audio_mute` mutes the process from outside through Windows
+Core Audio (`data/mute_audio.ps1`: every session of the process on every active output device, mute plus
+level 0). `engine.EngineSession.start` launches it with the engine pid for the whole run, logged to
+`<run>/root/logs/audio_mute.log`. Windows keeps a program's Volume Mixer level, so the editor stays muted
+when the owner starts it too. To mute a running editor by hand: `python -m roadcraft.audio_mute`. Game
+(TED h1 bench: `muted 11744 device0`); the persistence across the owner's own launches is Windows behaviour,
+not yet confirmed by the owner.
+
 ## Limits
 
 - **Stuck dialogs block invisibly.** A modal dialog on the private desktop waits forever: always

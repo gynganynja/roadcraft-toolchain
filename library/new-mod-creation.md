@@ -102,6 +102,8 @@ This is the usual cause of "my copied truck has no winch / scanner / crane contr
   enabling `winchSettings` alone gives a winch with no controls. **The SDK sample `tuz_119lynx_mod` is exactly
   that** (component and `TruckWinchUnit`, no `TRY_ATTACH_WINCH`, no pull/detach). Start from a retail BRO's
   rows instead (Lynx scout: winch axis, pull, detach, both scanners, `TOGGLE_TOWING`). **Retail, Code.**
+- Without a winch, take `TOGGLE_TOWING` out too: on a truck with no winch controller it crashes the HUD script
+  as soon as the truck is current (TED c1; validator `RC081`). **Game, Retail.**
 - Regenerate from the BRO; do not paste compiled blocks into a class whose BRO does not enable the module.
   If you must patch: component + its `.prop.resource` link, unit + its `.sso.resource` link, rows, and
   `truckInputConfiguration` flags matching the used slots (slots 5-8 need `isSecondaryActionsMapped`, and do not
