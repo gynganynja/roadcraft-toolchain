@@ -271,3 +271,11 @@ The native crane IK puts no cap on how far a telescope can reach (C, `C:\RC_RE\r
   - check the compiled telescope limits with `tpl-nodes`;
   - in game, dbg var `Game/Truck/IK` shows whether the blue target sphere or the physical effector stops first.
 - **Status:** mod-specific check pending, because the share was unreachable.
+- **Winch rope ruled out (2026-10-22, C/R):** with nothing hooked, the crane has no rope constraint, rope bodies or hook body.
+  - `TruckWinch.constraint` (`ConstraintKeepDistance`: a Havok stiff spring, min 1e-6, max = length) and the drawn `PhysRope` exist only between `TryAttach` and `Detach`.
+  - Unattached, `maxLength` is just the length of the downward ground ray used to find hookable loads.
+  - The rope hangs from `winchSource`, which in all 15 retail crane classes is on the last IK body (the tip), so it never spans the boom.
+  - **Retail:** `maxLength` = `craneZoneMaxLenght`, and `maxLength` >= `craneDetails.boomLength` (HWC945 30/25.5, ZiKZ 30/21, TC305 25/18.5).
+  - **SuperHeavy:** an 80 m rope only stops hooking loads once the tip is above about 80 m. Raise `winchSettings.maxLenght` and `craneZoneMaxLenght` together if that matters; no cap was found.
+  - **Remaining wall suspects:** a contact at the 23 m pose, or a modelled hook that collides.
+  - No validator check added: the rope does not limit reach.
