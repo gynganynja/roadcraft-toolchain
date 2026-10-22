@@ -268,7 +268,7 @@ Source: `C:\RC_RE\research\physics_semantics.md`, "Terrain deformation under whe
 - **Inferred, first suspect:** all five KGS-25 paks put their 4 trails on modelless `contact` wheels. The native trail update runs an extra branch only on deformable terrain, and that branch reads the wheel geom and its tracker. Nothing else in the wheel classes differs from retail: empty or missing `vfx`, 22 wheels, width, mass and factors all have retail precedent.
 - **Workaround:** move `wheelsWithTrail` to `kgs_L/R_idler0` and `kgs_L/R_drive0` (`isRear` on the rear pair).
 - **Settle with a bench**, with the owner's go-ahead: baseline, trails moved, and baseline with `physics/truck/enable wheel extrusion from wetness` off.
-- The installed T-80BVM has the same layout (RC079 x4). Whether it survives deformable terrain is untested.
+- The T-80BVM had the same layout (RC079 x4). v2 (b66dcc8f, 2026-10-22, pak_patch) moved the trails to `t80_*_idler0` (front) and `t80_*_drive7` (rear, `isRear`) and gave both classes the TC305 trail textures at 2.5 x the track width; validate: RC079 fixed, nothing new. Its v1 build had written the trail descriptors only into the generated wheel classes (the BROs had no `propWheelTrail`), so a regeneration from BRO would have dropped them; v2 adds them to the drive/idler BROs. Deformable-terrain behaviour is untested (Build).
 
 ## Checks
 
