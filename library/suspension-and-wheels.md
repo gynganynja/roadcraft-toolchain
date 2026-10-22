@@ -346,7 +346,8 @@ four wheels although both descriptors exist and their complete compiled values
 are equal. Its audit now checks presence plus full compiled parity, retaining
 the failed reference-equality gate and leaving retail reset behavior Open.
 Evidence: Jimny reports/native_audit_pointer_equivalence_failed.json,
-native_final_report.json and J31TestF final_services_all_093912.
+native_final_report.json and J31TestF final_services_all_093912.
+
 
 Evidence: shipped `wheel_trail.cls/.sfx`, `trail.vsh`, Roamer trail contracts,
 Lada build-007/test-008 and v6 `effects_result.json`. Shared
@@ -511,7 +512,7 @@ override (`truckWheel` fields + `frictionMaterials`) merged into each Kanga `whe
 |---|---|
 | Soft contact is two-rate. Each wheel contact is scaled by `softForceScale` (terrain and dynamic bodies) or `softForceScaleStatic` (other fixed bodies). Past a penetration of physRadius/4 the scale ramps to fully rigid within a further small depth. A soft tyre (e.g. the Kanga's BRO 0.19 instead of the Baikal override's 0.4) sinks further and reaches the rigid band on every load peak, which reads as jerk. Restore the donor's override before tuning anything else | Code (`FUN_140ca86d0`); effect Inferred; Game ("0.4 alone lowered the chatter") |
 | `activateCriticalCollisionTypeOnInit` sets Havok quality CRITICAL: continuous (TOI) collision against dynamic bodies too. Against terrain it adds nothing over the default. It matters where a tyre touches a truck body, its own carrier included. All 515 retail wheel classes set True; the Baikal 5916 pool sets False. Test False as a single variable on a chattering wheel that touches its own hulls | Code (`FUN_140dc8e50`, `FUN_14155f340`, map at 0x1450c2a30); Retail; effect Inferred |
-| A wheel collides with its own carrier body's hulls, and a buggy's carrier is the chassis. Keep chassis, fender and stop-block cdt clear of each tyre across full bump, full droop and full steer: those contacts are scaled by `softForceScale`, get CRITICAL TOI, and are a prime suspect for the Apoc chatter | Code (filter); Inferred (Apoc) |
+| A wheel collides with its own carrier body's hulls, and a buggy's carrier is the chassis. Keep chassis, fender and stop-block cdt clear of each tyre across full bump, full droop and full steer: those contacts are scaled by `softForceScale`, get CRITICAL TOI, and were a suspect for the Apoc chatter. **Not the Apoc cause (2026-10-22):** its native-slot tyres stayed >= 154 mm from every hull over travel and full lock (static sweep); its axles rested on their bump stops instead (case-studies.md "Apoc chatter = axles on their bump stops") | Code (filter); Build (Apoc sweep) |
 | Tyre friction is mu = sqrt(wheel `bodyFriction` x the other surface's friction): static and terrain default 1.2, or the per-triangle mesh material. Dropping a donor's `frictionMaterials` changes mu on every surface | Code (`FUN_140ca8fd0`) |
 | `sidewaysFrictionMultiplier` / `sidewaysFrictionMaxVelocity` have **no reader in the engine** (extended search, 2026-10-14). The WALL-E pivot changes credited to them were confounded. Leave them at retail values, but they do nothing. The real lateral control is the slot flag `enableLateralForce` (next section) | Code (negative search; research/physics_semantics.md "Tyre slip and sideways friction"); Game (WALL-E, reinterpreted: Inferred) |
 

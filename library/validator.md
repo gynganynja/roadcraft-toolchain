@@ -378,6 +378,12 @@ of retail by construction.
 Per-hull extents are now decoded (the `.tpl` bounds table, physics-report.md "Body inertia"), so the
 wheel-against-hull check listed as not added under "Rules and codes" no longer lacks its input (not built).
 
+**Gap (Apoc, 2026-10-22):** RC082 judges only prismatic/hinge child bodies. Wheels on native slots of the
+root body (buggies, most scouts) are never swept against their carrier's hulls, although the engine does
+not filter that pair. The Apoc check was done by hand (case-studies.md "Apoc chatter = axles on their bump
+stops"): it swept the tyre over `height+min .. height+max` and the steer angle about the kingpin. A rule
+needs the steering pivot (custom steering joint or slot centre).
+
 ### RC082 run (2026-10-22)
 
 **Retail calibration** (local install, 120 truck classes, 1,512 prismatic / hinge child bodies, 93 s): 1,359

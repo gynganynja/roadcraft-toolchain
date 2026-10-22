@@ -394,6 +394,30 @@ suite has 23 passing tests. A sandbox fixture-write failure was rerun with requi
 
 
 
+## Apoc chatter = axles on their bump stops, 2026-10-22
+
+Installed `apb-crawl-trophy-20260930` (sha e8fb89df), source `RoadCraft/apoc_repair` (not `C:/RC/buggy`).
+Every Apoc tune since soft-flex (09-30) read `min`/`max` as stop positions. With the measured stop geometry
+(stops at `height + min` / `height + max`, neutral at `height`) height 0.50 / min -0.18 put the top stop
+0.18 m above the spring neutral against ~0.36 m static sag: `roadcraft suspension --geometry measured` puts
+both axles on the bump stop at beta 34.8/58/81.2 (front also at 105) (**Build**, static). The owner's chatter
+("wheels bounce rapidly, body fairly level", "shopping trolley") began with the first such build
+(`apb-mud-proxy`, soft-flex physics) and survived three damping and wheel-mass trials, which all ran on the
+stops (**Game** timeline; cause **Inferred**).
+
+The laptop's own-hull mechanism (a wheel is not filtered against its carrier) was checked and does not
+apply: a static sweep of each tyre cylinder (visual radius, width) over -0.30..+1.10 m travel and +-35 deg
+steer about the kingpin against the four chassis cdt boxes (`joint_sweep` shapes, box inflation, so a
+lower bound) gave 154 mm front at full lock, 405 mm rear (**Build**). RC082 does not see this case: it
+sweeps only jointed wheel carriers, and native-slot wheels on the root body are skipped. A native-slot
+wheel-vs-carrier-hull sweep is a candidate rule.
+
+`apb-stops-20261022` (sha 25c1fe1d): sag 0.22, lift 0.12, bump 0.22, droop 0.22 (max 0), strength
+0.01607/0.02312, damping 0.16/0.22 (~10x strength); off both stops at every beta. `cdt_body_front` narrowed
++-0.40 -> +-0.34 m for the 0.2 m keep-out (gap 203 mm). Project test recipe 9/9, validate --baseline: 0 new.
+**Open** until driven. Lesson: before any damping or wheel trial on a chattering vehicle, run the axles
+through `--geometry measured`; a tune designed before 2026-10-02 must be re-read.
+
 ## Apoc crawl range with fast-trail suspension, 2026-09-30
 
 
