@@ -407,7 +407,22 @@ lead's exact-hull sweep says 0.14: oriented boxes over-fill the hulls). RC70 the
 the final rule the Mammoth markup's `main_collision_grp` (chassis, body, dump, rock ejectors) becomes filter
 index 1, which is the chassis's constraint id, so the carriers (dontCollideWith 1) are filtered against the
 chassis, the body **and** the dump. If that holds in the engine, RC69's carriers cannot rest on body hulls at
-all and its high stance has another cause. Settle it with the share back: run `roadcraft validate <pak>
+all and its high stance has another cause.
+
+The carriers are in no group (the markup has one, `main_collision_grp`), and the group handling does not touch
+them: they keep their own constraint ids (Code: only members get `calcFilterInfo(layer, 0, g, g)` and the group
+bit). Their block comes from their own dontCollideWith, the chassis's constraint id 1, which the 1-based group
+index happens to equal, so every member now carries id 1 (Inferred: the index base). Expected RC082 from the
+lead's numbers (front carrier tops 2.28 vs body hull bottoms 2.30 at rest, contact after 2-3 cm; rear housing
+at 0.14 m; RC70 rear 0.25 m against the 0.20 limit):
+
+| group index | RC69 | RC70 |
+|---|---|---|
+| 1-based (the rule) | 0: every lead contact is with chassis/body/dump hulls, all filtered; only other carriers, other carriers' tyres and non-grouped bodies remain, and the hull builder kept the tyres' swept volume clear | 0 |
+| 0-based | warnings: front carriers about 0.025 m (2 cm gap + 5 mm epsilon, earlier with box over-fill), rear about 0.14 m (boxes: 0.057) | rear passes (0.05 m past the limit, beyond the 3 cm margin); but the chassis is then unfiltered too, and the box run found carrier/chassis contacts at 0.05-0.12 m and 10-43 at-rest overlaps, which the lead's hulls never cleared because the audit assumed direct-parent filtering |
+
+So the acceptance as stated (RC69 flagged, RC70 passing) matches neither filter exactly; it matches the
+direct-parent-only reading that ignores groups. Settle it with the share back: run `roadcraft validate <pak>
 --rules joint-sweep` and `physics report` on both paks; and, to decide the group base in the engine, a headless
 bench readback of the Mammoth bodies' filter info (`GetFilterInfo`, research section 1) would show the chassis's
 and the carriers' sub-ids directly.

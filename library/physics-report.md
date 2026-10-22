@@ -231,7 +231,11 @@ over-fill of its hull makes some of them spurious.
   so every body whose dontCollideWith is g is filtered against **all** the group's members. On the Mammoth markup
   (`main_collision_grp` = chassis, body, dump, rock ejectors; `BoneBody_cdt|BoneChassis_cdt` first, so the
   chassis's constraint id is 1) the sprung carriers, children of the chassis with dontCollideWith 1, would be
-  filtered against the chassis, the body and the dump alike. This contradicts the direct-parent-only reading the
+  filtered against the chassis, the body and the dump alike. A body in **no** group keeps its own constraint id
+  and dontCollideWith; nothing about the group is copied onto it. It is filtered against a member only when its
+  dontCollideWith equals the group's index (bit-level coincidence, so it depends on constraint order: with the
+  chassis at constraint id 2 the same carriers would collide with it). Grades: the bit mechanism Code; the
+  1-based index, and so the Mammoth carriers' block, Inferred. This contradicts the direct-parent-only reading the
   RC69/RC70 hull audits used; see validator.md RC082 for what it means for the acceptance;
 - `no_collision` bodies collide with nothing; a wheel copies its carrier's layer and id bits.
 

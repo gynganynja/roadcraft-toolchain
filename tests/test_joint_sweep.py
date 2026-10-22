@@ -73,6 +73,32 @@ class FilterTests(unittest.TestCase):
         self.assertTrue(f.blocked("carrier", "body"))
         self.assertFalse(f.blocked("arm", "body"))                   # its dont (body's old id 0) is ignored
 
+    def test_body_in_no_group_against_a_group(self):
+        # the Mammoth markup: one group (dump, body, chassis, rock ejectors); the sprung carriers are in no group
+        # and keep their own constraint ids (3 and 4 here) with dontCollideWith = the chassis's constraint id 1
+        cons = [("body", "chassis"), ("dump", "body"), ("carrierL", "chassis"), ("carrierR", "chassis")]
+        group = [["dump", "body", "chassis", "ejectorL", "ejectorR"]]
+        f = js.Filter(cons, 22, group, self.LAYERS)
+        self.assertEqual((f.ids["carrierL"], f.dont["carrierL"]), (3, 1))     # untouched by the group
+        self.assertEqual((f.ids["chassis"], f.dont["chassis"], f.group_mask["chassis"]), (1, 1, 2))
+        for member in ("chassis", "body", "dump"):          # group index 1 == the carriers' dont: all blocked
+            self.assertTrue(f.blocked("carrierL", member), member)
+        self.assertFalse(f.blocked("carrierL", "carrierR"))  # siblings, neither grouped
+        old = js.GROUP_BASE
+        try:
+            js.GROUP_BASE = 0                                # 0-based: index 0 is bit 0, which the test clears
+            f0 = js.Filter(cons, 22, group, self.LAYERS)
+            for member in ("chassis", "body", "dump"):
+                self.assertFalse(f0.blocked("carrierL", member), member)
+            self.assertFalse(f0.blocked("body", "chassis"))  # even group members then collide
+        finally:
+            js.GROUP_BASE = old
+        # the block is a coincidence of order: with the chassis's constraint id 2, the carrier's dont (2) no
+        # longer matches the group index 1 and the carrier collides with the chassis it hangs on
+        f2 = js.Filter([("dump", "body"), ("body", "chassis"), ("carrierL", "chassis")], 3, group, self.LAYERS)
+        self.assertEqual(f2.dont["carrierL"], 2)
+        self.assertFalse(f2.blocked("carrierL", "chassis"))
+
 
 def entity(name, joint=None, layer="default"):
     fields = {"collisionLayer": pr.V(layer, "explicit", "t")}
