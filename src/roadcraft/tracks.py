@@ -10,6 +10,10 @@ Checks wired into :mod:`roadcraft.bro_lint` (need the compiled model; RC047/RC04
 
 * RC046  a track's ground-level wheels are all fakes resting on their top stops (no real wheel, none
          sprung).  KGS25 c02/c03: one track sank up to 19 cm into a pad in pivot turns.
+         Support geometry on compiled classes (:func:`support_findings`, :func:`compiled_track_survey`; the
+         engine's rolling radius incl. section.height, slot offset and axle height/min): a real wheel more
+         than 1 cm below the stop fakes' loaded line (warning; 0 of 33 retail crawlers), and stop fakes damped
+         above the retail 0.3-0.55 (info; Goliath D11 0.72, DZR-01).
 * RC047  a body carrying a track's wheels (a track frame) is welded on with a fixed joint, at any mass
          share, or hangs on a hinge/slide without a motor (an unsprung joint flops).  Retail springs its
          frames: Greenway HT500 ``BoneTrackSusp_L/R_cdt`` 7.5 t on a hinge, childRotation [0,90,0],
@@ -142,13 +146,41 @@ def body_masses(markup: dict[str, Any] | None) -> dict[str, float]:
     return masses
 
 
+def wheel_radius_offset(doc: dict[str, Any], slot: dict[str, Any]) -> float:
+    """``radiusOffset`` of the slot's inline wheel (0 when unset or a type reference)."""
+    entry = (doc.get("wheelPool") or {}).get(slot.get("editableWheel"))
+    inline = ((entry.get("wheel") or {}).get("truckWheel") or {}) if isinstance(entry, dict) and \
+        isinstance(entry.get("wheel"), dict) else {}
+    return float(inline.get("radiusOffset") or 0)
+
+
+def loaded_geometry(slot: dict[str, Any], axle: dict[str, Any] | None, radius: float | None,
+                    section_height: float, y: float, radius_offset: float = 0.0) -> dict[str, float] | None:
+    """The engine's physical wheel against the ground (physics_semantics.md T1 and T4, Code):
+    rolling radius = radius - radiusOffset + section.height + slot.extraPhysicalRadius (SetTrackHeight);
+    centre = node y + slot.offset.y (model axes) - (axle.height + travel), travel from ``min`` (top stop,
+    where a loaded stop fake or rigid wheel sits) to ``max`` (droop stop, where an unloaded one hangs)."""
+    if radius is None:
+        return None
+    rolling = radius - radius_offset + section_height + float(slot.get("extraPhysicalRadius") or 0)
+    offset = slot.get("offset")
+    lift = float(offset.get("y") or 0) if isinstance(offset, dict) else 0.0
+    base = y + lift - _num(axle, "height", 0.0)
+    return {"rollingRadius": round(rolling, 4),
+            "loadedBottom": round(base - _num(axle, "min", 0.0) - rolling, 4),
+            "droopBottom": round(base - _num(axle, "max", 1.0) - rolling, 4)}
+
+
 def track_layout(doc: dict[str, Any], nodes: TplNodes | None = None) -> list[dict[str, Any]]:
     """Per track: every real and fake wheel with its axle, kind, radius, modelled bottom height
-    (native Y of the slot minus the radius; None without the model) and the body it hangs on."""
+    (native Y of the slot minus the radius; None without the model) and the body it hangs on, plus the
+    engine's effective geometry (:func:`loaded_geometry`: ``rollingRadius``, ``loadedBottom``,
+    ``droopBottom``) and, per track, ``fakeLine`` (lowest loaded fake bottom)."""
     settings = doc.get("truckSettings") or {}
     slots = settings.get("wheelSlots") or []
     out = []
     for index, track in enumerate(settings.get("tracks") or []):
+        section_height = float((track.get("section") or {}).get("height", 0.1) or 0)   # schema default 0.1
         wheels = []
         for role, ids in (("real", track.get("wheelIds") or []), ("fake", track.get("fakeWheelIds") or [])):
             for i in ids:
@@ -159,17 +191,24 @@ def track_layout(doc: dict[str, Any], nodes: TplNodes | None = None) -> list[dic
                 name = slot.get("geomName")
                 axle_name, axle = axle_for(slot, settings)
                 radius = wheel_radius(doc, slot)
-                bottom = None
+                bottom = geometry = None
                 if nodes is not None and name in nodes.index and radius is not None:
-                    bottom = round(nodes.position(name)[1] - radius, 4)
+                    y = nodes.position(name)[1]
+                    bottom = round(y - radius, 4)
+                    geometry = loaded_geometry(slot, axle, radius, section_height, y, wheel_radius_offset(doc, slot))
                 wheels.append({"slot": i, "geomName": name, "role": role, "axle": axle_name,
                                "kind": axle_kind(axle), "radius": radius, "bottom": bottom,
-                               "body": hanging_body(nodes, slot, track)})
+                               "body": hanging_body(nodes, slot, track), **(geometry or {})})
         bottoms = [w["bottom"] for w in wheels if w.get("bottom") is not None]
         lowest = min(bottoms) if bottoms else None
         for w in wheels:
             w["ground"] = None if lowest is None or w.get("bottom") is None else w["bottom"] - lowest <= GROUND_TOLERANCE
-        out.append({"track": index, "wheels": wheels, "lowestBottom": lowest})
+        fake_loaded = [w["loadedBottom"] for w in wheels if w["role"] == "fake" and w.get("loadedBottom") is not None]
+        fake_line = min(fake_loaded) if fake_loaded else None
+        for w in wheels:
+            if fake_line is not None and w.get("loadedBottom") is not None:
+                w["aboveFakeLine"] = round(w["loadedBottom"] - fake_line, 4)
+        out.append({"track": index, "wheels": wheels, "lowestBottom": lowest, "fakeLine": fake_line})
     return out
 
 
@@ -263,3 +302,134 @@ def retail_track_survey(game_root, names: Iterable[str] | None = None) -> dict[s
         flags = sorted({f[0] for f in track_findings(doc, nodes, markup)})
         rows.append({"truck": name, "tpl": tpl, "tracks": layout, "flags": flags, "notes": notes})
     return {"vehicles": len(rows), "flagged": {r["truck"]: r["flags"] for r in rows if r["flags"]}, "rows": rows}
+
+
+# ------------------------------------------------------------------ compiled classes (the engine's own radii)
+
+REAL_BELOW_FAKES = 0.01   # m; retail real wheels beside stop fakes sit 0.1-3.1 cm ABOVE the fakes' loaded line
+                          # (EPEC TC305 +0.15 cm, Greenway HT500 idlers +3.1 cm); none below it (2026-10-22 survey)
+STOP_FAKE_DAMPING_MAX = 0.6  # retail stop-fake axles use damping 0.3 (EPEC) or 0.55 (Greenway, Arling, DS-135, Kite3)
+
+
+def _fnum(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def compiled_track_layout(ctx: Any, stores: list, store: Any, member: str) -> dict[str, Any]:
+    """Per track of a compiled truck class (mod ``.pak``/folder or retail): every real and fake wheel with the
+    engine's rolling radius (physics_report ``slot.physicalRadius``: class radius - radiusOffset + section.height
+    + extraPhysicalRadius), its axle, kind, ``loadedBottom`` / ``droopBottom`` (:func:`loaded_geometry` rules),
+    ``aboveFakeLine``, and the track's ``fakeLine``. Uses the class radius, which includes the wheel type's
+    ``geomRadius``; a BRO's EditableWheel scale does not (Greenway HT500 fakes: scale 0.26, class radius 0.208)."""
+    from . import physics_report as pr
+    truck = pr.build_truck(ctx, stores, store, member)
+    ents = {e["id"]: e for e in truck["entities"]}
+    layers = pr.class_layers(ctx, stores, store, member)
+    rb = ("properties", "prop_truck_rb")
+    tpl, _, _ = pr._first(layers, ("properties", "geom", "nameTpl"))
+    slots, _, _ = pr._first(layers, rb + ("wheelSlotWithDescs",))
+    slots = [s if isinstance(s, dict) else {} for s in (slots or [])]
+    tracks_doc, _, _ = pr._first(layers, ("properties", "prop_truck_track", "tracks"))
+    anchor = next((s.get("geomName") for s in slots if s.get("geomName")), None)
+    nodes, _ = pr._load_nodes(ctx, stores, tpl, anchor, False)
+
+    def field(ent: dict | None, key: str) -> Any:
+        return ((ent or {}).get("fields", {}).get(key) or {}).get("value")
+
+    out = []
+    for ti, track in enumerate(tracks_doc or []):
+        track = track if isinstance(track, dict) else {}
+        wheels = []
+        for role, ids in (("real", track.get("wheelIds") or []), ("fake", track.get("fakeWheelIds") or [])):
+            for si in ids:
+                if not isinstance(si, int) or not 0 <= si < len(slots):
+                    wheels.append({"slot": si, "role": role, "error": "slot index out of range"})
+                    continue
+                slot, ent = slots[si], ents.get(f"slot[{si}]")
+                axle_ent = ents.get(field(ent, "slot.axle"))
+                axle = {k: field(axle_ent, k) for k in ("min", "max", "height", "strength", "damping")}
+                axle = {k: v for k, v in axle.items() if v is not None}
+                rolling = field(ent, "slot.physicalRadius")
+                name = slot.get("geomName")
+                row = {"slot": si, "geomName": name, "role": role,
+                       "axle": field(axle_ent, "name") or field(ent, "slot.axle"),
+                       "kind": axle_kind(axle), "axleValues": axle, "rollingRadius": rolling,
+                       "body": field(ent, "slot.parentBody")}
+                if rolling is not None and nodes is not None and name in nodes.index:
+                    offset = slot.get("offset")         # model axes (FUN_140dc4eb0, Code)
+                    lift = _fnum(offset.get("y")) if isinstance(offset, dict) else 0.0
+                    base = nodes.position(name)[1] + lift - _num(axle, "height", 0.0)
+                    row["loadedBottom"] = round(base - _num(axle, "min", 0.0) - float(rolling), 4)
+                    row["droopBottom"] = round(base - _num(axle, "max", 1.0) - float(rolling), 4)
+                wheels.append(row)
+        fakes = [w["loadedBottom"] for w in wheels if w["role"] == "fake" and w.get("loadedBottom") is not None]
+        fake_line = min(fakes) if fakes else None
+        for w in wheels:
+            if fake_line is not None and w.get("loadedBottom") is not None:
+                w["aboveFakeLine"] = round(w["loadedBottom"] - fake_line, 4)
+        out.append({"track": ti, "wheels": wheels, "fakeLine": fake_line,
+                    "sectionHeight": (track.get("section") or {}).get("height")})
+    return {"class": store.display(member), "tpl": tpl, "tracks": out}
+
+
+def support_findings(layout: dict[str, Any]) -> list[tuple[str, str, str, str]]:
+    """RC046 (support geometry, compiled classes): a track carried by stop fakes, and a real wheel whose loaded
+    physical bottom (rolling radius incl. section.height) reaches more than ``REAL_BELOW_FAKES`` below the fakes'
+    loaded line. That wheel then carries the track and the stop fakes hang towards their droop stops, invisible
+    under the drawn belt. Retail stop-fake layouts keep every real wheel 0.1-3.1 cm above the line."""
+    found = []
+    for track in layout.get("tracks") or []:
+        fakes = [w for w in track["wheels"] if w["role"] == "fake" and w.get("loadedBottom") is not None]
+        if not fakes or any(w["kind"] != "stops" for w in fakes):
+            continue                     # sprung fakes extend to the ground: real wheels below them are by design
+        for w in track["wheels"]:
+            gap = w.get("aboveFakeLine")
+            if w["role"] != "real" or gap is None or gap >= -REAL_BELOW_FAKES:
+                continue
+            found.append(("RC046", "warning",
+                          f"real wheel {w['geomName']} reaches {-gap * 100:.1f} cm below the stop fakes' loaded line "
+                          f"(rolling radius {float(w['rollingRadius']):.4f} incl. section.height): it carries the "
+                          "track and the fakes hang towards their droop stop, invisible under the belt. Retail "
+                          "stop-fake crawlers keep real wheels 0.1-3.1 cm above the line (EPEC TC305, Greenway HT500)",
+                          f"truckSettings.tracks[{track['track']}]"))
+        damping = max(_num(w.get("axleValues"), "damping", 0.0) for w in fakes)
+        if damping > STOP_FAKE_DAMPING_MAX:
+            found.append(("RC046", "info",
+                          f"stop fakes damped at {damping:g}, above every retail stop-fake axle (0.3-0.55): a fake that "
+                          "drooped while its track was unloaded re-seats more slowly, so the frame and drawn belt can ride "
+                          "raised on it for a while (Inferred from the soft-row damping, Goliath D11 DZR-01; bench pending)",
+                          f"truckSettings.tracks[{track['track']}]"))
+    return found
+
+
+def compiled_track_survey(target: str | None = None, game_root: Any = None,
+                          names: Iterable[str] | None = None) -> dict[str, Any]:
+    """:func:`compiled_track_layout` + :func:`support_findings` for every tracked truck class of a mod ``.pak`` or
+    folder (``target``), or of every retail crawler (``target`` None)."""
+    from . import physics_report as pr
+    ctx = pr.Context(game_root)
+    rows: list[dict[str, Any]] = []
+    if target is None:
+        store = ctx.retail()
+        wanted = set(names) if names else None
+        members = [(n, m) for n, m in sorted(pr.retail_trucks(ctx).items()) if not wanted or n in wanted]
+        stores = [store] if store is not None else []
+    else:
+        store = pr.open_store(target)
+        stores = ctx.stores(store)
+        members = [(m, m) for m in pr.truck_classes(ctx, store)]
+    for name, member in members:
+        try:
+            layers = pr.class_layers(ctx, stores, store, member)
+            if not pr._first(layers, ("properties", "prop_truck_track", "tracks"))[0]:
+                continue
+            layout = compiled_track_layout(ctx, stores, store, member)
+        except Exception as exc:  # noqa: BLE001 - a survey row records why it failed
+            rows.append({"truck": name, "error": f"{type(exc).__name__}: {exc}"})
+            continue
+        rows.append({"truck": name, **layout, "findings": support_findings(layout)})
+    return {"vehicles": len(rows), "flagged": {r["truck"]: len(r["findings"]) for r in rows if r.get("findings")},
+            "rows": rows}

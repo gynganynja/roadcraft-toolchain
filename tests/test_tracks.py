@@ -136,6 +136,56 @@ class FindingTests(unittest.TestCase):
         self.assertEqual(tracks.track_findings(doc, model(frame_under_chassis=False), markup()), [])
 
 
+D11_FAKES = {"min": 0, "max": 0.4, "height": 0.06, "strength": 0.001, "damping": 0.72}   # Goliath D11 RC7b/RC8
+HT500_FAKES = dict(D11_FAKES, damping=0.55)
+
+
+def compiled(real_gap, fake_axle=HT500_FAKES):
+    """A compiled_track_layout-shaped track: one real idler ``real_gap`` m above the fakes' loaded line."""
+    fake = {"geomName": "fake0", "role": "fake", "kind": tracks.axle_kind(fake_axle), "axleValues": fake_axle,
+            "rollingRadius": 0.4289, "loadedBottom": 0.1445, "aboveFakeLine": 0.0}
+    real = {"geomName": "idler", "role": "real", "kind": "rigid", "axleValues": {"min": 0, "max": 0},
+            "rollingRadius": 0.6384, "loadedBottom": 0.1445 + real_gap, "aboveFakeLine": real_gap}
+    return {"tracks": [{"track": 0, "wheels": [real, fake], "fakeLine": 0.1445}]}
+
+
+class SupportGeometryTests(unittest.TestCase):
+    def test_loaded_geometry_matches_the_d11_numbers(self):
+        # d11t_left_contact0: node y 0.5534, offset y 0.08 (model axes), class r 0.3, section 0.128939
+        g = tracks.loaded_geometry({"offset": {"y": 0.08}}, D11_FAKES, 0.3, 0.128939, 0.5534)
+        self.assertAlmostEqual(g["rollingRadius"], 0.4289, places=4)
+        self.assertAlmostEqual(g["loadedBottom"], 0.1445, places=4)
+        self.assertAlmostEqual(g["droopBottom"], -0.2555, places=4)     # 0.40 m below the drawn belt
+        idler = tracks.loaded_geometry({}, {"max": 0}, 0.5095114, 0.128939, 0.8387)
+        self.assertAlmostEqual(idler["loadedBottom"] - g["loadedBottom"], 0.0558, places=3)
+
+    def test_track_layout_reports_the_fake_line(self):
+        (track,) = tracks.track_layout(truck(STOPS), model())
+        wheels = {w["geomName"]: w for w in track["wheels"]}
+        # KGS c03 contacts: y 0.265 - height 0.05 - (r 0.2 + default section 0.1)
+        self.assertAlmostEqual(track["fakeLine"], -0.085, places=3)
+        self.assertAlmostEqual(wheels["kgs_L_idler0"]["aboveFakeLine"], 0.385, places=3)
+
+    def test_retail_like_raised_idlers_pass(self):
+        self.assertEqual(tracks.support_findings(compiled(0.031)), [])      # Greenway HT500
+        self.assertEqual(tracks.support_findings(compiled(0.0015)), [])     # EPEC TC305
+        self.assertEqual(tracks.support_findings(compiled(-0.005)), [])     # inside the 1 cm tolerance
+
+    def test_idler_below_the_stop_fake_line_warns(self):
+        found = tracks.support_findings(compiled(-0.04))
+        self.assertEqual([(f[0], f[1]) for f in found], [("RC046", "warning")])
+        self.assertIn("4.0 cm below", found[0][2])
+
+    def test_sprung_fakes_make_low_real_wheels_by_design(self):
+        sprung = {"min": -0.2, "max": 0.3, "height": 0.2, "strength": 0.05, "damping": 0.5}   # EPEC LT200-like
+        self.assertEqual(tracks.support_findings(compiled(-0.23, sprung)), [])
+
+    def test_stop_fake_damping_above_retail_is_info(self):
+        found = tracks.support_findings(compiled(0.0558, D11_FAKES))
+        self.assertEqual([(f[0], f[1]) for f in found], [("RC046", "info")])
+        self.assertIn("0.72", found[0][2])
+
+
 class LintWiringTests(unittest.TestCase):
     def test_lint_reports_track_codes_with_the_article(self):
         found = bro_lint.lint_truck(truck(STOPS), model=model(), markup=markup())

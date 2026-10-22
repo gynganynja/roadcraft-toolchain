@@ -306,6 +306,22 @@ Source: `C:\RC_RE\research\physics_semantics.md`, "Terrain deformation under whe
 - **Settle with a bench**, with the owner's go-ahead: baseline, trails moved, and baseline with `physics/truck/enable wheel extrusion from wetness` off.
 - The installed T-80BVM has the same layout (RC079 x4). Whether it survives deformable terrain is untested.
 
+## Invisible support under the belt: the Goliath D11 "track rides raised" (DZR-01, 2026-10-22)
+
+Source: `C:\RC_RE\research\goliath_dzr01.md` (static; compiled RC8 = RC7b classes and models, retail HT500/TC305).
+Player and owner: a track rides raised after turning or a base recall, "sitting on a large invisible wheel" (Game,
+owner 2026-10-22).
+
+| Finding | Grade |
+|---|---|
+| Physical wheel bottom = node y + `slot.offset.y` (model axes, not the node's local frame) − axle `height` − travel − (class radius − radiusOffset + `section.height` + extraPhysicalRadius). Travel runs from `min` (a loaded stop fake or rigid wheel) to `max` (an unloaded stop fake). The slot node's rotation is not used for physical wheels: suspension along body −Y, axle along body X | Code |
+| Use the **compiled class radius**: a BRO's EditableWheel scale omits the wheel type's `geomRadius` (HT500 fakes: scale 0.26, radius 0.208) | Retail |
+| D11 idlers sit 5.6 / 6.4 cm above the fakes' loaded line (HT500 3.1 cm, TC305 0.15 cm); the sprocket is 0.96 m up. The idler-below-the-belt hypothesis is refuted: an idler's physical bottom is its drawn belt face | Code + Retail |
+| The invisible parts are the stop fakes: 0.43 m physical radius behind 0.17 m drawn rollers. Unloaded, they hang up to `max` = 0.40 m below the drawn belt, which stays on the frame. A frame landing on drooped fakes rides raised | Code (geometry); mechanism Inferred; KGS c03 bench saw lifted fakes at full travel (Game) |
+| They re-seat slowly: strength 0.001 gives no push back; fake damping 0.72 is above every retail stop-fake axle (0.3-0.55); frame body damping 1.5 / 0.03 (retail 0.05 / 0); contacts rigid (`softForceScale` 1, retail 0.55) | Retail values; effect Inferred (sag law Unknown); bench pending |
+| Fix candidate (class): fake damping 0.55, fake `max` 0.15. Markup: frame damping 0.05 / 0, hinge spring motor 1e7 / 1.1e7. Optional: softForceScale 0.55. `section.height` and idler radius are not the levers | Inferred; owner's bench/drive pending |
+| Visual rollers use their node's full matrix and turn 180 deg when `isRightSided` is false. A right roller node yawed 180 deg *and* flagged right faces inboard (D11). Use identity nodes, or clear the flag | Code |
+
 ## Checks
 
 `roadcraft lint-bro TRUCK.bro --class auto_X.cls --tpl X.tpl` (the markup beside the model is
@@ -314,6 +330,7 @@ read by default) runs `roadcraft.tracks`:
 | Code | Severity | Finds | Retail |
 |---|---|---|---|
 | RC046 | warning | a track whose ground wheels are all stop fakes, no real wheel at ground level (needs the model) | none |
+| RC046 (support geometry, compiled class: `tracks.compiled_track_survey(pak)`) | warning / info | warning: a real wheel more than 1 cm below the stop fakes' loaded line (it carries the track; the fakes hang). Info: stop-fake damping above 0.6 (DZR-01). Not yet wired into `validate` | 0 of 33; Goliath D11 info x2 per variant |
 | RC047 | warning | a wheel-carrying body (track frame) welded to its parent by a fixed constraint at any mass share, or on a hinge/slide with no motor; the message names a frame under 10 % of the body mass and gives the HT500 hinge as the fix (widened 2026-10-13: fix 2's heavy but welded frames passed the old 10 % rule) | none |
 | RC048 | info | sprung wheels on a jointed body under 10 % of the total body mass: expect springs softer than the vehicle-mass formula (rationale superseded 2026-10-13, see below; the flag stays) | Aramatsu Forester Neo crane and forwarder |
 
