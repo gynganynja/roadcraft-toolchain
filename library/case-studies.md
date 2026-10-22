@@ -396,7 +396,7 @@ suite has 23 passing tests. A sandbox fixture-write failure was rerun with requi
 
 ## Apoc chatter = axles on their bump stops, 2026-10-22
 
-Installed `apb-crawl-trophy-20260930` (sha e8fb89df), source `RoadCraftpoc_repair` (not `C:\RCuggy`).
+Installed `apb-crawl-trophy-20260930` (sha e8fb89df), source `RoadCraft/apoc_repair` (not `C:/RC/buggy`).
 Every Apoc tune since soft-flex (09-30) read `min`/`max` as stop positions. With the measured stop geometry
 (stops at `height + min` / `height + max`, neutral at `height`) height 0.50 / min -0.18 put the top stop
 0.18 m above the spring neutral against ~0.36 m static sag: `roadcraft suspension --geometry measured` puts
