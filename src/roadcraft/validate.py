@@ -166,6 +166,12 @@ CODES: dict[str, tuple[str, str, str]] = {
               "object' in PlayerInputTruckController.GetToggleableActionReactive: the towing toggle reads the winch "
               "state, which is null without prop_truck_view_winch_controller; c2 blanked the row and ran; Retail: 38 "
               "of 1,120 retail classes map TOGGLE_TOWING and all 38 have prop_truck_view_winch_controller"),
+    "RC082": ("joint-sweep", "a wheel-carrying joint's hulls hit the truck's other hulls inside its travel",
+              "static: cdt_ oriented boxes (.tpl bounds table) and wheel cylinders swept along the prismatic / hinge "
+              "axis (childRotation Z in the child bone frame) against every shape the engine does not filter from "
+              "them (research physics_semantics.md 'Jointed-body collision filtering': direct constraint parent "
+              "only, < 31 constraints, Collision Groups; physics_report joint_sweeps); Game: Mammoth RC69's sprung "
+              "carriers rested on hull contact (high stance, chatter; library/validator.md RC082)"),
 }
 RULES = sorted({rule for rule, _, _ in CODES.values()} | {"bro-lint"})
 
@@ -1852,16 +1858,28 @@ def judge_inertia(role: str, mass: float | None, per_mass_mid: float | None,
     return reasons
 
 
+def _physics_report(ctx: Context, target: str | Path) -> dict | Exception:
+    """physics_report.report of the target, computed once per run (RC080, RC082); the error if it fails."""
+    from . import physics_report
+    cached = getattr(ctx, "_physics_report_result", None)
+    if cached is None:
+        try:
+            cached = physics_report.report(target, game_root=getattr(ctx, "game_root", None))
+        except (physics_report.PhysicsReportError, OSError, zipfile.BadZipFile) as exc:
+            cached = exc
+        ctx._physics_report_result = cached
+    return cached
+
+
 def rule_body_inertia(ctx: Context, target: str | Path, notes: list[str]) -> None:
     """RC080: a wheel-carrying jointed body (wheel carrier, track frame) or any body of >= 1 t whose inertia,
     estimated from its cdt_ shapes (physics_report.body_inertia), is far below retail for its role."""
     if "body-inertia" not in ctx.rules:
         return
     from . import physics_report
-    try:
-        result = physics_report.report(target, game_root=getattr(ctx, "game_root", None))
-    except (physics_report.PhysicsReportError, OSError, zipfile.BadZipFile) as exc:
-        notes.append(f"RC080 body inertia not checked: {exc}")
+    result = _physics_report(ctx, target)
+    if isinstance(result, Exception):
+        notes.append(f"RC080 body inertia not checked: {result}")
         return
     for truck in result["trucks"]:
         markup_name = ctx.find_stem(truck["tpl"], ".tpl_markup") if truck.get("tpl") else None
@@ -1899,6 +1917,60 @@ def rule_body_inertia(ctx: Context, target: str | Path, notes: list[str]) -> Non
                     fix="enlarge its collision shapes to the body's real extent (inboard of the wheel keep-out), "
                         "or use a COM offset (hkCenterOfMassOffset) with real-sized shapes; the inertia comes "
                         "from the shapes, so mass on a token box leaves the body free to twist")
+
+
+def rule_joint_sweep(ctx: Context, target: str | Path, notes: list[str]) -> None:
+    """RC082: a wheel-carrying prismatic or hinge child body whose collision shapes (with the bodies below it and
+    their wheels) touch an unfiltered shape of the same truck before the joint limit (warning) or within the
+    near-limit margin past it (info); physics_report 'Joint sweep'."""
+    if "joint-sweep" not in ctx.rules:
+        return
+    from . import joint_sweep, physics_report
+    result = _physics_report(ctx, target)
+    if isinstance(result, Exception):
+        notes.append(f"RC082 joint sweep not checked: {result}")
+        return
+    for truck in result["trucks"]:
+        markup_name = ctx.find_stem(truck["tpl"], ".tpl_markup") if truck.get("tpl") else None
+        if markup_name is None or not ctx.bundle.has(markup_name):
+            continue                                        # retail markup: not the mod's to fix
+        doc = ctx.ps(markup_name)
+        infos = doc.get("objectInfos") if isinstance(doc, dict) else None
+        for ent in truck["entities"]:
+            f = ent["fields"] if ent["kind"] == "body" else {}
+            status = f.get("sweep.status", {}).get("value")
+            if status in (None, "clear", "not checked"):
+                continue                                    # not checked: physics report sweep.status says why
+            if not f.get("sweep.movingWheels", {}).get("value"):
+                continue                                    # cranes, booms, tippers: pose-dependent (RC082 scope)
+            kind = f.get("joint.type", {}).get("value")
+            unit = "m" if kind == "prismatic" else "deg"
+            oi = ent.get("objectIndex")
+            try:
+                line = infos[oi].line or None
+            except (TypeError, IndexError, KeyError, AttributeError):
+                line = None
+            for side in ("low", "high"):
+                contact = physics_report._num(f.get(f"sweep.{side}.firstContact", {}).get("value"))
+                limit = physics_report._num(f.get(f"sweep.{side}.limit", {}).get("value"))
+                if contact is None or limit is None:
+                    continue
+                margin = joint_sweep.NEAR_LIMIT if unit == "m" else                     physics_report._num(f.get("sweep.nearLimitMargin", {}).get("value")) or 0.0
+                if abs(contact) <= abs(limit):
+                    severity, what = "warning", "before the joint limit (contact within the travel)"
+                elif abs(contact) <= abs(limit) + margin:
+                    severity, what = "info", f"within {margin:.3g} {unit} past the joint limit"
+                else:
+                    continue
+                pair = f.get(f"sweep.{side}.pair", {}).get("value")
+                ctx.add("RC082", severity, ctx.bundle.display(markup_name),
+                        f"{kind} {ent['id']!r} (parent {f.get('sweep.parent', {}).get('value')!r}): first contact "
+                        f"at {abs(contact):.3f} {unit} from rest towards its {'min' if side == 'low' else 'max'} "
+                        f"limit {limit:g} {unit}, {what}: {pair}",
+                        line=line, key=f"objectInfos[{oi}]" if oi is not None else "",
+                        fix="trim or move the moving body's cdt_ hulls (or the hit hulls) clear of its whole travel, "
+                            "or shorten the travel; a carrier resting on hull contact rides high and chatters. "
+                            "Do not hide it with no_collision on a wheel carrier (its wheels lose the ground)")
 
 
 def rule_ik_frames(ctx: Context, truck: Truck) -> None:
@@ -2740,6 +2812,7 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
     rule_state_pairs(ctx, lamp_states)
     rule_misspelt_states(ctx, lamp_states)
     rule_body_inertia(ctx, target, notes)
+    rule_joint_sweep(ctx, target, notes)
     for name in ctx.bundle.names():
         lower = name.lower()
         if lower.endswith(".tpl_markup") and lower not in checked_markups:

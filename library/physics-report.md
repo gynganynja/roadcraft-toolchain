@@ -188,6 +188,74 @@ keyed by the retail paks' sizes and times (`--cache` to move it; never inside th
 
 Mammoth RC68's front carriers give 0.015 m² and 0.018x, and RC69's 0.27 m² and 0.33x.
 
+## Joint sweep (hull contact over a joint's travel)
+
+A jointed body whose collision shapes touch another shape of the same truck partway along its travel rests on
+that contact instead of its spring. Mammoth RC69's sprung carriers were audited for overlap only at rest; over
+their travel the boxes met other hulls after a few centimetres of compression (lead's exact-hull sweep), and the
+truck stood high and chattered (Game, owner). `joint_sweeps` (module `roadcraft.joint_sweep`) adds the sweep to
+every prismatic and limited hinge child body, and validator rule RC082 judges it (validator.md).
+
+**Moving and static shapes.** The moving set is the child body, every body jointed below it (by constraint
+parent, so a roll body under a heave body moves with it) and the wheels those bodies carry. Everything else in
+the truck is static. Body shapes are the cdt_ oriented boxes of "Body inertia" in model space; wheels are
+cylinders at the slot's wheel node (axle along the node's X, `slot.physicalRadius`, the class `width`). Tyre
+pairs are not judged.
+
+**Motion.** Prismatic: the constraint slides along `childRotation`'s Z in the child bone frame
+(`vehicle.euler_axis`), + as the constraint position (`[90,0,0]` on an identity bone is + = down, droop;
+headless-bench.md, frames.md). Hinge: about that axis through `childTranslation` (child frame), + right-handed.
+Each side is swept from 0 to `minLimit`/`maxLimit` (`isMinLimit`/`isMaxLimit` must be True) or
+`angleStart`/`angleEnd` (`limited` must be True), and on past the limit by 0.10 m or 10 deg so the clearance
+there is reported too. Hinge limits beyond a half turn (retail slewing rings carry +-18,000 deg) are swept to
+180 deg. Steps are 1 cm / 0.5 deg inside each pair's bounding-sphere window, then 12 bisections.
+
+**Contact.** A separating-axis test on the boxes (15 axes) and, for a box against a wheel, the box axes, the
+cylinder axis, 16 radial directions, the direction to the box and their cross products, with the cylinder's
+exact projection. Penetration under 5 mm (`CONTACT_EPS`) does not count. Pairs already touching at rest are
+left out of the sweep and counted in `sweep.restOverlaps`: that is the at-rest audit's job, and a box's
+over-fill of its hull makes some of them spurious.
+
+**Filter** (research physics_semantics.md "Jointed-body collision filtering", Code, except the group index):
+
+- only with fewer than 31 constraints in the markup: constraints in markup order, kept while one of their bodies
+  is new; ids counted from 0, child first; the child's dontCollideWith is its parent's id (if it already has one,
+  the parent's becomes the child's); a pair is blocked when `idA & dontB` or `idB & dontA` is non-zero with bit 0
+  cleared. So a body is filtered only against its direct constraint parent, and the first-listed constraint's
+  child (id 0) is not filtered against its own children;
+- markup Collision Groups (`collisionGroups.<name>.objects`) overwrite their members' ids with
+  `calcFilterInfo(layer, 0, g, g)` and set group bit g. The group index is taken as **1-based** (first group 1;
+  `joint_sweep.GROUP_BASE`). Inferred, strong, from retail: with a 0-based index 717 retail body pairs that
+  overlap at rest (11 box pairs between the ZiKZ 612C body and cabin, for one) would collide; a 1-based index
+  blocks all but 2. The index lookup (`FUN_141a263d0`) is not decompiled. Consequence: a member's id becomes g,
+  so every body whose dontCollideWith is g is filtered against **all** the group's members. On the Mammoth markup
+  (`main_collision_grp` = chassis, body, dump, rock ejectors; `BoneBody_cdt|BoneChassis_cdt` first, so the
+  chassis's constraint id is 1) the sprung carriers, children of the chassis with dontCollideWith 1, would be
+  filtered against the chassis, the body and the dump alike. This contradicts the direct-parent-only reading the
+  RC69/RC70 hull audits used; see validator.md RC082 for what it means for the acceptance;
+- `no_collision` bodies collide with nothing; a wheel copies its carrier's layer and id bits.
+
+**Fields** on the child body (all `derived`):
+
+| field | meaning |
+|---|---|
+| `sweep.status` | `clear`, `contact within travel` (a side's first contact at or before its limit), `contact near limit` (within 3 cm past it, or for a hinge the angle that moves its farthest moving point 3 cm) or `not checked` (the evidence says why: unlimited hinge, no limited side, no shapes, no model, bounds table or node tree) |
+| `sweep.parent` | the constraint parent (explicit `target` or the nearest body above) |
+| `sweep.movingWheels` | physics wheels carried by the moving set (RC082 judges only joints with one or more) |
+| `sweep.posedPartsSkipped` | wheel-carrying joints only: bodies under a position-motor joint that carries no wheels (cranes, booms, grapples), left out of the static set because their modelled pose is one of many |
+| `sweep.pairs`, `sweep.restOverlaps` | unfiltered shape pairs swept; pairs touching at rest (left out; the note names three) |
+| `sweep.low/high.limit` | the joint limit on that side (m or deg) |
+| `sweep.low/high.firstContact` | the first contact position (signed, m or deg), None when none up to the swept end |
+| `sweep.low/high.clearance` | `abs(firstContact) - abs(limit)`; negative = contact within the travel |
+| `sweep.low/high.pair` | moving shape (body) x the shape it hits |
+| `sweep.nearLimitMargin` | hinges: the near-limit margin in degrees |
+
+**Limits.** Oriented boxes over-fill the convex hulls (wedges and chamfers most), so contacts come early and
+the first-contact distance is a lower bound. A single joint is swept with every other joint at its modelled
+pose: crane, arm and tipper joints move together in play, so RC082 judges only wheel-carrying joints
+(validator.md "RC082 run": 82 of the 84 retail joints with contact inside their travel are crane, boom and
+harvester joints). Wheel steering, wheel-joint travel and the dynamic load are not modelled.
+
 ## Engine facts used (C:\RC_RE\research\physics_semantics.md, grade C unless noted)
 
 - **Body defaults.** A body with a physics block but a missing key gets the value from the body

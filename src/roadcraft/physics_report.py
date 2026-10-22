@@ -13,7 +13,9 @@ like one) and lists, for every truck class in it, the value the engine will use 
 * derived quantities that need no unknown law: total mass, wheel / parent-body mass ratio, frame
   share, physics wheels per track, a centre-of-mass height proxy against the track width;
 * each body's inertia estimated from its cdt_ shapes (the ``.tpl`` per-mesh bounds, solid boxes, mass by
-  volume; :func:`body_inertia`), and ``inertia_distribution`` gives its retail spread per body role.
+  volume; :func:`body_inertia`), and ``inertia_distribution`` gives its retail spread per body role;
+* each prismatic / limited hinge child body's sweep over its travel: the first contact of its shapes (and of the
+  bodies and wheels below it) with an unfiltered shape of the truck, per side (:func:`joint_sweeps`).
 
 Every value is ``{"value", "source", "evidence"}``.  ``source`` is ``explicit`` (set in the file),
 ``inherited`` (set in a base class reached through ``__type``), ``engine-default`` (the engine's own
@@ -47,6 +49,7 @@ import zipfile
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
+from . import joint_sweep
 from . import ps_format
 from . import retail as retail_mod
 from . import schema as schema_mod
@@ -554,6 +557,12 @@ def _bodies(ctx: Context, infos: list[Any], where: str | None) -> list[dict[str,
     return out
 
 
+def _markup_groups(ctx: Context, stores: list[Store], tpl: str | None) -> list[list[str]]:
+    """Member lists of the model markup's Collision Groups (``collisionGroups.<name>.objects``)."""
+    hit = ctx.find(stores, tpl, ".tpl_markup") if tpl else None
+    return joint_sweep.collision_groups(ctx.ps(*hit)) if hit else []
+
+
 def _slot_axle(ctx: Context, rb_layers: list[tuple[Any, str]], slot: dict, si: int, slot_where: str
                ) -> tuple[str, dict[str, Any], str]:
     """(axle id, axle container, evidence) for a slot."""
@@ -851,6 +860,7 @@ def build_truck(ctx: Context, stores: list[Store], store: Store, name: str) -> d
         else:
             b["inertiaRole"] = b["role"]
     body_inertia(bodies, slot_entities, nodes, tpl_where)
+    joint_sweeps(bodies, slot_entities, classes, nodes, tpl_where, infos, _markup_groups(ctx, stores, tpl))
     derived = _derived(bodies, slot_entities, tracks, nodes, tpl_where)
     entities += bodies + tracks + [axles[k] for k in sorted(axles)] + \
         [classes[k] for k in sorted(classes)] + slot_entities + [derived]
@@ -1059,6 +1069,106 @@ def body_inertia(bodies: list[dict], slots: list[dict], nodes: TplNodes | None, 
             if per_mass and mass is not None and wheel_i:
                 f["inertiaToWheelInertia"] = V(mass * sorted(per_mass.values())[1] / wheel_i, "derived",
                                                "middle body inertia (of x/y/z) / wheels.inertia")
+
+
+EV_SWEEP = ("cdt_ oriented boxes (.tpl bounds table) and wheel cylinders (physicalRadius, class width, axle along "
+            "the wheel node's X) of the child body, the bodies jointed below it and their wheels, swept along the "
+            "joint (prismatic: childRotation's Z in the child bone frame, + as the constraint position; hinge: "
+            "about that axis through childTranslation, + right-handed) against every shape the engine does not "
+            f"filter from them ({RESEARCH} 'Jointed-body collision filtering'); pairs touching at rest are left out")
+
+
+def joint_sweeps(bodies: list[dict], slots: list[dict], classes: dict[str, dict], nodes: TplNodes | None,
+                 tpl_where: str | None, infos: list[Any], groups: list[list[str]]) -> None:
+    """Add the ``sweep.*`` fields to every prismatic / hinge child body (library/physics-report.md 'Joint
+    sweep'): the first contact going towards each limit, with the hit pair."""
+    joints = [b for b in bodies if b["fields"].get("joint.type", {}).get("value") in ("prismatic", "hinge")]
+    if not joints:
+        return
+    model = tpl_where or "no compiled model (.tpl)"
+    why = None
+    if nodes is None:
+        why = "no compiled model (.tpl) found"
+    elif not nodes.bounds:
+        why = f"{model}: per-mesh bounds table not found"
+    elif nodes.parents is None:
+        why = f"{model}: node tree (parent array) not resolved"
+    if why:
+        for b in joints:
+            b["fields"]["sweep.status"] = V("not checked", "derived", why)
+        return
+    names = {b["id"] for b in bodies}
+    layers = {b["id"]: b["fields"].get("collisionLayer", {}).get("value") for b in bodies}
+
+    def parent_of(node: str) -> str | None:
+        if node not in nodes.index:
+            return None
+        return next((a for a in _ancestors(nodes, node) if a in names), None)
+
+    constraints, total = joint_sweep.constraint_list(infos, names, parent_of)
+    shapes = {b: [joint_sweep.box_shape(s["node"], b, s["center"], s["axes"], s["size"])
+                  for s in body_shapes(nodes, b, names)] for b in sorted(names) if b in nodes.index}
+    wheels, wheel_body = [], {}
+    for s in slots:
+        f = s["fields"]
+        geom, carrier = f["slot.geomName"]["value"], f["slot.parentBody"]["value"]
+        radius = _num(f.get("slot.physicalRadius", {}).get("value"))
+        wclass = next((c for c in classes.values() if c["fields"].get("class", {}).get("value") ==
+                       f["slot.class"]["value"]), None)
+        width = _num(wclass["fields"].get("width", {}).get("value")) if wclass and wclass.get("physics") else None
+        if not s.get("physics") or geom not in nodes.index or carrier not in names or not radius or not width:
+            continue
+        m = nodes.matrix(geom)
+        wid = f"{s['id']} ({geom})"
+        wheels.append(joint_sweep.cylinder_shape(wid, wid, (m[12], m[13], m[14]), (m[0], m[1], m[2]), radius, width))
+        wheel_body[wid] = carrier
+    results = joint_sweep.sweep_truck(constraints, total, groups, layers, shapes, wheels, wheel_body, nodes.matrix)
+    capped = total >= joint_sweep.CONSTRAINT_CAP
+    for b in joints:
+        f = b["fields"]
+        res = results.get(b["id"])
+        if res is None:
+            f["sweep.status"] = V("not checked", "derived", "not a constraint child in the markup's constraint list")
+            continue
+        if res.get("skipped"):
+            f["sweep.status"] = V("not checked", "derived", res["skipped"])
+            continue
+        unit = "m" if res["kind"] == "prismatic" else "deg"
+        findings = {x["side"]: x["severity"] for x in joint_sweep.judge(res)}
+        status = "contact within travel" if "warning" in findings.values() else             "contact near limit" if "info" in findings.values() else "clear"
+        f["sweep.status"] = V(status, "derived", EV_SWEEP,
+                              note=f"{total} constraints: no sub-id filtering (>= 31)" if capped else None)
+        f["sweep.parent"] = V(res["parent"], "derived", "constraint parent (target, or nearest body above)")
+        f["sweep.movingWheels"] = V(res["wheels"], "derived", "wheels carried by the swept bodies (RC082 judges "
+                                    "only joints that carry wheels)")
+        if res["posedSkipped"]:
+            f["sweep.posedPartsSkipped"] = V(res["posedSkipped"], "derived", "bodies under a position-motor joint "
+                                             "that carries no wheels (crane, boom, grapple): left out of a "
+                                             "wheel-carrying joint's sweep, their pose varies in play")
+        f["sweep.pairs"] = V(res["pairs"], "derived", "shape pairs that may collide, not touching at rest")
+        rest = res["restOverlaps"]
+        f["sweep.restOverlaps"] = V(len(rest), "derived", "unfiltered shape pairs already touching at rest "
+                                    "(left out of the sweep)",
+                                    note="; ".join(f"{joint_sweep.describe(a)} x {joint_sweep.describe(c)}"
+                                                   for a, c in rest[:3]) or None)
+        if unit == "deg":
+            f["sweep.nearLimitMargin"] = V(res["margin"], "derived", "degrees that move the farthest moving "
+                                           f"shape {joint_sweep.NEAR_LIMIT} m")
+        for side in ("low", "high"):
+            r = res.get(side)
+            if not r:
+                continue
+            f[f"sweep.{side}.limit"] = V(r["limit"], "derived", f"joint limit ({unit})")
+            contact = r["contact"]
+            f[f"sweep.{side}.firstContact"] = V(contact, "derived", f"first contact position ({unit}); none up to "
+                                                f"{r['sweptTo']:.3g}" if contact is None else
+                                                f"first contact position ({unit}), swept to {r['sweptTo']:.3g}")
+            if contact is not None:
+                f[f"sweep.{side}.clearance"] = V(abs(contact) - abs(r["limit"]), "derived",
+                                                 f"|firstContact| - |limit| ({unit}); < 0: contact within travel")
+                f[f"sweep.{side}.pair"] = V(f"{joint_sweep.describe(r['moving'])} x "
+                                            f"{joint_sweep.describe(r['static'])}", "derived",
+                                            "moving shape x the shape it hits")
 
 
 def _derived(bodies: list[dict], slots: list[dict], tracks: list[dict], nodes: TplNodes | None,
