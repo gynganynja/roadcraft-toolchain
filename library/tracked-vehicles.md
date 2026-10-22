@@ -59,7 +59,7 @@ the frame bone (z -1.86 on a track running 1.03 to -2.87, rear-biased). The owne
 HT500: "the track frames have springyness, allows the wheels to move smoothly up and down; my mods
 don't" (Game, 2026-10-13). A spring motor takes real units and unlimited force; a position motor's
 `spring` key is never read (physics_semantics.md T5, read_fields.md). Mods: Goliath D11 already
-hinges its frames HT500-style (+-5 deg, 1.56e7 / 1.7e7); T-80 +-2 deg, 1.2e7 / 4.4e6; Hitachi
+hinges its frames HT500-style (+-5 deg, 1.56e7 / 1.7e7); T-80 +-2 deg, 1.2e7 / 4.4e6 until v3 (+-8 deg, 3e6 / 3.3e6, below); Hitachi
 EX5600 has no frame bodies; KGS-25 welded its frames with `tpl_markup_constraint_fixed` until
 candidate f841eb34 (Build).
 
@@ -197,6 +197,29 @@ Game, one vehicle (KGS-25 fix 2); every step was needed, none alone was enough:
 7. Run `roadcraft lint-bro` with the class, model and markup (below), then measure on the bench
    before installing: roll in pivot turns, hull height, frame twist and the yaw achieved.
 
+### T-80BVM v3: the recipe without a model rebuild (2026-10-22, Build)
+
+The owner on T-80 v2: "it starts floating and has all the issues the goliath and KGS used to have. it doesnt feel
+smooth like vanilla". v2 was the KGS candidate-03 layout: real idler and sprocket only, raised 0.34-0.40 m, and twelve
+stop fakes carrying the hull (lint RC046 on both tracks). Its fakes had max 0.4 (an unloaded 0.001-strength fake hangs
+on its droop stop, 0.40 m below the drawn belt: the Goliath's invisible wheel) and height 0.06 (the belt and road
+wheels rode 6 cm above the physics ground line). Frames 2.5 t, +-2 deg, 1.2e7 / 4.4e6, damping 1.5 / 0.03; hull
+centre of mass +0.3 m.
+
+v3 (c0ea74b6, `t80bvm_mod/tools/v3_tracks.py`, text members only) applies the recipe above plus the KGS v10 ground run:
+- End road wheels (contact1/contact6) moved from `fakeWheelIds` to `wheelIds`, on a new rigid axle.
+- **Raised hidden rollers without moving bones:** contact radius 0.2 -> 0.3073 (the visible road wheel's scale) with
+  axle `height` -0.108. The wheel body is created at slot - height (physics_semantics.md "Unloaded wheel rest", code
+  analysis), so a negative height lifts the roller's centre to the road-wheel centre and keeps its bottom on the
+  modelled ground line. The KGS v10 did the same by raising the contact bones and recompiling the model. Whether the
+  belt outline follows the raised body or the slot node is Inferred (body), not seen in game.
+- Remaining fakes droop only 0.05 (max), strength 0.001, damping 0.3; rigid axles strength 1 / damping 0.85.
+- KGS wheel tables (TC305 friction, softForceScale 0.75, 450 kg wheels).
+- Frames 5.5 t from the hull (total 43 t kept), hinge +-8 deg 3e6 / 3.3e6, frame damping 0.05 / 0.
+- Hull centre of mass -0.3 (0.61 m; collision box centre 0.91).
+
+validate --baseline: 0 new; lint-bro RC046 x2 -> 0. Not benched (no editor runs); the owner's drive is pending.
+
 ## A small crawler on the hull: WALL-E (2026-10-04)
 
 A 1 m tracked robot, every wheel on `BoneChassis_cdt` on one rigid axle (min = max = 0, strength 1, damping
@@ -268,7 +291,7 @@ Source: `C:\RC_RE\research\physics_semantics.md`, "Terrain deformation under whe
 - **Inferred, first suspect:** all five KGS-25 paks put their 4 trails on modelless `contact` wheels. The native trail update runs an extra branch only on deformable terrain, and that branch reads the wheel geom and its tracker. Nothing else in the wheel classes differs from retail: empty or missing `vfx`, 22 wheels, width, mass and factors all have retail precedent.
 - **Workaround:** move `wheelsWithTrail` to `kgs_L/R_idler0` and `kgs_L/R_drive0` (`isRear` on the rear pair).
 - **Settle with a bench**, with the owner's go-ahead: baseline, trails moved, and baseline with `physics/truck/enable wheel extrusion from wetness` off.
-- The installed T-80BVM has the same layout (RC079 x4). Whether it survives deformable terrain is untested.
+- The T-80BVM had the same layout (RC079 x4). v2 (b66dcc8f, 2026-10-22, pak_patch) moved the trails to `t80_*_idler0` (front) and `t80_*_drive7` (rear, `isRear`) and gave both classes the TC305 trail textures at 2.5 x the track width; validate: RC079 fixed, nothing new. Its v1 build had written the trail descriptors only into the generated wheel classes (the BROs had no `propWheelTrail`), so a regeneration from BRO would have dropped them; v2 adds them to the drive/idler BROs. Deformable-terrain behaviour is untested (Build).
 
 ## Checks
 

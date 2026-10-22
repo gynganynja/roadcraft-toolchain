@@ -715,6 +715,14 @@ mesh itself disappears and reappears and this is a reoccuring problem." The v4 b
 default-visible and hidden at init, and a lit overlay that flashes over beacon lenses that stay. Not yet
 applied to the Dump Twuck.
 
+**Owner rule, 2026-10-22 (Dump Twuck v11, Build):** no light cast on the terrain; lamps still glow. With the
+kit, pass empty effect lists (`lamp_states(driving=[], braking=[], reversing=[])`, `flasher(effects=())`): it
+creates no Vfx nodes and no links to them, and the lens / lit-shell states are unchanged. For an already-built
+class, `dumptwuck_mod/tools/strip_light_cast.py` removes every `sfx_group` holding an `sfx_light_base`, every
+VfxRestart/VfxStop node naming only those groups (it refuses a node mixing them with other effects) and the links
+to them, dropping link lists left empty; on the Dump Twuck class the result equals the kit's no-effect graph node
+for node and validates with no new findings. Apply it to the pak member and the editor BRO / autogen class alike.
+
 ## L275 v8 beacon: switch only a lit shell (2026-10-01)
 
 **Game (owner, v7):** "The entire mesh appears then disappears for the beacon." v6/v7 swapped two coincident
@@ -985,3 +993,14 @@ This is a visibility/update-protocol distinction, not evidence of a broken rig.
 Both pose/frame sets are preserved in J31TestF final_all_092833 and
 final_services_all_093912. Native camera rendering/steering were validated;
 the recovered cockpit has no authored gauge or wiper clips.
+
+## Removing light cast while keeping the lamps lit (owner rule 2026-10-22; Roamer 105 99af33ce)
+
+**Build, not driven.** The owner rule for every mod: lamps glow but cast no light on the terrain. On the Roamer every
+emitter was an `sfx_light_base` child named `light` inside an effect group: in the classes' `sfx.list` overrides
+(head/high beams, bullbar lights, tail/brake/reverse points, ten indicator `sfx_group`s) and in the mod's `.sfx`
+files. Removing just that child, and keeping each emptied group (`list = { }`), keeps every `VfxRestart` / `VfxStop`
+and `prop_vehicles_headlights` name valid; the `*_fake` groups and `sfx_flare_effect_base` flares (lens glow) and the
+lit lens materials stay. Check: zero `sfx_light_base` in the pak's text members, the set of effect names unchanged
+per class, `roadcraft validate --baseline` no new findings. Evidence: `port_roamer105/campaign/fixes_20261022_01`
+(tools/fixes_1022_fit.py `drop_lights`, validation.json 124 checks). Whether the glow alone reads well at night is Open.

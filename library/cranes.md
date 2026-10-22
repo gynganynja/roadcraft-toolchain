@@ -252,3 +252,61 @@ Segment_1, Segment_2; Kanga 25 too). **Rule (SSL source + compiled frames):** ma
 (winch points, VFX boxes) were authored for that frame. Also missing in the client class: `equipmentCameraType CRANE`
 on `prop_camera_equipment_preset` (ZiKZ, Kanga), crane sound graph (`Addon`), effect emitter nodes
 (`sfx_exhaust_*`, `sfx_radiator_haze`) and the effect/sound links in the class `.resource`. c3 installed; drive Open.
+
+
+## LTM 1150-5.3 all-terrain crane on the HWC945 donor (2026-10-22, Build; native stages and drive Open)
+
+New mod `ltm1150_mod` (Liebherr LTM 1150-5.3 from the script-built source `C:\RC\LTM1150_Model`), Kanga 25 pipeline,
+retail **EPEC HWC945** heavy crane as donor (BRO merged over `chassis_epec_hwc945.bro`, graphs from the compiled class).
+Offline stages only (owner rule); grades below are Build unless stated.
+
+* **Six telescope sections on two IK prismatics** (SuperHeavy generalisation): Tele3 carries sections 1-3, Tele6 4-6;
+  sections 1, 2 skinned base/Tele3 at 2/3-1/3 and 1/3-2/3, 4, 5 Tele3/Tele6 likewise. Real 12.33 -> 66 m = 8.945 m per
+  section (26.835 m per joint) leaves >= 1.87 m of every section inside the one behind (sections ~11 m long). Rig audit
+  poses section i at exactly i x 8.945 m along the boom.
+* **A boom that rests tilted needs a computed prismatic axis.** The LTM boom rests 0.548 deg nose-down; an identity
+  telescope (childRotation 0) slides along the horizontal and would leave the sections 0.26 m off the boom axis after
+  26.8 m. childRotation = `child_rotation(native boom axis)` = [0.5477, 0, 0]. Compute it whenever a long prismatic is
+  not exactly along a native axis (frames.md rule, extended to small tilts that the eye misses at rest).
+* **Outrigger beams with two visible stages:** HWC945 retail = one beam prismatic per corner (2.3 m) + foot. Here the
+  inner stage (carrying the jack) is the anchor body over the full 2.71 m and the outer stage is a visual follower
+  skinned 0.5 chassis / 0.5 beam body - it moves half the stroke, as the real two-stage beam does. Anchors without the
+  HWC945 stowed-pad platform swap (`platformAttachedToAnchor/Truck`) like the KGS-25: pads hang under the rods.
+* **Modelled jack rods limit the foot stroke:** retail strokes reach 0.1-0.25 m below ground (above). The LTM rear rods
+  (1.0 m in a 0.84 m housing, pads 0.65 m up) reach 0.12 m below ground only after stretching the hidden rod top
+  0.11 m inside the housing; front rods were retracted 0.15 m to stow the pads 0.40 m up and reach 0.20 m below. Audit
+  the rod left in the housing at full stroke (`audit_rig.py`, >= 0.05 m).
+* **Rear counter-steer on five axles:** retail per-slot `steeringAngle` (HWC945 30 / 20 / 0 / -20). LTM: one turning
+  centre just ahead of axle 3, front from axle 1 at 30 deg, rear scaled so axle 5 sits at the retail -20 ->
+  30 / 11.1 / -1.7 / -12.0 / -20. At a consistent -30.6 deg the axle-5 tyre swept into the rear outrigger box (rig
+  audit: tyre sweep vs carrier hulls); retail tables are not geometrically consistent either.
+* **Hook block from a transport pose:** the source hooks the block into the front coupling, tilted 51 deg. The model
+  stage turns every mesh under `HOOK_BLOCK` about the sheave axis until the hook is plumb, then lowers it until the block
+  top is 0.12 m under the lowest head geometry above it (1.97 m below the head sheave), and replaces the modelled falls
+  with straight ropes skinned to the hook body (they swing with the ball joint). Hide/show list = every mesh bound to
+  the hook bone (KGS-25 v8 rule).
+* **Donor Body graph wiper nodes:** the HWC945 Body graph has `BlueprintNodeTplAnimOnBegin/OnEnd` (wiper sounds) that
+  need `tplAnimation` wiper clips; with no modelled wipers the build drops those two nodes and their links (Inferred
+  assert risk, the anchors-node lesson above). Wiper locators `BoneWiper_*_B` stay as sound positions.
+* IK root: `rootBodyLocalOffset` on the slew axis at the slewing ring (HWC945: slew axis, 0.6 m above its root); masses
+  scaled from the HWC945 (34 / 8 / 4 / 2.5 / 1.5 t, beams 1 t, feet 0.5 t, 61 t with wheels).
+
+Evidence: `ltm1150_mod/tools/{ltm_config,create_models,prepare_mod,audit_rig}.py`, `build/model_layout.json`,
+`reports/rig_audit.json` (PASS 50/50), `reports/prepare.json`. Import, generation, packaging and the drive are Open.
+
+**SuperHeavy c8 (2026-10-22): collision group renamed, NOT the telescope-wall fix.** First reading (numbered groups
+filter only by joint index) was corrected by the laptop RE the same day: members of one markup group are filtered
+from each other whatever the group is called; only bodies outside the group collide with members (the Mammoth RC75
+case). RC082 sweep on c7: every boom joint clear. The IK has no reach cap (limits pass through; collinear prismatics
+split evenly). The ~45 m stop is Open: candidates blockedZones (none found), contact with the world or a hook body;
+in game, dbg var Game/Truck/IK separates a target stop from a physical stop (needs an owner-approved run).
+
+**LTM detailed master pass (same day, Build):** the master's chassis linkages (tie rods, steering cylinders, drag
+link, relay rod, trailing links, A-frames, Panhard rods, prop shafts) are DAMPED_TRACK empty pairs. The model stage now
+exports the depsgraph-evaluated rest pose and the constraints, and turns every pair whose two ends resolve to different
+game bones into a retail-style visual IK chain [tracker's body, A, B] (HINGE2 + short PRISMATIC, effector = the target's
+body). This mirrors the HWC945's own axle, rack and steering-cylinder chains. 36 chains came out of 50 trackers
+(mutual pairs merge). Hook pivot moved to the lower head sheaves (`HEAD_SHEAVE_LOWER`). The detailed rear jack rods
+reach 0.20 m below ground, so the stretch above is gone. Driven and planetary hubs need two wheel models (hub covers
+turn with the wheel). Dashboard: SPEED / RPM / FUEL needles on the HWC945's own elements, the air gauge as
+ENGINE_ENABLED; no subtype exists for brake or clutch pedals (schema enum NONE / SPEED / RPM / FUEL / ENGINE_ENABLED).
