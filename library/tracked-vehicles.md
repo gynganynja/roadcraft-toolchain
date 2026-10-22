@@ -60,7 +60,7 @@ HT500: "the track frames have springyness, allows the wheels to move smoothly up
 don't" (Game, 2026-10-13). A spring motor takes real units and unlimited force; a position motor's
 `spring` key is never read (physics_semantics.md T5, read_fields.md). Mods: Goliath D11 already
 hinges its frames HT500-style (+-5 deg, 1.56e7 / 1.7e7); T-80 +-2 deg, 1.2e7 / 4.4e6; Hitachi
-EX5600 has no frame bodies; KGS-25 welded its frames with `tpl_markup_constraint_fixed` until
+EX5600 has no frame bodies (v2 2026-10-22: moved to the TC305 layout below, idler + sprocket real and rigid 4 cm above the roller line, 7 model-less stop fakes per track on their own `fake_roller_*` bones, rollers and carriers as `visualWheelSlots`; Build, not driven); KGS-25 welded its frames with `tpl_markup_constraint_fixed` until
 candidate f841eb34 (Build).
 
 ## The KGS-25 failure: "like there isn't anything underneath it"

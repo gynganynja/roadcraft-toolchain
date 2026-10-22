@@ -56,7 +56,8 @@ or the body will catch on terrain where the visible underside would not (Game, b
 |---|---|
 | Locators (`_cockpit_camera`, `_third_person_camera`, `_equipment_camera`) and collision objects keep identity world orientation in the SDK Lynx `.blend` | SDK |
 | Collision is convex `cdt_` objects only; the root `BoneChassis_cdt` at the origin; objects at scale 1 and rotation 0 | SDK (documentation) |
-| Levels of detail are authored `<stem>_LOD0 .. _LODn`; the exporter drops `_LOD0`. Compiled naming can retain `<stem>` as the geometry group (Y61) rather than an explicitly named `<stem>_vis`; inspect the actual table and geometry report. Hide distances: 800 m vehicle, 350 m wheel; the LWI transition off for trucks | Build (EX5600), SDK |
+| Levels of detail are authored `<stem>_LOD0 .. _LODn`; the exporter drops `_LOD0`. Compiled naming can retain `<stem>` as the geometry group (Y61) rather than an explicitly named `<stem>_vis`; inspect the actual table and geometry report. Hide distances: 800 m vehicle, 350 m wheel; the LWI transition off for trucks | Build (EX5600), SDK |
+
 | The water cut-off volume is found by name (`cutoff_volume`) | Build |
 | Asset names lowercase | SDK (documentation) |
 
@@ -381,3 +382,6 @@ Survey of the installed mods' main tpls (desktop, `tpl-nodes`, root `_cdt` bone 
 Kanga 25 (`BoneRear_cdt`), L275, Lada, Mammoth (from RC72), forklift, SuperHeavy, Trophy Truck, WALL-E, Warthog,
 Watcher 61 (3), WL994. Not read: KGS-25, T-80BVM. The Roamer 105 and the Hitachi likely share the spawn and
 recovery terrain bug and the COM-frame trap (Inferred).
+**Hitachi EX5600 v2** (2026-10-22, Build): uprighted with `hitachi_ex5600/tools/upright_root_v2.py` (the RC72 pattern
+on one bone): `tpl-nodes` before/after differs only in `BoneChassis_cdt`'s axes; winch sockets rewritten from the
+turned-frame (x, y +-4.6, z 1) to identity (x, y 1, z +-4.6), flooding point y 3.0. Package a18d37e0, installed, not driven.
