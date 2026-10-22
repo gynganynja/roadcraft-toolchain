@@ -1125,7 +1125,8 @@ def joint_sweeps(bodies: list[dict], slots: list[dict], classes: dict[str, dict]
             continue
         m = nodes.matrix(geom)
         wid = f"{s['id']} ({geom})"
-        wheels.append(joint_sweep.cylinder_shape(wid, wid, (m[12], m[13], m[14]), (m[0], m[1], m[2]), radius, width))
+        # axle along the truck's X, not the node's: retail wheel nodes often point X forward (Mammoth RC76 duals)
+        wheels.append(joint_sweep.cylinder_shape(wid, wid, (m[12], m[13], m[14]), (1.0, 0.0, 0.0), radius, width))
         wheel_body[wid] = carrier
     results = joint_sweep.sweep_truck(constraints, total, groups, layers, shapes, wheels, wheel_body, nodes.matrix,
                                       group_names)

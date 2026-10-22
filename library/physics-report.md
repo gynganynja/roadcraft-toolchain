@@ -199,7 +199,8 @@ every prismatic and limited hinge child body, and validator rule RC082 judges it
 **Moving and static shapes.** The moving set is the child body, every body jointed below it (by constraint
 parent, so a roll body under a heave body moves with it) and the wheels those bodies carry. Everything else in
 the truck is static. Body shapes are the cdt_ oriented boxes of "Body inertia" in model space; wheels are
-cylinders at the slot's wheel node (axle along the node's X, `slot.physicalRadius`, the class `width`). Tyre
+cylinders at the slot's wheel node (axle along the truck's X, `slot.physicalRadius`, the class `width`; the
+node's own rotation is ignored, because 82 retail wheels and the Mammoth's have the node X pointing forward). Tyre
 pairs are not judged.
 
 **Motion.** Prismatic: the constraint slides along `childRotation`'s Z in the child bone frame

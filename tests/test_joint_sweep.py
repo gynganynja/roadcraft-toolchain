@@ -192,6 +192,42 @@ class PrismaticSweepTests(unittest.TestCase):
         self.assertIsNone(f["sweep.low.firstContact"])
         self.assertEqual(f["sweep.parent"], "chassis")
 
+    def _spy(self, groups, group_names, slots=(), classes=None, rotate=None):
+        """Run joint_sweeps with sweep_truck replaced by a recorder; return its arguments."""
+        names = ["chassis", "cdt_chassis", "carrier", "cdt_carrier", "wheel"]
+        tree = nodes(names, [(0, 1, 0), (0, 1, 0), (0, 1.5, 0), (0, 1.5, 0), (1.2, 1.5, 0)], [-1, 0, 0, 2, 2],
+                     {"cdt_chassis": (1, 0.4, 1), "cdt_carrier": (0.4, 0.4, 0.4)})
+        if rotate:
+            tree.matrices[names.index("wheel")] = rotate
+        seen = {}
+        real = js.sweep_truck
+        js.sweep_truck = lambda *a: seen.setdefault("args", a) and {}
+        try:
+            pr.joint_sweeps([entity("chassis"), entity("carrier", "prismatic")], list(slots), classes or {}, tree,
+                            "m.tpl", [info("chassis"), info("carrier", PRISMATIC)], groups, group_names)
+        finally:
+            js.sweep_truck = real
+        return seen["args"]
+
+    def test_group_names_reach_the_filter(self):
+        # Mammoth RC76: a group renamed no_self_collision must reach sweep_truck, or it is judged as index 2
+        args = self._spy([["chassis", "carrier"]], ["no_self_collision"])
+        self.assertEqual(args[-1], ["no_self_collision"])
+        self.assertEqual(js.group_indices(args[-1]), [1])
+
+    def test_wheel_axle_ignores_the_node_rotation(self):
+        # a wheel node with X pointing forward (retail and Mammoth duals) still gets a lateral axle
+        slot = {"id": "slot[0]", "physics": True, "fields": {
+            "slot.geomName": pr.V("wheel", "explicit", "t"), "slot.parentBody": pr.V("carrier", "explicit", "t"),
+            "slot.physicalRadius": pr.V(0.5, "explicit", "t"), "slot.class": pr.V("w", "explicit", "t")}}
+        wclass = {"physics": True, "fields": {"class": pr.V("w", "explicit", "t"),
+                                              "width": pr.V(2.2, "explicit", "t")}}
+        forward = (0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, 0, 1.2, 1.5, 0, 1)
+        wheels = self._spy([], [], [slot], {"w": wclass}, rotate=forward)[5]
+        self.assertEqual(len(wheels), 1)
+        self.assertEqual(wheels[0].axes[0], (1.0, 0.0, 0.0))
+        self.assertAlmostEqual(wheels[0].half[0], 1.1)
+
     def test_judge(self):
         res = {"margin": 0.03, "low": {"limit": -0.2, "contact": -0.21, "moving": None, "static": None},
                "high": {"limit": 0.2, "contact": 0.25, "moving": None, "static": None}}
