@@ -364,3 +364,20 @@ fits recovered castings there; native captures must verify the result.
 Evidence: preserved Jimny v6 final_all_092833/steer_left_visual_frames.json,
 Jimny reports/suspension_source_inventory.json and tools/create_models.py.
 This is a source/frame diagnostic, not a universal fixed offset for axles.
+
+## The root physics bone must have an identity native frame (Mammoth RC71/RC72, 2026-10-15)
+
+| Rule | Grade |
+|---|---|
+| `prop_truck_teleporter.ssc` `GetTerrainOffset` builds the root body's physics OBB in the body's **native** axes and reads x = width, y = height, z = length, with `originOffset` = abs(OBB origin y). Every placement path uses it: eagle-mode base deployment, recall, recovery, field service and task teleports | SSL (read by the Mammoth lead) |
+| A root bone authored pointing up in Blender gives native y = forward and z = down, so placement samples the terrain over the wrong footprint and the truck spawns into slopes and launches. That was Mammoth player report MAM-01, which RC54 had masked with `teleportOffset` 5.9 | Game (RC54-RC70), Build |
+| Class values written in truck axes are read in that native frame too: the winch `offsetInBodySpace`, towing offsets, `prop_truck_under_water_cheker.rootOffsetPosition` | SSL, Build |
+| `hkCenterOfMassOffset` is applied in the body's native axes (as above in "Mass"). RC66-RC70 wrote world-axis deltas onto a turned bone and put the body COM about 5.5 m high | Build |
+| Fix: point the root bone along +Y with roll 0, then restore the world matrices of the bone-parented objects (the Mammoth's `cat793d_detail/tools/upright_root_rc72.py`). RC72 (sha b53e2658) is the fixed build | Build |
+
+Survey of the installed mods' main tpls (desktop, `tpl-nodes`, root `_cdt` bone axes, 2026-10-15). **Turned**
+(x = [1,0,0], y = [0,0,1]): the Hitachi EX5600 `BoneChassis_cdt`, the Roamer 105 expedition `BoneChassis_cdt`
+(all three tpls, factory variants included) and the test crawler. Identity: Apoc, Dump Twuck, Goliath (3), Grader,
+Kanga 25 (`BoneRear_cdt`), L275, Lada, Mammoth (from RC72), forklift, SuperHeavy, Trophy Truck, WALL-E, Warthog,
+Watcher 61 (3), WL994. Not read: KGS-25, T-80BVM. The Roamer 105 and the Hitachi likely share the spawn and
+recovery terrain bug and the COM-frame trap (Inferred).
