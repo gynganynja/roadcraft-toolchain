@@ -2134,3 +2134,14 @@ visible lamp/state, motion range/axis/park verification and attachment closure,
 with visible review tied to the exact installed candidate. Asset-specific
 regression checks must follow reproduced causes; no guessed handedness fix or
 automatic shared threshold change was applied in this explanatory audit.
+
+
+## LTM 1150-5.3 all-terrain crane, offline stages (2026-10-22; Build, native stages and drive Open)
+
+A five-axle all-terrain crane (Liebherr LTM 1150-5.3) from a script-generated Blender 5.2 source that three other
+sessions were detailing at the same time. The mod project `ltm1150_mod` follows the Kanga 25 pipeline with the retail
+EPEC HWC945 as donor; the owner ran no native step from the agent (no importer, editor, packer, game or install).
+Done offline: palette textures, 5.2 -> neutral -> 5.0 model hand-off, BRO / markups (lint 0 errors), rig audit
+(50/50), review renders and store icons. Decisions and evidence: the project README; lessons: cranes.md ("LTM
+1150-5.3"), build-pipeline.md ("A Blender 5.2 source master"), truck-settings.md (retail gear table vs the no-skip
+rule; per-axle counter-steer), validator.md (RC070 before import).

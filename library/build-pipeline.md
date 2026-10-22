@@ -1152,3 +1152,34 @@ first backup silently drops every later pass's edits to that file when the scrip
 `frame_hinge`, `wheel_feel`, `steer_curve`, `v7_retail_frames` do this; `hook_swing`, `hook_visibility`,
 `trail_wheels` patch the current copy). Make each patch idempotent or failing on a second run, and leave the editor
 copies at the installed version when a candidate is built but not installed.
+
+
+## A Blender 5.2 source master: neutral hand-off to the 5.0 export scene (LTM 1150, 2026-10-22)
+
+**Build:** the SDK exporter wants Blender 5.0 files (a 5.1 armature break is reported above), while new source
+masters are authored in 5.2 (`C:\RC\LTM1150_Model`). Opening a newer .blend in an older Blender is not guaranteed, so
+the LTM models stage never does it: (1) it copies the master (other sessions may be saving it) and the 5.2 Blender runs
+`tools/export_master.py` read-only, writing `manifest.json` (every object: type, parent chain, collections, world /
+local matrices, custom props) and `meshes.npz` (per mesh, evaluated with its modifiers at rest: world vertices,
+polygon starts/sizes, loop vertex indices, UV0, world corner normals, per-face neutral surface id and texture-set
+attribute); (2) the 5.0 Blender rebuilds the game scene from those arrays (`foreach_set` on vertices / loops /
+polygon `loop_start`, then `normals_split_custom_set`, so the weighted-normal shading survives). 108k triangles took
+~3 s to export and ~25 s to build. The master's sha256 is kept in the manifest.
+
+**Map meshes to bones by rig ancestry, not by object lists.** While three other sessions added detail objects and
+empties to the same master, the LTM stage assigns each mesh the game bone of its nearest ancestor empty matched by a
+regex table (`NODE_BONE`), folds unknown empties into their parent, and selects hull points and lamp lenses by name
+pattern + region + surface id. A rebuilt, 3-4x denser master needs no code change; optional empties (`CAB_STEER`,
+`CAB_DRIVER_EYE`, `CCAB_JOY_L/R`, ...) are used when present, configured fallbacks otherwise.
+
+**Kanga-derived projects write exponent floats.** `tools/native/roadcraft_native.dump_ps` (copied from the Roamer
+port into Kanga 25 and its descendants) prints floats with `repr`, so a donor value such as the HWC945 towing spline's
+0.000003 came out as `3e-06` (RC050 error, the WALL-E assert). Write PS / BRO / markup / `.td` / `.mi` with the
+toolchain's `roadcraft.ps_format.dumps` (fixed decimals) instead; the LTM project does. Automation: RC050 already
+catches it at validate time.
+
+**Untextured first builds:** a 256 px palette per material family (body / glass / lens), one 64 px swatch per neutral
+surface id, all with the same layout, so a face's remapped UV (its source UV0 squeezed into the middle half of its
+swatch, keeping the tangent orientation) works on every family; glass and lens keep their own textures (one material
+per texture per object). TextureConverter compiles them like painted maps (`ltm1150_mod/tools/prepare_textures.py`).
+Evidence: `ltm1150_mod/build/master_export/manifest.json`, `build/blender_models.log`, `reports/models.json`.

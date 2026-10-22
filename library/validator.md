@@ -500,6 +500,12 @@ No mod ships a light-emitting particle. Every hit is a pre-rule build; new build
   are not judged, because those reads lists are partial.
 - RC073 judges the markup as written plus its `.lods_base`. Bodies the engine creates (wheels) have no markup
   block and are not counted.
+- RC070 on a source tree **before the native import**: every freshly authored `<m>.tpl.asset` names
+  `linkBaseTpl: tpl/tpl.tpl.resource`, which asset_importer writes with the rest of `tpl/`; `validate mods_source`
+  reports it as an error until then (LTM 1150, 2026-10-22: 2 errors, 0 after import is expected). Proposed fix (not
+  applied: `validate.py` is a pinned runtime file and other mod sessions were mid-recipe): report it as info when the
+  bundle is a folder and the asset has no `tpl/` member yet; packages stay strict. Patch + regression test:
+  `ltm1150_mod/reports/proposed_toolchain_validate_rc070.patch` (tests passed, 61 tests).
 
 Evidence: scratch runs of 2026-10-13 (retail calibration, `final.json` for the owner's mods). The tests are
 `tests/test_validate.py` (one synthetic fixture per rule, a pak, the CLI contract, SDK-gated checks on the TUZ

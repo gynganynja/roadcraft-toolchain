@@ -756,6 +756,14 @@ mesh itself disappears and reappears and this is a reoccuring problem." The v4 b
 default-visible and hidden at init, and a lit overlay that flashes over beacon lenses that stay. Not yet
 applied to the Dump Twuck.
 
+**Owner rule, 2026-10-22 (Dump Twuck v11, Build):** no light cast on the terrain; lamps still glow. With the
+kit, pass empty effect lists (`lamp_states(driving=[], braking=[], reversing=[])`, `flasher(effects=())`): it
+creates no Vfx nodes and no links to them, and the lens / lit-shell states are unchanged. For an already-built
+class, `dumptwuck_mod/tools/strip_light_cast.py` removes every `sfx_group` holding an `sfx_light_base`, every
+VfxRestart/VfxStop node naming only those groups (it refuses a node mixing them with other effects) and the links
+to them, dropping link lists left empty; on the Dump Twuck class the result equals the kit's no-effect graph node
+for node and validates with no new findings. Apply it to the pak member and the editor BRO / autogen class alike.
+
 ## L275 v8 beacon: switch only a lit shell (2026-10-01)
 
 **Game (owner, v7):** "The entire mesh appears then disappears for the beacon." v6/v7 swapped two coincident
