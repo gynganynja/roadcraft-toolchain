@@ -172,6 +172,21 @@ CODES: dict[str, tuple[str, str, str]] = {
               "them (research physics_semantics.md 'Jointed-body collision filtering': direct constraint parent "
               "only, < 31 constraints, Collision Groups; physics_report joint_sweeps); Game: Mammoth RC69's sprung "
               "carriers rested on hull contact (high stance, chatter; library/validator.md RC082)"),
+    "RC083": ("light-emitters", "light-casting emitter on a vehicle: lamps must light up without illuminating the terrain",
+              "Owner rule 2026-10-22 (standing, every mod; library/cockpit-and-lamps.md 'No light cast'); schema: "
+              ".sfx::sfx_light_base ('Sfx Light') is the one light-casting effect type, particle emitters cast light "
+              "with lightEmissionParams.isEmitLight; retail effect library: ssl/sfx_light.sfx is the only one of 475 "
+              "retail .sfx that is a light; Retail: 0 of the retail truck classes and BROs carry sfx_light_base, "
+              "sfx_light or an inline isEmitLight, and the one prop_vehicles_headlights (Derry Longhorn 4520) is "
+              "empty (research/lamps_semantics.md; research/light_emitters_by_mod.md)"),
+    "RC084": ("pct-streaming", "texture slices or mip chain the streamer cannot use as retail does",
+              "code analysis, static (C:/RC_RE/research/texture_streaming.md): mod_pak_builder slice_pct.py L67-110 "
+              "writes one pct/<tex>_<n>.pct_mip per header.mipLevel and a rewritten .pct.resource listing them in "
+              "mipMaps; the engine desc reader (ModEditor FUN_143ab1b20) asserts predownsampleMipsCount == 0 || "
+              ">= nMipMap and maps disableStreaming to the always-resident load mode, and a texture is hires-"
+              "streamable only with >= 3 mips (retail FUN_1427cc2a0, Inferred field); Retail: 0 of 2,154 vehicle "
+              "textures have a missing slice, a size mismatch, fewer than 3 mips or a chain stopping above 8 px; "
+              "none ships per-LOD texture sets"),
 }
 RULES = sorted({rule for rule, _, _ in CODES.values()} | {"bro-lint"})
 
@@ -1595,6 +1610,234 @@ def rule_towing_action(ctx: Context, truck: Truck) -> None:
             return
 
 
+# RC083: light-casting types. The schema's only light effect is .sfx::sfx_light_base; ssl/sfx_light.sfx is the only
+# retail effect-library entry that is one (2026-10-22 survey of the 475 retail .sfx). Mod .sfx files that contain one
+# are added per target (light_sfx_types).
+LIGHT_SFX_TYPES = frozenset({"sfx_light_base", "sfx_light"})
+LIGHT_SERVICE_FIELDS = ("namesFxVhc", "namesFxVhcFake", "namesFxVhcBrake", "namesFxVhcReverse", "namesFxVhcStanding",
+                        "namesFxVhcStandingFake", "sfxLight", "sfxLightFake", "sfxLightBrake", "sfxLightReverse")
+LIGHT_FIX = ("remove the emitter (and any graph VfxRestart / VfxStop or prop_vehicles_headlights entry naming it); keep "
+             "the lens / emissive-overlay material swap (vehicleLightMaterials, or the lit-copy graph) so the lamp "
+             "still lights up")
+
+
+def _non_empty(value: Any) -> bool:
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, dict):
+        return any(_non_empty(v) for k, v in value.items() if not (isinstance(k, str) and k.startswith("__")))
+    if isinstance(value, list):
+        return any(_non_empty(v) for v in value)
+    return False
+
+
+def light_emitters(doc: Any, light_types: Iterable[str] = LIGHT_SFX_TYPES) -> list[tuple[str, str, str]]:
+    """(key path, kind, detail) for every light-casting emitter in a parsed class / effect / BRO document:
+
+    * ``sfx_light``: a dict whose ``__type`` is ``sfx_light_base``, retail ``sfx_light`` or a light group type of
+      ``light_types`` (an ``.sfx`` that contains one); a group reference is reported only when no light is spelled out
+      under it, so an inlined compiled instance counts once;
+    * ``particle``: a particle emitter with ``isEmitLight = True``;
+    * ``beam-service``: a ``prop_vehicles_headlights`` / BRO ``vehiclesHeadlights`` that names effects to start."""
+    types = {t.lower() for t in light_types}
+    found: list[tuple[str, str, str]] = []
+    groups: list[tuple[str, str]] = []
+    for path, sub in _walk_dicts(doc):
+        kind = sub.get("__type")
+        if isinstance(kind, str) and kind.lower() in types:
+            if kind.lower() == "sfx_light_base":
+                found.append((path, "sfx_light", "sfx_light_base"))
+            else:
+                groups.append((path, kind))
+        if sub.get("isEmitLight") is True:
+            found.append((path, "particle", "isEmitLight = True"))
+        leaf = path.rsplit(".", 1)[-1]
+        if leaf in ("prop_vehicles_headlights", "vehiclesHeadlights") or kind in ("prop_vehicles_headlights", "VehiclesHeadlights"):
+            names = [k for _, k, v, _ in _walk_paths(sub) if k in LIGHT_SERVICE_FIELDS and _non_empty(v)]
+            if names and sub.get("isEnabled") is not False:
+                found.append((path, "beam-service", ", ".join(sorted(set(names)))))
+    lights = [p for p, k, _ in found if k == "sfx_light"]
+    for path, kind in groups:
+        if not any(p.startswith(path + ".") or p == path for p in lights):
+            found.append((path, "sfx_light", kind))
+    return sorted(found)
+
+
+def light_sfx_types(ctx: Context) -> set[str]:
+    """``LIGHT_SFX_TYPES`` plus the stems of the mod's own ``.sfx`` files that contain a light (to a fixed point, as
+    a mod effect may wrap another)."""
+    types = set(LIGHT_SFX_TYPES)
+    docs = {name.lower().rsplit("/", 1)[-1][:-4]: ctx.ps(name) for name in ctx.bundle.names()
+            if name.lower().endswith(".sfx")}
+    changed = True
+    while changed:
+        changed = False
+        for stem, doc in docs.items():
+            if stem not in types and any(k == "sfx_light" for _, k, _ in light_emitters(doc, types)):
+                types.add(stem)
+                changed = True
+    return types
+
+
+def rule_light_emitters(ctx: Context) -> None:
+    """RC083: any light-casting emitter in the mod's classes, effects or BROs (owner rule 2026-10-22)."""
+    if "light-emitters" not in ctx.rules:
+        return
+    types = light_sfx_types(ctx)
+    for name in ctx.bundle.names():
+        lower = name.lower()
+        if not lower.endswith((".cls", ".sfx", ".bro", ".prop")):
+            continue
+        doc = ctx.ps(name)
+        path = ctx.bundle.display(name)
+        if doc is None:
+            count = len(re.findall(rb"sfx_light_base|isEmitLight\s*=\s*True", ctx.bundle.read(name)))
+            if count:
+                ctx.add("RC083", "warning", path, f"{count} light-casting emitter(s) (sfx_light_base / isEmitLight) in a "
+                        f"file the editor cannot parse. {lamps.NO_LIGHT_CAST_RULE}", fix=LIGHT_FIX)
+            continue
+        for key, kind, detail in light_emitters(doc, types):
+            what = {"sfx_light": f"light effect ({detail})", "particle": "light-emitting particle emitter (isEmitLight)",
+                    "beam-service": f"prop_vehicles_headlights beam service starting effects ({detail})"}[kind]
+            ctx.add("RC083", "warning", path,
+                    f"{what} at {key or '<root>'} in {name}: it illuminates the terrain. {lamps.NO_LIGHT_CAST_RULE} "
+                    "Retail trucks carry no beam emitter; their lamps are material swaps (vehicleLightMaterials)",
+                    key=key, fix=LIGHT_FIX)
+
+
+# RC084: .pct textures (research texture_streaming.md). Mips at or below the 64 KiB mip tail
+# (Streaming.Textures.miptailSize_PC default) stay resident; larger ones are the streamed "hires" part.
+PCT_MIPTAIL_BYTES = 0x10000
+PCT_MIN_STREAM_EDGE = 512           # textures this large are expected to stream like retail vehicle textures
+PCT_HIRES_MIN_MIPS = 3              # retail FUN_1427cc2a0: fewer mips -> never hires-streamable
+PCT_TAIL_MAX_EDGE = 8               # retail vehicle chains stop at 4 or 8 px on the short edge
+PCT_HIRES_INFO_MIB = 400            # retail vehicles: zikz_612c 613 MiB, next 248, typical 100-250
+PCT_LOD_SUFFIX = re.compile(r"_l([1-9])(?=_|$)")
+
+
+def _pct_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _pct_size(ctx: Context, name: str) -> int:
+    """Byte length of a member without keeping it in the bundle cache (mips can be 16 MiB each)."""
+    return len(ctx.bundle.by_name[name.lower()][0].read())
+
+
+def rule_pct_streaming(ctx: Context) -> None:
+    """RC084: every ``pct/*.pct.resource`` of the mod: slice members and sizes (pak), the unsliced blob (source),
+    the predownsample assert, mip chains a streamed texture needs, and two pak-level infos (hires memory against
+    retail vehicles, per-LOD texture sets, which no retail vehicle ships)."""
+    if "pct-streaming" not in ctx.rules:
+        return
+    hires_bytes = 0
+    textures: dict[str, str] = {}
+    for name in ctx.bundle.names():
+        lower = name.lower()
+        if not lower.endswith(".pct.resource"):
+            continue
+        try:
+            desc = schema_mod.yaml_loads(ctx.bundle.read(name).decode("utf-8", "replace"))
+        except Exception:                              # noqa: BLE001 - an unreadable descriptor is RC049's business
+            continue
+        if not isinstance(desc, dict) or desc.get("__type", "res_desc_pct") != "res_desc_pct":
+            continue
+        path = ctx.bundle.display(name)
+        header = desc.get("header") if isinstance(desc.get("header"), dict) else {}
+        sx, sy, nmip = (_pct_int(header.get(k)) for k in ("sx", "sy", "nMipMap"))
+        levels = [lv for lv in (header.get("mipLevel") or []) if isinstance(lv, dict)]
+        sizes = [_pct_int(lv.get("size"), -1) for lv in levels]
+        mips = [m for m in (desc.get("mipMaps") or []) if isinstance(m, str) and m]
+        blob = desc.get("pct") if isinstance(desc.get("pct"), str) else ""
+        tex = str(desc.get("texName") or lower.rsplit("/", 1)[-1][: -len(".pct.resource")])
+        textures[tex.lower()] = path
+        folder = posixpath.dirname(name)
+        no_stream = str(desc.get("disableStreaming", "")).lower() == "true"
+        hires_bytes += sum(s for s in sizes if s > PCT_MIPTAIL_BYTES)
+        simple = (str(desc.get("useHeaderFromResource", "")).lower() == "true"
+                  and _pct_int(header.get("nFaces"), 1) == 1 and _pct_int(desc.get("tileLayout")) == 0)
+        if simple and nmip and len(levels) != nmip:
+            ctx.add("RC084", "error", path, f"texture {tex}: header.mipLevel lists {len(levels)} levels but nMipMap "
+                    f"is {nmip}", key="header.mipLevel",
+                    fix="regenerate the .pct and its .resource with the TextureConverter; do not edit headers by hand")
+        if simple and mips:
+            if nmip and len(mips) != nmip:
+                ctx.add("RC084", "error", path, f"texture {tex}: mipMaps lists {len(mips)} slices for {nmip} mip "
+                        "levels; mod_pak_builder writes exactly one pct_mip per level", key="mipMaps",
+                        fix="rebuild the pak with the SDK packer (pak_build) instead of repacking by hand")
+            missing = [m for m in mips if not ctx.bundle.has(f"{folder}/{m}")]
+            if missing:
+                ctx.add("RC084", "error", path, f"texture {tex}: {len(missing)} of {len(mips)} mip slices are not in "
+                        f"the {ctx.bundle.kind}: {', '.join(missing[:4])}{' ...' if len(missing) > 4 else ''}; the "
+                        "streamer cannot load those levels", key="mipMaps",
+                        fix="rebuild the pak with the SDK packer; a repack must keep every pct/<tex>_<n>.pct_mip")
+            wrong = [(m, s) for m, s in zip(mips, sizes) if ctx.bundle.has(f"{folder}/{m}")
+                     and s >= 0 and _pct_size(ctx, f"{folder}/{m}") != s]
+            if wrong:
+                ctx.add("RC084", "error", path, f"texture {tex}: {len(wrong)} mip slice(s) differ in size from the "
+                        f"header ({wrong[0][0]}: header {wrong[0][1]} bytes, member "
+                        f"{_pct_size(ctx, f'{folder}/{wrong[0][0]}')}); a stale slice from another build",
+                        key="mipMaps", fix="rebuild the texture and the pak together")
+        elif simple and blob:
+            blob_path = f"{folder}/{blob}"
+            need = _pct_int(desc.get("imageOffset")) + max(
+                (_pct_int(lv.get("offset")) + _pct_int(lv.get("size")) for lv in levels), default=0)
+            if not ctx.bundle.has(blob_path):
+                ctx.add("RC084", "error", path, f"texture {tex}: its pixel blob {blob} is missing; slice_pct has "
+                        "nothing to cut into mips", key="pct", fix="re-run the TextureConverter for this texture")
+            elif _pct_size(ctx, blob_path) < need:
+                ctx.add("RC084", "error", path, f"texture {tex}: {blob} is {_pct_size(ctx, blob_path)} bytes, the "
+                        f"header needs {need} (imageOffset + mip levels); the top mips would be cut short",
+                        key="pct", fix="re-run the TextureConverter for this texture")
+        pre = _pct_int(desc.get("predownsampleMipsCount"))
+        if str(desc.get("downsampled", "")).lower() == "true" and 0 < pre < nmip:
+            ctx.add("RC084", "error", path, f"texture {tex}: downsampled with predownsampleMipsCount {pre} < nMipMap "
+                    f"{nmip}; the engine asserts predownsampleMipsCount == 0 || >= nMipMap", key="predownsampleMipsCount",
+                    fix="let the TextureConverter write the downsample fields (retail: nMipMap + 1)")
+        edge, short = max(sx, sy), min(sx, sy)
+        if edge < PCT_MIN_STREAM_EDGE or short <= 0:
+            continue
+        if no_stream:
+            if edge >= 1024:
+                ctx.add("RC084", "info", path, f"texture {tex} ({sx} x {sy}) has disableStreaming: it is loaded whole "
+                        "and kept resident (never streamed); retail sets it only on terrain height maps and the mod "
+                        "store card / icon", key="disableStreaming",
+                        fix="clear disableStreaming on model textures; keep it for the store card and icon")
+            continue
+        if (sx & (sx - 1)) or (sy & (sy - 1)):
+            ctx.add("RC084", "info", path, f"texture {tex} is {sx} x {sy}, not a power of two, and streamed; fine for "
+                    "UI art, not for model textures (the converter cuts the chain short)", key="header.sx",
+                    fix="model textures: power-of-two sources; store card / icon: one level with disableStreaming")
+        elif nmip < PCT_HIRES_MIN_MIPS:
+            ctx.add("RC084", "warning", path, f"texture {tex} ({sx} x {sy}) has {nmip} mip level(s): the streamer only "
+                    f"treats textures with >= {PCT_HIRES_MIN_MIPS} levels as streamable, and without a chain it "
+                    "shimmers at distance; every retail vehicle texture has a full chain", key="header.nMipMap",
+                    fix="convert with the SDK sample .td (a full chain stops at 4 x 4)")
+        elif short >> (nmip - 1) > PCT_TAIL_MAX_EDGE:
+            ctx.add("RC084", "warning", path, f"texture {tex} ({sx} x {sy}) has {nmip} mip levels, so its chain stops "
+                    f"at {short >> (nmip - 1)} px; retail vehicle chains run down to 4 or 8 px", key="header.nMipMap",
+                    fix="convert with the SDK sample .td (a full chain stops at 4 x 4)")
+    if not textures:
+        return
+    mib = hires_bytes / 2 ** 20
+    if mib > PCT_HIRES_INFO_MIB:
+        ctx.add("RC084", "info", ctx.bundle.display("pct"), f"{mib:.0f} MiB of streamed (hires) mips in "
+                f"{len(textures)} textures, more than every retail vehicle but one (zikz_612c 613 MiB; typical "
+                "100-250 MiB). Over the hires budget the streamer drops up to 2 mips on every texture in view",
+                key="pct/hires-memory", fix="share textures between model variants and LODs; drop unused sets; pack UVs instead "
+                "of adding sets")
+    lod_sets = sorted(t for t in textures if PCT_LOD_SUFFIX.search(t)
+                      and PCT_LOD_SUFFIX.sub("_l0", t, count=1) in textures)
+    if lod_sets:
+        ctx.add("RC084", "info", ctx.bundle.display("pct"), f"{len(lod_sets)} per-LOD texture sets (e.g. "
+                f"{', '.join(lod_sets[:3])}) beside their _l0 sets: a part that switches LOD swaps to a different, "
+                "lower-resolution bake and its own streaming request; no retail vehicle ships per-LOD textures",
+                key="pct/lod-sets", fix="give LOD1/LOD2 the LOD0 material and UVs; the mip chain already covers distance")
+
+
 def rule_suspension(ctx: Context, truck: Truck) -> None:
     path = ctx.bundle.display(truck.name)
     rb = truck.rb
@@ -2779,6 +3022,8 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
     rule_materials(ctx)
     rule_material_type(ctx, notes)
     rule_bro(ctx)
+    rule_light_emitters(ctx)
+    rule_pct_streaming(ctx)
     if baseline is not None and "save-compat" in selected:
         rule_save_compat(ctx, Context(open_target(baseline), retail_view, schema, selected, fields))
     checked_markups = set()

@@ -91,7 +91,8 @@ The codes continue `lint-bro`'s RC001-RC048. `.bro` truck files in a source tree
 **RC075** (warning: a BRO key the generator drops; info: a key that lands in the class where the engine never reads
 it) comes from `data/bro_passthrough.json`, see [bro-passthrough.md](bro-passthrough.md). RC076 is `spring-motors`
 RC077 is `save-compat` (below; it runs only with `--baseline`), RC078 is `material-type`, RC079 is `wheel-trail`,
-RC080 is `body-inertia`, RC081 is `towing-action` and RC082 is `joint-sweep`; the next free code is RC083.
+RC080 is `body-inertia`, RC081 is `towing-action`, RC082 is `joint-sweep`, RC083 is `light-emitters` and RC084 is
+`pct-streaming`; the next free code is RC085.
 
 | Code | Rule | Severity | Catches | Evidence (grade) |
 |---|---|---|---|---|
@@ -128,11 +129,15 @@ RC080 is `body-inertia`, RC081 is `towing-action` and RC082 is `joint-sweep`; th
 | RC079 | wheel-trail | warning | a slot named in `prop_truck_rb.wheelsWithTrail` whose wheel class (via `wheelPool`, parents merged) has a caterpillar trail (`prop_wheel_trail_rb.isCaterpillar = True`) but no model (`geom.nameTpl` absent or empty). Retail puts crawler trails on the sprocket and idler. Non-caterpillar trails on modelless wheels (N&S rail cranes) are not flagged. Hits: KGS-25 x4 (every variant), T-80BVM x4; 0 on the other 15 installed mods | code analysis, static: `prop_truck_rb.ssc` starts caterpillar trails only for `wheelsWithTrail` slots; the native trail update `FUN_1404d56b0` has a branch that runs only on deformable terrain and reads the wheel geom's bounds and tracker (C:/RC_RE/research/physics_semantics.md 'Terrain deformation under wheels'); Retail: 144 of 144 caterpillar trail wheels have a model; Game: every KGS-25 variant crashed the editor engine on deformable terrain only (link to this trait Inferred, not proven) |
 | RC080 | body-inertia | warning | a markup body in the mod's own `.tpl_markup` that is a **wheel carrier** (a non-hull body that wheel slots hang on: sprung carrier, axle or bogie body) or **track frame** of any mass, or any body of >= 1 t, whose inertia estimated from its cdt_ shapes (`physics_report` "Body inertia") is far below retail for its role: inertia / mass on the middle body axis (`inertiaPerMass.mid`) below the role floor (hull 0.03, wheel carrier 0.02, track frame 0.01, other bodies 0.003 m^2; about half the retail minimum 0.072 / 0.045 / 0.029 / 0.0067), or, for a carrier, middle-axis inertia below 0.1x the spin inertia (0.5 m r^2) of the wheels it carries (retail minimum 0.447x, the TUZ Lynx steer axles). The message gives the x/y/z inertia, the shape count and extent; the fix hint: enlarge the shapes to the body's real extent (inboard of the wheel keep-out), or keep a COM offset with real-sized shapes. Bodies without a compiled model, bounds table or cdt_ mesh are not judged | code analysis, static: inertia comes from the collision shapes x mass (Havok `buildMassProperties`; physics_semantics.md Q2), `hkCenterOfMassOffset` only moves the centre of mass; Retail: 0 of 481 retail bodies in scope (1,840 bodies with shapes, 124 truck classes, `roadcraft physics inertia`); Game: Mammoth RC68's 9 t front carriers on a 0.3 m cube (135 kg·m², 0.015 m^2, 0.018x the wheel) were "super janky" and a front wheel almost rolled over; RC69 (0.22 x 1.2 x 1.8 m, 0.27 m^2, 0.33x) passes. Hits: RC68 x2 (the front carriers); 0 on the 27 installed paks |
 | RC081 | towing-action | error | a truck class whose `prop_truck_view_actions_mapper` maps `TOGGLE_TOWING` (`namedActionType`, any slot) but has no `prop_truck_view_winch_controller`. Blank the slot or enable the winch through the BRO. Hits: TED c1 | Game: TED c1 (headless bench 2026-10-19) stopped with 'SSL runtime error: trying to get member of null object' in `PlayerInputTruckController.GetToggleableActionReactive`, because the towing toggle reads the winch state, which is null without a winch; c2 (slot blanked) ran; Retail: 38 of 1,120 retail classes map `TOGGLE_TOWING`, all 38 with the winch controller |
-| RC082 | joint-sweep | warning / info | a **wheel-carrying** prismatic or limited hinge child body in the mod's own `.tpl_markup` (the joint's moving set, the child and every body jointed below it, carries a physics wheel) whose cdt_ boxes or wheels, swept along the joint (prismatic: `childRotation` Z in the child bone frame; hinge: about it through `childTranslation`), first touch a shape the engine does not filter from them **at or before the joint limit** (warning: contact within the travel, so the body rests on hull contact instead of its spring) or within 3 cm past it (info; hinges: the angle that moves the farthest moving point 3 cm). The message gives the distance from rest, the limit and the hit pair (`physics_report` "Joint sweep", fields `sweep.*`). Pairs touching at rest, tyre-vs-tyre pairs and operator-posed work parts (bodies under a position-motor joint that carries no wheels: cranes, booms, grapples) are left out; cranes and other wheel-less joints are reported by `physics report` only | static: oriented boxes (`.tpl` bounds table) and wheel cylinders, separating-axis test, 5 mm contact epsilon; filter per research physics_semantics.md "Jointed-body collision filtering" (Code) with the Collision Group index taken 1-based (Inferred from retail, physics-report.md); Retail: 0 of 193 wheel-carrying joints in 120 truck classes except the superseded `zikz_605e_heavy_transporter_old` rockers (below); Game: Mammoth RC69's sprung carriers rested on hull contact (high stance, chatter) |
+| RC082 | joint-sweep | warning / info | a **wheel-carrying** prismatic or limited hinge child body in the mod's own `.tpl_markup` (the joint's moving set, the child and every body jointed below it, carries a physics wheel) whose cdt_ boxes or wheels, swept along the joint (prismatic: `childRotation` Z in the child bone frame; hinge: about it through `childTranslation`), first touch a shape the engine does not filter from them **at or before the joint limit** (warning: contact within the travel, so the body rests on hull contact instead of its spring) or within 3 cm past it (info; hinges: the angle that moves the farthest moving point 3 cm). The message gives the distance from rest, the limit and the hit pair (`physics_report` "Joint sweep", fields `sweep.*`). Pairs touching at rest, tyre-vs-tyre pairs and operator-posed work parts (bodies under a position-motor joint that carries no wheels: cranes, booms, grapples) are left out; cranes and other wheel-less joints are reported by `physics report` only | static: oriented boxes (`.tpl` bounds table) and wheel cylinders, separating-axis test, 5 mm contact epsilon; filter per research physics_semantics.md "Jointed-body collision filtering" (Code), with the Collision Group index from the engine's sub-system table (first ordinary group 2; Code, Game 2026-10-22) and constraint ids in breadth-first joint order (Game readback, Inferred use; physics-report.md); Retail: 0 of 193 wheel-carrying joints in 120 truck classes except the superseded `zikz_605e_heavy_transporter_old` rockers (below); Game: Mammoth RC69's sprung carriers rested on hull contact (high stance, chatter) |
+| RC083 | light-emitters | warning | any **light-casting emitter** in the mod's `.cls`, `.sfx`, `.bro` or `.prop` files: a dict whose `__type` is `sfx_light_base`, retail `sfx_light`, or a mod `.sfx` that contains one (a compiled instance that inlines its `list.light` counts once); a particle emitter with `lightEmissionParams.isEmitLight = True` written in the mod; a `prop_vehicles_headlights` / BRO `vehiclesHeadlights` beam service that names effects (`namesFxVhc*`, `sfxLight*`; an empty one is clean). Each finding gives the file, the key path and the owner rule; fix hint: remove the emitter (and the graph VfxRestart / VfxStop or beam-service entry naming it), keep the lens / emissive-overlay material swap. `sfx_flare_effect_base` bulbs and emissive lens materials are not flagged, nor are retail effects referenced by name (crawler track sparks) | Owner rule 2026-10-22 (standing, every mod: lamps light up, nothing illuminates the terrain; cockpit-and-lamps.md "No light cast"); schema: `.sfx::sfx_light_base` is the only light effect type; Retail: 0 hits in all 2,320 retail `.cls`, 1,336 `.bro` and 389 `.prop` (the Derry Longhorn 4520's empty `prop_vehicles_headlights` is clean); the only retail hits are effect-library `.sfx` no mod ships (`ssl/sfx_light.sfx`, spark/flare particles). Hits (2026-10-22): 18 of the 28 paks scanned (15 distinct mods), Roamer 105 expedition 247 down to WALL-E 2 (C:\RC_RE
+| RC084 | pct-streaming | error / warning / info | every `pct/*.pct.resource`. **Error:** a `mipMaps` slice missing from the pak, a slice whose size differs from its `header.mipLevel`, a `mipMaps` or `mipLevel` count other than `nMipMap` (hand repacks), a missing or short source `.pct` blob, `downsampled` with `0 < predownsampleMipsCount < nMipMap` (engine assert). **Warning:** a streamed texture of >= 512 px with < 3 mips (never hires-streamable) or a chain stopping above 8 px. **Info:** non-power-of-two streamed texture; `disableStreaming` on >= 1024 px (always resident); > 400 MiB of hires mips (above the 64 KiB tail) in the mod; per-LOD texture sets (`_l1`/`_l2` beside `_l0`) | code analysis, static (C:/RC_RE/research/texture_streaming.md): `slice_pct.py` L67-110; ModEditor `FUN_143ab1b20` (assert, disableStreaming -> resident mode 4); retail `FUN_1427cc2a0` (>= 3 mips, field Inferred), `FUN_14222cfd0` (global drop up to 2 mips over budget); Retail: 0 errors / warnings on 2,154 vehicle textures, no per-LOD sets, hires per vehicle 100-250 MiB typical, zikz_612c 613. Hits (2026-10-22, 8 local paks): Goliath D11 2 info (504 MiB, 108 per-LOD sets), KGS-25 1 info (512 x 640 icon), others clean |
+esearch\light_emitters_by_mod.md) |
 
 `--rules` takes the rule names: `ps-parse`, `ps-numbers`, `unknown-keys`, `wheel-frames`, `suspension`,
 `joints`, `lamps`, `materials`, `references`, `duplicates`, `ignored-fields`, `engine-defaults`,
-`objsettings-gate`, `spring-motors`, `save-compat`, `material-type`, `wheel-trail`, `body-inertia` and `bro-lint`.
+`objsettings-gate`, `spring-motors`, `save-compat`, `material-type`, `wheel-trail`, `body-inertia`, `towing-action`,
+`joint-sweep`, `light-emitters`, `pct-streaming` and `bro-lint`.
 
 Not added (2026-10-14): a check for a wheel overlapping its parent body's hulls. It needs per-hull
 extents, which were not decoded from `.tpl`/`.tpl_data` then (they are now: the bounds table, RC080 run). A test on hull-node origins inside the wheel
@@ -391,7 +396,10 @@ clear. `tests/test_joint_sweep.py` re-checks this on the installed game.
 **Collision Group index.** The research gives `calcFilterInfo(layer, 0, g, g)` for group members but not the
 base of g (`FUN_141a263d0`, not decompiled). With g from 0, 717 retail body pairs that overlap at rest (the ZiKZ
 612C body and cabin share 11 box pairs, the 605E trailer legs and ramps, ...) would collide; with g from 1 all
-but 2 are blocked. RC082 uses 1-based groups (`joint_sweep.GROUP_BASE`; Inferred, strong).
+but 2 are blocked. **Settled 2026-10-22 (Code + Game): the index is the group name's slot in a table that starts
+with `default` 0 and `no_self_collision` 1, so the first ordinary group is 2** (`joint_sweep.GROUP_BASE` = 2,
+`group_indices`). Retail's rest overlaps are blocked under any base of 1 or more. The same bench showed that the
+constraint ids follow breadth-first joint order (`joint_sweep.engine_order`), not markup order.
 
 | Target | RC082 |
 |---|---|
@@ -399,33 +407,53 @@ but 2 are blocked. RC082 uses 1-based groups (`joint_sweep.GROUP_BASE`; Inferred
 | `\192.168.0.129\mods` | not run: the laptop lost its login to the share (2026-10-22) |
 | `mammoth_rc69_seriesspring_6cfd86f5.pak`, `mammoth_rc70_swept_6726811a.pak` (bench share) | not run on the final code (share login lost); see below |
 
-**Mammoth RC69/RC70: open.** An earlier run of the sweep (2026-10-14, before the group rule was settled; it
-dropped the group members' constraint ids without the group bit) gave RC69: front carriers first contact 0.020 m
-up (vs `cdt_b_078`/`cdt_b_081` of `BoneBody_cdt`, limit 0.23), rear 0.057 m (vs `cdt_b_109`, limit 0.20; the
-lead's exact-hull sweep says 0.14: oriented boxes over-fill the hulls). RC70 then still hit the chassis hulls
-(front 0.055 / 0.118 m, rear 0.054 m), because that rule left the chassis unfiltered from the carriers. Under
-the final rule the Mammoth markup's `main_collision_grp` (chassis, body, dump, rock ejectors) becomes filter
-index 1, which is the chassis's constraint id, so the carriers (dontCollideWith 1) are filtered against the
-chassis, the body **and** the dump. If that holds in the engine, RC69's carriers cannot rest on body hulls at
-all and its high stance has another cause.
+**Mammoth RC69/RC70/RC75: superseded by the engine filter (2026-10-22).** The analysis that stood here assumed
+group index 1 and markup order. It concluded that `main_collision_grp` took the chassis's constraint id 1 and so
+filtered every carrier against chassis, body and dump. The engine does otherwise.
+- The group is index 2, and constraint ids are breadth first: body 0, chassis 1, FL carrier 2, FR 3, rear link 4.
+- Only the FL carrier (own id 2) is filtered against the group's members. FR, the rear link, the rear soft stage and
+  their wheels collide with chassis, body and dump.
+- RC082 on `mammoth_rc75_retune_3d6dec4e.pak` with the corrected filter:
+  - FL clear;
+  - FR contact within travel at -0.032 m, with 11 rest overlaps against chassis/body boxes;
+  - rear link contact at -0.074 m, with 26 rest overlaps against chassis boxes;
+  - soft stage: rear tyre vs body box at -0.117 m.
+- With the group renamed `no_self_collision` (index 1): fronts and link clear.
+- The headless bench confirmed both (Game): RC75 empty floats the FL wheel 0.154 m with FR and the link on their droop
+  stops; the renamed variant stands on all four. See headless-bench.md "Mammoth RC75" and suspension-and-wheels.md
+  "RC75 front-left wheel floats".
+- RC69/RC70 have not been re-run with the corrected filter. They share the markup group and the carrier order, so expect
+  the same FR/link contacts.
 
-The carriers are in no group (the markup has one, `main_collision_grp`), and the group handling does not touch
-them: they keep their own constraint ids (Code: only members get `calcFilterInfo(layer, 0, g, g)` and the group
-bit). Their block comes from their own dontCollideWith, the chassis's constraint id 1, which the 1-based group
-index happens to equal, so every member now carries id 1 (Inferred: the index base). Expected RC082 from the
-lead's numbers (front carrier tops 2.28 vs body hull bottoms 2.30 at rest, contact after 2-3 cm; rear housing
-at 0.14 m; RC70 rear 0.25 m against the 0.20 limit):
+### RC083 run (2026-10-22)
 
-| group index | RC69 | RC70 |
+`light-emitters` over the 8 laptop paks (`root/mods`) and the 20 desktop paks (`\192.168.0.129\mods`), read-only.
+Full per-member key paths: C:\RC_RE
+esearch\light_emitters_by_mod.md (copied to the desktop's
+Downloads
+oadcraft_laptop_research).
+
+| Pak | RC083 | of which beam services |
 |---|---|---|
-| 1-based (the rule) | 0: every lead contact is with chassis/body/dump hulls, all filtered; only other carriers, other carriers' tyres and non-grouped bodies remain, and the hull builder kept the tyres' swept volume clear | 0 |
-| 0-based | warnings: front carriers about 0.025 m (2 cm gap + 5 mm epsilon, earlier with box over-fill), rear about 0.14 m (boxes: 0.057) | rear passes (0.05 m past the limit, beyond the 3 cm margin); but the chassis is then unfiltered too, and the box run found carrier/chassis contacts at 0.05-0.12 m and 10-43 at-rest overlaps, which the lead's hulls never cleared because the audit assumed direct-parent filtering |
+| roamer105_expedition (desktop) | 247 (231 class + 5 `.sfx` lights) | 11 |
+| mammoth (desktop) | 38 (19 CAT 793D lights, in the class and in its preview class) | 0 |
+| goliath_d11 (both) | 37 (33 class + 4 `.sfx`) | 0 |
+| watcher61 (desktop) | 25 | 0 |
+| dumptwuck (desktop) | 22 | 0 |
+| kanga25 (desktop) | 14 | 0 |
+| roamer105ute (laptop) | 13 | 1 |
+| l275_minespec (desktop) | 9 | 0 |
+| red_forklift_35 (desktop) | 8 | 0 |
+| watcher_y61_expedition (laptop) | 7 | 1 |
+| lada_niva (desktop) | 6 | 0 |
+| jimny (laptop) | 5 | 1 |
+| kgs25 (both), trophy_truck (desktop) | 5 each | 0 |
+| walle (both) | 2 | 0 |
+| apoc_buggy, ted, grader_16m3, hitachi_ex5600, superheavy_crane, t80bvm, test_crawler, warthog_m12, wl994_loader | 0 | 0 |
 
-So the acceptance as stated (RC69 flagged, RC70 passing) matches neither filter exactly; it matches the
-direct-parent-only reading that ignores groups. Settle it with the share back: run `roadcraft validate <pak>
---rules joint-sweep` and `physics report` on both paks; and, to decide the group base in the engine, a headless
-bench readback of the Mammoth bodies' filter info (`GetFilterInfo`, research section 1) would show the chassis's
-and the carriers' sub-ids directly.
+The light counts match the desktop agent's `sfx_light_base` survey except the Mammoth (19 there: one class counted).
+No mod ships a light-emitting particle. Every hit is a pre-rule build; new builds get no emitters from `roadcraft.lamps`
+(`cast_light=False` by default).
 
 ## Library failures and how far the rules reach
 

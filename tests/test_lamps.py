@@ -85,9 +85,29 @@ class FlasherTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             lamps.flasher("B", [])
 
-    def test_generated_block_is_clean(self):
+    def test_default_block_casts_no_light(self):
+        """Owner rule 2026-10-22: lenses and overlays light up, nothing illuminates the terrain."""
         built = lamps.exterior_lights({"head_l": "head", "tail_l": "tail", "rev_l": "reverse", "beacon": "beacon_amber"},
                                       flashers=[{"prefix": "Beacon", "lit": ["beacon_lit"], "roles": ["beacon_amber"]}])
+        self.assertFalse(lamps.CAST_LIGHT_DEFAULT)
+        self.assertEqual(built["effects"], {})
+        nodes = built["blueprint"]["nodes"]
+        self.assertFalse([n for n, node in nodes.items() if node["__type"] in ("BlueprintNodeVfxRestart", "BlueprintNodeVfxStop")])
+        self.assertNotIn("sfx_light", json.dumps(built))
+        self.assertEqual(lamps.lamp_findings({"blueprints": {"Lights": built["blueprint"]}}, set()), [])
+        self.assertIn("BeaconStep0/Restart", nodes["Apply"]["OnTrue"])
+        after = lamps.simulate(nodes, nodes["Init"]["OnExit"])
+        self.assertFalse(after["beacon_lit"] or after["head_lights_on"])
+        self.assertTrue(lamps.simulate(nodes, ["HeadsOn/Input"], after)["head_lights_on"])
+        self.assertIn("head_lights_on", built["litObjects"])
+        explicit = lamps.exterior_lights({}, flashers=[{"prefix": "B", "lit": ["b_lit"], "effects": ["b_glow"]}])
+        self.assertIn("b_glow", explicit["blueprint"]["nodes"]["BGlow"]["vfxList"])
+
+    def test_opted_in_block_is_clean(self):
+        built = lamps.exterior_lights({"head_l": "head", "tail_l": "tail", "rev_l": "reverse", "beacon": "beacon_amber"},
+                                      flashers=[{"prefix": "Beacon", "lit": ["beacon_lit"], "roles": ["beacon_amber"]}],
+                                      cast_light=True)
+        self.assertEqual(built["effects"]["head_l_fx"]["list"]["light"]["__type"], "sfx_light_base")
         graph = {"blueprints": {"Lights": built["blueprint"]}}
         self.assertEqual(lamps.lamp_findings(graph, set()), [])
         nodes = built["blueprint"]["nodes"]
@@ -180,10 +200,12 @@ class LampFindingTests(unittest.TestCase):
         self.assertEqual(lit["emissive"]["tint"], [255, 255, 12, 3])
         self.assertEqual(lit["tex"]["emissiveTex"], "mod_x_lights_em")
         self.assertEqual(lamps.unlit_material("mod_x_lights")["__type"], "vehicle_body")
-        head = lamps.light_effect("head_l", "head")
+        with self.assertRaisesRegex(ValueError, "2026-10-22"):
+            lamps.light_effect("head_l", "head")
+        head = lamps.light_effect("head_l", "head", cast_light=True)
         self.assertFalse(head["isAutoStart"])
         self.assertEqual((head["list"]["light"]["lightType"], head["list"]["light"]["enableSM"]), ("spot", True))
-        self.assertEqual(lamps.light_effect("t", "tail", fogAmount=0)["list"]["light"]["fogAmount"], 0)
+        self.assertEqual(lamps.light_effect("t", "tail", cast_light=True, fogAmount=0)["list"]["light"]["fogAmount"], 0)
 
 
 class LintAndCliTests(unittest.TestCase):
@@ -224,7 +246,11 @@ class LintAndCliTests(unittest.TestCase):
             doc = ps_format.load(out)
             nodes = doc["blueprint"]["blueprints"]["ExteriorLights"]["nodes"]
             self.assertEqual(nodes["BeaconStep3"]["timeRef"]["def"], .55)
-            self.assertIn("head_l_fx", doc["effects"]["propSfx"]["list"])
+            self.assertNotIn("effects", doc)
+            opted = Path(tmp) / "lights_cast.bro"
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cli.main(["lamps", json.dumps(spec), "--cast-light", "--output", str(opted), "--json"]), 0)
+            self.assertIn("head_l_fx", ps_format.load(opted)["effects"]["propSfx"]["list"])
 
 
 if __name__ == "__main__":

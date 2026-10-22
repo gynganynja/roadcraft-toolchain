@@ -262,6 +262,52 @@ class TowingActionTests(Base):
         for files in (self.files("TOGGLE_TOWING", winch=True), self.files("TOGGLE_LIGHTS")):
             self.assertEqual(self.fixture(files).run(rules=["towing-action"]), [])
 
+
+class LightEmitterTests(Base):
+    """RC083: owner rule 2026-10-22, lamps light up without illuminating the terrain."""
+    GROUP_SFX = ('isAutoStart = False\nlist = {\n light = { lightType = "spot" __type = "sfx_light_base" }\n'
+                 ' bulb = { __type = "sfx_flare_effect_base" }\n}\n__type = "sfx_group"\n')
+    FLARE_SFX = 'list = {\n bulb = { __type = "sfx_flare_effect_base" }\n}\n__type = "sfx_group"\n'
+
+    def files(self, sfx_list="", props=""):
+        slots, _ = four_wheels()
+        lights = f"sfx = {{ list = {{ {sfx_list} }} }} {props}"
+        return {"ssl/truck.cls": truck_cls(slots, lights=lights), "ssl/w.cls": WHEEL_CLS,
+                "sfx/x_head.sfx": self.GROUP_SFX, "sfx/x_bulb.sfx": self.FLARE_SFX}
+
+    def test_beams_group_references_and_beam_service(self) -> None:
+        inlined = 'head_1 = { nameParent = "a" list = { light = { __type = "sfx_light_base" } } __type = "x_head" }'
+        bare = 'head_2 = { nameParent = "b" __type = "x_head" }'
+        retail = 'glow = { __type = "sfx_light" }'
+        flare = 'bulb_1 = { __type = "x_bulb" }'
+        service = 'prop_vehicles_headlights = { namesFxVhc = [ "head_1" ] namesFxVhcBrake = [ ] }'
+        found = self.fixture(self.files(" ".join((inlined, bare, retail, flare)), service)).run(rules=["light-emitters"])
+        keys = sorted((f.member, f.key) for f in found)
+        self.assertEqual(keys, [("sfx/x_head.sfx", "list.light"),
+                                ("ssl/truck.cls", "properties.prop_vehicles_headlights"),
+                                ("ssl/truck.cls", "properties.sfx.list.glow"),
+                                ("ssl/truck.cls", "properties.sfx.list.head_1.list.light"),
+                                ("ssl/truck.cls", "properties.sfx.list.head_2")])
+        self.assertEqual({f.code for f in found} | {f.severity for f in found}, {"RC083", "warning"})
+        self.assertTrue(all("2026-10-22" in f.message and "lens" in f.fixHint for f in found))
+
+    def test_particle_light(self) -> None:
+        particle = ('sparks = { emitters2 = { e = { typeParams = { default = { visuals = { lightEmissionParams = '
+                    '{ isEmitLight = True } } } } } } }')
+        found = self.fixture(self.files(particle)).run(rules=["light-emitters"])
+        self.assertEqual([f.key for f in found if f.member.endswith(".cls")],
+                         ["properties.sfx.list.sparks.emitters2.e.typeParams.default.visuals.lightEmissionParams"])
+
+    def test_retail_shapes_are_clean(self) -> None:
+        """Lens material swaps, flares and an empty beam service (Derry Longhorn 4520) are not light casting."""
+        files = self.files('bulb_1 = { __type = "x_bulb" }',
+                           'prop_vehicles_headlights = { namesFxVhc = [ ] } prop_vehicle_lights_material = { lights = '
+                           '{ "0" = { geomNames = [ "reflector_headlights" ] __type = "Headlights" } } }')
+        del files["sfx/x_head.sfx"]
+        self.assertEqual(self.fixture(files).run(rules=["light-emitters"]), [])
+        self.assertEqual(validate.light_emitters({"vehiclesHeadlights": {"isEnabled": False, "headlights": {
+            "sfxLight": ["x"]}}}), [])
+
 class SuspensionTests(Base):
     def test_missing_collection_and_bad_index(self) -> None:
         slots, nodes = four_wheels()
@@ -939,6 +985,103 @@ class RetailMaterialTypeTests(unittest.TestCase):
         found = validate.validate(SAMPLE, rules=["material-type"], notes=notes)
         self.assertEqual(found, [])
         self.assertFalse([n for n in notes if "RC078" in n])
+
+
+def pct_desc(tex, sx, sy, nmip, *, sliced=True, mips=None, extra="", bpt=1):
+    """A res_desc_pct as the SDK writes it: sliced (pak, mipMaps) or unsliced (source, pct blob + imageOffset)."""
+    sizes, offset, levels = [], 0, ""
+    for i in range(nmip):
+        size = max(4, sx >> i) * max(4, sy >> i) * bpt
+        sizes.append(size)
+        levels += f"  - offset: {offset}\n    size: {size}\n"
+        offset += size
+    names = mips if mips is not None else [f"{tex}_{i}.pct_mip" for i in range(nmip)] if sliced else []
+    mip_list = "".join(f"- {m}\n" for m in names) if names else ""
+    text = (f"__type: res_desc_pct\ndisableStreaming: false\ndownsampled: false\nheader:\n  format: 51\n"
+            f"  mipLevel:\n{levels}  nFaces: 1\n  nMipMap: {nmip}\n  size: {offset}\n  sx: {sx}\n  sy: {sy}\n  sz: 1\n"
+            f"imageOffset: {0 if sliced else 128}\nmipMaps:{' []' if not names else ''}\n{mip_list}"
+            f"pct: {'' if sliced else tex + '.pct'}\n"
+            f"predownsampleMipsCount: 0\ntexName: {tex}\ntileLayout: 0\nuseHeaderFromResource: true\n{extra}")
+    return text, sizes
+
+
+class PctStreamingTests(Base):
+    """RC084: .pct slices, blobs and mip chains (research texture_streaming.md)."""
+
+    def pak(self, members):
+        path = Path(tempfile.mkdtemp()) / "mod.pak"
+        self.addCleanup(lambda: path.unlink(missing_ok=True))
+        with zipfile.ZipFile(path, "w") as archive:
+            for name, data in members.items():
+                archive.writestr(name, data)
+        game = Path(tempfile.mkdtemp())
+        return validate.validate(path, rules=["pct-streaming"], game_root=game)
+
+    def sliced(self, tex, sx, sy, nmip, drop=(), resize=None, **kw):
+        text, sizes = pct_desc(tex, sx, sy, nmip, **kw)
+        members = {f"pct/{tex}.pct.resource": text}
+        for i, size in enumerate(sizes):
+            if i not in drop:
+                members[f"pct/{tex}_{i}.pct_mip"] = b"\0" * (resize if resize and i == 0 else size)
+        return members
+
+    def test_clean_retail_like_textures_pass(self) -> None:
+        members = self.sliced("mod_x_body", 2048, 2048, 10)
+        members.update(self.sliced("mod_x_body_nm", 1024, 512, 8))
+        members.update(self.sliced("mod_x_flat", 16, 16, 3))
+        self.assertEqual(self.pak(members), [])
+
+    def test_missing_and_resized_slices_are_errors(self) -> None:
+        members = self.sliced("mod_x_a", 512, 512, 8, drop=(0,))
+        members.update(self.sliced("mod_x_b", 512, 512, 8, resize=100))
+        found = self.pak(members)
+        self.assertEqual([(f.code, f.severity, f.member) for f in found],
+                         [("RC084", "error", "pct/mod_x_a.pct.resource"), ("RC084", "error", "pct/mod_x_b.pct.resource")])
+        self.assertIn("1 of 8 mip slices", found[0].message)
+        self.assertIn("header 262144 bytes, member 100", found[1].message)
+
+    def test_slice_count_and_predownsample_assert(self) -> None:
+        text, sizes = pct_desc("mod_x_c", 512, 512, 8, mips=[f"mod_x_c_{i}.pct_mip" for i in range(7)],
+                               extra="")
+        text = text.replace("downsampled: false", "downsampled: true").replace(
+            "predownsampleMipsCount: 0", "predownsampleMipsCount: 5")
+        members = {"pct/mod_x_c.pct.resource": text}
+        members.update({f"pct/mod_x_c_{i}.pct_mip": b"\0" * s for i, s in enumerate(sizes[:7])})
+        found = self.pak(members)
+        self.assertEqual(len(found), 2)
+        self.assertTrue(any("7 slices for 8" in f.message for f in found))
+        self.assertTrue(any("predownsampleMipsCount 5 < nMipMap 8" in f.message for f in found))
+
+    def test_short_chains_npot_and_disable_streaming(self) -> None:
+        members = self.sliced("mod_x_one", 1024, 1024, 1)
+        members.update(self.sliced("mod_x_short", 1024, 1024, 5))
+        members.update(self.sliced("mod_x_icon", 512, 640, 4))
+        nostream, sizes = pct_desc("mod_x_resident", 2048, 2048, 10)
+        members["pct/mod_x_resident.pct.resource"] = nostream.replace("disableStreaming: false", "disableStreaming: true")
+        members.update({f"pct/mod_x_resident_{i}.pct_mip": b"\0" * s for i, s in enumerate(sizes)})
+        found = {f.member.rsplit("/", 1)[-1]: f for f in self.pak(members)}
+        self.assertEqual(found["mod_x_one.pct.resource"].severity, "warning")
+        self.assertIn("1 mip level", found["mod_x_one.pct.resource"].message)
+        self.assertEqual(found["mod_x_short.pct.resource"].severity, "warning")
+        self.assertIn("stops at 64 px", found["mod_x_short.pct.resource"].message)
+        self.assertEqual(found["mod_x_icon.pct.resource"].severity, "info")
+        self.assertEqual(found["mod_x_resident.pct.resource"].severity, "info")
+
+    def test_lod_sets_and_source_blob(self) -> None:
+        members = {}
+        for tex in ("mod_x_p_l0", "mod_x_p_l1", "mod_x_p_l1_nm", "mod_x_p_l0_nm", "mod_x_wheel_l2"):
+            members.update(self.sliced(tex, 256, 256, 7))
+        found = self.pak(members)
+        self.assertEqual([(f.severity, f.key) for f in found], [("info", "pct/lod-sets")])
+        self.assertIn("2 per-LOD texture sets", found[0].message)
+        good, sizes = pct_desc("mod_x_src", 512, 512, 8, sliced=False)
+        short, _ = pct_desc("mod_x_cut", 512, 512, 8, sliced=False)
+        fx = self.fixture({"pct/mod_x_src.pct.resource": good, "pct/mod_x_src.pct": b"\0" * (128 + sum(sizes)),
+                           "pct/mod_x_cut.pct.resource": short, "pct/mod_x_cut.pct": b"\0" * 1000,
+                           "pct/mod_x_gone.pct.resource": pct_desc("mod_x_gone", 512, 512, 8, sliced=False)[0]})
+        found = fx.run(rules=["pct-streaming"])
+        self.assertEqual(sorted(f.member for f in found), ["pct/mod_x_cut.pct.resource", "pct/mod_x_gone.pct.resource"])
+        self.assertTrue(all(f.severity == "error" for f in found))
 
 
 if __name__ == "__main__":

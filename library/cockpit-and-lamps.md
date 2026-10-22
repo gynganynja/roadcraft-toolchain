@@ -54,6 +54,45 @@ dataDashboard = {
 
 
 
+## No light cast: lamps light up, nothing illuminates the terrain (owner rule, 2026-10-22)
+
+**Standing owner rule, every mod (2026-10-22):** "remove any actual light cast from headlights as this is a huge
+complaint, the game doesnt have a night mode. I still want the lights to light up, just not illuminate the terrain."
+
+This is the lamp-kit default and a rule:
+
+* A lamp is a **lit lens or emissive overlay** and nothing else: a `vehicleLightMaterials` material swap (the retail
+  route, below), or the lit-copy / lit-shell graph of `roadcraft.lamps`. Glow comes from the `vehicle_lights`
+  emission and bloom (`lamps.lit_material`), and optionally an `sfx_flare_effect_base` bulb sprite, which lights no
+  surface.
+* **No `sfx_light_base` emitter** of any kind: no head or high beam, no work, deck or reversing flood, no red tail or
+  stop point light, no beacon glow light. No retail `sfx_light` effect, no `prop_vehicles_headlights` beam service
+  (`namesFxVhc*`), no BRO `vehiclesHeadlights` `sfxLight*`, and no particle emitter with
+  `lightEmissionParams.isEmitLight = True`.
+* This matches retail: retail trucks carry **no beam emitters**. No retail class has an `sfx_light` /
+  `sfx_light_base`, the one `prop_vehicles_headlights` (Derry Longhorn 4520) is empty, and every retail exterior lamp
+  is a material swap through `vehicleLightMaterials` (C:\RC_RE\research\lamps_semantics.md, "Answer in brief";
+  Retail). Where retail's night lighting comes from is still Unknown.
+
+Code and checks (2026-10-22):
+* `roadcraft.lamps`: `CAST_LIGHT_DEFAULT = False`. `exterior_lights` makes no beam or glow effects (its `effects`
+  is empty and role-derived flasher effects are dropped). `light_effect` refuses to build an `sfx_light_base` unless
+  it is given `cast_light=True`. `roadcraft lamps` writes no `effects` block unless `--cast-light` or
+  `"castLight": true` is passed. The opt-in exists only for a future mod the owner explicitly exempts.
+* Validator **RC083** (`light-emitters`, warning) flags every light-casting emitter a mod ships, with the file, the
+  key path, the owner rule and the fix hint: remove the emitter (and its VfxRestart / VfxStop or beam-service
+  entry), keep the lens / overlay material swap. Retail calibration: 0 hits in every retail class, BRO and prop.
+  On 2026-10-22, 18 of the 28 paks scanned (15 distinct mods) carried emitters, every one built before the rule
+  (validator.md "RC083 run"; C:\RC_RE\research\light_emitters_by_mod.md).
+
+The beam history below (Lada, L275, Dump Twuck, Y61, Roamer, Jimny, CAT 793D) is kept as evidence of what was
+built. It is not a recipe to follow. When rebuilding one of those mods, strip its emitters and keep its lenses.
+
+| Rule | Grade |
+|---|---|
+| No light-casting emitter on any vehicle; lamps are lens / overlay material swaps | Owner rule (2026-10-22) |
+| Retail trucks have no beam emitter; retail lamps are `vehicleLightMaterials` swaps | Retail, Code (lamps_semantics.md) |
+
 ## Exterior lamps and beacons with `roadcraft.lamps` (start here, 2026-10-02)
 
 The lamp recipe that has worked, as shared code (`src/roadcraft/lamps.py`; Blender side
@@ -79,7 +118,9 @@ evidence of each step.
    8 / 1 with tint [255, 255, 12, 3], brake 45 / 2, reverse 45 / 2; the L275 amber beacon 30 / 2, tint
    [255, 255, 140, 0]. The emission mask `<atlas>_em` must be bright under the lens UVs (L275 and Lada lenses
    0.3-0.9 mean).
-6. **Beams** (`lamps.light_effect`, `LIGHTS`): `sfx_group` / `sfx_light_base` on empties at the lenses, aimed
+6. **Beams: off by default since 2026-10-22** (owner rule, "No light cast" above; validator RC083). The kit
+   builds none unless given `cast_light=True`. History of the presets, kept for that opt-in only:
+   (`lamps.light_effect`, `LIGHTS`): `sfx_group` / `sfx_light_base` on empties at the lenses, aimed
    along native +Z (Blender -Y): head spot 65 degrees, 38 m, intensity 20, shadows; tail point 1.3 m / 0.14;
    reverse spot 100 degrees, 8 m / 1.2; amber beacon point 7 m / 0.6. Not auto-started: the states restart
    and stop them.

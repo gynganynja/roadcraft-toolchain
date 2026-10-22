@@ -557,10 +557,13 @@ def _bodies(ctx: Context, infos: list[Any], where: str | None) -> list[dict[str,
     return out
 
 
-def _markup_groups(ctx: Context, stores: list[Store], tpl: str | None) -> list[list[str]]:
-    """Member lists of the model markup's Collision Groups (``collisionGroups.<name>.objects``)."""
+def _markup_groups(ctx: Context, stores: list[Store], tpl: str | None) -> tuple[list[list[str]], list[str]]:
+    """Member lists and names of the model markup's Collision Groups (``collisionGroups.<name>.objects``)."""
     hit = ctx.find(stores, tpl, ".tpl_markup") if tpl else None
-    return joint_sweep.collision_groups(ctx.ps(*hit)) if hit else []
+    if not hit:
+        return [], []
+    doc = ctx.ps(*hit)
+    return joint_sweep.collision_groups(doc), joint_sweep.collision_group_names(doc)
 
 
 def _slot_axle(ctx: Context, rb_layers: list[tuple[Any, str]], slot: dict, si: int, slot_where: str
@@ -860,7 +863,8 @@ def build_truck(ctx: Context, stores: list[Store], store: Store, name: str) -> d
         else:
             b["inertiaRole"] = b["role"]
     body_inertia(bodies, slot_entities, nodes, tpl_where)
-    joint_sweeps(bodies, slot_entities, classes, nodes, tpl_where, infos, _markup_groups(ctx, stores, tpl))
+    groups, group_names = _markup_groups(ctx, stores, tpl)
+    joint_sweeps(bodies, slot_entities, classes, nodes, tpl_where, infos, groups, group_names)
     derived = _derived(bodies, slot_entities, tracks, nodes, tpl_where)
     entities += bodies + tracks + [axles[k] for k in sorted(axles)] + \
         [classes[k] for k in sorted(classes)] + slot_entities + [derived]
@@ -1079,7 +1083,8 @@ EV_SWEEP = ("cdt_ oriented boxes (.tpl bounds table) and wheel cylinders (physic
 
 
 def joint_sweeps(bodies: list[dict], slots: list[dict], classes: dict[str, dict], nodes: TplNodes | None,
-                 tpl_where: str | None, infos: list[Any], groups: list[list[str]]) -> None:
+                 tpl_where: str | None, infos: list[Any], groups: list[list[str]],
+                 group_names: list[str] | None = None) -> None:
     """Add the ``sweep.*`` fields to every prismatic / hinge child body (library/physics-report.md 'Joint
     sweep'): the first contact going towards each limit, with the hit pair."""
     joints = [b for b in bodies if b["fields"].get("joint.type", {}).get("value") in ("prismatic", "hinge")]
@@ -1122,7 +1127,8 @@ def joint_sweeps(bodies: list[dict], slots: list[dict], classes: dict[str, dict]
         wid = f"{s['id']} ({geom})"
         wheels.append(joint_sweep.cylinder_shape(wid, wid, (m[12], m[13], m[14]), (m[0], m[1], m[2]), radius, width))
         wheel_body[wid] = carrier
-    results = joint_sweep.sweep_truck(constraints, total, groups, layers, shapes, wheels, wheel_body, nodes.matrix)
+    results = joint_sweep.sweep_truck(constraints, total, groups, layers, shapes, wheels, wheel_body, nodes.matrix,
+                                      group_names)
     capped = total >= joint_sweep.CONSTRAINT_CAP
     for b in joints:
         f = b["fields"]

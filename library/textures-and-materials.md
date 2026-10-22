@@ -565,3 +565,20 @@ Owner: "use the bfg tyre from this blend and the white steelie rim" (Watcher61 p
   (`mesh.materials[i] = m`) when re-assigning bake materials.
 
 Project: `l275_minespec_mod/art/wheels_v35` (generator `w10_build.py`, `w20_compose.py`, `w30_review.py`).
+
+## Texture streaming and "low-resolution patches" at 2048 (2026-10-22; static, research texture_streaming.md)
+
+Player report TEX-01 (Goliath D11, exteriors at 2048 from 4K art). Grades: Code, Retail, Inferred, Open.
+
+| Rule | Grade |
+|---|---|
+| Retail vehicle exteriors are 2048, cooked from 4096: `downsampled: true`, `predownsampleMipsCount = nMipMap + 1`, slices from `_1` (e.g. Lynx Scout body). Only cabin / `hd_cab` / gauge interiors ship at 4096. A mod with 2048 exteriors and a 4096 cabin is at retail resolution; `resample = 1` on a 4K source is what retail does | Retail |
+| The pak layer is not where mod textures lose resolution. Slicing (`slice_pct`, one `pct_mip` per level), full chains to 4 x 4, formats (51 / 36 / 52 / 37) and streaming flags match retail on all 8 local mod paks; the D11 RC11 build skipped no blobs | Code, Retail |
+| Streaming: mips at or below the 64 KiB tail (`miptailSize_PC`) stay resident, roughly 256 px and below for a 2048. Larger mips stream on demand. Over the hires budget the engine drops up to 2 mips on **every** visible texture (0.5 per step) | Code (default and constants); the size mapping is Inferred |
+| `disableStreaming` keeps a texture whole and resident. It does not sharpen anything: use it only for the store card and icon. Textures with < 3 mips are never hires-streamable | Code (load mode 4; mip-count field Inferred) |
+| Do not author per-LOD texture sets (`_l1` 1024, `_l2` 512 with their own UVs). A part crossing its LOD distance swaps to a different, lower-res bake and a new streaming request, which reads as patches. Retail ships none; give LOD1/LOD2 the LOD0 material and UVs | Retail (0 of 2,154 vehicle textures); cause of TEX-01 Inferred |
+| Measure UV utilisation before raising resolution. D11 exterior sets cover 26-48% of their square (about 90 px/m on the 245 m2 yellow body at 2048). Packing to 70% or more, dropping hidden faces and mirroring symmetric parts gains more than 2048 -> 2896 | Retail-measured (USF), effect Inferred |
+| Keep the hires total of a vehicle near retail's 100-250 MiB (D11 504, only zikz_612c 613 is higher). Share textures across variants and LODs | Retail |
+| Validator RC084 `pct-streaming` flags missing or stale slices, short chains, `disableStreaming` on large textures, > 400 MiB hires and per-LOD sets (library/validator.md) | Code, Retail |
+| Open: how the required mip is computed (`use tex density`), the hires budget per TexturesQuality preset, retail exterior px/m | Open |
+

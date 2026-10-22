@@ -7,7 +7,11 @@ Proven parts (library/cockpit-and-lamps.md, "Exterior lamps and beacons with roa
   switch them on the engine, brake and reverse events. The lit copies stay default-visible in the model markup and
   the graph's init hides them.
 * Beams (Lada): ``sfx_group`` / ``sfx_light_base`` lights parented to fitted anchors, started and stopped with the
-  lens states.
+  lens states. **Off by default** (owner rule, 2026-10-22, every mod): "remove any actual light cast from headlights
+  as this is a huge complaint, the game doesnt have a night mode. I still want the lights to light up, just not
+  illuminate the terrain." Retail trucks carry no beam emitter either (research/lamps_semantics.md). Lamps are lit
+  lenses / emissive overlays only; ``cast_light=True`` is the explicit opt-in, and validator RC083 warns on any
+  light-casting emitter a vehicle ships.
 * Strobes (CAT 793D, Game): one-shot ``BlueprintNodeTickTimer`` nodes that restart each other show and hide an
   emitter object while the lamp body stays.
 * Native material groups (retail, 110 classes): ``vehicle_light_materials`` writes the BRO ``vehicleLightMaterials``
@@ -41,7 +45,15 @@ EMISSION: dict[str, tuple[float, float, list[int]]] = {
     "beacon_amber": (30, 2, [255, 255, 140, 0]),  # L275 v8/v9 (Build)
 }
 
-# sfx_light_base presets: (lightType, radius m, intensity, colour A,R,G,B, spotAngle, shadows).
+# Owner rule 2026-10-22 (standing, every mod): lamps light up but never illuminate the terrain. New builds create no
+# sfx_light_base (or any other light-casting) emitter unless a caller passes cast_light=True on purpose.
+CAST_LIGHT_DEFAULT = False
+NO_LIGHT_CAST_RULE = ("owner rule 2026-10-22: \"remove any actual light cast from headlights as this is a huge "
+                      "complaint, the game doesnt have a night mode. I still want the lights to light up, just not "
+                      "illuminate the terrain.\"")
+
+# sfx_light_base presets, used ONLY with cast_light=True: (lightType, radius m, intensity, colour A,R,G,B, spotAngle,
+# shadows). The roles double as the lamp roles exterior_lights accepts.
 LIGHTS: dict[str, tuple[str, float, float, list[int], float, bool]] = {
     "head": ("spot", 38, 20, [255, 255, 241, 211], 65, True),         # Lada (daylight native states)
     "reverse": ("spot", 8, 1.2, [255, 255, 245, 227], 100, False),    # Lada; L275 light-bar floods
@@ -82,9 +94,14 @@ def tick_timer(seconds: float, on_finish: Iterable[str]) -> dict[str, Any]:
             "isLoopedRef": {"def": False, "__type": "BoolRefParam"}, "__type": "BlueprintNodeTickTimer"}
 
 
-def light_effect(anchor: str, role: str, **overrides: Any) -> dict[str, Any]:
+def light_effect(anchor: str, role: str, *, cast_light: bool = CAST_LIGHT_DEFAULT, **overrides: Any) -> dict[str, Any]:
     """``sfx_group`` holding one ``sfx_light_base`` parented to ``anchor`` (an empty at the lens, aimed along its
-    native +Z; Blender -Y). Not auto-started: the lamp graph restarts and stops it."""
+    native +Z; Blender -Y). Not auto-started: the lamp graph restarts and stops it.
+
+    A light-casting emitter: refused unless ``cast_light=True`` (``NO_LIGHT_CAST_RULE``; validator RC083)."""
+    if not cast_light:
+        raise ValueError("light_effect builds a light-casting sfx_light_base emitter, which the " + NO_LIGHT_CAST_RULE
+                         + " forbids by default; use lit lenses / emissive overlays, or pass cast_light=True on purpose")
     kind, radius, intensity, colour, spot, shadows = LIGHTS[role]
     light = {"isAutoStart": True, "nameParent": anchor, "lightType": kind, "spotAngle": spot, "spotInnerAngleFactor": .5,
              "useInverseSquaredFalloff": False, "falloffStrength": 2,
@@ -273,18 +290,25 @@ def flasher(prefix: str, lit: Sequence[str], *, effects: Sequence[str] = (),
 
 
 def exterior_lights(anchors: Mapping[str, str], *, lenses: Mapping[str, Any] | None = None,
-                    flashers: Sequence[Mapping[str, Any]] = ()) -> dict[str, Any]:
+                    flashers: Sequence[Mapping[str, Any]] = (), cast_light: bool = CAST_LIGHT_DEFAULT) -> dict[str, Any]:
     """A complete exterior-light block: ``anchors`` maps each light anchor to a ``LIGHTS`` role (head, tail,
     reverse, brake, beacon_amber...); ``lenses`` overrides ``lamp_states`` lens names; each flasher is
     ``{"prefix", "lit", "roles" or "effects", "pattern"}``. Returns the blueprint, the effect list, the lit
-    objects and the markup objects to hide by default (always none)."""
+    objects and the markup objects to hide by default (always none).
+
+    By default (``NO_LIGHT_CAST_RULE``) the anchors get **no** beam or glow emitters: the lenses and flashed
+    overlays light up and nothing illuminates the terrain, so ``effects`` is empty and role-derived flasher effects
+    are dropped (a flasher's explicit ``effects`` names are kept). ``cast_light=True`` opts in to the
+    ``sfx_light_base`` presets of ``LIGHTS`` (validator RC083 still warns on them)."""
     unknown = sorted({role for role in anchors.values() if role not in LIGHTS})
     if unknown:
         raise ValueError(f"no light preset for {unknown}; known roles: {sorted(LIGHTS)}")
-    effects = {anchor + "_fx": light_effect(anchor, role) for anchor, role in anchors.items()}
+    effects = ({anchor + "_fx": light_effect(anchor, role, cast_light=True) for anchor, role in anchors.items()}
+               if cast_light else {})
     by_role: dict[str, list[str]] = {}
     for anchor, role in anchors.items():
-        by_role.setdefault(role, []).append(anchor + "_fx")
+        if cast_light:
+            by_role.setdefault(role, []).append(anchor + "_fx")
     nodes: dict[str, Any] = {}
     running: list[str] = []
     stopped: list[str] = []

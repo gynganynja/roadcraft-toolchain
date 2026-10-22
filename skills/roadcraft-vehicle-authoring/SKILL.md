@@ -83,6 +83,9 @@ directory is not the project.
   flashes a lit overlay and never switches the unlit lens, or the mesh blinks out instead of glowing
   (RC039). Keep glass and opaque lamp parts off one texture in one object: the exporter keeps one
   material per texture.
+- Owner rule (2026-10-22, every mod): lamps light up but cast no light. Lit lenses / emissive overlays
+  only: no `sfx_light_base` beam, glow or work-lamp emitter, no `prop_vehicles_headlights` beam service and
+  no light-emitting particle (validator RC083; cockpit-and-lamps.md "No light cast"). Retail has none.
 - Renaming, adding or removing a controllable joint breaks vehicles already in a save: tell the
   owner to sell and buy the vehicle again.
 - Articulated steering and cranes: articulated-steering.md and cranes.md (retail crane IK chains, a slew-less

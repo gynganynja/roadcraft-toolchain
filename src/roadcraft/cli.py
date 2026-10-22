@@ -157,9 +157,14 @@ def make_parser() -> argparse.ArgumentParser:
     lint.add_argument("--report", type=Path, help="Write the check result to this explicit report path")
     _add_json(lint)
 
-    lamp = commands.add_parser("lamps", help="Build an exterior-light graph, beams and flashers (roadcraft.lamps)")
+    lamp = commands.add_parser("lamps", help="Build an exterior-light graph and flashers; no light-casting beams "
+                                            "unless --cast-light (roadcraft.lamps, owner rule 2026-10-22)")
     lamp.add_argument("spec", help='JSON text or file: {"anchors": {anchor: role}, "lenses": {...}, '
-                                   '"flashers": [{"prefix", "lit", "roles", "pattern": "single"|"double"|[[true, s], ...]}]}')
+                                   '"flashers": [{"prefix", "lit", "roles", "pattern": "single"|"double"|[[true, s], ...]}], '
+                                   '"castLight": false}')
+    lamp.add_argument("--cast-light", action="store_true",
+                      help="Opt in to sfx_light_base beam/glow emitters (off by default: lamps light up but must not "
+                           "illuminate the terrain; validator RC083 warns on them)")
     lamp.add_argument("--blueprint", default="ExteriorLights", help="Blueprint name in the truck BRO")
     lamp.add_argument("--output", type=Path, help="Also write the BRO fragment in the game's text format here")
     _add_json(lamp)
@@ -397,9 +402,11 @@ def execute(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
         spec = json.loads(text)
         named = {"single": lamps.SINGLE_FLASH, "double": lamps.DOUBLE_FLASH}
         flashers = [dict(f, pattern=named.get(f.get("pattern"), f.get("pattern") or lamps.SINGLE_FLASH)) for f in spec.get("flashers") or []]
-        built = lamps.exterior_lights(spec.get("anchors") or {}, lenses=spec.get("lenses"), flashers=flashers)
-        fragment = {"blueprint": {"blueprints": {args.blueprint: built["blueprint"]}},
-                    "effects": {"propSfx": {"list": built["effects"]}}}
+        built = lamps.exterior_lights(spec.get("anchors") or {}, lenses=spec.get("lenses"), flashers=flashers,
+                                      cast_light=bool(args.cast_light or spec.get("castLight") is True))
+        fragment = {"blueprint": {"blueprints": {args.blueprint: built["blueprint"]}}}
+        if built["effects"]:
+            fragment["effects"] = {"propSfx": {"list": built["effects"]}}
         result = {"fragment": fragment, "litObjects": built["litObjects"], "markupHidden": built["markupHidden"],
                   "findings": [dict(zip(("code", "severity", "message", "where"), f))
                                for f in lamps.lamp_findings(fragment["blueprint"], set())]}

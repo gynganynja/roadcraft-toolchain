@@ -7,7 +7,7 @@
 | Project selection | `project_context.py` | Explicit registry, environment or nearest mod; no implicit historical checkout registry |
 | Create/adopt workspace | `mod_workflow.py`, `onboard.py` | General, vehicle, material and tuning contracts; preserve existing files and acceptance |
 | Vehicle extension | `vehicle_workflow.py`, `bro_lint.py`, `vehicle.py` | Shared truck/rig checks and compatibility with existing adapters |
-| Exterior lamps | `lamps.py`, `blender_lamps.py` | Lens-state graph, beams, flashing beacons and lamp materials; lint RC037-RC039 in the shared vehicle checks |
+| Exterior lamps | `lamps.py`, `blender_lamps.py` | Lens-state graph, flashing beacons and lamp materials; no light-casting beams unless `cast_light=True` (owner rule 2026-10-22); lint RC037-RC039 and validator RC083 in the shared vehicle checks |
 | Dump-truck loads | `load_volume.py`, `blender_load.py` | Load volume fitted to the tub floor, the four grid borders (back on the tail lid), native sand-grid emulation (RC040-RC044) and load settings; lint RC036 checks names and border parents |
 | Tracked vehicles | `tracks.py` | Track layouts against the retail patterns, light welded track frames (RC046-RC048 in the shared vehicle checks); `roadcraft retail tracks` surveys the shipped crawlers |
 | Physics bench | `physics_bench.py`, `integrations/physics-bench/` | Variants of suspension, wheels and masses driven in the Mod Editor on a copy of a project, per-phase summaries; starts the editor only on `run`/`batch`, with the owner's go-ahead |
