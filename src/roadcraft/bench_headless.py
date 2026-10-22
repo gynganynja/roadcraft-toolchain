@@ -41,10 +41,10 @@ from . import engine as eng
 from . import physics_bench as pb
 
 SCHEMA_VERSION = 1
-PROBE_ITEMS = ("engine", "bodies", "com", "wheels", "joints", "tracks", "terrain", "linear")
+PROBE_ITEMS = ("engine", "bodies", "com", "wheels", "joints", "tracks", "terrain", "linear", "load")
 # items whose statements had not run in an engine when written: each is tried once at rest (probe_checks) and
 # left out of the per-sample probe if the engine rejects it, so one unknown accessor cannot cost a run's probes
-CHECKED_ITEMS = ("terrain", "linear")
+CHECKED_ITEMS = ("terrain", "linear", "load")
 GEARS = ("AUTO", "LOW_GEAR", "HIGH_GEAR", "REVERSE", "NEUTRAL")
 SWITCH = ("Unchanged", "On", "Off")
 IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -510,12 +510,17 @@ def probe_script(items: Sequence[str], tpl: str = "*") -> str:
         lines += ['for var lj in ps.GetAllConstraints()', ' if lj.IsPositional()',
                   '  result += "L " + lj.GetConstraintName() + StringFormat(" %.5f\\n", lj.GetCurrentPosition())',
                   ' end', 'end']
+    if "load" in items:
+        # V <mass> <volume>: the dump load (PropLoadVolume.GetCurrentMass / GetCurrentVolume; Mammoth RC75 bench
+        # 2026-10-22: a scene-spawned truck started with 207 t in the editor engine although spawnFull is unset)
+        lines += ['var plv = truck.owner.TryGet<PropLoadVolume>()', 'if plv != null',
+                  ' result += StringFormat("V %.1f %.4f\\n", plv.GetCurrentMass(), plv.GetCurrentVolume())', 'end']
     lines.append("return result")
     return "\n".join(lines)
 
 
 def probe_check_marker(item: str) -> str:
-    return {"terrain": "\nH ", "linear": "\nL "}[item]
+    return {"terrain": "\nH ", "linear": "\nL ", "load": "\nV "}[item]
 
 
 def probe_checks(session: Any, scenario: dict[str, Any], folder: Path) -> dict[str, Any]:
@@ -582,6 +587,26 @@ def readback_scripts() -> dict[str, str]:
             ' var body = ps.GetBodyByIdx(i)', ' var fi = body.GetCollisionFilterInfo()',
             ' r += "y " + body.GetName() + " " + fi.GetLayer() + StringFormat(" %i\\n", fi.GetSystem())', 'end',
             'return r']),
+        # the SSL view of each body's filter info (ssl/physics/collision_filter_info.ssl): layer, system group and
+        # IsInSubsystem for the two names every subsystem table starts with ("default" = index 0,
+        # "no_self_collision" = 1; FUN_141a25ff0).  SSL has no raw getter, and RigidBody.GetCollisionFilterInfo
+        # zeroes the sub-system mask that IsInSubsystem reads (FUN_1419a5df0 @0x1419a5ee7; Code), so both flags
+        # should read 0 for every body.  Other names are not asked: an unknown one logs "subsystem %s doesnt
+        # exist".  The "s" line is the truck phys system's own filter info.
+        "filters": "\n".join(_RB_HEAD + _RB_PS + [
+            'var r = "RB_FILTERS\\n"', 'var sfi = ps.GetCollisionFilterInfo()',
+            'r += "s " + sfi.GetLayer() + StringFormat(" %i\\n", sfi.GetSystem())',
+            'for (var i = 0; i < ps.GetBodyCount() and i < 64; i += 1)',
+            ' var body = ps.GetBodyByIdx(i)', ' var fi = body.GetCollisionFilterInfo()',
+            ' r += "f " + body.GetName() + " " + fi.GetLayer() + StringFormat(" %i ", fi.GetSystem())',
+            ' r += BoolToString(fi.IsInSubsystem("default"), "1", "0") + " "',
+            ' r += BoolToString(fi.IsInSubsystem("no_self_collision"), "1", "0") + "\\n"', 'end', 'return r']),
+        # the dump load (PropLoadVolume natives, ssl/terraforming/prop_load_volume.ssc; Inferred readable)
+        "load": "\n".join(_RB_HEAD + [
+            'var r = "RB_LOAD\\n"', 'var lv = truck.owner.TryGet<PropLoadVolume>()', 'if lv == null',
+            ' return r + "none\\n"', 'end',
+            'r += StringFormat("v %.1f %.1f %.4f %.4f\\n", lv.GetCurrentMass(), lv.GetMaxMass(), '
+            'lv.GetCurrentVolume(), lv.GetMaxVolume())', 'return r']),
     }
 
 
@@ -590,7 +615,7 @@ def parse_readback(replies: dict[str, str]) -> dict[str, Any]:
     out: dict[str, Any] = {"errors": {}}
     markers = {"identity": "RB_IDENTITY", "wheels": "RB_WHEELS", "softForce": "RB_SOFTFORCE",
                "constraints": "RB_CONSTRAINTS", "motors": "RB_MOTORS", "limits": "RB_LIMITS",
-               "positional": "RB_POSITIONAL", "layers": "RB_LAYERS"}
+               "positional": "RB_POSITIONAL", "layers": "RB_LAYERS", "filters": "RB_FILTERS", "load": "RB_LOAD"}
     constraints: dict[str, dict[str, Any]] = {}
     for key, reply in replies.items():
         if not isinstance(reply, str) or not reply.startswith(markers.get(key, "?")):
@@ -624,6 +649,15 @@ def parse_readback(replies: dict[str, str]) -> dict[str, Any]:
                                                                 linearLimits=[float(p[3]), float(p[4])])
             elif key == "layers":
                 out["bodyLayers"] = {p[1]: {"layer": p[2], "system": int(p[3])} for p in lines if p[0] == "y"}
+            elif key == "filters":
+                out["filters"] = {
+                    "system": next(({"layer": p[1], "system": int(p[2])} for p in lines if p[0] == "s"), None),
+                    "bodies": {p[1]: {"layer": p[2], "system": int(p[3]), "inDefault": p[4] == "1",
+                                      "inNoSelfCollision": p[5] == "1"} for p in lines if p[0] == "f"}}
+            elif key == "load":
+                v = next((p for p in lines if p[0] == "v"), None)
+                out["load"] = None if v is None else {"mass": float(v[1]), "maxMass": float(v[2]),
+                                                      "volume": float(v[3]), "maxVolume": float(v[4])}
         except (IndexError, ValueError) as exc:
             out["errors"][key] = f"unparsed: {exc}: {reply[:200]}"
     if constraints:
@@ -906,7 +940,7 @@ def parse_extra(path: str | Path) -> list[dict[str, Any]]:
         text = row.get("r") or ""
         if not text.startswith("F "):
             continue
-        joints, tracks, terrain, linear = [], [], {}, []
+        joints, tracks, terrain, linear, load = [], [], {}, [], None
         for ln in text.splitlines():
             p = ln.split()
             if p and p[0] == "J" and len(p) >= 4:
@@ -917,7 +951,10 @@ def parse_extra(path: str | Path) -> list[dict[str, Any]]:
                 terrain[int(p[1])] = float(p[2])
             elif p and p[0] == "L" and len(p) >= 3:
                 linear.append({"name": p[1], "position": float(p[2])})
-        rows.append({"t": row["t"], "joints": joints, "tracks": tracks, "terrain": terrain, "linear": linear})
+            elif p and p[0] == "V" and len(p) >= 3:
+                load = {"mass": float(p[1]), "volume": float(p[2])}
+        rows.append({"t": row["t"], "joints": joints, "tracks": tracks, "terrain": terrain, "linear": linear,
+                     "load": load})
     return rows
 
 
@@ -942,6 +979,7 @@ def write_csvs(samples: list[dict[str, Any]], extra: list[dict[str, Any]], folde
         "tracks": (["t", "track", "sliding"], []),
         "terrain": (["t", "wheel", "terrainY"], []),
         "linear": (["t", "joint", "position"], []),
+        "load": (["t", "mass", "volume"], []),
     }
     for s in samples:
         e = s.get("engine") or {}
@@ -967,6 +1005,8 @@ def write_csvs(samples: list[dict[str, Any]], extra: list[dict[str, Any]], folde
             tables["terrain"][1].append([row["t"], wheel, height])
         for lj in row.get("linear", []):
             tables["linear"][1].append([row["t"], lj["name"], lj["position"]])
+        if row.get("load"):
+            tables["load"][1].append([row["t"], row["load"]["mass"], row["load"]["volume"]])
     written = []
     for name, (header, rows) in tables.items():
         if not rows:

@@ -134,6 +134,8 @@ def probe_reply(t: float, script: str = "") -> str:
         lines += [f"H {i} 0.0500" for i in range(4)]
     if "GetCurrentPosition" in script:   # L lines: prismatic positions
         lines += [f"L SuspFrontLeft {0.05 * math.sin(2 * math.pi * hz * t):.5f}", "L SuspRear -0.04000"]
+    if "PropLoadVolume" in script:   # V line: the dump load
+        lines.append("V 206830.0 117.6143")
     return "\n".join(lines) + "\n"
 
 
@@ -196,6 +198,11 @@ def answer(script: str) -> str | None:
             return "NO_TRUCKS"
         STATE.truck = True
         return "SET_CURRENT fake_truck"
+    if "RB_FILTERS" in script:   # filter readback: the getter zeroes the sub-system mask, so IsInSubsystem is 0
+        return ("RB_FILTERS\ns constr_vhc 1\nf BoneChassis_cdt constr_vhc 1 0 0\n"
+                "f BoneSuspFrontLeft_cdt constr_vhc 1 0 0\nf BoneLid_cdt no_collision 1 0 0\n")
+    if "RB_LOAD" in script:
+        return "RB_LOAD\nv 218000.0 218000.0 120.0000 120.0000\n"
     if "GetBodyCount" in script or 'StringFormat("F %i' in script:
         return probe_reply(time.monotonic() - START, script)
     if "ROAMER_INPUT_APPLIED" in script:

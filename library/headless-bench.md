@@ -264,6 +264,43 @@ dies on `isEngineOff.Set(false)`. Before an engine-on scenario, check the class:
 `BlueprintNodeTruckShaker.shakerName` must exist in `prop_truck_shaker_native_controller`. Otherwise leave the
 engine off (`"engine": false` sends no engine statement).
 
+## Mammoth RC75 front-wheel bench (2026-10-22, laptop, owner-approved 3 runs + 1 spare; results in `C:\RC_RE\bench-headless\mammoth_rc75\results.md`)
+
+Scenarios:
+- `mammoth_rc75_parked_empty.json`: parked, handbrake, **engine on**, 30 s at 10 Hz; the same pad and place as the
+  2026-10-14 runs;
+- `mammoth_rc75_parked_unloaded.json`: the same, plus `PropLoadVolume.SetCurrentVolume(0)` at t 0.
+
+Each launch went through `run_queue.sh`. Before every launch it checked that no RoadCraft process was running and
+that C: had at least 5 GB free; it kept a 4-launch ledger and checked the kit for changes after the run.
+
+Bench additions (all tested with the fake engine):
+
+| Addition | What | Grade |
+|---|---|---|
+| readback `filters` | Per body: layer, system group, and `IsInSubsystem("default")` / `("no_self_collision")`; plus the phys system's own filter info. Only those two names are asked: an unknown name logs "subsystem %s doesnt exist". **The SSL getter cannot show sub-ids.** `RigidBody.GetCollisionFilterInfo` zeroes the sub-system mask (`FUN_1419a5df0` @0x1419a5ee7), so both flags read 0 on every body. The native filter info is `layer` bits 0-5, `system` bits 16-31, id mask = group mask \| 1<<sub-id, dont mask = group mask \| 1<<dont (`FUN_141560320`) | Code; Game (0/0 on all 24 bodies, 3 runs) |
+| readback `load` and probe item `load` (`V` line, `load.csv`) | `PropLoadVolume` current and max mass and volume, null-guarded | Game |
+| control call `PropLoadVolume.SetCurrentVolume(0)` | empties the dump; the load probe then read 1 kg | Game |
+
+| Launch | Run | Result | Grade |
+|---|---|---|---|
+| 1 | RC75 (3d6dec4e) parked, engine on | Complete, 271 samples, about 2.5 min. **The scene-spawned truck carried 206.8 t** (load volume 117.6 of 124.0) with `spawnFull` unset, so this is a loaded run. FL/FR on the pad; FL carrier on its bump stop, FR 15 mm off it. Rear link 0.21 m past its droop stop and twisted 8.4 deg (roll) / 4.5 deg (yaw) against the chassis; rear left 0.69 m above the pad | Game (engine headless) |
+| 2 | RC75 unloaded | Complete. **Reproduces the owner's symptom.** FL tyre 0.154 m above the pad (on the ground 9 % of samples); it twitches ±2 rad/s for about 5 s after spawn, then spins at 25 rad/s. FR carrier at its droop stop (+0.196), rear link at its droop stop (+0.103); FL carrier mid travel (-0.029) | Game (engine headless) |
+| 3 | RC75 with `main_collision_grp` renamed `no_self_collision` (laptop variant, markup only), unloaded | Complete. All four tyres at +0.020 m; carriers FL -0.057 / FR -0.063, link -0.024; chassis level. Proves the cause (below) and the group numbering | Game (engine headless) |
+| - | spare | not used | - |
+
+Run 3 replaced the planned front-slot swap. The readback order showed that the asymmetry follows the body and
+constraint order, which a slot swap leaves unchanged.
+
+Mammoth facts for later benches (Game):
+- `GetAllConstraints` / `GetBodyByIdx` list the joint tree **breadth first from the chassis**: body, front carriers, rear
+  link; then the body's children; the rear soft stage; then the dump's children. This is not markup order.
+- With the markup group at index 2, the FL carrier's sub-id (2) equals the group index. So only FL is filtered against
+  chassis, body and dump (suspension-and-wheels.md "RC75 front-left wheel floats").
+- The editor engine's scene spawn starts the dump's load volume nearly full (207-218 t over three spawns). Read `load`
+  before calling a run "empty".
+- Since RC72 the chassis's `GetForward` is the truck's forward: hull pitch reads about 0 at rest, no longer -90.
+
 ## Scene, play mode, truck, screenshot (`scene` command; Build with the fake, not yet run live)
 
 Recipe and evidence: `C:\RC_RE\research\scene_play.md`.

@@ -1,0 +1,172 @@
+{
+ "schemaVersion": 1,
+ "name": "mammoth-rc75-parked-empty-engine-on",
+ "note": "Mammoth (CAT 793D) RC75 front-left float bench, 2026-10-22 (owner-approved 3 runs + 1 spare): parked, handbrake on, ENGINE ON (the EngineStart/EngineShutdown shakers are defined since RC63), no pedal or steer, 30 s of 10 Hz probes after the scene is ready. Same pad and place as mammoth_parked_empty.json (roamer105_acceptance, pad top y 60.0, truck at (0, 61.2, -18)). RC74/RC75 rig: front carriers BoneSuspFront{Left,Right}_cdt at the front wheel centres (tpl +-2.504, 1.682, 3.387; +x = truck left = cab side), rear link BoneSuspRear_cdt lowered 0.13 m (0, 1.552, -2.33) and the soft stage BoneSuspRearSoft_cdt at (0, 1.682, -2.33) carrying both duals. Limits from design_rc75.json (prismatic + = droop, Game 2026-10-14). Launch 1 (2026-10-22) found the scene-spawned truck already carrying 206.8 t (PropLoadVolume, volume 117.6 of 124.0) with spawnFull unset, so this scenario is in fact loaded ~95 %; mammoth_rc75_parked_unloaded.json empties it. readback adds the SSL filter view (filters) and the load volume (load). wheelNames = the class slot order (slot 0 FR, slot 1 FL).",
+ "seed": 1,
+ "timestep": 0.0166667,
+ "durationSeconds": 30,
+ "wallClockSeconds": 1200,
+ "startupTimeoutSeconds": 300,
+ "scene": {
+  "file": "xscenes/mods/roamer105_acceptance/roamer105_acceptance.scn",
+  "settleSeconds": 1,
+  "readyTimeoutSeconds": 400
+ },
+ "vehicle": {
+  "tpl": "*",
+  "hull": "BoneChassis_cdt",
+  "wheelNames": [
+   "BoneWheelFrontRight",
+   "BoneWheelFrontLeft",
+   "BoneWheelRearRight",
+   "BoneWheelRearLeft"
+  ]
+ },
+ "spawn": {
+  "method": "scene",
+  "scene": "xscenes/mods/roamer105_acceptance/roamer105_acceptance.scn",
+  "vehicle": "approved_roamer",
+  "position": [
+   0,
+   61.2,
+   -18
+  ]
+ },
+ "inputs": {
+  "method": "Debug",
+  "schedule": [
+   {
+    "at": 0,
+    "phase": "parked",
+    "pedal": 0,
+    "steer": 0,
+    "handbrake": "On",
+    "engine": true
+   }
+  ]
+ },
+ "probes": {
+  "rateHz": 10,
+  "items": [
+   "engine",
+   "bodies",
+   "com",
+   "wheels",
+   "joints",
+   "terrain",
+   "linear",
+   "load"
+  ],
+  "readback": true
+ },
+ "capture": {
+  "cameras": [
+   {
+    "name": "side_pos_x",
+    "offset": [
+     17,
+     1.2,
+     1.5
+    ],
+    "target": [
+     0,
+     0.5,
+     0
+    ]
+   },
+   {
+    "name": "side_neg_x",
+    "offset": [
+     -17,
+     1.2,
+     1.5
+    ],
+    "target": [
+     0,
+     0.5,
+     0
+    ]
+   },
+   {
+    "name": "front_low",
+    "offset": [
+     0,
+     0.8,
+     16
+    ],
+    "target": [
+     0,
+     0.5,
+     2
+    ]
+   },
+   {
+    "name": "rear_low",
+    "offset": [
+     0,
+     0.8,
+     -16
+    ],
+    "target": [
+     0,
+     0.5,
+     -2
+    ]
+   }
+  ],
+  "settleSeconds": 0.5
+ },
+ "analysis": {
+  "pivotSteer": 0.5,
+  "settle": {
+   "rollDeg": 0.2,
+   "pitchDeg": 0.2,
+   "heightMm": 5
+  },
+  "stopToleranceM": 0.005,
+  "judderMinHz": 0.3,
+  "groundHeight": 60.0,
+  "sprung": {
+   "bodies": {
+    "BoneSuspFrontLeft_cdt": [
+     2.504,
+     1.682,
+     3.387
+    ],
+    "BoneSuspFrontRight_cdt": [
+     -2.504,
+     1.682,
+     3.387
+    ],
+    "BoneSuspRear_cdt": [
+     0,
+     1.552,
+     -2.33
+    ],
+    "BoneSuspRearSoft_cdt": [
+     0,
+     1.682,
+     -2.33
+    ]
+   },
+   "joints": {
+    "BoneSuspFrontLeft_cdt|BoneChassis_cdt": [
+     -0.2312,
+     0.1988
+    ],
+    "BoneSuspFrontRight_cdt|BoneChassis_cdt": [
+     -0.2312,
+     0.1988
+    ],
+    "BoneSuspRear_cdt|BoneChassis_cdt": [
+     -0.2414,
+     0.1036
+    ],
+    "BoneSuspRearSoft_cdt|BoneSuspRear_cdt": [
+     -0.15,
+     0.0
+    ]
+   }
+  }
+ }
+}

@@ -218,25 +218,29 @@ over-fill of its hull makes some of them spurious.
 
 **Filter** (research physics_semantics.md "Jointed-body collision filtering", Code, except the group index):
 
-- only with fewer than 31 constraints in the markup: constraints in markup order, kept while one of their bodies
-  is new; ids counted from 0, child first; the child's dontCollideWith is its parent's id (if it already has one,
-  the parent's becomes the child's); a pair is blocked when `idA & dontB` or `idB & dontA` is non-zero with bit 0
-  cleared. So a body is filtered only against its direct constraint parent, and the first-listed constraint's
-  child (id 0) is not filtered against its own children;
+- only with fewer than 31 constraints in the markup: constraints in the engine's order (**breadth first from the
+  root body**: every chassis child first, each body's children in markup order; `joint_sweep.engine_order`;
+  Game readback order, Mammoth RC75 2026-10-22, that the filter uses it Inferred, strong), kept while one of
+  their bodies is new; ids counted from 0, child first; the child's dontCollideWith is its parent's id (if it
+  already has one, the parent's becomes the child's); a pair is blocked when `idA & dontB` or `idB & dontA` is
+  non-zero with bit 0 cleared. So a body is filtered only against its direct constraint parent, and the
+  first-listed constraint's child (id 0) is not filtered against its own children;
 - markup Collision Groups (`collisionGroups.<name>.objects`) overwrite their members' ids with
-  `calcFilterInfo(layer, 0, g, g)` and set group bit g. The group index is taken as **1-based** (first group 1;
-  `joint_sweep.GROUP_BASE`). Inferred, strong, from retail: with a 0-based index 717 retail body pairs that
-  overlap at rest (11 box pairs between the ZiKZ 612C body and cabin, for one) would collide; a 1-based index
-  blocks all but 2. The index lookup (`FUN_141a263d0`) is not decompiled. Consequence: a member's id becomes g,
-  so every body whose dontCollideWith is g is filtered against **all** the group's members. On the Mammoth markup
-  (`main_collision_grp` = chassis, body, dump, rock ejectors; `BoneBody_cdt|BoneChassis_cdt` first, so the
-  chassis's constraint id is 1) the sprung carriers, children of the chassis with dontCollideWith 1, would be
-  filtered against the chassis, the body and the dump alike. A body in **no** group keeps its own constraint id
-  and dontCollideWith; nothing about the group is copied onto it. It is filtered against a member only when its
-  dontCollideWith equals the group's index (bit-level coincidence, so it depends on constraint order: with the
-  chassis at constraint id 2 the same carriers would collide with it). Grades: the bit mechanism Code; the
-  1-based index, and so the Mammoth carriers' block, Inferred. This contradicts the direct-parent-only reading the
-  RC69/RC70 hull audits used; see validator.md RC082 for what it means for the acceptance;
+  `calcFilterInfo(layer, 0, g, g)` and set group bit g. **g is the group name's slot in a sub-system table that
+  starts with `default` (0) and `no_self_collision` (1), then the markup's group names in order** (Code:
+  `FUN_141a25ff0` builds it, `FUN_141a263d0` looks the name up; a name beyond 32 entries gets 0). So the first
+  ordinary group is **2**; a group named `default` is 0 (bit 0: no filtering at all) and one named
+  `no_self_collision` is 1 (`joint_sweep.GROUP_BASE` = 2, `group_indices`). Retail is consistent with any base
+  of 1 or more (with 0, 717 retail body pairs that overlap at rest would collide). Game: renaming the Mammoth's
+  `main_collision_grp` to `no_self_collision` changed the bench (headless-bench.md, Mammoth RC75).
+  Consequence: a member's id becomes g, so every non-member whose dontCollideWith is g is filtered against
+  **all** the group's members, every non-member whose own id is g is filtered against them too, and a body
+  whose dontCollideWith was a member's old id loses that filter. A body in **no** group keeps its own id and
+  dontCollideWith. On the Mammoth RC75 markup (breadth-first ids: body 0, chassis 1, FL carrier 2, FR carrier 3,
+  rear link 4) the group index 2 equals the FL carrier's id: FL and its wheel are filtered against chassis, body
+  and dump, while FR, the rear link and their wheels (dont 1) are not, which is the RC75 floating front-left
+  wheel (suspension-and-wheels.md). The RC69/RC70 hull audits assumed direct-parent-only filtering; see
+  validator.md RC082;
 - `no_collision` bodies collide with nothing; a wheel copies its carrier's layer and id bits.
 
 **Fields** on the child body (all `derived`):

@@ -7,12 +7,15 @@ physics_report.body_shapes) and wheel cylinders (physical radius and class width
 node's X).  Pairs are tested with a separating-axis test.  Filtering follows the engine
 (research physics_semantics.md "Jointed-body collision filtering"; library/validator.md RC081):
 
-* constraints are walked in markup order, keeping a constraint only while one of its bodies is new; only with fewer
+* constraints are walked in the engine's order (breadth first from the root body, ``engine_order``; Inferred from
+  the Mammoth RC75 readback), keeping a constraint only while one of its bodies is new; only with fewer
   than 31 constraints in the markup are sub-system ids assigned (child first, counter from 0; the child's
   dontCollideWith is its parent's id, or, if it already has one, the parent's dontCollideWith becomes the child's);
 * a pair is blocked when ``idA & dontB`` or ``idB & dontA`` is non-zero after bit 0 is cleared (so the
   first-listed constraint's child, id 0, is not filtered against its own children);
-* members of one markup Collision Group never collide with each other and lose their constraint filtering;
+* members of one markup Collision Group never collide with each other and lose their constraint filtering: each
+  member gets id = dontCollideWith = the group's index in the engine's sub-system table ("default" 0,
+  "no_self_collision" 1, then the markup's groups in order, so the first ordinary group is 2; ``GROUP_BASE``);
 * a body on ``no_collision`` collides with nothing; a wheel copies its carrier's layer and id bits, so it is
   filtered only against its carrier's constraint parent (and that parent's other filtered pairs).
 
@@ -36,7 +39,16 @@ PRISMATIC_BEYOND = 0.10        # sweep this far past each prismatic limit, to re
 HINGE_MAX = 180.0              # hinge limits beyond a half turn are swept to it
 HINGE_BEYOND = 10.0            # degrees past each hinge limit
 NEAR_LIMIT = 0.03              # m: contact within this of the limit (beyond it) is reported as near the limit
-GROUP_BASE: int | None = 1    # markup Collision Group g (0-based) -> filter index g + 1 (None: groups ignored)
+# Markup Collision Group -> filter index (FUN_14153cb90 with FUN_141a25ff0 / FUN_141a263d0, Code 2026-10-22): the
+# engine builds a sub-system name table that always starts "default" (0), "no_self_collision" (1), appends the markup's
+# group names in markup order (at most 32 entries in all) and gives each group the table index of its name.  So the
+# first ordinary group is index 2, a group named "default" is 0 (bit 0: no filtering) and "no_self_collision" is 1; a
+# group that did not fit gets 0.  GROUP_BASE is the index of the first group slot; None ignores groups.  (Until
+# 2026-10-22 this was 1, Inferred from retail; any base >= 1 explains retail, the engine table says 2.)
+GROUP_BASE: int | None = 2
+PREDEFINED_GROUPS = ("default", "no_self_collision")
+MAX_SUBSYSTEMS = 32
+ENGINE_ORDER = True            # walk constraints breadth first from the root (engine_order), not in markup order
 CYLINDER_SIDES = 16            # candidate axes around a wheel cylinder
 
 
@@ -199,11 +211,56 @@ def touching(a: Shape, b: Shape) -> bool:
 
 # ------------------------------------------------------------------------------------------------ filter
 
+def engine_order(constraints: list[tuple[str, str | None]]) -> list[tuple[str, str | None]]:
+    """Constraints in the order the engine's physics system lists them: breadth first down the joint tree from the
+    root body (the chassis), each body's child constraints in markup order.  Inferred (strong) from the Mammoth RC75
+    readback (2026-10-22): ``GetAllConstraints`` and ``GetBodyByIdx`` run chassis; body, both front carriers, rear
+    link; the body's children ... ladder top; the rear soft stage; the dump's children; then deeper, while the markup
+    lists the body, the dump, the rock ejectors ... and the carriers last.  The sub-system ids follow this order."""
+    kids: dict[str | None, list[tuple[str, str | None]]] = {}
+    for c in constraints:
+        kids.setdefault(c[1], []).append(c)
+    children = {c[0] for c in constraints}
+    roots: list[str | None] = []
+    for _, parent in constraints:
+        if parent not in children and parent not in roots:
+            roots.append(parent)
+    out: list[tuple[str, str | None]] = []
+    done: set[int] = set()
+    queue = list(roots)
+    while queue:
+        body = queue.pop(0)
+        for c in kids.get(body, []):
+            if id(c) in done:
+                continue
+            done.add(id(c))
+            out.append(c)
+            queue.append(c[0])
+    out += [c for c in constraints if id(c) not in done]       # loops not reached from a root: markup order
+    return out
+
+
+def group_indices(names: list[str | None]) -> list[int]:
+    """Filter index of each markup Collision Group, in markup order (``GROUP_BASE`` comment).  A name of None is an
+    ordinary group (its slot index)."""
+    if GROUP_BASE is None:
+        return []
+    out = []
+    for g, name in enumerate(names):
+        slot = GROUP_BASE + g
+        if name in PREDEFINED_GROUPS:
+            out.append(PREDEFINED_GROUPS.index(name))
+        else:
+            out.append(slot if slot < MAX_SUBSYSTEMS else 0)   # "too many collision groups ... set to 0"
+    return out
+
+
 class Filter:
     """The engine's collision filter inside one truck (module docstring)."""
 
     def __init__(self, constraints: list[tuple[str, str | None]], total_constraints: int,
-                 groups: list[list[str]], layers: dict[str, str | None]) -> None:
+                 groups: list[list[str]], layers: dict[str, str | None],
+                 group_names: list[str | None] | None = None) -> None:
         self.ids: dict[str, int] = {}
         self.dont: dict[str, int] = {}
         self.capped = total_constraints >= CONSTRAINT_CAP
@@ -211,7 +268,7 @@ class Filter:
         if not self.capped:
             seen: set[str] = set()
             counter = 0
-            for child, parent in constraints:
+            for child, parent in (engine_order(constraints) if ENGINE_ORDER else constraints):
                 parent = parent or "__world"
                 if child in seen and parent in seen:
                     continue                                    # loop: dropped (spanning tree)
@@ -226,8 +283,8 @@ class Filter:
                     self.dont[parent] = self.ids[child]
         self.group_mask: dict[str, int] = {}
         if GROUP_BASE is not None:
-            for g, members in enumerate(groups[:32]):
-                index = g + GROUP_BASE
+            names = list(group_names or []) + [None] * max(0, len(groups) - len(group_names or []))
+            for index, members in zip(group_indices(names[:len(groups)]), groups):
                 for name in members:              # calcFilterInfo(layer, 0, g, g) overwrites the constraint ids
                     self.ids[name] = self.dont[name] = index
                     self.group_mask[name] = self.group_mask.get(name, 0) | (1 << index)
@@ -416,14 +473,25 @@ def collision_groups(doc: Any) -> list[list[str]]:
     return out
 
 
+def collision_group_names(doc: Any) -> list[str]:
+    """The names of the groups ``collision_groups`` returns, in the same order."""
+    groups = doc.get("collisionGroups") if isinstance(doc, dict) else None
+    out = []
+    if isinstance(groups, dict):
+        for name, value in groups.items():
+            if isinstance(value, dict) and isinstance(value.get("objects"), list):
+                out.append(str(name))
+    return out
+
+
 def sweep_truck(constraints: list[dict], total: int, groups: list[list[str]], layers: dict[str, str | None],
                 shapes: dict[str, list[Shape]], wheels: list[Shape], wheel_body: dict[str, str],
-                nodes_matrix) -> dict[str, dict[str, Any]]:
+                nodes_matrix, group_names: list[str | None] | None = None) -> dict[str, dict[str, Any]]:
     """Sweep every prismatic and limited hinge child body; result per child body name.
 
     ``shapes``: body -> its boxes; ``wheels``: wheel cylinders (``body`` = the wheel's name) with ``wheel_body``
     mapping each wheel to its carrier; ``nodes_matrix(name)``: the node's model matrix."""
-    filt = Filter([(c["child"], c["parent"]) for c in constraints], total, groups, layers)
+    filt = Filter([(c["child"], c["parent"]) for c in constraints], total, groups, layers, group_names)
     children: dict[str, list[str]] = {}
     for c in constraints:
         if c["parent"]:

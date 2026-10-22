@@ -63,6 +63,8 @@ class FakeSession:
     def exec_ssl(self, script, timeout=12.0):
         self.scripts.append(script)
         self.clock.sleep(0.03)  # a reply takes time
+        if "RB_FILTERS" in script or "RB_LOAD" in script:
+            return fake_engine.answer(script)
         if "GetBodyCount" in script or 'StringFormat("F %i' in script:
             return fake_engine.probe_reply(self.clock.t, script)
         for marker, play in (("SSL_LOAD_REQUESTED", False), ("SSL_PLAY_REQUESTED", True)):
@@ -545,6 +547,10 @@ class StepCourseTests(unittest.TestCase):
         self.assertEqual(len(readbacks), len(bh.readback_scripts()))
         first_input = next(i for i, s in enumerate(session.scripts) if "ROAMER_INPUT_APPLIED" in s)
         self.assertLess(max(session.scripts.index(s) for s in readbacks), first_input)  # read back at rest
+        rb = json.loads((self.tmp / "o" / "candidate" / "readback.json").read_text(encoding="utf-8"))["parsed"]
+        self.assertEqual(rb["filters"]["bodies"]["BoneSuspFrontLeft_cdt"]["layer"], "constr_vhc")
+        self.assertFalse(any(b["inNoSelfCollision"] for b in rb["filters"]["bodies"].values()))
+        self.assertEqual(rb["load"]["maxMass"], 218000.0)
 
     def test_readback_parse_keeps_errors_apart(self):
         parsed = bh.parse_readback({
@@ -774,7 +780,8 @@ class SeriesSpringTests(unittest.TestCase):
             spawn={"method": "scene", "scene": "xscenes/mods/pad/pad.scn", "vehicle": "test_vehicle",
                    "position": [0, 60.3, -18]},
             vehicle={"hull": "BoneChassis_cdt", "wheelNames": ["FR", "FL", "RR", "RL"]},
-            probes={"rateHz": 10, "items": ["bodies", "wheels", "joints", "terrain", "linear"], "readback": True},
+            probes={"rateHz": 10, "items": ["bodies", "wheels", "joints", "terrain", "linear", "load"],
+                    "readback": True},
             capture={"cameras": [{"name": "side", "offset": [12, 3, -6]}]},
             analysis={"groundHeight": 0.0, "sprung": {"bodies": {"BoneChassis_cdt": [0, 0, 0]},
                                                        "joints": {"SuspFrontLeft": [-0.05, 0.2]}}})
@@ -796,6 +803,8 @@ class SeriesSpringTests(unittest.TestCase):
         self.assertIn(" if lj.IsPositional()", script)
         self.assertIn("lj.GetCurrentPosition()", script)
         self.assertNotIn("GetTerrain", bh.probe_script(["wheels"]))
+        self.assertIn("if plv != null", bh.probe_script(["load"]))
+        self.assertNotIn("PropLoadVolume", script)
         self.assertTrue(all(ord(c) < 128 for c in script))
         self.assertIn("l.min, l.max", bh.readback_scripts()["limits"])
 
@@ -804,8 +813,8 @@ class SeriesSpringTests(unittest.TestCase):
         folder = self.tmp / "o" / "candidate"
         checks = json.loads((folder / "probe_checks.json").read_text(encoding="utf-8"))
         self.assertTrue(checks["items"]["terrain"]["ok"] and checks["items"]["linear"]["ok"])
-        self.assertEqual(checks["kept"], ["bodies", "wheels", "joints", "terrain", "linear"])
-        for name in ("terrain.csv", "linear.csv", "wheels.csv"):
+        self.assertEqual(checks["kept"], ["bodies", "wheels", "joints", "terrain", "linear", "load"])
+        for name in ("terrain.csv", "linear.csv", "wheels.csv", "load.csv"):
             self.assertTrue((folder / name).is_file(), name)
         summary = run["summary"]
         fr = summary["wheelGround"]["wheels"]["FR"]   # fake wheel: centre y 0.4, radius 0.6, terrain 0.05, pad 0
@@ -856,6 +865,22 @@ class SeriesSpringTests(unittest.TestCase):
         self.assertEqual(parsed["constraints"]["SuspFrontLeft"], {"position": -0.085, "linearLimits": [-0.23, 0.2]})
         self.assertEqual(parsed["constraints"]["SuspRearRoll"]["limits"], [-0.06981, 0.06981])
         self.assertEqual(parsed["bodyLayers"]["BoneSuspRear_cdt"], {"layer": "no_collision", "system": 3})
+
+    def test_readback_filters_and_load(self):
+        parsed = bh.parse_readback({
+            "filters": "RB_FILTERS\ns constr_vhc 1\nf BoneChassis_cdt constr_vhc 1 0 0\nf BoneLid_cdt no_collision 1 0 1\n",
+            "load": "RB_LOAD\nv 218000.0 218000.0 120.5000 120.5000\n"})
+        self.assertEqual(parsed["filters"]["system"], {"layer": "constr_vhc", "system": 1})
+        self.assertEqual(parsed["filters"]["bodies"]["BoneChassis_cdt"],
+                         {"layer": "constr_vhc", "system": 1, "inDefault": False, "inNoSelfCollision": False})
+        self.assertTrue(parsed["filters"]["bodies"]["BoneLid_cdt"]["inNoSelfCollision"])
+        self.assertEqual(parsed["load"]["mass"], 218000.0)
+        self.assertIsNone(bh.parse_readback({"load": "RB_LOAD\nnone\n"})["load"])
+        scripts = bh.readback_scripts()
+        # only the two names every subsystem table holds (an unknown name logs "subsystem %s doesnt exist")
+        self.assertEqual(sorted(set(re.findall(r'IsInSubsystem\("([^"]+)"\)', scripts["filters"]))),
+                         ["default", "no_self_collision"])
+        self.assertIn("if lv == null", scripts["load"])
 
     def test_sprung_spec_is_validated(self):
         for bad in ({"bodies": {"x y": None}}, {"bodies": {"B": [0, 1]}}, {"joints": {"J": [0]}}, {"other": 1}):

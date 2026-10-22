@@ -65,39 +65,74 @@ class FilterTests(unittest.TestCase):
         self.assertTrue(f.blocked("x", "chassis"))
 
     def test_collision_group_overwrites_ids(self):
-        # Mammoth: body|chassis first (ids 0, 1), the carriers' dontCollideWith is 1; the group's members get
-        # id = dont = 1 (group 0 + GROUP_BASE), so they block each other and every body whose dont is 1
+        # body|chassis first (ids 0, 1), the carrier's dontCollideWith is 1; the group's members get id = dont = 2
+        # (the engine's sub-system table: "default" 0, "no_self_collision" 1, the first markup group 2)
         f = js.Filter([("body", "chassis"), ("carrier", "chassis"), ("arm", "body")], 3,
-                      [["chassis", "body", "dump"]], self.LAYERS)
-        self.assertTrue(f.blocked("dump", "chassis"))
-        self.assertTrue(f.blocked("carrier", "body"))
+                      [["chassis", "body", "dump"]], self.LAYERS, ["main_collision_grp"])
+        self.assertEqual((f.ids["chassis"], f.dont["chassis"], f.group_mask["chassis"]), (2, 2, 4))
+        self.assertTrue(f.blocked("dump", "chassis"))                # members block each other
+        self.assertEqual(f.ids["carrier"], 2)                        # constraint id 2 == the group index:
+        self.assertTrue(f.blocked("carrier", "chassis"))             # blocked by coincidence, not by its dont 1
         self.assertFalse(f.blocked("arm", "body"))                   # its dont (body's old id 0) is ignored
 
+    def test_group_indices_follow_the_engine_table(self):
+        self.assertEqual(js.group_indices(["main_collision_grp"]), [2])
+        self.assertEqual(js.group_indices(["a", "b", "c"]), [2, 3, 4])
+        self.assertEqual(js.group_indices(["default", "x", "no_self_collision"]), [0, 3, 1])
+        self.assertEqual(js.group_indices([None] * 31)[-1], 0)          # beyond 32 table entries: set to 0
+        self.assertEqual(js.group_indices([None] * 30)[-1], 31)
+        doc = {"collisionGroups": {"truck": {"objects": ["A", "B"]}, "bad": 3, "dump": {"objects": ["C"]}}}
+        self.assertEqual(js.collision_groups(doc), [["A", "B"], ["C"]])
+        self.assertEqual(js.collision_group_names(doc), ["truck", "dump"])
+        # a group named "default" is index 0 = bit 0, which the pair test clears: its members collide
+        f = js.Filter([("body", "chassis")], 1, [["body", "chassis"]], self.LAYERS, ["default"])
+        self.assertFalse(f.blocked("body", "chassis"))
+        f = js.Filter([("body", "chassis")], 1, [["body", "chassis"]], self.LAYERS, ["truck"])
+        self.assertTrue(f.blocked("body", "chassis"))
+
     def test_body_in_no_group_against_a_group(self):
-        # the Mammoth markup: one group (dump, body, chassis, rock ejectors); the sprung carriers are in no group
-        # and keep their own constraint ids (3 and 4 here) with dontCollideWith = the chassis's constraint id 1
+        # the Mammoth RC75 markup: 23 constraints, one group main_collision_grp (dump, body, chassis, rock ejectors);
+        # the engine walks the joint tree breadth first, so body 0, chassis 1, then the chassis's other children in
+        # markup order: front-left carrier 2, front-right 3 (the markup lists the dump second, but it is deeper).
+        # The group's index is 2: members get id = dont = 2, which is the FL carrier's own id, so FL (and its
+        # wheel) is filtered against every member and FR is not (bench 2026-10-22: FR and the rear link jack the
+        # truck up on hull contact, FL hangs in the air)
         cons = [("body", "chassis"), ("dump", "body"), ("carrierL", "chassis"), ("carrierR", "chassis")]
         group = [["dump", "body", "chassis", "ejectorL", "ejectorR"]]
-        f = js.Filter(cons, 22, group, self.LAYERS)
-        self.assertEqual((f.ids["carrierL"], f.dont["carrierL"]), (3, 1))     # untouched by the group
-        self.assertEqual((f.ids["chassis"], f.dont["chassis"], f.group_mask["chassis"]), (1, 1, 2))
-        for member in ("chassis", "body", "dump"):          # group index 1 == the carriers' dont: all blocked
-            self.assertTrue(f.blocked("carrierL", member), member)
+        f = js.Filter(cons, 22, group, self.LAYERS, ["main_collision_grp"])
+        self.assertEqual([c[0] for c in js.engine_order(cons)], ["body", "carrierL", "carrierR", "dump"])
+        self.assertEqual((f.ids["carrierL"], f.dont["carrierL"]), (2, 1))
+        self.assertEqual((f.ids["carrierR"], f.dont["carrierR"]), (3, 1))
+        self.assertEqual((f.ids["chassis"], f.dont["chassis"], f.group_mask["chassis"]), (2, 2, 4))
+        for member in ("chassis", "body", "dump"):
+            self.assertTrue(f.blocked("carrierL", member), member)      # own id 2 == group index
+            self.assertFalse(f.blocked("carrierR", member), member)     # dont 1 matches nothing any more
         self.assertFalse(f.blocked("carrierL", "carrierR"))  # siblings, neither grouped
+        # the bench variant group1 renames the group no_self_collision: index 1 == the carriers' dont, all blocked
+        f1 = js.Filter(cons, 22, group, self.LAYERS, ["no_self_collision"])
+        for member in ("chassis", "body", "dump"):
+            self.assertTrue(f1.blocked("carrierL", member) and f1.blocked("carrierR", member), member)
         old = js.GROUP_BASE
         try:
             js.GROUP_BASE = 0                                # 0-based: index 0 is bit 0, which the test clears
             f0 = js.Filter(cons, 22, group, self.LAYERS)
             for member in ("chassis", "body", "dump"):
-                self.assertFalse(f0.blocked("carrierL", member), member)
+                self.assertFalse(f0.blocked("carrierR", member), member)
             self.assertFalse(f0.blocked("body", "chassis"))  # even group members then collide
         finally:
             js.GROUP_BASE = old
-        # the block is a coincidence of order: with the chassis's constraint id 2, the carrier's dont (2) no
-        # longer matches the group index 1 and the carrier collides with the chassis it hangs on
-        f2 = js.Filter([("dump", "body"), ("body", "chassis"), ("carrierL", "chassis")], 3, group, self.LAYERS)
-        self.assertEqual(f2.dont["carrierL"], 2)
-        self.assertFalse(f2.blocked("carrierL", "chassis"))
+        old = js.ENGINE_ORDER
+        try:
+            js.ENGINE_ORDER = False                          # markup order: the dump takes id 2, both carriers miss
+            fm = js.Filter(cons, 22, group, self.LAYERS, ["main_collision_grp"])
+            self.assertEqual((fm.ids["carrierL"], fm.ids["carrierR"]), (3, 4))
+            self.assertFalse(fm.blocked("carrierL", "chassis") or fm.blocked("carrierR", "chassis"))
+        finally:
+            js.ENGINE_ORDER = old
+
+    def test_engine_order_is_breadth_first(self):
+        cons = [("a2", "a"), ("a", "root"), ("b", "root"), ("b1", "b"), ("x", "y"), ("y", "x")]
+        self.assertEqual([c[0] for c in js.engine_order(cons)], ["a", "b", "a2", "b1", "x", "y"])
 
 
 def entity(name, joint=None, layer="default"):

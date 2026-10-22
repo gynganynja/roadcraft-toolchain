@@ -730,3 +730,46 @@ the first contact at 0.25 m of rear compression, beyond the 0.20 m limit. `valid
 | Rule | Grade |
 |---|---|
 | Audit sprung-carrier hulls over the whole joint travel plus a margin, against every hull that is not the carrier's direct joint parent, not just at rest. A carrier that touches a hull partway through its travel rests on that contact instead of its spring | Build (RC69), Game pending |
+
+### RC75 front-left wheel floats: one carrier filtered by coincidence (Mammoth, laptop bench 2026-10-22)
+
+**Symptom** (owner; RC70, RC74, RC75): the front-left wheel hangs above the ground. After a fresh garage spawn it also
+spins back and forth. The other three wheels sit normally. The rig is mirror-symmetric (Game).
+
+**Bench:** a parked headless bench of the installed `mammoth_rc75_retune_3d6dec4e.pak`, 3 launches. Grade: Game (engine
+headless). Results: `C:\RC_RE\bench-headless\mammoth_rc75\results.md`.
+
+| empty, 30 s medians | FL | FR | rear link |
+|---|---|---|---|
+| tyre bottom above the pad | **+0.154 m**, on the ground 9 % of samples | +0.018 m | rear tyres +0.02 m |
+| prismatic (+ = droop) | -0.029, mid travel | **+0.196, at the droop stop** | **+0.103, at the droop stop** |
+| wheel spin | ±2 rad/s with intermittent contact for ~5 s after spawn, then 25 rad/s free spin | still | still |
+
+Loaded, the same mechanism looks different:
+- the link is 0.21 m past its droop stop and twisted 8 deg / 4.5 deg against the chassis;
+- the rear left hangs 0.69 m above the pad;
+- FL sits on its bump stop, while FR is held 15 mm off its stop.
+
+**Cause: the collision filter, not the spring data.**
+- The markup's one Collision Group (`main_collision_grp`: chassis, body, dump, rock ejectors) gets filter index **2**.
+  The engine's sub-system table always starts `default` 0, `no_self_collision` 1 (Code). Members get id = dont = 2.
+- The engine assigns constraint sub-ids breadth first from the chassis: body 0, chassis 1, FL carrier 2, FR 3, rear
+  link 4 (readback order).
+- **FL's own id equals the group index.** So the FL carrier and its wheel are filtered against chassis, body and dump.
+- FR, the rear link, the soft stage and the rear wheels are not filtered: their dontCollideWith is the chassis's old id 1.
+- FR's carrier box and the link's housing hulls overlap chassis and body hulls at rest. The contacts push them onto their
+  droop stops and jack the truck up about 0.17 m on three corners. FL, the only carrier on its spring alone, cannot reach
+  the ground.
+- **The twitch** is the airborne wheel's spawn transient with the engine starting (Game). That a save reload skips it,
+  because the settled pose is restored, is Inferred.
+
+**Proof (Game):** the same pak with the group renamed `no_self_collision` (index 1 = the chassis children's dont). All
+four tyres then stood at +0.020 m, the carriers were off their stops (FL -0.057, FR -0.063, near the design 0.081 sag),
+the link sat at -0.024 and the chassis was level.
+
+| Rule | Grade |
+|---|---|
+| A markup Collision Group's filter index is its slot in a table that starts with `default` (0) and `no_self_collision` (1): the first ordinary group is 2. Its members' id and dontCollideWith become that index, so any non-member whose dont was that number loses its filter against them, and any body whose own constraint id equals it gains one | Code (`FUN_141a25ff0`, `FUN_141a263d0`); Game (Mammoth RC75 rename) |
+| Constraint sub-ids follow the engine's breadth-first joint order (all chassis children first, in markup order), not markup order. Mirror-image carriers can therefore filter differently | Game (readback order); that the filter uses it is Inferred, strong (the RC75 asymmetry matches it exactly) |
+| Do not let the filter depend on order. With a group on the chassis, either name it `no_self_collision` (then every chassis child is filtered against the group, as the desktop hull audits assumed) or make the carrier/hull pairs explicit. Then run RC082 with the corrected filter | Game (rename bench); fix not yet built |
+| A floating, twitching wheel on an otherwise sound rig: compare its carrier's prismatic with the opposite side. One carrier at a droop stop with its wheel on the ground means hull contact is jacking that corner | Game |
