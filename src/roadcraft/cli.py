@@ -562,7 +562,8 @@ PASSTHROUGH_HELP = """headless editor commands (each has its own --help):
   validate <target>     runtime-failure checks for a source tree or .pak (library/validator.md)
   schema dump|show|search  the engine's type schema (library/validator.md)
   physics report <target>  the physics values the engine will use, with their source (library/physics-report.md)
-  compare <mod> --donor <retail truck|pak>  effective physics side by side with outliers (library/physics-report.md)"""
+  compare <mod> --donor <retail truck|pak>  effective physics side by side with outliers (library/physics-report.md)
+  sound clone-bank ...  clone a retail sample bank with your WAVs, no Wwise; build-only, unbenched (library/audio-assets.md)"""
 
 
 def _passthrough(argv: list[str]) -> int | None:
@@ -595,6 +596,9 @@ def _passthrough(argv: list[str]) -> int | None:
     if head == "compare":
         from . import physics_report
         return physics_report.main(argv)
+    if head == "sound":
+        from . import sound_clone
+        return sound_clone.main(rest)
     return None
 
 

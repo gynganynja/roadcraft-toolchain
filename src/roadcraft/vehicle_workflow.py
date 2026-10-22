@@ -18,7 +18,8 @@ RUNTIME_FILES = ("__init__.py", "__main__.py", "cli.py", "core.py", "jobs.py", "
                  "native_suspension.py", "tpl_reader.py", "tracks.py", "physics_bench.py", "bench_stability.py",
                  "library.py", "retail.py", "source.py", "transaction.py", "onboard.py",
                  "mod_workflow.py", "project_context.py", "pak_build.py", "class_staging.py", "pak_determinism.py",
-                 "quiet.py", "overrides.py", "validate.py", "schema.py", "physics_report.py", "joint_sweep.py")
+                 "quiet.py", "overrides.py", "validate.py", "schema.py", "physics_report.py", "joint_sweep.py",
+                 "sound_clone.py", "wwise_bank.py")
 
 
 PROJECT_AGENT_INSTRUCTIONS = """# RoadCraft mod project

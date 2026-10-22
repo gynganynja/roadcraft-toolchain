@@ -149,8 +149,106 @@ physics effect. The `Body` graph sets these switches:
   write the `sounds/` resources.
 
 A hand-patched clone of a retail sample bank is possible in principle, but it
-is unbuilt and untested.
+is unbuilt and untested. `roadcraft sound clone-bank` now builds one (next
+section).
+
+## Cloning a retail sample bank without Wwise (2026-10-23)
+
+**Build only, unbenched.** `roadcraft sound clone-bank` writes a hand-patched
+clone of a retail sample bank. Nobody has loaded or heard one in the game or the
+editor yet. Grades and evidence are in `sound_semantics.md` §7.
+
+**No MP3 importer exists (C).**
+- No editor, SDK or tool reads MP3 or OGG.
+- `mod_sounds_gen convert-external-sources` reads `*.wav` only. It calls
+  ffmpeg, through the empty `ffmpeg-tool` slot in `wwise_common.prjenv`, only to
+  change a WAV's sample rate or channel count.
+- Convert an MP3 to WAV outside the toolchain first.
+
+**What the command does.**
+- It reads the donor `.bnk`, its event resources and its streamed media bundle
+  from the retail paks. Only the 23 sample-based `vhc_*` banks are accepted;
+  REV, FX and music banks are refused.
+- It keeps the donor's whole structure: the layer crossfades and pitch on
+  `rtpc_vehicle_rpm`, the `fuel` switch, attenuation, bus, loop flags and
+  InitialDelay.
+- It changes only the IDs:
+  - bank ID = FNV-1 of `--name`;
+  - event names = the donor prefix replaced by `--name`, with ID = FNV-1 of the
+    new name;
+  - every object, layer and media ID is re-derived from `--name`, and the result
+    is checked against all 85 retail banks.
+- Roles you assign get PCM16 `.wem` media, laid out byte for byte like retail
+  `tech.bnk`'s one PCM media. Unassigned roles keep the donor's Vorbis bytes.
+- All media goes into the bank's DATA chunk, so the clone needs no media bundle.
+- It writes `<out>/sounds/banks/<name>.sound_bank.resource`,
+  `sounds/desktop/<name>.bnk` and one `sounds/events/<event>.sound_event.resource`
+  per donor event. These are CRLF, like retail.
+
+Usage:
+
+```
+roadcraft sound clone-bank --donor vhc_vostok_tk53krot --name <bank>          # list roles
+roadcraft sound clone-bank --donor vhc_vostok_tk53krot --name <bank> \
+    --clip engine.idle=idle.wav --clip engine.mid=high.wav \
+    --clip engine.high=high.wav --clip engine.overlay=high.wav \
+    --clip engine_start.filled.1=start.wav --clip engine_start.filled.2=silence \
+    --clip engine_start.no_fuel=start.wav --clip engine_stop=stop.wav \
+    --out <project>/mods_source
+```
+
+- `--clip` takes a role, a role prefix (`acc` assigns `acc.1`…`acc.6`), or a
+  Sound ID.
+- `silence` gives a 50 ms silent clip.
+- Accepted WAVs are 8/16/24/32-bit integer or 32-bit float PCM, mono or stereo.
+  24/32-bit is rounded to 16-bit with no dither, and the sample rate is kept.
+- The report gives the new event and Sound IDs, each loop's end-to-start step
+  against its median step, and which roles still carry donor audio.
+
+**TK53 Krot roles (R).** The rpm values are the positive side of the crossfade
+curves.
+
+| Role | Plays | Audible rpm | Full rpm |
+|---|---|---|---|
+| `engine.idle` | loop | 0–980 | 0–800 |
+| `engine.mid` | loop | 801–1195 | 981–1031 |
+| `engine.high` | loop | 1032–1499 | 1196–1234 |
+| `engine.overlay` | loop on a second layer | 945–1500 | 1500 |
+
+- Pitch, layer 1: +0 cents at 800, rising to +300 cents at 1500.
+- Pitch, layer 2: +0 cents at 694, rising to +200 cents at 1500.
+- `engine_start.filled.1`: the start, after a 0.7 s InitialDelay.
+- `engine_start.filled.2`: the crank.
+- `engine_start.no_fuel`: the crank alone.
+- `engine_stop`: a one-shot.
+
+**Loops (R/I).** The donor loops with the Sound's `Loop` property (infinite).
+The PCM clone carries no `smpl` loop points, so the whole file loops (I). Clips
+must therefore be seamless end to start. 48 kHz is fine: the Krot's own media is
+48 kHz.
+
+**Using the clone (C/I).**
+1. Point the class's `PlaySoundOnEmitter` nodes at `<name>_engine`,
+   `_engine_start` and `_engine_stop`.
+2. Regenerate `linksSound` (`res://sounds/events/<e>.sound_event.resource`).
+3. Build.
+
+**Bench still needed (U):**
+- The bank loads beside the retail Krot with no "already loaded" or ID warning.
+- Every role is heard.
+- The PCM header is accepted.
+- The loop seams are inaudible.
+- The editor plays it, as expected for a sample bank.
+- `mod_pak_builder` picks up `sounds/desktop/<name>.bnk` through the bank
+  resource.
+
+**Route 2 does not work (I).** Overriding the retail Krot media from a mod is
+not per-mod. Mod pak layers are global. `sounds/banks`, `sounds/desktop` and
+`sounds/media_bundles` are not cached tag directories, so the retail entry is
+kept. The SDK builder also drops retail tags.
 
 Integration: this article is listed in [the library index](README.md) and is
-available through `roadcraft library audio-assets`. No shared code, native recipe
-or installation authority changed.
+available through `roadcraft library audio-assets`. Shared code added on
+2026-10-23: `roadcraft.wwise_bank` (the v135 bank reader) and `roadcraft.sound_clone`
+(`roadcraft sound clone-bank`). Both are build-only. No native recipe or
+installation authority changed.

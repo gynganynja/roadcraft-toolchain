@@ -32,7 +32,7 @@ before installing it. Read the subject articles when authoring:
 | [animated-parts.md](animated-parts.md) | Parts that move by themselves or on a key: model clips, `prop_animation_controller`, blueprint triggers; why custom SSL is not a mod route |
 | [truck-settings.md](truck-settings.md) | Truck BRO settings: steering, pedals, gearbox, controls, the SDK sample's gaps |
 | [cockpit-and-lamps.md](cockpit-and-lamps.md) | Steering wheel and gauges (`dataDashboard`), lamps that work in the campaign |
-| [audio-assets.md](audio-assets.md) | Engine audio sources, licences, recording identity, approximation auditions and sound-bank limits |
+| [audio-assets.md](audio-assets.md) | Engine audio sources, licences, recording identity, approximation auditions, sound-bank limits and the no-Wwise retail-bank clone (`sound clone-bank`, build-only) |
 | [textures-and-materials.md](textures-and-materials.md) | Texture sets, channel packing, material instances, interface images |
 | [bro-passthrough.md](bro-passthrough.md) | Which BRO fields the generator carries into the compiled class, renamed, transformed or drops (RC075) |
 | [retail-data.md](retail-data.md) | Where the shipped vehicles' data lives and how to read it, including compiled models |
