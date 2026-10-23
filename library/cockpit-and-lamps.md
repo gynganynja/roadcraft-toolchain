@@ -700,6 +700,43 @@ the model lacks. Evidence: dumptwuck_mod tools/exterior.py, create_models.py (`e
 aimed anchors), build/physics.json (lightAnchors, effectSources), build-026 and test-026
 (171 static checks), candidate dtw-20261001-v4.
 
+**Exhaust and haze sources on the installed mods (2026-10-23, node audit fixes; Build, not yet seen in game):**
+- **Outlet direction.** The Lada outlet's native -Z runs out of the pipe, so its point source uses `emitDir 'z-'`. An
+  `empty(..., direction=d)` helper written for lamp anchors aims native **+Z** along `d` (Trophy Truck, Watcher 61
+  `create_models.empty`): with `'z-'` their plumes left the outlets forward, into the vehicle, at 0.4-0.8 m/s. Read
+  the compiled outlet frame (`tpl-nodes`) and pick the sign that matches; Trophy v6 and Watcher v8 use `'z+'`.
+- **No node at all.** The copied Lynx graph starts `part_exhaust_small_cars` and `part_radiator_haze`; a model
+  without `sfx_exhaust_*` / `sfx_radiator_haze` shows neither (Apoc buggy, Warthog: outlet empty + Lada point source;
+  Warthog's art has no tailpipe, so the plume leaves a rearward bore in the tail).
+- **Empties under parentArea emitters.** The ZiKZ gas and idle exhaust emitters carry a ready `point {emitDir y+}`
+  next to their `local__parentArea` source: on an empty, switch only the source `__type` to `local__point` (CAT 793D
+  RC83, six emitters, identity locators with native Y up, as its acceleration emitters already were).
+- **Haze needs faces.** In `part_radiator_haze` only `CPU_Smoke_6` is visible, and it is a parentArea emitter. Give it a
+  hidden rigid quad named `sfx_radiator_haze`, origin at the quad, facing up, bone-parented to the body (retail
+  helper form; the `sfx_` prefix hides it, KGS-25 observation), with the material and one UV of the nearest art face.
+  Place it over the radiator: behind the grille under the bonnet (Watcher, L275, CAT), in an empty engine bay
+  (Warthog), under an air-cooled engine's shields (Apoc buggy), or over the rear bed where trophy trucks carry their
+  radiators (Trophy Truck: bare frame, nothing modelled). Whether these faces emit visibly is Open until a drive.
+
+**Lint, stock emitters (2026-10-23, installed-mod node audit):** the check above read only the `nameParent`s written in
+the mod's own effects block, so a truck that starts a stock effect with no matching node passed. RC025 now also
+resolves every effect the truck lists or starts: the stock `ssl/sfx/<name>.sfx` (mod first, else `default_other.pak`)
+with the truck's entry merged on top. It then checks each visible emitter (`isVisible` absent or True) of an effect
+that the blueprints start or that has `isAutoStart`, against the model by its `nameParent` (wildcards allowed).
+- **RC025 (error):** the pattern matches no node. Installed hits: apoc buggy and Warthog M12 (exhaust and haze),
+  Trophy Truck and all five Watcher 61 configs (haze).
+- **RC027 (warning):** a `local__parentArea` emitter, which emits from its node's faces, is bound to a node with no
+  mesh (per-mesh bounds from `tpl_reader.find_bounds`). Installed hits: CAT 793D `mammoth.pak` (`sfx_exhaust_02/03`,
+  `sfx_radiator_haze`), L275 minespec (`sfx_radiator_haze`), SuperHeavy crane. The "no emission" is Inferred from
+  the effect definitions, not seen in game.
+- **Not flagged:** invisible emitters (the `wind_expl_01_*` wind-sim burst), effects listed but never started (the
+  copied Lynx block's 50-odd entries), emitters without a `nameParent`, and point sources on empties (the Lada,
+  Trophy and Watcher exhaust outlets).
+- **Where it runs:** `lint-bro <truck.bro> --tpl <model.tpl>` reads the stock effects from the configured
+  installation; `roadcraft validate` runs it on `.bro` files and on compiled truck classes, so installed paks are
+  covered. Without retail paks the stock emitters are unknown and validate says so in its notes.
+- **Fixes:** the node audit's REPORT.md, fixes B and C (`node_audit_20261023` in the RoadCraft folder).
+
 **Game correction (owner, v4 drive):** the beacons "dont emit when they strobe, the mesh itself
 disappears and reappears". v4 hid every lit copy in the model markup (RC037) and its flash swapped
 the beacon lens with that copy (RC039). v5 rebuilds the lamps with `roadcraft.lamps` (start here):

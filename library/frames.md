@@ -258,6 +258,22 @@ on `_wheel` (bone = "_wheel") and are authored for the retail frame. **Build:** 
 retail frame exactly; checked with tpl-nodes); rig-audit check "Collision and effect helpers ... origin at their shape".
 Drive effect of the collision origins: Open.
 
+**Correction (installed-mod audit, 2026-10-23; Retail, SDK sample):** the `_wheel` frame only matters together with the
+wheel BRO's `boneRotation`. Retail pairs its rotated `_wheel` with cylinders that have no `boneRotation` (181 of 181
+`wheel` cylinders in Bro.Compiled.pak); the SDK TUZ Lynx wheel pairs an **identity** `_wheel` with `boneRotation [90,0,90]`,
+which under R = Rz . Ry . Rx (Hinges above) turns the cylinder's Z onto native +X (`vehicle.euler_axis`) - the same axle
+axis. Faults are identity + no rotation (cylinders lie fore-aft: grader 16M3, 994 loader, Goliath D11 as installed) or a
+retail frame that keeps `[90,0,90]`; Kanga c6 changed both together. Never change one without the other. Exhaust: in the
+stock effects mods start, the visible emitters are `local__parentArea` (node faces) or `local__point`; the origin-anchored
+`local__geomPrimitive` plane is the invisible wind-sim burst (`wind_expl_01_*`, `isVisible = False`), so a helper mesh at
+the model origin still smokes from its faces. What loses smoke is a missing `sfx_*` node, or a parentArea emitter on an
+empty (CAT 793D, L275 haze, SuperHeavy; no faces, emission Inferred). Every origin-placed `cdt_*` whose parent could be read
+sits under its body bone. Evidence: RoadCraft `node_audit_20261023/REPORT.md` and `results/*.json`.
+The SDK's other sample, the Aramatsu Crayfish wheel BRO, hangs its cylinders on `_wheel` with no rotation although its
+wheel model has no `_wheel` node at all; the grader and 994 copied that BRO onto identity `_wheel` models. Their fix
+(2026-10-23) is `boneRotation [90,0,90]` in the BRO generator. Cylinder sizes are in unit-wheel space: retail compiled
+classes keep `radius ~1` whatever the tyre radius, so a Crayfish 0.87 / 0.8 cylinder on a 1.86 m tyre is not undersized.
+
 
 ## Frame under a lowered body on unchanged axles (L275 v14, Claude, 2026-10-12)
 

@@ -803,27 +803,33 @@ class Context:
                          "string or enum value was meant", line=line,
                          fix=f'write "{detail}" (quoted) if a string or enum value was meant')
 
-    def nodes(self, tpl_name: str | None, anchor: str | None = None) -> TplNodes | None:
+    def nodes(self, tpl_name: str | None, anchor: str | None = None, bounds: bool = False) -> TplNodes | None:
         """Node table of the compiled model ``<name>.tpl`` (mod first, then retail); ``anchor`` is a node name
-        that selects the right name table (tpl_reader.read_nodes)."""
+        that selects the right name table (tpl_reader.read_nodes); ``bounds`` also reads the per-mesh bounds."""
         if not tpl_name:
             return None
-        key = f"{tpl_name.lower()}|{anchor or ''}"
+        key = f"{tpl_name.lower()}|{anchor or ''}|{'bounds' if bounds else ''}"
         if key not in self._nodes:
             member = self.find_stem(tpl_name, ".tpl")
             nodes = None
             if member is not None:
                 data = self.read(member) or b""
                 try:
-                    nodes = read_tpl_bytes(data, anchor=anchor, parents=False)
+                    nodes = read_tpl_bytes(data, anchor=anchor, parents=False, bounds=bounds)
                 except (TplFormatError, ValueError, IndexError):
                     nodes = None
                 try:
-                    nodes = nodes or read_tpl_bytes(data, parents=False)
+                    nodes = nodes or read_tpl_bytes(data, parents=False, bounds=bounds)
                 except (TplFormatError, ValueError, IndexError):
                     nodes = None
             self._nodes[key] = nodes
         return self._nodes[key]
+
+    def stock_sfx(self, name: str) -> dict | None:
+        """An effect definition ``<name>.sfx`` by name, mod first, then retail (``ssl/sfx`` in default_other.pak)."""
+        member = self.find_stem(name, ".sfx")
+        doc = self.ps(member) if member else None
+        return doc if isinstance(doc, dict) else None
 
     def tpl_bytes(self, tpl_name: str | None) -> bytes | None:
         member = self.find_stem(tpl_name, ".tpl") if tpl_name else None
@@ -2367,13 +2373,56 @@ def rule_bro(ctx: Context) -> None:
             continue
         tpl = doc.get("tpl") if isinstance(doc.get("tpl"), str) else None
         markup, _ = ctx.markup(tpl)
-        model = ctx.nodes(tpl)
-        for f in bro_lint.lint_truck(doc, model=model, markup=markup if isinstance(markup, dict) else None):
+        model = ctx.nodes(tpl, bounds=True)
+        for f in bro_lint.lint_truck(doc, model=model, markup=markup if isinstance(markup, dict) else None,
+                                     stock_sfx=ctx.stock_sfx):
             if f["severity"] == "info" or "bro-lint" not in ctx.rules:
                 continue
             ctx.findings.append(Finding("bro-lint", f["severity"], ctx.bundle.display(name),
                                         getattr(doc, "lines", {}).get(f["where"].split(".")[0]), f["message"],
                                         f"lint-bro {f['code']} ({f['library']})", f["code"], f["where"]))
+
+
+def _add_lint(ctx: Context, name: str, findings: list[dict[str, str]]) -> None:
+    for f in findings:
+        ctx.add(f["code"], f["severity"], ctx.bundle.display(name), f["message"], key=f["where"],
+                evidence=f"lint-bro {f['code']} ({f['library']})")
+
+
+def rule_effect_nodes(ctx: Context, truck: Truck) -> None:
+    """lint-bro RC025 / RC027 on a compiled truck class: the visible emitters of every effect its ``sfx.list``
+    lists or its blueprints start, stock ``.sfx`` merged with the class's entry, against the body model."""
+    sfx = truck.props.get("sfx")
+    listed = sfx.get("list") if isinstance(sfx, dict) else None
+    started = bro_lint._effects_started(truck.props.get("prop_blueprints"))
+    if not started and not listed:
+        return
+    anchor = next((s.get("geomName") for s in truck.slots if isinstance(s, dict) and s.get("geomName")), None)
+    nodes = ctx.nodes(truck.tpl, anchor, bounds=True)
+    if nodes is None:
+        return
+    _add_lint(ctx, truck.name, bro_lint.effect_emitter_findings(
+        listed if isinstance(listed, dict) else {}, started, nodes, ctx.stock_sfx, where="properties.sfx.list"))
+
+
+def rule_wheel_vfx(ctx: Context) -> None:
+    """lint-bro RC028 on every wheel BRO and compiled wheel class: vfx cylinders on ``_wheel`` against its model's
+    frame."""
+    for name in ctx.bundle.names():
+        lower = name.lower()
+        if lower.endswith(".bro"):
+            doc = ctx.ps(name)
+            if isinstance(doc, dict) and isinstance(doc.get("truckWheel"), dict) and isinstance(doc.get("tpl"), str):
+                _add_lint(ctx, name, bro_lint.wheel_vfx_findings(doc.get("propVFX"), ctx.nodes(doc["tpl"]), "propVFX"))
+            continue
+        if not lower.endswith(".cls") or b"truck_wheel" not in ctx.bundle.read(name):
+            continue
+        props = (_merged_class(ctx, name) or {}).get("properties")
+        if not isinstance(props, dict) or not isinstance(props.get("prop_truck_wheel"), dict):
+            continue
+        geom = props.get("geom")
+        tpl = geom.get("nameTpl") if isinstance(geom, dict) else None
+        _add_lint(ctx, name, bro_lint.wheel_vfx_findings(props.get("vfx"), ctx.nodes(tpl), "properties.vfx"))
 
 
 # ------------------------------------------------------------------------------------------------ save-compat
@@ -2665,7 +2714,8 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
     if (root / "root" / "paks").is_dir():
         retail_view = Retail(root)
     else:
-        notes.append(f"no retail paks under {root}: retail references and instance types not checked")
+        notes.append(f"no retail paks under {root}: retail references, instance types and stock effect emitters "
+                     "(lint-bro RC025 / RC027 on stock .sfx) not checked")
     if schema_mod.sdk_present(root):
         schema = schema_mod.load(root)
     else:
@@ -2700,6 +2750,7 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
         rule_suspension(ctx, truck)
         rule_wheel_frames(ctx, truck)
         rule_wheel_trails(ctx, truck)
+        rule_effect_nodes(ctx, truck)
         rule_ik_frames(ctx, truck)
         rule_lamps(ctx, truck)
         markup, markup_name = ctx.markup(truck.tpl)
@@ -2716,6 +2767,7 @@ def validate(target: str | Path, *, rules: Iterable[str] | None = None, game_roo
                     for light in lights.values():
                         lamp_states.update({light.get("lightName", "lights"), light.get("defaultName", "default_cc")})
                     _check_lights(ctx, name, "vehicleLightMaterials.lights", lights, doc["tpl"], ctx.nodes(doc["tpl"]))
+    rule_wheel_vfx(ctx)
     rule_state_pairs(ctx, lamp_states)
     rule_misspelt_states(ctx, lamp_states)
     rule_body_inertia(ctx, target, notes)

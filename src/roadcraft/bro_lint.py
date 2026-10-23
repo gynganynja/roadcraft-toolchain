@@ -15,9 +15,15 @@ Each check comes from something that went wrong in a drive or a build (library/s
 * RC013  ikSettings without useNamedChains (every retail truck sets it).
 * RC014  driven IK bone count differs from explicit constraint count (review implicit defaults).
 * RC020-RC024  names the model lacks; wheel slots with children that nothing moves.
-* RC025  effects parented to nodes the model lacks (wildcards such as sfx_exhaust_* allowed).
+* RC025  effects parented to nodes the model lacks (wildcards such as sfx_exhaust_* allowed): the nameParents
+         of the BRO's own effects block, and of the visible emitters of every stock effect the truck lists or
+         starts (ssl/sfx/<name>.sfx with the truck's override merged on; apoc buggy, Warthog: no exhaust, no haze).
 * RC026  the blueprint starts or stops effects the truck does not declare (a donor's SFX graph
          copied without its effects block shows nothing).
+* RC027  a visible local__parentArea emitter (it emits from its node's faces) bound to a node with no mesh
+         (CAT 793D sfx_exhaust_02/03 and haze empties; no emission is inferred, not seen in game).
+* RC028  a wheel vfx cylinder (local__cylinder on _wheel) whose axis, boneRotation turned by the wheel model's
+         _wheel frame, is not along native X: wheel particles and grass lie fore-aft (grader 16M3, 994).
 * RC030-RC032  settings the compiled class lost.
 * RC033-RC034  generated components missing the properties they require.
 * RC035  load-volume refill stream fixed in truck space (no sfxMovableDumpPositionBone).
@@ -45,12 +51,17 @@ Each check comes from something that went wrong in a drive or a build (library/s
 
 from __future__ import annotations
 
+import copy
 import json
+import math
+import posixpath
+import zipfile
 from fnmatch import fnmatchcase
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 from . import lamps, load_volume, native_suspension, ps_format, tracks, vehicle
+from .schema import saber_merge
 from .tpl_reader import TplNodes, read_tpl
 
 SEVERITY_ORDER = {"error": 0, "warning": 1, "info": 2}
@@ -75,6 +86,59 @@ def wheel_model_references(settings: dict[str, Any], model: TplNodes | Iterable[
     return []
 
 
+WHEEL_BONE = "_wheel"
+AXLE_COS = math.cos(math.radians(10))   # a cylinder axis within 10 degrees of native X lies on the axle
+
+
+def _axis_label(v: tuple[float, ...]) -> str:
+    for i, name in enumerate(("X (axle)", "Y (up)", "Z (fore-aft)")):
+        if abs(v[i]) >= AXLE_COS:
+            return ("-" if v[i] < 0 else "+") + name
+    return str([round(c, 3) for c in v])
+
+
+def wheel_vfx_findings(vfx: dict[str, Any] | None, model: TplNodes | Iterable[str] | None,
+                       where: str = "propVFX") -> list[dict[str, str]]:
+    """RC028: a ``local__cylinder`` vfx bone on ``_wheel`` (wheel dust and water, grass) whose axis is not along the
+    axle.  The cylinder axis is the bone's local Z turned by ``boneRotation`` (:func:`vehicle.euler_axis`,
+    R = Rz.Ry.Rx) and then by the wheel model's ``_wheel`` frame (rows = local axes in native space); the axle is
+    native X.  Retail pairs its rotated ``_wheel`` with no boneRotation (181 of 181 cylinders), the SDK TUZ Lynx an
+    identity ``_wheel`` with ``[90, 0, 90]``; identity + no rotation lies fore-aft.  ``vfx`` is the wheel BRO's
+    ``propVFX`` or the class's ``properties.vfx``; needs the wheel model's node table."""
+    nodes = nodes_of(model)
+    bones = ((vfx or {}).get("vfxSkeleton") or {}).get("vfxBones") if isinstance(vfx, dict) else None
+    if nodes is None or WHEEL_BONE not in nodes.index or not isinstance(bones, list):
+        return []
+    frame = nodes.axes(WHEEL_BONE)
+    identity = all(abs(frame["xyz"[i]][j] - (i == j)) < 1e-3 for i in range(3) for j in range(3))
+    out: list[dict[str, str]] = []
+    for index, bone in enumerate(bones):
+        if not isinstance(bone, dict) or bone.get("bone") != WHEEL_BONE or \
+                (bone.get("geom") or {}).get("__type") != "local__cylinder":
+            continue
+        rotation = bone.get("boneRotation")
+        try:
+            local = vehicle.euler_axis([float(a) for a in (rotation or (0, 0, 0))])
+        except (TypeError, ValueError):
+            continue
+        axis = tuple(sum(local[k] * frame["xyz"[k]][i] for k in range(3)) for i in range(3))
+        length = math.sqrt(sum(c * c for c in axis)) or 1.0
+        axis = tuple(c / length for c in axis)
+        if abs(axis[0]) >= AXLE_COS:
+            continue
+        fix = ("give it boneRotation [90, 0, 90] (SDK TUZ Lynx)" if identity and not rotation else
+               "drop its boneRotation (retail)" if not identity and rotation else
+               "pair the frame and boneRotation as retail (rotated _wheel, none) or the SDK (identity, [90, 0, 90])")
+        kind = "identity" if identity else "rotated"
+        out.append(_finding("RC028", "warning",
+                            f"vfx cylinder {bone.get('name')!r} on {WHEEL_BONE} (frame {kind}, "
+                            f"boneRotation {list(rotation) if rotation else 'none'}) lies along native "
+                            f"{_axis_label(axis)}, not the axle: its wheel particles and grass footprint are turned "
+                            f"90 degrees; {fix}, and never change the _wheel frame without the boneRotation",
+                            f"{where}.vfxSkeleton.vfxBones[{index}]", "suspension-and-wheels.md"))
+    return out
+
+
 def _walk(value: Any) -> Iterable[dict[str, Any]]:
     if isinstance(value, dict):
         yield value
@@ -94,6 +158,102 @@ def _effects_started(blueprint: Any) -> set[str]:
             if isinstance(ref, str) and ref:
                 names.add(ref)
     return names
+
+
+STOCK_SFX_PAK = Path("root/paks/client/default/default_other.pak")
+PARENT_AREA = "local__parentArea"
+
+
+def stock_sfx_reader(game_root: str | Path | None = None) -> Callable[[str], dict[str, Any] | None] | None:
+    """Stock effect definitions by name: ``ssl/sfx/<name>.sfx`` in the installation's ``default_other.pak``,
+    parsed and cached; None when the installation has no such pak."""
+    from .project_context import game_root as default_game_root
+    pak = (Path(game_root) if game_root else default_game_root()) / STOCK_SFX_PAK
+    if not pak.is_file():
+        return None
+    with zipfile.ZipFile(pak) as archive:
+        members = {posixpath.basename(n).lower()[:-4]: n for n in archive.namelist() if n.lower().endswith(".sfx")}
+    cache: dict[str, dict[str, Any] | None] = {}
+
+    def read(name: str) -> dict[str, Any] | None:
+        key = name.lower()
+        if key not in cache:
+            member = members.get(key)
+            cache[key] = None
+            if member is not None:
+                with zipfile.ZipFile(pak) as archive:
+                    doc = ps_format.loads(archive.read(member).decode("utf-8", errors="replace"))
+                cache[key] = doc if isinstance(doc, dict) else None
+        return cache[key]
+    return read
+
+
+def _short(names: list[str], shown: int = 4) -> str:
+    return ", ".join(names[:shown]) + (f" (+{len(names) - shown} more)" if len(names) > shown else "")
+
+
+def effect_emitter_findings(listed: dict[str, Any], started: Iterable[str], model: TplNodes | Iterable[str],
+                            stock_sfx: Callable[[str], dict[str, Any] | None], *, where: str = "sfx.list",
+                            reported: Iterable[str] = ()) -> list[dict[str, str]]:
+    """RC025 / RC027 on the emitters of the effects a truck lists (``listed``: the class's ``sfx.list`` or the BRO's
+    ``effects.propSfx.list``) or starts (``started``, from the blueprints).
+
+    Each effect is its stock definition (``stock_sfx(name)``: the parsed ``ssl/sfx/<name>.sfx``, or None) with the
+    truck's entry merged on top (SaberMerge).  Only effects the blueprints start or stop, or that start themselves
+    (``isAutoStart``), are checked, and only their visible emitters (``isVisible`` absent or True); an emitter
+    binds to its own ``nameParent``, else the effect's.  RC025: the pattern matches no model node (patterns in
+    ``reported`` are already reported).  RC027: a ``local__parentArea`` emitter, which emits from its node's
+    faces, on a node with no mesh (needs ``model`` read with bounds; skipped when the bounds are unknown)."""
+    nodes = nodes_of(model)
+    names = list(nodes.names) if nodes is not None else list(model)
+    bounds = nodes.bounds if nodes is not None else None
+    started, reported = set(started), set(reported)
+    out: list[dict[str, str]] = []
+    for effect in list(listed) + sorted(started - set(listed)):
+        stock = stock_sfx(effect)
+        merged = copy.deepcopy(stock) if isinstance(stock, dict) else {}
+        if isinstance(listed.get(effect), dict):
+            saber_merge(merged, listed[effect])
+        if effect not in started and merged.get("isAutoStart") not in (True, "True"):
+            continue
+        emitters = merged.get("emitters2")
+        lost: dict[str, list[str]] = {}
+        empty: dict[str, list[str]] = {}
+        for emitter_name, emitter in emitters.items() if isinstance(emitters, dict) else ():
+            if not isinstance(emitter, dict) or emitter.get("isVisible", True) in (False, "False"):
+                continue
+            pattern = emitter.get("nameParent") or merged.get("nameParent")
+            if not isinstance(pattern, str) or not pattern or pattern.startswith("<"):
+                continue
+            matches = [name for name in names if fnmatchcase(name, pattern)]
+            if not matches:
+                if pattern not in reported:
+                    lost.setdefault(pattern, []).append(emitter_name)
+                continue
+            emission = emitter.get("emission")
+            source = emission.get("source") if isinstance(emission, dict) else None
+            if bounds is not None and isinstance(source, dict) and source.get("__type") == PARENT_AREA:
+                for node in matches:
+                    if nodes.index[node] not in bounds:
+                        empty.setdefault(node, []).append(emitter_name)
+        how = "started by the blueprint" if effect in started else "isAutoStart"
+        origin = f"stock ssl/sfx/{effect}.sfx" if stock is not None else "the truck's own entry"
+        for pattern, emitter_names in lost.items():
+            out.append(_finding("RC025", "error",
+                                f"{effect} ({how}): visible emitters {_short(emitter_names)} ({origin}) emit from "
+                                f"nameParent {pattern!r}, which matches no model node, so they show nothing; add the "
+                                "node (retail: a hidden face mesh, origin at the shape, under its body bone) or "
+                                "override the emitters' nameParent", f"{where}.{effect}", "cockpit-and-lamps.md"))
+        if empty:
+            emitter_names = sorted({e for found in empty.values() for e in found})
+            out.append(_finding("RC027", "warning",
+                                f"{effect} ({how}): visible {PARENT_AREA} emitters {_short(emitter_names)} emit from the "
+                                f"faces of {sorted(empty)}, which have no mesh, so they probably show nothing "
+                                "(inferred from the effect definition, not seen in game); make each a small hidden face "
+                                "mesh at the same place under the same bone (retail: a 63 mm disc facing along the "
+                                "pipe, a quad facing up for haze) or override those emitters with a local__point source",
+                                f"{where}.{effect}", "cockpit-and-lamps.md"))
+    return out
 
 
 def _crane_references(blueprint, names, markup, where):
@@ -144,10 +304,13 @@ NEUTRAL_DELAY_MAX = 5.0  # seconds; retail 0-3 (truck-settings.md "Heavy hauler 
 def lint_truck(doc: dict[str, Any], *, compiled_class: str | None = None,
                model: TplNodes | Iterable[str] | None = None, beta: float = vehicle.SUSPENSION_BETA,
                weight_shares: dict[str, float] | None = None,
-               markup: dict[str, Any] | None = None) -> list[dict[str, str]]:
+               markup: dict[str, Any] | None = None,
+               stock_sfx: Callable[[str], dict[str, Any] | None] | None = None) -> list[dict[str, str]]:
     """Findings for one truck BRO document.  ``weight_shares`` maps a suspension item to one wheel's
     fraction of the vehicle's weight (default: an even split over all wheels). ``markup`` is the body
-    model's parsed ``.tpl_markup`` (lamp visibility checks RC037 / RC038)."""
+    model's parsed ``.tpl_markup`` (lamp visibility checks RC037 / RC038).  ``stock_sfx`` resolves stock effect
+    definitions by name (:func:`stock_sfx_reader`); with it and the model, the emitters of started effects are
+    checked too (RC025, and RC027 when the model was read with bounds)."""
     out: list[dict[str, str]] = []
     settings = doc.get("truckSettings") or {}
     slots = settings.get("wheelSlots") or []
@@ -370,6 +533,14 @@ def lint_truck(doc: dict[str, Any], *, compiled_class: str | None = None,
         if missing:
             out.append(_finding("RC025", "error", f"effects are parented to nodes the model lacks: {missing}",
                                 "effects", "cockpit-and-lamps.md"))
+        # Installed-mod audit, 2026-10-23: the apoc buggy and Warthog start the stock exhaust and haze with no
+        # sfx_exhaust_* / sfx_radiator_haze node (no nameParent in their own block to catch), and the CAT 793D binds
+        # parentArea smoke to empties. Resolve the stock emitters of what the blueprints start.
+        if stock_sfx is not None:
+            out.extend(effect_emitter_findings(dict(((effects or {}).get("propSfx") or {}).get("list") or {}),
+                                               _effects_started(doc.get("blueprint")),
+                                               nodes if nodes is not None else names,
+                                               stock_sfx, where="effects.propSfx.list", reported=missing))
         # Dump Twuck v3 -> v4, 2026-10-01 (disassembled ModEditor): the sand grid spans the four border
         # meshes in the parentBody frame, and the back border is composed with its parent's transform.
         # Hung under parentBody itself, that body's pivot is applied twice: v3's grid ran 3.7 m past the
@@ -496,25 +667,30 @@ def passthrough_findings(doc: dict[str, Any], table: dict[str, Any] | None = Non
 
 
 def lint_files(bro: str | Path, compiled_class: str | Path | None = None, tpl: str | Path | None = None,
-               beta: float = vehicle.SUSPENSION_BETA, markup: str | Path | None = None) -> dict[str, Any]:
+               beta: float = vehicle.SUSPENSION_BETA, markup: str | Path | None = None,
+               game_root: str | Path | None = None) -> dict[str, Any]:
     """Lint files. Without an explicit ``markup``, the body markup beside the compiled model
-    (``X.tpl.asset/X.tpl_markup``) is read when present, so the shared vehicle checks cover lamp visibility."""
+    (``X.tpl.asset/X.tpl_markup``) is read when present, so the shared vehicle checks cover lamp visibility.
+    Stock effects come from ``game_root`` (default: the configured installation) when it has them."""
     doc = ps_format.load(bro)
     class_text = Path(compiled_class).read_text(encoding="utf-8", errors="replace") if compiled_class else None
     model = None
     if tpl:
         anchor = next((s.get("geomName") for s in (doc.get("truckSettings") or {}).get("wheelSlots") or []), None)
-        model = read_tpl(tpl, anchor=anchor)
+        model = read_tpl(tpl, anchor=anchor, bounds=True)
     if markup is None and tpl:
         markup = lamps.markup_beside(tpl)
     markup_doc = ps_format.load(markup) if markup else None
     if "truckWheel" in doc:
-        settings = doc["truckWheel"]
+        settings, vfx = doc["truckWheel"], doc.get("propVFX")
         if class_text:
-            settings = ps_format.loads(class_text).get("properties", {}).get("prop_truck_wheel", settings)
+            props = ps_format.loads(class_text).get("properties", {})
+            settings, vfx = props.get("prop_truck_wheel", settings), props.get("vfx", vfx)
         findings = wheel_model_references(settings, model) if model is not None else []
+        findings += wheel_vfx_findings(vfx, model, "properties.vfx" if class_text else "propVFX")
     else:
-        findings = lint_truck(doc, compiled_class=class_text, model=model, beta=beta, markup=markup_doc)
+        findings = lint_truck(doc, compiled_class=class_text, model=model, beta=beta, markup=markup_doc,
+                              stock_sfx=stock_sfx_reader(game_root))
     return {"bro": str(bro), "compiledClass": str(compiled_class) if compiled_class else None,
             "model": str(tpl) if tpl else None, "markup": str(markup) if markup else None, "findings": findings,
             "errors": sum(1 for f in findings if f["severity"] == "error"),

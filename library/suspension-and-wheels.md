@@ -422,6 +422,11 @@ Inferred: the meanings of truck mass, wheel count, spin and ground speed. What f
 **Rules (Retail unless graded):**
 - `terrainDeformationFactor`: 0 on asphalt, gravel and `default`; 0.25 on mud and sand; up to 2.5 on grass and ground (HT500).
 - Cylinder: radius 0.85-1.2 and height 0.5-1.5 in wheel-model units; `systems` 18 or 26. No retail cylinder has a zero or negative dimension.
+- Cylinder axis on the axle. The axis is the vfx bone's Z, turned by `boneRotation` (R = Rz·Ry·Rx, `vehicle.euler_axis`) and then by the wheel model's `_wheel` frame.
+  - Retail: a rotated `_wheel` with no `boneRotation`. SDK TUZ Lynx: an identity `_wheel` with `[90, 0, 90]`. Both land on native X.
+  - An identity `_wheel` with no rotation lies fore-aft (grader 16M3, 994 loader, Goliath D11 as installed, 2026-10-23).
+  - **Lint RC028 (warning)** flags a `local__cylinder` on `_wheel` whose axis is more than 10° off native X. It runs in `lint-bro <wheel.bro> --tpl <wheel.tpl>` and in `roadcraft validate` (wheel BROs and compiled wheel classes).
+  - Change the frame and the rotation together: [frames.md](frames.md), "Correction (installed-mod audit, 2026-10-23)".
 - **Code (SSL):** mirror `trailSfxDesc` into `defaultTrailSfxDesc`, or a mod wheel loses its trail (`ResetTrailDesc`).
 - Crawlers: [tracked-vehicles.md](tracked-vehicles.md), "Ruts, mud and trails under a crawler" (RC079).
 
